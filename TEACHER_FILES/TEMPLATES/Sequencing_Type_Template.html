@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SPED ALM — Sequencing Template Generator</title>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --blue:#2f6fed; --blue-dark:#1b4fb8;
+    --purple:#7b6ef0; --purple-dark:#5546c4;
+    --green:#2fbf57; --green-dark:#1f9d44;
+    --red:#e23b54; --red-dark:#b9263c;
+    --gold:#ffc34d; --ink:#243a5e; --ink-soft:#5d7299;
+    --field:#f7f9fd; --field-border:#e6ebf4; --line:#eef2f8;
+    --font:"Fredoka","Nunito",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html, body{ height:100%; overflow:hidden; }
+  body{ font-family:var(--font); color:var(--ink); background:#eef2f9; display:flex; flex-direction:column; }
+
+  /* ===== TOP BAR ===== */
+  .seq-top{
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap; flex:none;
+    background:#fff; padding:14px 22px; border-bottom:1px solid var(--line);
+  }
+  .seq-logo{ width:46px; height:46px; border-radius:14px; flex:none;
+    background:linear-gradient(135deg,#3fc6a0,#2f6fed); display:flex; align-items:center; justify-content:center; font-size:24px; }
+  .seq-top h1{ font-weight:700; font-size:21px; line-height:1.1; }
+  .seq-top .seq-tsub{ color:var(--ink-soft); font-size:12px; font-weight:500; }
+  .seq-top-actions{ margin-left:auto; display:flex; gap:10px; flex-wrap:wrap; }
+  .seq-btn{ cursor:pointer; border:none; font-family:var(--font); font-weight:700; font-size:14px;
+    padding:11px 18px; border-radius:13px; display:inline-flex; align-items:center; gap:7px;
+    transition:transform .08s ease, filter .1s ease; }
+  .seq-btn:active{ transform:translateY(2px); }
+  .seq-btn--ghost{ background:#fff; color:var(--ink); border:1.5px solid var(--field-border); }
+  .seq-btn--ghost:hover{ background:#f7f9fd; }
+  .seq-btn--edit{ background:var(--purple); color:#fff; box-shadow:0 4px 0 var(--purple-dark); }
+  .seq-btn--print{ background:var(--gold); color:#5c4400; box-shadow:0 4px 0 #d9a416; }
+  .seq-btn--pub{ background:var(--green); color:#fff; box-shadow:0 4px 0 var(--green-dark); }
+
+  /* ===== BODY GRID ===== */
+  .seq-body{ display:grid; grid-template-columns:280px 1fr 270px; gap:16px; padding:16px; align-items:stretch;
+    flex:1; min-height:0; overflow:hidden; }
+  .seq-left-col, .seq-preview-col, .seq-right-col{ overflow-y:auto; min-height:0; padding-right:2px;
+    scrollbar-width:thin; scrollbar-color:#c7d3e8 transparent; }
+  .seq-left-col::-webkit-scrollbar, .seq-preview-col::-webkit-scrollbar, .seq-right-col::-webkit-scrollbar{ width:6px; }
+  .seq-left-col::-webkit-scrollbar-track, .seq-preview-col::-webkit-scrollbar-track, .seq-right-col::-webkit-scrollbar-track{ background:transparent; }
+  .seq-left-col::-webkit-scrollbar-thumb, .seq-preview-col::-webkit-scrollbar-thumb, .seq-right-col::-webkit-scrollbar-thumb{ background:#c7d3e8; border-radius:10px; }
+  .seq-left-col::-webkit-scrollbar-thumb:hover, .seq-preview-col::-webkit-scrollbar-thumb:hover, .seq-right-col::-webkit-scrollbar-thumb:hover{ background:#aebedb; }
+  .seq-card{ background:#fff; border:1px solid var(--line); border-radius:18px; padding:16px; }
+  .seq-card + .seq-card{ margin-top:16px; }
+  .seq-step{ font-size:12px; font-weight:800; letter-spacing:.04em; color:var(--ink-soft); text-transform:uppercase; margin-bottom:12px; }
+  .seq-step .seq-edit-link{ color:var(--purple); cursor:pointer; font-weight:700; text-transform:none; letter-spacing:0; }
+
+  /* ----- Activity Slides (multi-activity) navigator ----- */
+  .seq-slidebar{ display:flex; align-items:center; gap:8px; }
+  .seq-slidebar button{ width:30px; height:30px; flex:none; border-radius:9px; border:1.5px solid var(--field-border); background:#fff; cursor:pointer; font-size:14px; color:var(--ink); }
+  .seq-slidebar button:hover:not(:disabled){ background:#f1f4fa; }
+  .seq-slidebar button:disabled{ opacity:.35; cursor:default; }
+  .seq-slide-label{ flex:1; text-align:center; font-weight:700; font-size:13px; color:var(--ink); }
+  .seq-slide-actions{ display:flex; gap:8px; margin-top:10px; }
+  .seq-slide-actions button{ flex:1; cursor:pointer; border:1.5px dashed var(--blue); background:#eaf2ff; color:var(--blue);
+    font-family:var(--font); font-weight:700; font-size:12.5px; padding:8px; border-radius:11px; }
+  .seq-slide-actions button.danger{ border-color:#f0a8b4; background:#fdeef1; color:#c43a55; }
+
+  /* Activity type card */
+  .seq-type{ display:flex; align-items:center; gap:12px; border:2px solid var(--blue); background:#eaf2ff; border-radius:14px; padding:13px; }
+  .seq-type-ic{ width:40px; height:40px; border-radius:11px; background:#fff; display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 3px 0 #d4e2fb; }
+  .seq-type b{ font-weight:700; font-size:15px; }
+  .seq-type-desc{ color:var(--ink-soft); font-size:12.5px; font-weight:500; line-height:1.5; margin-top:12px; }
+
+  /* Steps list (editor) */
+  .seq-item-row{ display:flex; align-items:flex-start; gap:8px; padding:9px 0; border-bottom:1px solid var(--line); position:relative; }
+  .seq-item-row:last-of-type{ border-bottom:none; }
+  .seq-order-badge{ flex:none; width:24px; height:24px; border-radius:50%; background:var(--blue); color:#fff; font-size:12px; font-weight:800;
+    display:flex; align-items:center; justify-content:center; margin-top:11px; }
+  .seq-side{ display:flex; flex-direction:column; align-items:center; gap:4px; flex:1; min-width:0; }
+  .seq-side-name{ width:100%; padding:5px 6px; border-radius:8px; border:1.5px solid var(--field-border); background:var(--field); font-family:var(--font); font-size:11px; text-align:center; outline:none; color:var(--ink); }
+  .seq-side-name::placeholder{ color:#aab4c5; }
+  .seq-side-name:focus{ border-color:var(--blue); background:#fff; }
+  .seq-thumb{ width:100%; height:54px; flex:none; border-radius:10px; border:1.5px solid var(--field-border);
+    background:var(--field); display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden; font-size:24px; }
+  .seq-thumb img{ width:100%; height:100%; object-fit:cover; }
+  .seq-order-controls{ display:flex; flex-direction:column; gap:3px; margin-top:11px; }
+  .seq-order-controls button{ cursor:pointer; border:1.5px solid var(--field-border); background:#fff; color:var(--ink-soft); width:24px; height:20px; border-radius:6px; font-size:11px; line-height:1; }
+  .seq-order-controls button:hover{ background:#f1f4fa; }
+  .seq-order-controls button:disabled{ opacity:.35; cursor:default; }
+  .seq-item-menu{ align-self:center; margin-top:11px; cursor:pointer; border:none; background:none; color:var(--ink-soft); font-size:18px; width:28px; height:28px; border-radius:8px; }
+  .seq-item-menu:hover{ background:#f1f4fa; }
+  .seq-pop{ position:absolute; right:0; top:34px; z-index:5; background:#fff; border:1px solid var(--field-border); border-radius:12px; box-shadow:0 8px 24px rgba(36,58,94,.18); padding:6px; display:none; }
+  .seq-pop.show{ display:block; }
+  .seq-pop button{ display:block; width:100%; text-align:left; border:none; background:none; cursor:pointer; font-family:var(--font); font-size:13px; padding:8px 14px; border-radius:8px; color:var(--ink); }
+  .seq-pop button:hover{ background:#f1f4fa; }
+  .seq-pop button.del{ color:#d6336c; }
+  .seq-add{ cursor:pointer; width:100%; margin-top:10px; border:1.5px dashed var(--blue); background:#eaf2ff; color:var(--blue); font-family:var(--font); font-weight:700; font-size:13px; padding:9px; border-radius:12px; }
+
+  /* Thumbnail upload */
+  .seq-thumbbox{ position:relative; border:2px dashed #aecdfb; background:#f5f9ff; border-radius:14px; padding:10px; text-align:center; }
+  .seq-thumbbox img{ width:100%; border-radius:10px; display:block; }
+  .seq-thumb-empty{ height:96px; display:flex; align-items:center; justify-content:center; color:var(--ink-soft); font-size:12px; font-weight:600; }
+  .seq-thumb-check{ position:absolute; top:-8px; right:-8px; width:24px; height:24px; border-radius:50%; background:var(--blue); color:#fff; display:none; align-items:center; justify-content:center; font-size:13px; }
+  .seq-thumb-check.show{ display:flex; }
+  .seq-change{ cursor:pointer; width:100%; margin-top:10px; border:1.5px solid var(--field-border); background:#fff; color:var(--ink); font-family:var(--font); font-weight:700; font-size:13px; padding:9px; border-radius:11px; }
+
+  /* Teacher tip */
+  .seq-tip{ background:#fef6e6; border:1px solid #f6e2b3; border-radius:14px; padding:13px; }
+  .seq-tip b{ font-size:13px; display:flex; align-items:center; gap:6px; }
+  .seq-tip p{ color:#7a5e1d; font-size:12px; font-weight:500; line-height:1.5; margin-top:6px; }
+  .seq-guide-settings-btn{ margin-left:auto; cursor:pointer; border:1.5px solid #bcd4fb; background:#eaf2ff; color:var(--blue);
+    font-family:var(--font); font-weight:800; font-size:13px; padding:7px 12px; border-radius:10px; white-space:nowrap; }
+  .seq-guide-settings-btn:hover{ background:#dbe8ff; }
+
+  /* ===== CENTER PREVIEW ===== */
+  .seq-preview-col .seq-step{ margin-bottom:12px; }
+  .seq-stage{
+    position:relative; overflow:hidden; border-radius:20px;
+    border:1px solid var(--line);
+    background:#fdf6d8; padding:30px;
+    --seq-text:#243a5e; --seq-badge:#2f6fed; font-family:'Comic Sans MS','Comic Sans',cursive; font-size:40px;
+  }
+  .seq-deco{ position:absolute; inset:0; pointer-events:none; }
+  .seq-stage.no-deco .seq-deco{ display:none; }
+  .seq-deco .d-sun{ position:absolute; top:14px; right:22px; font-size:42px; }
+  .seq-deco .d-cloud1{ position:absolute; top:18px; left:24px; font-size:30px; opacity:.9; }
+  .seq-deco .d-cloud2{ position:absolute; top:46%; right:10px; font-size:26px; opacity:.8; }
+  .seq-deco .d-grass{ position:absolute; left:0; right:0; bottom:0; height:64px;
+    background:linear-gradient(180deg, rgba(126,217,124,0), #aee08a 70%); }
+  .seq-deco .d-flower1{ position:absolute; bottom:8px; left:18px; font-size:24px; }
+  .seq-deco .d-flower2{ position:absolute; bottom:6px; right:26px; font-size:22px; }
+
+  .seq-title{ text-align:center; font-weight:700; font-size:1.25em; color:var(--seq-text); position:relative; z-index:2; }
+  .seq-instr{ text-align:center; font-size:.5em; font-weight:500; color:var(--seq-text); opacity:.85; margin:6px 0 22px; position:relative; z-index:2; }
+  .seq-grid{ position:relative; z-index:2; display:grid; gap:22px; }
+  .seq-card-it{
+    background:#fff; border:3px solid #e2c98f; border-radius:18px; padding:12px; padding-top:26px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    cursor:pointer; user-select:none; position:relative;
+    box-shadow:0 4px 12px rgba(36,58,94,.08); transition:transform .08s ease, border-color .12s ease;
+  }
+  .seq-card-it:hover{ transform:translateY(-2px); }
+  .seq-card-it.tapped{ border-color:var(--seq-badge) !important; }
+  .seq-card-it-img{ width:100%; height:3.6em; object-fit:contain; display:block; }
+  .seq-card-it-emoji{ font-size:3em; line-height:1; }
+  .seq-card-it-name{ font-weight:700; font-size:.6em; margin-top:8px; color:var(--seq-text); text-align:center; }
+  .seq-badge-num{
+    position:absolute; top:-14px; left:50%; transform:translateX(-50%);
+    width:34px; height:34px; border-radius:50%; background:var(--seq-badge); color:#fff;
+    font-size:.45em; font-weight:800; display:none; align-items:center; justify-content:center;
+    box-shadow:0 3px 0 rgba(0,0,0,.15); border:3px solid #fff;
+  }
+  .seq-card-it.tapped .seq-badge-num{ display:flex; }
+
+  /* border style variants */
+  .seq-stage.bs-dashed .seq-card-it{ border-style:dashed; }
+  .seq-stage.bs-solid .seq-card-it{ border-radius:8px; }
+
+  .seq-stage-controls{ display:flex; flex-direction:column; align-items:center; gap:10px; margin-top:22px; position:relative; z-index:2; }
+  .seq-stage-btnrow{ display:flex; justify-content:center; gap:10px; }
+  .seq-mini{ cursor:pointer; border:none; font-family:var(--font); font-weight:700; font-size:.5em; padding:.55em 1.2em; border-radius:12px; }
+  .seq-mini--reset{ background:#eef3fb; color:var(--ink-soft); }
+  .seq-mini--check{ background:var(--green); color:#fff; }
+  .seq-hint{ font-size:.46em; font-weight:700; min-height:1.3em; text-align:center; color:var(--red-dark); }
+  .seq-stage-nav{ display:flex; align-items:center; gap:14px; margin-top:6px; }
+  .seq-stage-nav button{ cursor:pointer; border:none; background:#eef3fb; color:var(--ink-soft); font-family:var(--font); font-weight:700; font-size:.42em; padding:.55em 1em; border-radius:10px; }
+  .seq-stage-nav button:disabled{ opacity:.35; cursor:default; }
+  .seq-stage-nav span{ font-weight:700; font-size:.42em; color:var(--seq-text); opacity:.8; }
+
+  /* accessibility reminders */
+  .seq-reminders{ background:#eef6ff; border:1px solid #d3e6fb; border-radius:16px; padding:14px 16px; margin-top:16px; }
+  .seq-reminders .r-title{ font-size:11px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:var(--blue); margin-bottom:12px; }
+  .seq-rem-list{ display:flex; gap:10px; flex-wrap:wrap; justify-content:space-between; }
+  .seq-rem{ display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; flex:1; min-width:80px; color:var(--ink-soft); font-size:11.5px; font-weight:600; }
+  .seq-rem .r-ic{ font-size:20px; }
+
+  /* ===== RIGHT SETTINGS ===== */
+  .seq-set-title{ display:flex; align-items:center; gap:8px; font-weight:700; font-size:15px; margin-bottom:16px; }
+  .seq-set-label{ font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-soft); margin:0 0 9px; }
+  .seq-set-group{ margin-bottom:18px; }
+  .seq-swatches{ display:flex; gap:8px; flex-wrap:wrap; }
+  .seq-sw{ width:38px; height:38px; border-radius:11px; cursor:pointer; border:2px solid #fff; box-shadow:0 0 0 1.5px var(--field-border); position:relative; }
+  .seq-sw.sel{ box-shadow:0 0 0 2.5px var(--blue); }
+  .seq-sw.sel::after{ content:"✓"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--blue); font-weight:800; font-size:14px; }
+  .seq-input, .seq-select{ width:100%; padding:11px 13px; border-radius:12px; border:1.5px solid var(--field-border); background:#fff; font-family:var(--font); font-size:14px; color:var(--ink); outline:none; }
+  .seq-input:focus, .seq-select:focus{ border-color:var(--blue); }
+  .seq-size-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .seq-size-num{ width:54px; text-align:center; padding:5px; border:1.5px solid var(--field-border); border-radius:8px; font-family:var(--font); font-weight:700; }
+  .seq-size-row{ display:flex; align-items:center; gap:10px; }
+  .seq-size-row input[type=range]{ flex:1; accent-color:var(--blue); }
+  .seq-size-row .a-sm{ font-size:13px; font-weight:700; } .seq-size-row .a-lg{ font-size:20px; font-weight:700; }
+  .seq-color-row{ display:flex; align-items:center; gap:8px; }
+  .seq-color-row input[type=color]{ width:46px; height:34px; border:none; border-radius:9px; background:none; cursor:pointer; }
+  .seq-seg{ display:flex; gap:8px; }
+  .seq-seg button{ flex:1; cursor:pointer; border:1.5px solid var(--field-border); background:#fff; border-radius:11px; padding:10px 4px; font-family:var(--font); font-weight:600; font-size:12px; color:var(--ink-soft); display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .seq-seg button.sel{ border-color:var(--blue); background:#eaf2ff; color:var(--blue); }
+  .seq-seg .seg-box{ width:30px; height:20px; border:2.5px solid var(--ink-soft); }
+  .seq-seg button.sel .seg-box{ border-color:var(--blue); }
+  .seg-rounded{ border-radius:8px; } .seg-dashed{ border-style:dashed; border-radius:8px; } .seg-solid{ border-radius:2px; }
+  .seq-spacing{ display:flex; align-items:center; gap:12px; }
+  .seq-spacing button{ width:34px; height:34px; border-radius:10px; border:1.5px solid var(--field-border); background:#fff; cursor:pointer; font-size:18px; font-weight:700; color:var(--ink); }
+  .seq-spacing span{ font-weight:700; font-size:14px; flex:1; text-align:center; }
+  .seq-check{ display:flex; align-items:center; gap:9px; padding:7px 0; cursor:pointer; font-size:14px; font-weight:600; }
+  .seq-check input{ width:18px; height:18px; accent-color:var(--blue); }
+  .seq-set-actions{ display:flex; gap:10px; margin-top:8px; }
+  .seq-set-actions button{ flex:1; cursor:pointer; border:none; font-family:var(--font); font-weight:700; font-size:14px; padding:12px; border-radius:12px; }
+  .seq-reset{ background:#eef2f8; color:var(--ink-soft); }
+  .seq-apply{ background:var(--blue); color:#fff; box-shadow:0 4px 0 var(--blue-dark); }
+
+  /* preview-only mode (Preview button) — show ONLY the activity itself,
+     just like what the student will actually see when answering. */
+  body.seq-preview-only .seq-left-col,
+  body.seq-preview-only .seq-right-col,
+  body.seq-preview-only .seq-top,
+  body.seq-preview-only .seq-preview-col > .seq-step,
+  body.seq-preview-only .seq-reminders{ display:none; }
+  body.seq-preview-only { background: #fdf6d8; }
+  body.seq-preview-only .seq-body{
+    grid-template-columns:1fr; min-height:100vh; padding:0;
+  }
+  body.seq-preview-only .seq-preview-col{ width:100%; max-width:100%; }
+  body.seq-preview-only .seq-stage{
+    width:100%; min-height:100vh; border-radius:0; border:none;
+    padding:60px 40px; display:flex; flex-direction:column; justify-content:center;
+  }
+  body.seq-preview-only .seq-grid,
+  body.seq-preview-only .seq-title,
+  body.seq-preview-only .seq-instr{ max-width:1100px; width:100%; margin-left:auto; margin-right:auto; }
+
+  /* collapsible right settings panel — when collapsed, the Template
+     Guide card takes its place instead of leaving an empty gap. */
+  .seq-right-col{ position:relative; }
+  .seq-collapse-btn{ cursor:pointer; border:1.5px solid var(--field-border); background:#fff; width:30px; height:30px; flex:none;
+    border-radius:9px; font-size:14px; color:var(--ink-soft); margin-left:auto; }
+  .seq-collapse-btn:hover{ background:#f1f4fa; }
+  .seq-right-panel-guide{ display:none; }
+  body.seq-right-collapsed .seq-right-panel-full{ display:none; }
+  body.seq-right-collapsed .seq-right-panel-guide{ display:block; }
+
+  /* ===== SCORE MODAL (shown after "Check answers") ===== */
+  .seq-modal-overlay{ position:fixed; inset:0; background:rgba(36,58,94,.55); z-index:80;
+    display:none; align-items:center; justify-content:center; padding:20px; }
+  .seq-modal-overlay.show{ display:flex; }
+  .seq-modal-card{ background:#fff; border-radius:26px; padding:34px 30px; max-width:360px; width:100%;
+    text-align:center; box-shadow:0 24px 60px rgba(0,0,0,.3); animation:seqPop .22s ease; }
+  @keyframes seqPop{ from{ transform:scale(.85); opacity:0; } to{ transform:scale(1); opacity:1; } }
+  .seq-modal-emoji{ font-size:58px; line-height:1; margin-bottom:4px; }
+  .seq-modal-score{ font-size:26px; font-weight:800; color:var(--ink); margin:4px 0 8px; }
+  .seq-modal-msg{ font-size:14px; font-weight:600; color:var(--ink-soft); margin-bottom:22px; line-height:1.5; }
+  .seq-modal-actions{ display:flex; gap:10px; }
+  .seq-modal-actions button{ flex:1; cursor:pointer; border:none; font-family:var(--font); font-weight:700; font-size:14px; padding:13px; border-radius:14px; }
+  .seq-modal-try{ background:var(--blue); color:#fff; box-shadow:0 4px 0 var(--blue-dark); }
+  .seq-modal-close{ background:#eef2f8; color:var(--ink-soft); }
+
+  /* ===== PUBLISH MODAL (shown when "Publish" is clicked) ===== */
+  .seq-publish-card{ max-width:380px; text-align:left; }
+  .seq-publish-card h3{ text-align:center; font-size:18px; font-weight:800; color:var(--ink); margin-bottom:16px; }
+  .seq-publish-thumb-wrap{ border:1.5px solid var(--field-border); background:var(--field); border-radius:14px;
+    padding:8px; margin-bottom:16px; }
+  .seq-publish-thumb-wrap img{ width:100%; border-radius:10px; display:block; }
+  .seq-publish-thumb-empty{ height:120px; display:flex; align-items:center; justify-content:center;
+    color:var(--ink-soft); font-size:12.5px; font-weight:600; text-align:center; padding:0 10px; }
+  .seq-publish-field{ margin-bottom:18px; }
+  .seq-publish-field label{ display:block; font-size:12.5px; font-weight:700; color:var(--ink-soft);
+    margin-bottom:6px; }
+  .seq-publish-field input[type="date"]{ width:100%; padding:10px 12px; border-radius:10px;
+    border:1.5px solid var(--field-border); background:#fff; font-family:var(--font); font-size:14px;
+    color:var(--ink); outline:none; }
+  .seq-publish-field input[type="date"]:focus{ border-color:var(--blue); }
+  .seq-publish-field .seq-publish-hint{ font-size:11.5px; color:var(--ink-soft); font-weight:500; margin-top:5px; }
+  .seq-publish-confirm{ background:var(--green); color:#fff; box-shadow:0 4px 0 var(--green-dark); }
+  .seq-grading-radios{ display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+  .seq-grad-opt{ display:flex; align-items:center; gap:5px; font-size:13px; font-weight:600;
+    color:var(--ink); cursor:pointer; padding:6px 10px; border:1.5px solid var(--field-border);
+    border-radius:8px; background:#fff; transition:border-color .15s,background .15s; }
+  .seq-grad-opt:has(input:checked){ border-color:var(--blue); background:#eaf2ff; color:var(--blue); }
+  .seq-grad-opt input[type="radio"]{ accent-color:var(--blue); cursor:pointer; }
+
+  /* ===== FLOATING EXIT BUTTON (preview / fullscreen mode) ===== */
+  .seq-exit-float{
+    display:none; position:fixed; top:14px; right:14px; z-index:100;
+    align-items:center; gap:6px; cursor:pointer; border:none;
+    background:rgba(36,58,94,.85); color:#fff; font-family:var(--font); font-weight:700; font-size:13px;
+    padding:10px 18px; border-radius:30px; box-shadow:0 6px 18px rgba(0,0,0,.25);
+  }
+  .seq-exit-float:hover{ background:rgba(36,58,94,1); }
+  body.seq-preview-only .seq-exit-float{ display:flex; }
+
+  @media (max-width:1100px){
+    .seq-body{ grid-template-columns:1fr; }
+    body.seq-right-collapsed .seq-body{ grid-template-columns:1fr; }
+  }
+  /* ===== DESIGN FOR SCORING ===== */
+  .seq-modal-emoji{
+    width: 110px;
+    height: 110px;
+    object-fit: contain;
+    margin-bottom: 12px;
+}
+
+.seq-modal-emoji{
+  width:110px;
+  height:110px;
+  object-fit:contain;
+  animation: rewardFloat 2s ease-in-out infinite;
+}
+
+@keyframes rewardFloat{
+  0%,100%{
+    transform: translateY(0) scale(1);
+  }
+
+  50%{
+    transform: translateY(-20px) scale(1.08);
+  }
+}
+
+
+</style>
+</head>
+<body>
+<div id="spedLoading" style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 60%,#2563eb 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .5s ease;pointer-events:all;">
+  <img src="../../ASSETS/logo.png" alt="SPED ALM" onerror="this.style.display='none'" style="width:88px;height:88px;border-radius:22px;background:#fff;padding:6px;box-shadow:0 10px 36px rgba(0,0,0,.35);animation:spedLdPulse 2s ease-in-out infinite;">
+  <p style="color:#fff;font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;margin:0;letter-spacing:1px;text-shadow:0 2px 8px rgba(0,0,0,.2);">SPED ALM</p>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite 0s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .18s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .36s;"></span>
+  </div>
+  <p style="color:rgba(255,255,255,.65);font-family:'Poppins',sans-serif;font-size:13px;font-weight:400;margin:0;">Loading, please wait...</p>
+</div>
+<style>
+@keyframes spedLdBounce{0%,80%,100%{transform:translateY(0);opacity:.5}40%{transform:translateY(-16px);opacity:1}}
+@keyframes spedLdPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+</style>
+<script>
+(function(){
+  function hideLoader(){
+    var e=document.getElementById('spedLoading');
+    if(!e) return;
+    e.style.opacity='0';
+    e.style.pointerEvents='none';
+    setTimeout(function(){ if(e.parentNode) e.parentNode.removeChild(e); }, 520);
+  }
+  if(document.readyState==='complete'){ setTimeout(hideLoader,200); }
+  else { window.addEventListener('load', function(){ setTimeout(hideLoader,200); }); }
+})();
+</script>
+
+  <!-- TOP BAR -->
+  <div class="seq-top">
+    <div class="seq-logo">🔢</div>
+    <div>
+      <h1>Sequencing Template Generator</h1>
+      <div class="seq-tsub">Step / Picture Sequencing (Task Analysis) activities for learners (ASD / Intellectual Disability)</div>
+    </div>
+    <div class="seq-top-actions">
+      <button class="seq-btn seq-btn--print" id="seqPrintBtn" type="button">🖨️ Generate Printable</button>
+      <button class="seq-btn seq-btn--ghost" id="seqPreviewBtn" type="button">👁 Preview</button>
+      <button class="seq-btn seq-btn--ghost" id="seqDraftBtn" type="button">💾 Save Draft</button>
+      <button class="seq-btn seq-btn--pub" id="seqPubBtn" type="button">🌐 Publish</button>
+    </div>
+  </div>
+
+  <!-- BODY -->
+  <div class="seq-body">
+
+    <!-- LEFT COLUMN -->
+    <div class="seq-left-col">
+
+      <!-- Multiple activities (slides) inside one activity set -->
+      <div class="seq-card">
+        <div class="seq-step">Activity Slides <span class="seq-edit-link">(suggested: ~5 per set)</span></div>
+        <div class="seq-slidebar">
+          <button id="seqPrevSlide" type="button">◂</button>
+          <div class="seq-slide-label" id="seqSlideLabel">Slide 1 of 1</div>
+          <button id="seqNextSlide" type="button">▸</button>
+        </div>
+        <div class="seq-slide-actions">
+          <button id="seqAddSlide" type="button">+ Add Slide</button>
+          <button id="seqDeleteSlide" type="button" class="danger">🗑 Delete</button>
+        </div>
+      </div>
+
+      <div class="seq-card">
+        <div class="seq-step">1. Activity Type</div>
+        <div class="seq-type">
+          <div class="seq-type-ic">🔢</div>
+          <b>Sequencing Type</b>
+        </div>
+        <p class="seq-type-desc">Learners tap the picture steps in the correct order (1 → 2 → 3 → 4). A number badge appears on each step as it is tapped. Best for daily living / self-help routines (Task Analysis).</p>
+      </div>
+
+      <div class="seq-card">
+        <div class="seq-step">2. Steps <span class="seq-edit-link">(this order = correct answer)</span></div>
+        <div id="seqItems"></div>
+        <button class="seq-add" id="seqAddItem" type="button">+ Add Step</button>
+      </div>
+
+      <div class="seq-card">
+        <div class="seq-step">3. Thumbnail Image <span class="seq-edit-link">(Upload)</span></div>
+        <div class="seq-thumbbox">
+          <div class="seq-thumb-check" id="seqThumbCheck">✓</div>
+          <img id="seqThumbImg" alt="Thumbnail" style="display:none" />
+          <div class="seq-thumb-empty" id="seqThumbEmpty">No thumbnail yet.<br>Upload or press Publish.</div>
+        </div>
+        <label class="seq-change">⬆ Change Image<input type="file" accept="image/*" id="seqThumbUpload" hidden /></label>
+      </div>
+
+    </div>
+
+    <!-- CENTER PREVIEW -->
+    <div class="seq-preview-col">
+      <div class="seq-step">4. Activity Preview</div>
+      <div class="seq-stage" id="seqStage">
+        <div class="seq-deco">
+          <span class="d-sun">☀️</span><span class="d-cloud1">☁️</span><span class="d-cloud2">☁️</span>
+          <div class="d-grass"></div><span class="d-flower1">🌼</span><span class="d-flower2">🌸</span>
+        </div>
+        <div class="seq-title" id="seqTitle"></div>
+        <div class="seq-instr" id="seqInstr"></div>
+        <div class="seq-grid" id="seqGrid"></div>
+        <div class="seq-stage-controls">
+          <div class="seq-hint" id="seqHint"></div>
+          <div class="seq-stage-btnrow">
+            <button class="seq-mini seq-mini--reset" id="seqReset" type="button">🔁 Try Again</button>
+            <button class="seq-mini seq-mini--check" id="seqCheck" type="button">✓ Check answers</button>
+          </div>
+          <div class="seq-stage-nav" id="seqStageNav">
+            <button id="seqStagePrev" type="button">◂ Previous</button>
+            <span id="seqStageSlideLabel">Slide 1 of 1</span>
+            <button id="seqStageNext" type="button">Next ▸</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="seq-reminders">
+        <div class="r-title">♿ Accessibility Reminders</div>
+        <div class="seq-rem-list">
+          <div class="seq-rem"><span class="r-ic">🖼️</span>Use real, clear photos</div>
+          <div class="seq-rem"><span class="r-ic">🎨</span>High contrast colors</div>
+          <div class="seq-rem"><span class="r-ic">🔠</span>Large fonts</div>
+          <div class="seq-rem"><span class="r-ic">🔢</span>Keep steps short (3–6)</div>
+          <div class="seq-rem"><span class="r-ic">✅</span>One routine per page</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT SETTINGS -->
+    <div class="seq-right-col" id="seqRightCol">
+      <div class="seq-card seq-right-panel-full" id="seqRightPanelFull">
+        <div class="seq-set-title">🎨 Design &amp; Settings
+          <button class="seq-collapse-btn" id="seqCollapseBtn" type="button" title="Hide panel">⮜</button>
+        </div>
+
+        <div class="seq-set-group">
+          <div class="seq-set-label">Background Color</div>
+          <div class="seq-swatches" id="seqSwatches"></div>
+        </div>
+
+        <div class="seq-set-group">
+          <div class="seq-set-label">Fonts</div>
+          <select class="seq-select" id="seqFont">
+            <option value="'Comic Sans MS','Comic Sans',cursive">Comic Sans MS</option>
+            <option value="'Fredoka',sans-serif">Fredoka</option>
+            <option value="'Nunito',sans-serif">Nunito</option>
+            <option value="'Poppins',sans-serif">Poppins</option>
+            <option value="Verdana,sans-serif">Verdana</option>
+            <option value="Arial,sans-serif">Arial</option>
+          </select>
+        </div>
+
+        <div class="seq-set-group">
+          <div class="seq-size-head">
+            <div class="seq-set-label" style="margin:0">Font Size</div>
+            <input class="seq-size-num" id="seqSizeNum" type="number" min="20" max="64" />
+          </div>
+          <div class="seq-size-row">
+            <span class="a-sm">A</span>
+            <input type="range" id="seqSize" min="20" max="64" step="1" />
+            <span class="a-lg">A</span>
+          </div>
+        </div>
+
+        <div class="seq-set-group">
+          <div class="seq-set-label">Text Color</div>
+          <div class="seq-color-row">
+            <input type="color" id="seqTextColor" />
+            <span style="font-size:13px;color:var(--ink-soft);font-weight:600">Title &amp; labels</span>
+          </div>
+        </div>
+
+        <div class="seq-set-group">
+          <div class="seq-set-label">Number Badge Color</div>
+          <div class="seq-color-row">
+            <input type="color" id="seqBadgeColor" />
+            <span style="font-size:13px;color:var(--ink-soft);font-weight:600">Tap badge</span>
+          </div>
+        </div>
+
+        <div class="seq-set-group">
+          <div class="seq-set-label">Border Style</div>
+          <div class="seq-seg" id="seqBorder">
+            <button data-b="rounded" class="sel" type="button"><span class="seg-box seg-rounded"></span>Rounded</button>
+            <button data-b="dashed" type="button"><span class="seg-box seg-dashed"></span>Dashed</button>
+            <button data-b="solid" type="button"><span class="seg-box seg-solid"></span>Solid</button>
+          </div>
+        </div>
+
+        <div class="seq-set-group">
+          <div class="seq-set-label">Steps per Row</div>
+          <div class="seq-spacing">
+            <button id="seqColsMinus" type="button">−</button>
+            <span id="seqColsVal">4</span>
+            <button id="seqColsPlus" type="button">+</button>
+          </div>
+        </div>
+
+        <div class="seq-set-group">
+          <div class="seq-set-label">Spacing</div>
+          <div class="seq-spacing">
+            <button id="seqSpaceMinus" type="button">−</button>
+            <span id="seqSpaceVal">Medium</span>
+            <button id="seqSpacePlus" type="button">+</button>
+          </div>
+        </div>
+
+        <div class="seq-set-group">
+          <div class="seq-set-label">Instruction Text</div>
+          <input class="seq-input" id="seqInstrInput" type="text" />
+        </div>
+
+        <div class="seq-set-group">
+          <div class="seq-set-label">Title</div>
+          <input class="seq-input" id="seqTitleInput" type="text" />
+        </div>
+
+        <div class="seq-set-group">
+          <div class="seq-set-label">Other Options</div>
+          <label class="seq-check"><input type="checkbox" id="seqShowTitle" checked /> Show title</label>
+          <label class="seq-check"><input type="checkbox" id="seqShowInstr" checked /> Show instructions</label>
+          <label class="seq-check"><input type="checkbox" id="seqShowLabels" checked /> Show step labels</label>
+          <label class="seq-check"><input type="checkbox" id="seqShowDeco" checked /> Show decorations</label>
+        </div>
+
+        <div class="seq-set-actions">
+          <button class="seq-reset" id="seqResetAll" type="button">↻ Reset</button>
+          <button class="seq-apply" id="seqApply" type="button">✓ Apply Changes</button>
+        </div>
+      </div>
+
+      <!-- Shown instead of the settings panel whenever it is hidden,
+           so this space is never left empty. -->
+      <div class="seq-tip seq-right-panel-guide" id="seqRightPanelGuide">
+        <b>💡 Template Guide
+          <button class="seq-guide-settings-btn" id="seqShowSettingsBtn" type="button" title="Show Design & Settings">🎨 Settings</button>
+        </b>
+        <p>
+          • Upload custom images for each sequence step.<br>
+          • Add clear text descriptions or instructions.<br>
+          • Arrange steps in the correct order using the move controls.<br>
+          • Customize colors, fonts, and spacing to match learner needs.<br>
+          • Preview the activity before publishing.<br>
+          • Add or remove steps as needed.
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Floating exit button — always reachable in preview/fullscreen mode,
+       even on phones where there is no ESC key. -->
+  <button class="seq-exit-float" id="seqExitFloatBtn" type="button">✖ Exit</button>
+
+  <!-- SCORE MODAL (appears after "Check answers") -->
+
+<div class="seq-modal-overlay" id="seqModalOverlay">
+  <div class="seq-modal-card">
+
+    <img
+      class="seq-modal-emoji"
+      id="seqModalEmoji"
+      src=""
+      alt="Result"
+    >
+
+    <div class="seq-modal-score" id="seqModalScore">
+      0 / 0 correct
+    </div>
+
+    <div class="seq-modal-msg" id="seqModalMsg">
+      Great job!
+    </div>
+
+    <div id="seqRetakeInfo" style="display:none;font-size:12px;color:#64748b;margin-bottom:4px;"></div>
+    <div class="seq-modal-actions">
+      <button class="seq-modal-close" id="seqModalCloseBtn" type="button">✖ Close</button>
+      <button class="seq-modal-try" id="seqModalTryBtn" type="button">🔁 Try Again</button>
+      <button class="seq-modal-try seq-publish-confirm" id="seqStudentSubmitBtn" type="button" style="display:none;">✅ Submit Final Answer</button>
+    </div>
+
+  </div>
+</div>
+
+  <!-- PUBLISH MODAL (appears when "Publish" is clicked) -->
+  <div class="seq-modal-overlay" id="seqPublishOverlay">
+    <div class="seq-modal-card seq-publish-card">
+      <h3>🌐 Publish Activity</h3>
+      <div class="seq-publish-thumb-wrap" id="seqPublishThumbWrap">
+        <div class="seq-publish-thumb-empty" id="seqPublishThumbEmpty">No thumbnail uploaded yet.</div>
+        <img id="seqPublishThumbImg" alt="Activity thumbnail preview" style="display:none" />
+      </div>
+      <div class="seq-publish-field">
+        <label>📚 Grading Period</label>
+        <div class="seq-grading-radios">
+          <label class="seq-grad-opt"><input type="radio" name="seqGrading" value="First" checked /> 1st Grading</label>
+          <label class="seq-grad-opt"><input type="radio" name="seqGrading" value="Second" /> 2nd Grading</label>
+          <label class="seq-grad-opt"><input type="radio" name="seqGrading" value="Third" /> 3rd Grading</label>
+        </div>
+      </div>
+      <div class="seq-publish-field">
+        <label>👤 Assign to Learner</label>
+        <select id="seqLearnerSelect" title="Assigned learner" style="width:100%;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;color:#475569;background:#f1f5f9;margin-top:4px;pointer-events:none;appearance:none;-webkit-appearance:none;cursor:default;">
+          <option value="">Loading learners...</option>
+        </select>
+        <div class="seq-publish-hint">Select the student who will receive this activity.</div>
+      </div>
+      <div class="seq-publish-field">
+        <label for="seqDeadlineInput">📅 Deadline</label>
+        <input type="date" id="seqDeadlineInput" />
+        <div class="seq-publish-hint">Choose the last day the activity can still be submitted.</div>
+      </div>
+      <div class="seq-modal-actions">
+        <button class="seq-modal-close" id="seqPublishCancelBtn" type="button">✖ Cancel</button>
+        <button class="seq-modal-try seq-publish-confirm" id="seqPublishConfirmBtn" type="button">✅ Confirm Publish</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* =====================================================================
+   SEQUENCING TEMPLATE GENERATOR — main script
+   Sections below:
+     1. STATE            – design settings + the list of activity slides
+     2. SLIDE NAVIGATION – switching / adding / deleting activity slides
+     3. STEPS EDITOR     – the left-hand "Steps" list (teacher input)
+     4. ACTIVITY PREVIEW – the tap-to-order interaction in the stage
+     5. SCORE MODAL      – popup shown after "Check answers"
+     6. APPEARANCE       – design & settings panel (right column)
+     7. TOP BAR ACTIONS  – preview / save / collapse panel / publish
+     8. PRINTABLE OUTPUT – worksheet + performance checklist generator
+     9. INIT             – first render on page load
+   ===================================================================== */
+
+  const $ = id => document.getElementById(id);
+  var _stuMode = false, _stuPubId = '', _stuRetake = 0,
+      _stuLastScore = null, _stuLastTotal = null, _stuProg = [];
+
+  /* ── IndexedDB helper ──────────────────────────────────────── */
+  var _idb = (function(){
+    var DB='sped_alm_db', VER=1, ST='blobs';
+    function open(cb){var r=indexedDB.open(DB,VER);r.onupgradeneeded=function(e){e.target.result.createObjectStore(ST);};r.onsuccess=function(e){cb(null,e.target.result);};r.onerror=function(e){cb(e.target.error,null);};}
+    return {
+      save:function(key,val,cb){open(function(err,db){if(err){cb&&cb(err);return;}var tx=db.transaction(ST,'readwrite');tx.objectStore(ST).put(val,key);tx.oncomplete=function(){cb&&cb(null);};tx.onerror=function(e){cb&&cb(e.target.error);};});},
+      load:function(key,cb){open(function(err,db){if(err){cb(err,null);return;}var tx=db.transaction(ST,'readonly');var r=tx.objectStore(ST).get(key);r.onsuccess=function(){cb(null,r.result||null);};r.onerror=function(e){cb(e.target.error,null);};});},
+      del:function(key,cb){open(function(err,db){if(err){cb&&cb(err);return;}var tx=db.transaction(ST,'readwrite');tx.objectStore(ST).delete(key);tx.oncomplete=function(){cb&&cb(null);};});}
+    };
+  })();
+
+  /* ------------------------------------------------------------- *
+   * 1. STATE
+   * ------------------------------------------------------------- */
+
+  // Design settings are shared by every slide, so the whole activity
+  // set keeps one consistent look.
+  const DEFAULT_DESIGN = {
+    bg:"#fdf6d8", font:"'Comic Sans MS','Comic Sans',cursive", fontSize:40,
+    textColor:"#243a5e", badgeColor:"#2f6fed", border:"rounded", spacing:"Medium", cols:4,
+    showTitle:true, showInstr:true, showDeco:true, showLabels:true
+  };
+  const BG_SWATCHES = ["#fdf6d8","#eaf2ff","#e8faf0","#f0eefc","#fdebf2","#ffffff"];
+  const SPACINGS = ["Small","Medium","Large"];
+  const SPACE_GAP = { Small:14, Medium:22, Large:32 };
+
+  // One "activity" = one sequencing task (its own title, instruction, steps).
+  function makeDefaultActivity(){
+    return {
+      title:"Arrange the Steps",
+      instruction:"Tap the pictures in the correct order. Start with step 1.",
+      steps:[
+        {img:null, emoji:"🚪", label:"Enter the CR"},
+        {img:null, emoji:"🚰", label:"Turn on the faucet"},
+        {img:null, emoji:"🧼", label:"Apply soap & scrub"},
+        {img:null, emoji:"🤲", label:"Rinse & dry hands"}
+      ]
+    };
+  }
+  function makeBlankActivity(slideNumber){
+    return {
+      title:"New Activity "+slideNumber,
+      instruction:"Tap the pictures in the correct order. Start with step 1.",
+      steps:[
+        {img:null, emoji:"⭐", label:""},
+        {img:null, emoji:"⭐", label:""}
+      ]
+    };
+  }
+
+  const state = {
+    ...structuredClone(DEFAULT_DESIGN),
+    thumb:null,
+    activities:[ makeDefaultActivity() ], // the slides in this activity set
+    currentIndex:0                         // which slide is being edited/previewed
+  };
+
+  // Shortcut used everywhere below: "the slide we are currently working on".
+  function currentActivity(){ return state.activities[state.currentIndex]; }
+
+  // Tracks the order in which the student has tapped the cards (by their
+  // original / correct index), reset whenever a new slide is shown.
+  let tapOrder = [];
+
+  const stage = $("seqStage"), grid = $("seqGrid");
+
+  /* ------------------------------------------------------------- *
+   * 2. SLIDE NAVIGATION (multiple activities in one set)
+   * ------------------------------------------------------------- */
+
+  function renderSlideNav(){
+    const total = state.activities.length;
+    $("seqSlideLabel").textContent = `Slide ${state.currentIndex+1} of ${total}`;
+    $("seqPrevSlide").disabled = state.currentIndex === 0;
+    $("seqNextSlide").disabled = state.currentIndex === total-1;
+    $("seqDeleteSlide").disabled = total <= 1;
+
+    // Keep the in-stage navigator (visible even in student/preview mode) in sync.
+    $("seqStageSlideLabel").textContent = `Slide ${state.currentIndex+1} of ${total}`;
+    $("seqStagePrev").disabled = state.currentIndex === 0;
+    $("seqStageNext").disabled = state.currentIndex === total-1;
+    $("seqStageNav").style.display = total > 1 ? "flex" : "none";
+  }
+
+  // Re-draws everything that depends on which slide is active.
+  function refreshSlideUI(){
+    renderItems();
+    $("seqTitleInput").value = currentActivity().title;
+    $("seqInstrInput").value = currentActivity().instruction;
+    renderActivity();
+    renderSlideNav();
+  }
+
+  function goToSlide(index){
+    state.currentIndex = Math.max(0, Math.min(state.activities.length-1, index));
+    refreshSlideUI();
+  }
+
+  $("seqPrevSlide").addEventListener("click", ()=> goToSlide(state.currentIndex-1));
+  $("seqNextSlide").addEventListener("click", ()=> goToSlide(state.currentIndex+1));
+  $("seqStagePrev").addEventListener("click", ()=> goToSlide(state.currentIndex-1));
+  $("seqStageNext").addEventListener("click", ()=> goToSlide(state.currentIndex+1));
+
+  $("seqAddSlide").addEventListener("click", ()=>{
+    state.activities.push(makeBlankActivity(state.activities.length+1));
+    goToSlide(state.activities.length-1); // jump straight to the new slide
+  });
+
+  $("seqDeleteSlide").addEventListener("click", ()=>{
+    if (state.activities.length <= 1){ alert("Keep at least one slide."); return; }
+    state.activities.splice(state.currentIndex, 1);
+    goToSlide(Math.min(state.currentIndex, state.activities.length-1));
+  });
+
+  /* ------------------------------------------------------------- *
+   * 3. STEPS EDITOR (left column "Steps" list)
+   * ------------------------------------------------------------- */
+
+  function stepEditorRow(stepIndex){
+    const steps = currentActivity().steps;
+    const step = steps[stepIndex];
+    const row = document.createElement("div"); row.className = "seq-item-row";
+
+    const orderBadge = document.createElement("div");
+    orderBadge.className = "seq-order-badge"; orderBadge.textContent = stepIndex+1;
+    row.appendChild(orderBadge);
+
+    // Image / emoji upload box
+    const box = document.createElement("div"); box.className = "seq-side";
+    const thumbLabel = document.createElement("label"); thumbLabel.className = "seq-thumb";
+    if (step.img){ const im = document.createElement("img"); im.src = step.img; thumbLabel.appendChild(im); }
+    else { thumbLabel.textContent = step.emoji || "+"; }
+    const fileInput = document.createElement("input");
+    fileInput.type = "file"; fileInput.accept = "image/*"; fileInput.hidden = true;
+    fileInput.addEventListener("change", e=>{
+      const file = e.target.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev=>{ steps[stepIndex].img = ev.target.result; renderItems(); renderActivity(); };
+      reader.readAsDataURL(file);
+    });
+    thumbLabel.appendChild(fileInput); box.appendChild(thumbLabel);
+
+    // Step label text field
+    const labelInput = document.createElement("input");
+    labelInput.className = "seq-side-name";
+    labelInput.placeholder = "Step label (e.g. Turn on faucet)";
+    labelInput.value = step.label || "";
+    labelInput.addEventListener("input", e=>{ steps[stepIndex].label = e.target.value; renderActivity(); });
+    box.appendChild(labelInput);
+    row.appendChild(box);
+
+    // Move up / down buttons (this is how the teacher sets the correct order)
+    const orderControls = document.createElement("div"); orderControls.className = "seq-order-controls";
+    const upBtn = document.createElement("button"); upBtn.type = "button"; upBtn.textContent = "↑";
+    upBtn.disabled = stepIndex === 0;
+    upBtn.addEventListener("click", ()=>{
+      if (stepIndex === 0) return;
+      [steps[stepIndex-1], steps[stepIndex]] = [steps[stepIndex], steps[stepIndex-1]];
+      renderItems(); renderActivity();
+    });
+    const downBtn = document.createElement("button"); downBtn.type = "button"; downBtn.textContent = "↓";
+    downBtn.disabled = stepIndex === steps.length-1;
+    downBtn.addEventListener("click", ()=>{
+      if (stepIndex === steps.length-1) return;
+      [steps[stepIndex+1], steps[stepIndex]] = [steps[stepIndex], steps[stepIndex+1]];
+      renderItems(); renderActivity();
+    });
+    orderControls.appendChild(upBtn); orderControls.appendChild(downBtn);
+    row.appendChild(orderControls);
+
+    // "⋮" menu → remove this step
+    const menuBtn = document.createElement("button"); menuBtn.className = "seq-item-menu"; menuBtn.type = "button"; menuBtn.textContent = "⋮";
+    const menuPopup = document.createElement("div"); menuPopup.className = "seq-pop";
+    const deleteBtn = document.createElement("button"); deleteBtn.className = "del"; deleteBtn.type = "button"; deleteBtn.textContent = "🗑 Remove step";
+    deleteBtn.addEventListener("click", ()=>{
+      if (steps.length <= 2){ alert("Keep at least 2 steps."); return; }
+      steps.splice(stepIndex, 1); renderItems(); renderActivity();
+    });
+    menuPopup.appendChild(deleteBtn);
+    menuBtn.addEventListener("click", e=>{
+      e.stopPropagation();
+      document.querySelectorAll(".seq-pop").forEach(p=>{ if (p !== menuPopup) p.classList.remove("show"); });
+      menuPopup.classList.toggle("show");
+    });
+    row.appendChild(menuBtn); row.appendChild(menuPopup);
+    return row;
+  }
+
+  function renderItems(){
+    const wrap = $("seqItems"); wrap.innerHTML = "";
+    currentActivity().steps.forEach((_, i)=> wrap.appendChild(stepEditorRow(i)));
+  }
+  document.addEventListener("click", ()=> document.querySelectorAll(".seq-pop").forEach(p=> p.classList.remove("show")));
+
+  $("seqAddItem").addEventListener("click", ()=>{
+    currentActivity().steps.push({ img:null, emoji:"⭐", label:"" });
+    renderItems(); renderActivity();
+  });
+
+  /* ------------------------------------------------------------- *
+   * 4. ACTIVITY PREVIEW (tap-to-order interaction)
+   * ------------------------------------------------------------- */
+
+  function shuffle(array){
+    const copy = array.slice();
+    for (let i = copy.length-1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i+1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
+  function stepCard(stepIndex){
+    const step = currentActivity().steps[stepIndex];
+    const card = document.createElement("div"); card.className = "seq-card-it"; card.dataset.i = stepIndex;
+
+    const badge = document.createElement("div"); badge.className = "seq-badge-num"; card.appendChild(badge);
+
+    if (step.img){ const im = document.createElement("img"); im.className = "seq-card-it-img"; im.src = step.img; card.appendChild(im); }
+    else { const emojiBox = document.createElement("div"); emojiBox.className = "seq-card-it-emoji"; emojiBox.textContent = step.emoji || "?"; card.appendChild(emojiBox); }
+
+    if (step.label){
+      const labelBox = document.createElement("div"); labelBox.className = "seq-card-it-name";
+      labelBox.textContent = step.label; labelBox.style.display = state.showLabels ? "block" : "none";
+      card.appendChild(labelBox);
+    }
+
+    card.addEventListener("click", ()=> onCardTap(stepIndex));
+    return card;
+  }
+
+  // Tapping a card adds it to tapOrder; tapping an already-tapped card
+  // removes it again, so students can undo a mistake.
+  function onCardTap(stepIndex){
+    const existingPosition = tapOrder.indexOf(stepIndex);
+    if (existingPosition === -1) tapOrder.push(stepIndex);
+    else tapOrder.splice(existingPosition, 1);
+    $("seqHint").textContent = "";
+    refreshBadges();
+  }
+
+  function refreshBadges(){
+    document.querySelectorAll(".seq-card-it").forEach(card=>{
+      const stepIndex = +card.dataset.i;
+      const position = tapOrder.indexOf(stepIndex);
+      const badge = card.querySelector(".seq-badge-num");
+      if (position === -1){ card.classList.remove("tapped"); badge.textContent = ""; badge.style.background = ""; }
+      else { card.classList.add("tapped"); badge.textContent = position+1; badge.style.background = ""; }
+    });
+  }
+
+  function applyCols(){ grid.style.gridTemplateColumns = `repeat(${state.cols}, 1fr)`; }
+
+  // Renders the whole preview stage for the slide that is currently active.
+  function renderActivity(){
+    const activity = currentActivity();
+    $("seqTitle").textContent = activity.title;
+    $("seqInstr").textContent = activity.instruction;
+    $("seqTitle").style.display = state.showTitle ? "block" : "none";
+    $("seqInstr").style.display = state.showInstr ? "block" : "none";
+
+    tapOrder = [];
+    const shuffledOrder = shuffle(activity.steps.map((_, i)=> i));
+    grid.innerHTML = "";
+    applyCols();
+    shuffledOrder.forEach(stepIndex=> grid.appendChild(stepCard(stepIndex)));
+    $("seqHint").textContent = "";
+  }
+
+  function resetTaps(){
+    tapOrder = [];
+    document.querySelectorAll(".seq-card-it").forEach(card=>{
+      card.classList.remove("tapped"); card.style.borderColor = "";
+    });
+    refreshBadges();
+    $("seqHint").textContent = "";
+  }
+  $("seqReset").addEventListener("click", resetTaps);
+
+  $("seqCheck").addEventListener("click", ()=>{
+    const totalSteps = currentActivity().steps.length;
+    if (tapOrder.length < totalSteps){
+      $("seqHint").textContent = "Tap all the steps first before checking.";
+      return;
+    }
+    let correctCount = 0;
+    document.querySelectorAll(".seq-card-it").forEach(card=>{
+      const stepIndex = +card.dataset.i;
+      const position = tapOrder.indexOf(stepIndex);
+      const isCorrect = position === stepIndex; // correct order = the original (pre-shuffle) index
+      if (isCorrect) correctCount++;
+      card.style.borderColor = isCorrect ? "#1f9d44" : "#e23b54";
+      card.querySelector(".seq-badge-num").style.background = isCorrect ? "#1f9d44" : "#e23b54";
+    });
+    openScoreModal(correctCount, totalSteps);
+  });
+
+  /* ------------------------------------------------------------- *
+   * 5. SCORE MODAL
+   * ------------------------------------------------------------- */
+
+ function openScoreModal(correctCount, totalSteps) {
+    const percent = correctCount / totalSteps;
+
+    let image, message;
+
+    if (percent === 1) {
+        image = "images/perfect.png";
+        message = "Perfect! You got them all correct! 🎊";
+    
+    confetti({
+        particleCount: 200,
+        spread: 120,
+        startVelocity: 40,
+        origin: { y: 0.6 }
+    });
+
+    setTimeout(() => {
+        confetti({
+            particleCount: 100,
+            spread: 80,
+            origin: { x: 0.2, y: 0.6 }
+        });
+
+        confetti({
+            particleCount: 100,
+            spread: 80,
+            origin: { x: 0.8, y: 0.6 }
+        });
+    }, 300);
+}
+    else if (percent >= 0.5) {
+        image = "images/goodjob.png";
+        message = "Try again, you can do it! ⭐";
+    }
+    else {
+        image = "images/tryagain.png";
+        message = "Good try! Let's practice again! 💪";
+    }
+
+    $("seqModalEmoji").src = image;
+    $("seqModalScore").textContent = `${correctCount} / ${totalSteps} correct`;
+    $("seqModalMsg").textContent = message;
+    $("seqModalOverlay").classList.add("show");
+
+    if (_stuMode) {
+      _stuLastScore = correctCount; _stuLastTotal = totalSteps;
+      $("seqModalCloseBtn").style.display = "none";
+      $("seqModalTryBtn").textContent = "🔁 Retake";
+      $("seqStudentSubmitBtn").style.display = "";
+      var ri = $("seqRetakeInfo");
+      ri.style.display = _stuRetake > 0 ? "" : "none";
+      if (_stuRetake > 0) ri.textContent = "Retakes so far: " + _stuRetake;
+    }
+  }
+
+  function closeScoreModal(){ $("seqModalOverlay").classList.remove("show"); }
+
+  $("seqModalCloseBtn").addEventListener("click", closeScoreModal);
+  $("seqModalTryBtn").addEventListener("click", ()=>{
+    if (_stuMode) _stuRetake++;
+    closeScoreModal(); resetTaps();
+  });
+
+  /* ------------------------------------------------------------- *
+   * 6. APPEARANCE (Design & Settings panel)
+   * ------------------------------------------------------------- */
+
+  function applyAppearance(){
+    stage.style.background = state.bg;
+    stage.style.fontFamily = state.font;
+    stage.style.fontSize = state.fontSize + "px";
+    stage.style.setProperty("--seq-text", state.textColor);
+    stage.style.setProperty("--seq-badge", state.badgeColor);
+    stage.classList.toggle("bs-dashed", state.border === "dashed");
+    stage.classList.toggle("bs-solid", state.border === "solid");
+    stage.classList.toggle("no-deco", !state.showDeco);
+    grid.style.gap = SPACE_GAP[state.spacing] + "px";
+    applyCols();
+  }
+
+  function renderSwatches(){
+    const wrap = $("seqSwatches"); wrap.innerHTML = "";
+    BG_SWATCHES.forEach(color=>{
+      const swatch = document.createElement("div");
+      swatch.className = "seq-sw" + (color === state.bg ? " sel" : "");
+      swatch.style.background = color;
+      swatch.addEventListener("click", ()=>{ state.bg = color; applyAppearance(); renderSwatches(); });
+      wrap.appendChild(swatch);
+    });
+  }
+
+  $("seqFont").addEventListener("change", e=>{ state.font = e.target.value; applyAppearance(); });
+
+  function setFontSize(value){
+    value = Math.max(20, Math.min(64, value));
+    state.fontSize = value;
+    $("seqSize").value = value; $("seqSizeNum").value = value;
+    applyAppearance();
+  }
+  $("seqSize").addEventListener("input", e=> setFontSize(+e.target.value));
+  $("seqSizeNum").addEventListener("input", e=> setFontSize(+e.target.value || 40));
+
+  $("seqTextColor").addEventListener("input", e=>{ state.textColor = e.target.value; applyAppearance(); });
+  $("seqBadgeColor").addEventListener("input", e=>{ state.badgeColor = e.target.value; applyAppearance(); });
+
+  document.querySelectorAll("#seqBorder button").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      state.border = btn.dataset.b;
+      document.querySelectorAll("#seqBorder button").forEach(b=> b.classList.remove("sel"));
+      btn.classList.add("sel");
+      applyAppearance();
+    });
+  });
+
+  function setColumns(delta){
+    state.cols = Math.max(2, Math.min(6, state.cols + delta));
+    $("seqColsVal").textContent = state.cols;
+    applyAppearance();
+  }
+  $("seqColsMinus").addEventListener("click", ()=> setColumns(-1));
+  $("seqColsPlus").addEventListener("click", ()=> setColumns(1));
+
+  function setSpacing(delta){
+    let index = SPACINGS.indexOf(state.spacing) + delta;
+    index = Math.max(0, Math.min(SPACINGS.length-1, index));
+    state.spacing = SPACINGS[index];
+    $("seqSpaceVal").textContent = state.spacing;
+    applyAppearance();
+  }
+  $("seqSpaceMinus").addEventListener("click", ()=> setSpacing(-1));
+  $("seqSpacePlus").addEventListener("click", ()=> setSpacing(1));
+
+  $("seqInstrInput").addEventListener("input", e=>{
+    currentActivity().instruction = e.target.value;
+    $("seqInstr").textContent = e.target.value;
+  });
+  $("seqTitleInput").addEventListener("input", e=>{
+    currentActivity().title = e.target.value;
+    $("seqTitle").textContent = e.target.value;
+  });
+
+  $("seqShowTitle").addEventListener("change", e=>{ state.showTitle = e.target.checked; renderActivity(); });
+  $("seqShowInstr").addEventListener("change", e=>{ state.showInstr = e.target.checked; renderActivity(); });
+  $("seqShowLabels").addEventListener("change", e=>{ state.showLabels = e.target.checked; renderActivity(); });
+  $("seqShowDeco").addEventListener("change", e=>{ state.showDeco = e.target.checked; applyAppearance(); });
+
+  $("seqApply").addEventListener("click", ()=>{ applyAppearance(); flash($("seqApply"), "✓ Applied"); });
+
+  // "Reset" only restores the design settings — it does not touch the
+  // teacher's steps/content, so nothing the teacher typed gets lost.
+  $("seqResetAll").addEventListener("click", ()=>{
+    Object.assign(state, structuredClone(DEFAULT_DESIGN));
+    syncDesignControls(); applyAppearance(); renderActivity();
+  });
+
+  function syncDesignControls(){
+    $("seqFont").value = state.font;
+    $("seqSize").value = state.fontSize; $("seqSizeNum").value = state.fontSize;
+    $("seqTextColor").value = state.textColor; $("seqBadgeColor").value = state.badgeColor;
+    $("seqSpaceVal").textContent = state.spacing; $("seqColsVal").textContent = state.cols;
+    $("seqShowTitle").checked = state.showTitle; $("seqShowInstr").checked = state.showInstr;
+    $("seqShowLabels").checked = state.showLabels; $("seqShowDeco").checked = state.showDeco;
+    document.querySelectorAll("#seqBorder button").forEach(b=> b.classList.toggle("sel", b.dataset.b === state.border));
+    renderSwatches();
+  }
+
+  /* ------------------------------------------------------------- *
+   * 7. TOP BAR ACTIONS
+   * ------------------------------------------------------------- */
+
+  function flash(button, text){
+    const original = button.textContent;
+    button.textContent = text;
+    setTimeout(()=> button.textContent = original, 1100);
+  }
+
+  // Cross-browser helpers — different browsers still use different
+  // (vendor-prefixed) names for the Fullscreen API.
+  function requestFullscreen(el){
+    const request = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+    if (request) request.call(el).catch(()=>{ /* ignore — not every device/browser allows it */ });
+  }
+  function exitFullscreen(){
+    const exit = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      if (exit) exit.call(document).catch(()=>{});
+    }
+  }
+
+  function enterPreviewMode(){
+    document.body.classList.add("seq-preview-only");
+    requestFullscreen(document.documentElement);
+  }
+  function exitPreviewMode(){
+    document.body.classList.remove("seq-preview-only");
+    exitFullscreen();
+  }
+
+  $("seqPreviewBtn").addEventListener("click", enterPreviewMode);
+  $("seqExitFloatBtn").addEventListener("click", exitPreviewMode);
+
+  // If the student/teacher exits fullscreen another way (ESC key on desktop,
+  // swipe-down on some devices), make sure our own preview mode follows suit.
+  ["fullscreenchange", "webkitfullscreenchange"].forEach(evt=>{
+    document.addEventListener(evt, ()=>{
+      const stillFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+      if (!stillFullscreen) document.body.classList.remove("seq-preview-only");
+    });
+  });
+
+  /* ── Save Draft to localStorage ── */
+  function saveDraft() {
+    var draftId = new URLSearchParams(location.search).get('draft_id') || ('draft_' + Date.now());
+    var firstTitle = (state.activities[0] && state.activities[0].title) || '';
+    var draft = {
+      id:           draftId,
+      title:        firstTitle || 'Untitled Draft',
+      type:         'Sequencing',
+      templateFile: 'TEMPLATES/Sequencing_Type_Template.html',
+      learner:      sessionStorage.getItem('selected_learner')   || 'ALL',
+      condition:    sessionStorage.getItem('selected_condition') || '',
+      teacherName:  sessionStorage.getItem('teacher_name')       || '—',
+      savedAt:      new Date().toISOString(),
+      data:         JSON.parse(JSON.stringify(state))
+    };
+    var drafts = [];
+    try { drafts = JSON.parse(localStorage.getItem('teacher_drafts') || '[]'); } catch(e) {}
+    var idx = drafts.findIndex(function(d){ return d.id === draftId; });
+    if (idx >= 0) drafts[idx] = draft; else drafts.push(draft);
+    try {
+      localStorage.setItem('teacher_drafts', JSON.stringify(drafts));
+      history.replaceState(null, '', '?draft_id=' + encodeURIComponent(draftId));
+      flash($('seqDraftBtn'), '✓ Draft Saved!');
+      // Sync to DB so admin can see this draft
+      var _tid = sessionStorage.getItem('teacher_id') || '';
+      if (_tid) {
+        var _dbDraftId = draft.db_draft_id || 0;
+        fetch('../TEACHER_BACKEND/teacher_save_draft.php', {
+          method: 'POST',
+          keepalive: true,
+          body: new URLSearchParams({ teacher_id: _tid, activity_title: draft.title, activity_type: draft.type, db_draft_id: _dbDraftId })
+        }).then(function(r){ return r.json(); }).then(function(d){
+          if (d && d.success && d.db_draft_id) {
+            var _drafts = [];
+            try { _drafts = JSON.parse(localStorage.getItem('teacher_drafts') || '[]'); } catch(e){}
+            var _idx = _drafts.findIndex(function(x){ return x.id === draftId; });
+            if (_idx >= 0) { _drafts[_idx].db_draft_id = d.db_draft_id; localStorage.setItem('teacher_drafts', JSON.stringify(_drafts)); }
+          }
+        }).catch(function(){});
+      }
+      setTimeout(function(){ window.location.href = '../Teacher_activies.html'; }, 700);
+    } catch(e) { alert('Storage full – could not save draft.'); }
+  }
+
+  /* ── Load Draft from localStorage if ?draft_id= in URL ── */
+  function loadDraftIfAny() {
+    var draftId = new URLSearchParams(location.search).get('draft_id');
+    if (!draftId) return;
+    var drafts = [];
+    try { drafts = JSON.parse(localStorage.getItem('teacher_drafts') || '[]'); } catch(e) {}
+    var draft = drafts.find(function(d){ return d.id === draftId; });
+    if (!draft || !draft.data) return;
+    Object.assign(state, draft.data);
+    if (state.thumb) setThumb(state.thumb);
+    refreshSlideUI();
+    syncDesignControls();
+    applyAppearance();
+  }
+
+  $("seqDraftBtn").addEventListener("click", saveDraft);
+
+  // Collapse / expand the right-hand "Design & Settings" panel. When it's
+  // hidden, the Template Guide card is shown in that same space instead.
+  $("seqCollapseBtn").addEventListener("click", ()=> document.body.classList.add("seq-right-collapsed"));
+  $("seqShowSettingsBtn").addEventListener("click", ()=> document.body.classList.remove("seq-right-collapsed"));
+
+  // Thumbnail upload
+  $("seqThumbUpload").addEventListener("change", function(){
+    const file = this.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev=> setThumb(ev.target.result);
+    reader.readAsDataURL(file);
+  });
+  function setThumb(dataURL){
+    state.thumb = dataURL;
+    $("seqThumbImg").src = dataURL; $("seqThumbImg").style.display = "block";
+    $("seqThumbEmpty").style.display = "none"; $("seqThumbCheck").classList.add("show");
+  }
+
+  // Publish = open a confirmation modal showing the activity's Thumbnail
+  // Image (step 3) plus a deadline date field.
+  function openPublishModal(){
+    $("seqPublishOverlay").classList.add("show");
+
+    if (state.thumb){
+      $("seqPublishThumbImg").src = state.thumb;
+      $("seqPublishThumbImg").style.display = "block";
+      $("seqPublishThumbEmpty").style.display = "none";
+    } else {
+      $("seqPublishThumbImg").style.display = "none";
+      $("seqPublishThumbEmpty").style.display = "flex";
+      $("seqPublishThumbEmpty").textContent = "No thumbnail uploaded yet. Add one in step 3.";
+    }
+
+    var _tid   = sessionStorage.getItem('teacher_id') || '';
+    var _preId = sessionStorage.getItem('selected_learner_id') || '';
+    var _lSel  = $('seqLearnerSelect');
+    if (_lSel) {
+      _lSel.innerHTML = '<option value="">-- Select a learner --</option>';
+      if (_tid) {
+        fetch('../TEACHER_BACKEND/teacher_list_learners.php?teacher_id=' + _tid)
+          .then(function(r){ return r.json(); })
+          .then(function(data){
+            (data||[]).forEach(function(s){
+              var o = document.createElement('option');
+              o.value = s.id;
+              o.textContent = s.name + ' (' + (s.disability||'General') + ')';
+              if (String(s.id) === String(_preId)) o.selected = true;
+              _lSel.appendChild(o);
+            });
+          }).catch(function(){});
+      }
+    }
+  }
+
+  function closePublishModal(){
+    $("seqPublishOverlay").classList.remove("show");
+  }
+
+  $("seqPubBtn").addEventListener("click", openPublishModal);
+  $("seqPublishCancelBtn").addEventListener("click", closePublishModal);
+
+  function compressThumb(dataURL, callback) {
+    if (!dataURL) { callback(''); return; }
+    var img = new Image();
+    img.onload = function() {
+      var MAX = 160;
+      var ratio = Math.min(MAX / img.width, MAX / img.height, 1);
+      var cv = document.createElement('canvas');
+      cv.width = Math.round(img.width * ratio);
+      cv.height = Math.round(img.height * ratio);
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      callback(cv.toDataURL('image/jpeg', 0.55));
+    };
+    img.onerror = function() { callback(''); };
+    img.src = dataURL;
+  }
+
+  function confirmPublish() {
+    var deadline = $("seqDeadlineInput").value;
+    if (!deadline) { alert("Please set a deadline date before publishing."); return; }
+
+    var _lSel2 = $('seqLearnerSelect');
+    var assignedId = _lSel2 ? parseInt(_lSel2.value || '0') : 0;
+    if (!assignedId) { alert('Please select a learner from the dropdown before publishing.'); return; }
+    var assignedIds = [assignedId];
+
+    var grading = document.querySelector('input[name="seqGrading"]:checked').value;
+    var firstTitle = (state.activities[0] && state.activities[0].title) || 'Untitled Activity';
+    compressThumb(state.thumb, function(smallThumb) {
+    var pub = {
+      id:          'pub-' + Date.now(),
+      title:       firstTitle,
+      type:        'Sequencing',
+      grading:     grading,
+      deadline:    deadline,
+      thumbnail:   smallThumb,
+      teacherName: sessionStorage.getItem('teacher_name') || '—',
+      teacherId:   sessionStorage.getItem('teacher_id')   || '',
+      learner:     sessionStorage.getItem('selected_learner')   || 'ALL',
+      condition:   sessionStorage.getItem('selected_condition') || '',
+      publishedAt: new Date().toISOString()
+    };
+    var existing = [];
+    try { existing = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+    existing.push(pub);
+    try { localStorage.setItem('published_activities', JSON.stringify(existing)); } catch(e){ alert('Storage full – try clearing old drafts first.'); return; }
+    _idb.save('pub_data_' + pub.id, JSON.parse(JSON.stringify(state)), function(err){ if(err) console.warn('IDB save failed:',err); });
+    var _pubRef = pub;
+    var _assignedIds = assignedIds;
+    fetch('../TEACHER_BACKEND/teacher_create_activity.php', {
+      method: 'POST',
+      body: new URLSearchParams({
+        teacher_id: _pubRef.teacherId,
+        activity_title: _pubRef.title,
+        activity_type: 'Sequencing',
+        status: 'published',
+        assigned_student_ids: JSON.stringify(_assignedIds)
+      })
+    }).then(function(r){ return r.json(); }).then(function(d){
+      if (d.success && d.activity_id) {
+        var acts = []; try { acts = JSON.parse(localStorage.getItem('published_activities')||'[]'); } catch(e){}
+        var i = acts.findIndex(function(a){ return a.id === _pubRef.id; });
+        if (i >= 0) { acts[i].db_activity_id = d.activity_id; try { localStorage.setItem('published_activities', JSON.stringify(acts)); } catch(e){} }
+      }
+    }).catch(function(){});
+    closePublishModal();
+    setTimeout(function(){ window.location.href = '../Teacher_activies.html'; }, 400);
+    }); // end compressThumb
+  }
+  $("seqPublishConfirmBtn").addEventListener("click", confirmPublish);
+
+  /* ------------------------------------------------------------- *
+   * 8b. FIT STAGE TO SCREEN (student preview mode)
+   * ------------------------------------------------------------- */
+
+  function fitStageToScreen() {
+    if (!document.body.classList.contains("seq-preview-only")) return;
+    var stg = $("seqStage");
+    if (!stg) return;
+    stg.style.transformOrigin = "top center";
+    stg.style.transform = "none";
+    var available = window.innerHeight;
+    var naturalHeight = stg.scrollHeight;
+    var scale = naturalHeight > available ? available / naturalHeight : 1;
+    stg.style.transform = scale < 1 ? "scale(" + scale + ")" : "none";
+  }
+  window.addEventListener("resize", function() {
+    if (document.body.classList.contains("seq-preview-only")) fitStageToScreen();
+  });
+
+  /* ------------------------------------------------------------- *
+   * 9. INIT
+   * ------------------------------------------------------------- */
+
+  renderItems();
+  renderSwatches();
+  syncDesignControls();
+  applyAppearance();
+  renderActivity();
+  renderSlideNav();
+  loadDraftIfAny();
+
+  /* ── STUDENT MODE ─────────────────────────────────────────── */
+  (function () {
+    var p = new URLSearchParams(location.search);
+    if (p.get('student_mode') !== '1') return;
+    _stuMode = true;
+    _stuPubId = p.get('pub_id') || '';
+
+    try { _stuProg = JSON.parse(localStorage.getItem('student_progress') || '[]'); } catch(e){}
+    var prev = _stuProg.find(function(r){ return r.pubId === _stuPubId; });
+    if (prev) _stuRetake = prev.retakes || 0;
+
+    function showNotAvailable() {
+      document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Poppins,sans-serif;gap:16px;padding:32px;text-align:center;">'
+        + '<div style="font-size:72px;">📭</div>'
+        + '<h2 style="color:#1e3a8a;margin:0;">Activity Not Available</h2>'
+        + '<p style="color:#64748b;max-width:340px;margin:0;">The activity content could not be loaded. Ask your teacher to republish it.</p>'
+        + '<button onclick="window.history.back()" style="margin-top:8px;background:#1e3a8a;color:#fff;border:none;padding:12px 28px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;">← Exit</button>'
+        + '</div>';
+    }
+
+    function applyStudentMode(saved) {
+      if (!saved) { showNotAvailable(); return; }
+
+      Object.assign(state, saved);
+
+      var pubs = [];
+      try { pubs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+      var pub = pubs.find(function(r){ return r.id === _stuPubId; }) || {};
+      var splashThumb = pub.thumbnail
+        ? '<img src="' + pub.thumbnail + '" style="width:120px;height:120px;object-fit:cover;border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.35);" />'
+        : '<div style="font-size:80px;line-height:1;">📋</div>';
+      var dueText = pub.deadline
+        ? '<p style="color:#fde68a;font-size:15px;margin:0;">📅 Due: ' + new Date(pub.deadline+'T00:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) + '</p>'
+        : '';
+      var retakeText = _stuRetake > 0
+        ? '<p style="color:#fca5a5;font-size:13px;margin:0;">You have retaken this ' + _stuRetake + ' time(s).</p>'
+        : '';
+
+      var splash = document.createElement('div');
+      splash.id = 'stuSplash';
+      splash.style.cssText = 'position:fixed;inset:0;background:linear-gradient(145deg,#1e3a8a 0%,#1e40af 60%,#1d4ed8 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:99999;padding:32px;text-align:center;';
+      splash.innerHTML = splashThumb
+        + '<h1 style="color:#fff;font-family:Fredoka,Poppins,sans-serif;font-size:32px;font-weight:700;margin:0;max-width:520px;line-height:1.2;">' + (pub.title || state.activities[0]&&state.activities[0].title || 'Activity') + '</h1>'
+        + '<p style="color:#93c5fd;font-size:15px;margin:0;">Sequencing Type &nbsp;·&nbsp; ' + (pub.grading||'') + ' Grading</p>'
+        + dueText + retakeText
+        + '<button id="stuSplashBtn" style="margin-top:12px;background:#22c55e;color:#fff;border:none;padding:18px 56px;border-radius:18px;font-family:Fredoka,Poppins,sans-serif;font-size:24px;font-weight:700;cursor:pointer;box-shadow:0 6px 0 #15803d;">▶ Start Activity</button>'
+        + '<button onclick="window.history.back()" style="background:transparent;color:#93c5fd;border:none;font-size:14px;cursor:pointer;margin-top:4px;">← Exit</button>';
+      document.body.appendChild(splash);
+
+      function _stuGoBack() {
+        _stuMode = false;
+        if (document.fullscreenElement) document.exitFullscreen();
+        var ret = sessionStorage.getItem('stu_return_url');
+        sessionStorage.removeItem('stu_return_url');
+        if (ret && ret.indexOf('Student_') !== -1) { window.location.href = ret; return; }
+        var base = window.location.href.split('/TEACHER_FILES/')[0];
+        window.location.href = base + '/STUDENT_FILES/Student_mymaterials.html';
+      }
+
+      document.getElementById('stuSplashBtn').addEventListener('click', function(e) {
+        e.stopPropagation();
+        var fs = document.documentElement;
+        if (fs.requestFullscreen) fs.requestFullscreen().catch(function(){});
+        else if (fs.webkitRequestFullscreen) fs.webkitRequestFullscreen();
+        splash.remove();
+
+        renderItems(); renderSwatches(); syncDesignControls(); applyAppearance(); renderActivity(); renderSlideNav();
+        document.body.classList.add('seq-preview-only');
+        setTimeout(fitStageToScreen, 50);
+
+        document.addEventListener('fullscreenchange', function() {
+          if (!document.fullscreenElement && _stuMode) _stuGoBack();
+        });
+        document.addEventListener('webkitfullscreenchange', function() {
+          if (!document.webkitFullscreenElement && _stuMode) _stuGoBack();
+        });
+
+        var origExit = document.querySelector('.seq-exit-float');
+        if (origExit) {
+          var newExit = origExit.cloneNode(false);
+          newExit.textContent = '← Exit';
+          origExit.parentNode.replaceChild(newExit, origExit);
+          newExit.addEventListener('click', function(ev) { ev.preventDefault(); ev.stopPropagation(); _stuGoBack(); });
+        }
+
+        $('seqStudentSubmitBtn').addEventListener('click', function() {
+          if (_stuLastScore === null) { alert('Please check your answers first before submitting.'); return; }
+          var pct = Math.round((_stuLastScore / _stuLastTotal) * 100);
+          var record = { pubId:_stuPubId, title:pub.title||'Activity', type:'Sequencing',
+            grading:pub.grading||'', deadline:pub.deadline||'',
+            score:_stuLastScore, total:_stuLastTotal, percent:pct, retakes:_stuRetake,
+            submittedAt:new Date().toISOString() };
+          var idx = _stuProg.findIndex(function(r){ return r.pubId === _stuPubId; });
+          if (idx >= 0) _stuProg[idx] = record; else _stuProg.push(record);
+          try { localStorage.setItem('student_progress', JSON.stringify(_stuProg)); } catch(e){}
+          var notifs = [];
+          try { notifs = JSON.parse(localStorage.getItem('student_notifications') || '[]'); } catch(e){}
+          notifs.unshift({ id:'notif-'+Date.now(), type:'achievement',
+            title:'Activity Submitted! 🌟',
+            message:'You scored '+pct+'% on "'+(pub.title||'Activity')+'"'+(_stuRetake>0?' after '+_stuRetake+' retake(s)':'')+'. Great job!',
+            isRead:false, createdAt:new Date().toISOString() });
+          try { localStorage.setItem('student_notifications', JSON.stringify(notifs)); } catch(e){}
+          // Mirror completion to DB so teacher reports show real student progress
+          var _stuId = sessionStorage.getItem('student_record_id');
+          closeScoreModal();
+          if (pub.db_activity_id && pub.teacherId && _stuId) {
+            fetch('../TEACHER_BACKEND/teacher_complete_activity.php', {
+              method: 'POST',
+              keepalive: true,
+              body: new URLSearchParams({ teacher_id: pub.teacherId, student_id: _stuId, activity_id: pub.db_activity_id, score: pct })
+            }).finally(function(){ _stuGoBack(); });
+          } else {
+            _stuGoBack();
+          }
+        });
+      });
+    }
+
+    _idb.load('pub_data_' + _stuPubId, function(err, saved) {
+      if (saved) { applyStudentMode(saved); return; }
+      var ls = null;
+      try { ls = JSON.parse(localStorage.getItem('pub_data_' + _stuPubId) || 'null'); } catch(e){}
+      applyStudentMode(ls);
+    });
+  })();
+</script>
+</body>
+</html>

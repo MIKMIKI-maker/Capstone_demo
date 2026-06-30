@@ -1,0 +1,400 @@
+﻿<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
+    <title>Notifications – SPED ALM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
+    <link href="TEACHER_CSS/Teacher_notif.css" rel="stylesheet" />
+</head>
+
+<body>
+<div id="spedLoading" style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 60%,#2563eb 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .5s ease;pointer-events:all;">
+  <img src="../ASSETS/logo.png" alt="SPED ALM" onerror="this.style.display='none'" style="width:88px;height:88px;border-radius:22px;background:#fff;padding:6px;box-shadow:0 10px 36px rgba(0,0,0,.35);animation:spedLdPulse 2s ease-in-out infinite;">
+  <p style="color:#fff;font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;margin:0;letter-spacing:1px;text-shadow:0 2px 8px rgba(0,0,0,.2);">SPED ALM</p>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite 0s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .18s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .36s;"></span>
+  </div>
+  <p style="color:rgba(255,255,255,.65);font-family:'Poppins',sans-serif;font-size:13px;font-weight:400;margin:0;">Loading, please wait...</p>
+</div>
+<style>
+@keyframes spedLdBounce{0%,80%,100%{transform:translateY(0);opacity:.5}40%{transform:translateY(-16px);opacity:1}}
+@keyframes spedLdPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+</style>
+<script>
+(function(){
+  function hideLoader(){
+    var e=document.getElementById('spedLoading');
+    if(!e) return;
+    e.style.opacity='0';
+    e.style.pointerEvents='none';
+    setTimeout(function(){ if(e.parentNode) e.parentNode.removeChild(e); }, 520);
+  }
+  if(document.readyState==='complete'){ setTimeout(hideLoader,200); }
+  else { window.addEventListener('load', function(){ setTimeout(hideLoader,200); }); }
+})();
+</script>
+    <div class="teacher-app-wrapper">
+        <!-- ══ SIDEBAR ══ -->
+        <aside class="teacher-sidebar">
+            <div class="teacher-sidebar-logo">
+                <img alt="SPED ALM Logo" class="teacher-sidebar-logo-img" src="../ASSETS/logo.png" />
+                <div class="teacher-sidebar-logo-text">
+                    <span class="teacher-sidebar-title">SPED ALM</span>
+                    <span class="teacher-sidebar-sub">Teacher Portal</span>
+                </div>
+            </div>
+            <nav class="teacher-sidebar-nav">
+                <a class="teacher-nav-item" href="Teacher_dashboard.html">
+                    <i class="fa-solid fa-table-cells-large"></i>
+                    <span>Dashboard</span>
+                    <i class="fa-solid fa-chevron-right teacher-nav-arrow"></i>
+                </a>
+                <a class="teacher-nav-item" href="Teacher_IEP.html">
+                    <i class="fa-solid fa-file-circle-plus"></i>
+                    <span>IEP Materials</span>
+                </a>
+                <a class="teacher-nav-item" href="Teacher_learners.html">
+                    <i class="fa-solid fa-users"></i>
+                    <span>My Learners</span>
+                </a>
+                <a class="teacher-nav-item" href="Teacher_report.html">
+                    <i class="fa-solid fa-chart-column"></i>
+                    <span>Reports</span>
+                </a>
+                <a class="teacher-nav-item" href="Teacher_settings.html">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            <div class="teacher-sidebar-footer">
+                <div class="teacher-profile">
+                    <div class="teacher-avatar" id="teacher-avatar-letter">T</div>
+                    <div class="teacher-info">
+                        <span class="teacher-name" id="teacher-name-sidebar">Teacher</span>
+                        <span class="teacher-role">SPED Teacher</span>
+                    </div>
+                </div>
+                <a class="teacher-signout-btn" href="#" id="teacher-signout-btn" onclick="var _id=sessionStorage.getItem('admin_id');fetch('../ADMIN_FILES/ADMIN_BACKEND/logout.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'admin_id='+encodeURIComponent(_id||'')}).finally(function(){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html';});return false;">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Sign Out</span>
+                </a>
+            </div>
+        </aside>
+        <!-- ══ MAIN CONTENT ══ -->
+        <main class="teacher-main-content">
+            <!-- TOPBAR -->
+            <header class="teacher-topbar">
+                <div>
+                    <h1 class="teacher-page-title">Notifications</h1>
+                    <p class="teacher-page-sub" id="teacher-unread-subtitle"><!-- backend: unread count --></p>
+                </div>
+                <div class="teacher-topbar-right">
+                    <div class="teacher-search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input name="search" placeholder="Search..." type="text" />
+                    </div>
+                </div>
+            </header>
+            <!-- FILTER BAR -->
+            <div class="teacher-filter-bar">
+                <div class="teacher-filter-tabs">
+                    <button class="teacher-tab-btn active" onclick="filterTab(this,'all')" type="button">All
+                        Notifications</button>
+                    <button class="teacher-tab-btn" id="unread-teacher-tab-btn" onclick="filterTab(this,'unread')"
+                        type="button">Unread (<!-- backend -->)</button>
+                </div>
+                <div class="teacher-filter-actions">
+                    <button class="teacher-clear-all-btn" onclick="clearAll()" type="button">Clear All</button>
+                    <button class="teacher-mark-all-btn" onclick="markAllRead()" type="button">Mark All as Read</button>
+                </div>
+            </div>
+            <!-- SEND NOTIFICATION TO STUDENT -->
+            <div style="background:#fff;border-radius:14px;border:1px solid #e8ecf4;padding:20px 22px;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,.04);">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+                <span style="font-size:20px;">📢</span>
+                <h3 style="font-family:'Poppins',sans-serif;font-size:15px;font-weight:700;color:#1e3a8a;margin:0;">Send Notification to Student</h3>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+                <select id="notif-student-select" style="padding:9px 12px;border:1px solid #dde3f0;border-radius:9px;font-size:13px;font-family:'Poppins',sans-serif;color:#333;background:#f8faff;">
+                  <option value="">Broadcast to all students</option>
+                </select>
+                <select id="notif-type-select" style="padding:9px 12px;border:1px solid #dde3f0;border-radius:9px;font-size:13px;font-family:'Poppins',sans-serif;color:#333;background:#f8faff;">
+                  <option value="message">💬 Message</option>
+                  <option value="reminder">🔔 Reminder</option>
+                  <option value="achievement">⭐ Achievement</option>
+                  <option value="alert">⚠️ Alert</option>
+                </select>
+              </div>
+              <input id="notif-title-input" placeholder="Notification title…" type="text" style="width:100%;padding:9px 12px;border:1px solid #dde3f0;border-radius:9px;font-size:13px;font-family:'Poppins',sans-serif;margin-bottom:8px;box-sizing:border-box;" />
+              <textarea id="notif-msg-input" placeholder="Write your message here…" rows="2" style="width:100%;padding:9px 12px;border:1px solid #dde3f0;border-radius:9px;font-size:13px;font-family:'Poppins',sans-serif;resize:vertical;box-sizing:border-box;margin-bottom:10px;"></textarea>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <button onclick="sendStudentNotif()" type="button" style="padding:9px 22px;background:#1e3a8a;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:600;font-family:'Poppins',sans-serif;cursor:pointer;">Send</button>
+                <span id="notif-send-status" style="font-size:12px;color:#16a34a;font-family:'Poppins',sans-serif;"></span>
+              </div>
+            </div>
+
+            <!-- NOTIFICATION LIST — backend: inject .teacher-notif-item cards here -->
+            <div class="teacher-notif-list" id="teacher-notifList">
+                <!-- ══════════════════════════════════════════
+                 EMPTY STATE — shown when no notifications
+                 backend: remove this when items are present
+            ══════════════════════════════════════════ -->
+                <div class="teacher-empty-state" id="teacher-emptyState">
+                    <div class="teacher-empty-icon">
+                        <i class="fa-regular fa-bell"></i>
+                    </div>
+                    <div class="teacher-empty-title">No notifications</div>
+                    <div class="teacher-empty-desc">Your tray is empty.</div>
+                </div>
+            </div><!-- /notifList -->
+            <!-- FOOTER COUNT — backend: update count -->
+            <div class="teacher-notif-footer" id="teacher-notif-footer">
+                <!-- backend: e.g. Showing 0 of 0 notifications --></div>
+        </main>
+    </div><!-- /teacher-app-wrapper -->
+    <script>
+        var TEACHER_ID = parseInt(sessionStorage.getItem('teacher_id') || '1');
+        var allNotifications = [];
+        var currentTab = 'all';
+
+        /* ── Sidebar profile ── */
+        function _applyTeacherPhoto(pic) {
+            var el = document.getElementById('teacher-avatar-letter');
+            if (!el || !pic) return;
+            el.textContent = ''; el.style.cssText = 'background:transparent;padding:0';
+            el.innerHTML = '<img src="' + pic + '" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;" />';
+        }
+        function loadSidebar() {
+            var name = sessionStorage.getItem('teacher_name');
+            if (name) {
+                document.getElementById('teacher-avatar-letter').textContent = name.trim().charAt(0).toUpperCase();
+                document.getElementById('teacher-name-sidebar').textContent = name;
+                _applyTeacherPhoto(sessionStorage.getItem('teacher_profile_pic'));
+            } else {
+                var fd = new FormData(); fd.append('teacher_id', TEACHER_ID);
+                fetch('TEACHER_BACKEND/teacher_get_profile.php', { method: 'POST', body: fd })
+                    .then(function(r) { return r.json(); })
+                    .then(function(d) {
+                        if (d.success && d.teacher) {
+                            document.getElementById('teacher-avatar-letter').textContent = d.teacher.avatarLetter;
+                            document.getElementById('teacher-name-sidebar').textContent = d.teacher.name;
+                            sessionStorage.setItem('teacher_name', d.teacher.name);
+                            if (d.teacher.profilePhoto) {
+                                sessionStorage.setItem('teacher_profile_pic', d.teacher.profilePhoto);
+                                _applyTeacherPhoto(d.teacher.profilePhoto);
+                            }
+                        }
+                    }).catch(function(){});
+            }
+        }
+
+        /* ── Load notifications from backend ── */
+        function loadNotifications() {
+            fetch('TEACHER_BACKEND/teacher_manage_notifications.php?action=list&teacher_id=' + TEACHER_ID + '&limit=50')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    allNotifications = data.notifications || [];
+                    renderAll();
+                    updateUnreadBadge();
+                }).catch(function() { renderAll(); });
+        }
+
+        function updateUnreadBadge() {
+            var unread = allNotifications.filter(function(n) { return !n.is_read; }).length;
+            document.getElementById('teacher-unread-subtitle').textContent =
+                unread > 0 ? unread + ' unread notification' + (unread !== 1 ? 's' : '') : 'All caught up';
+            var unreadBtn = document.getElementById('unread-teacher-tab-btn');
+            if (unreadBtn) unreadBtn.textContent = 'Unread (' + unread + ')';
+        }
+
+        function typeIcon(type) {
+            var icons = { info: 'fa-circle-info', success: 'fa-circle-check', warning: 'fa-triangle-exclamation', error: 'fa-circle-xmark' };
+            return icons[type] || 'fa-bell';
+        }
+        function typeColor(type) {
+            var colors = { info: '#3b82f6', success: '#10b981', warning: '#f59e0b', error: '#ef4444' };
+            return colors[type] || '#6b7280';
+        }
+        function timeAgo(ts) {
+            var d = new Date(ts.replace(' ', 'T'));
+            var diff = Math.floor((Date.now() - d.getTime()) / 1000);
+            if (diff < 60) return 'Just now';
+            if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+            if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+            return Math.floor(diff/86400) + 'd ago';
+        }
+
+        function renderAll() {
+            var list = currentTab === 'unread'
+                ? allNotifications.filter(function(n) { return !n.is_read; })
+                : allNotifications;
+            var container = document.getElementById('teacher-notifList');
+            var empty = document.getElementById('teacher-emptyState');
+            var footer = document.getElementById('teacher-notif-footer');
+
+            if (!list.length) {
+                if (empty) empty.style.display = '';
+                footer.textContent = 'Showing 0 of 0 notifications';
+                return;
+            }
+            if (empty) empty.style.display = 'none';
+
+            var html = '';
+            list.forEach(function(n) {
+                var readClass = n.is_read ? ' read' : '';
+                html += '<div class="teacher-notif-item' + readClass + '" data-id="' + n.id + '" data-read="' + (n.is_read ? 'true' : 'false') + '" style="display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-bottom:1px solid #f1f5f9;background:' + (n.is_read ? '#fff' : '#f0f7ff') + '">'
+                    + '<div style="font-size:20px;color:' + typeColor(n.notification_type) + ';margin-top:2px;"><i class="fa-solid ' + typeIcon(n.notification_type) + '"></i></div>'
+                    + '<div style="flex:1;min-width:0;">'
+                    + '<div style="font-weight:' + (n.is_read ? '500' : '700') + ';font-size:14px;color:#1e293b;">' + escHtml(n.title) + '</div>'
+                    + (n.message ? '<div style="font-size:13px;color:#64748b;margin-top:2px;">' + escHtml(n.message) + '</div>' : '')
+                    + '<div style="font-size:11px;color:#94a3b8;margin-top:4px;">' + timeAgo(n.created_at) + '</div>'
+                    + '</div>'
+                    + '<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">'
+                    + (!n.is_read ? '<button class="teacher-mark-read-btn" onclick="markRead(' + n.id + ')" style="font-size:11px;padding:3px 8px;border:1px solid #93c5fd;border-radius:4px;background:#eff6ff;color:#2563eb;cursor:pointer;">Mark Read</button>' : '<span style="font-size:11px;color:#94a3b8;">Read</span>')
+                    + '<button onclick="dismiss(' + n.id + ')" style="font-size:11px;padding:3px 8px;border:1px solid #fca5a5;border-radius:4px;background:#fff5f5;color:#ef4444;cursor:pointer;">Dismiss</button>'
+                    + '</div>'
+                    + '</div>';
+            });
+            container.innerHTML = html;
+            footer.textContent = 'Showing ' + list.length + ' of ' + allNotifications.length + ' notifications';
+        }
+
+        function escHtml(str) {
+            return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        /* ── Tab filter ── */
+        function filterTab(btn, type) {
+            document.querySelectorAll('.teacher-tab-btn').forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            currentTab = type;
+            renderAll();
+        }
+
+        /* ── Mark single read ── */
+        function markRead(id) {
+            var fd = new URLSearchParams();
+            fd.append('action', 'mark_read');
+            fd.append('teacher_id', TEACHER_ID);
+            fd.append('notification_id', id);
+            fetch('TEACHER_BACKEND/teacher_manage_notifications.php', { method: 'POST', body: fd })
+                .then(function() {
+                    var n = allNotifications.find(function(x) { return x.id == id; });
+                    if (n) n.is_read = true;
+                    renderAll(); updateUnreadBadge();
+                }).catch(function(){});
+        }
+
+        /* ── Dismiss single ── */
+        function dismiss(id) {
+            var fd = new URLSearchParams();
+            fd.append('action', 'delete');
+            fd.append('teacher_id', TEACHER_ID);
+            fd.append('notification_id', id);
+            fetch('TEACHER_BACKEND/teacher_manage_notifications.php', { method: 'POST', body: fd })
+                .then(function() {
+                    allNotifications = allNotifications.filter(function(x) { return x.id != id; });
+                    renderAll(); updateUnreadBadge();
+                }).catch(function(){});
+        }
+
+        /* ── Mark all read ── */
+        function markAllRead() {
+            var fd = new URLSearchParams();
+            fd.append('action', 'mark_all_read');
+            fd.append('teacher_id', TEACHER_ID);
+            fetch('TEACHER_BACKEND/teacher_manage_notifications.php', { method: 'POST', body: fd })
+                .then(function() {
+                    allNotifications.forEach(function(n) { n.is_read = true; });
+                    renderAll(); updateUnreadBadge();
+                }).catch(function(){});
+        }
+
+        /* ── Clear all ── */
+        function clearAll() {
+            if (!allNotifications.length) return;
+            var fd = new URLSearchParams();
+            fd.append('action', 'clear_all');
+            fd.append('teacher_id', TEACHER_ID);
+            fetch('TEACHER_BACKEND/teacher_manage_notifications.php', { method: 'POST', body: fd })
+                .then(function() {
+                    allNotifications = [];
+                    renderAll(); updateUnreadBadge();
+                }).catch(function(){});
+        }
+
+        /* ── Load students into send-notif dropdown ── */
+        function loadStudentDropdown() {
+            fetch('TEACHER_BACKEND/teacher_list_learners.php?teacher_id=' + TEACHER_ID)
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    var sel = document.getElementById('notif-student-select');
+                    if (!sel) return;
+                    var students = d.students || d.learners || [];
+                    students.forEach(function(s) {
+                        var opt = document.createElement('option');
+                        opt.value = s.id;
+                        opt.textContent = s.student_name || s.name;
+                        sel.appendChild(opt);
+                    });
+                }).catch(function(){});
+        }
+
+        /* ── Send notification to student ── */
+        function sendStudentNotif() {
+            var studentId = document.getElementById('notif-student-select').value;
+            var title     = document.getElementById('notif-title-input').value.trim();
+            var message   = document.getElementById('notif-msg-input').value.trim();
+            var type      = document.getElementById('notif-type-select').value;
+            var status    = document.getElementById('notif-send-status');
+
+            if (!title || !message) {
+                status.style.color = '#dc2626';
+                status.textContent = 'Title and message are required.';
+                return;
+            }
+
+            var fd = new FormData();
+            fd.append('action', 'send');
+            fd.append('teacher_id', TEACHER_ID);
+            fd.append('student_id', studentId);
+            fd.append('title', title);
+            fd.append('message', message);
+            fd.append('type', type);
+
+            fetch('TEACHER_BACKEND/teacher_notify_student.php', { method: 'POST', body: fd })
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    if (d.success) {
+                        status.style.color = '#16a34a';
+                        status.textContent = d.message || 'Notification sent!';
+                        document.getElementById('notif-title-input').value = '';
+                        document.getElementById('notif-msg-input').value = '';
+                        setTimeout(function() { status.textContent = ''; }, 3000);
+                    } else {
+                        status.style.color = '#dc2626';
+                        status.textContent = d.message || 'Failed to send.';
+                    }
+                }).catch(function() {
+                    status.style.color = '#dc2626';
+                    status.textContent = 'Network error. Please try again.';
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSidebar();
+            loadNotifications();
+            loadStudentDropdown();
+        });
+    </script>
+</body>
+
+</html>

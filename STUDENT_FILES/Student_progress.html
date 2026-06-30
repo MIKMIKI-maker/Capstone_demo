@@ -1,0 +1,386 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>SPED ALM - My Progress</title>
+    <link href="STUDENT_CSS/Student_progress.css" rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;family=Nunito:wght@400;600;700;800;900&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
+</head>
+
+<body>
+<div id="spedLoading" style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 60%,#2563eb 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .5s ease;pointer-events:all;">
+  <img src="../ASSETS/logo.png" alt="SPED ALM" onerror="this.style.display='none'" style="width:88px;height:88px;border-radius:22px;background:#fff;padding:6px;box-shadow:0 10px 36px rgba(0,0,0,.35);animation:spedLdPulse 2s ease-in-out infinite;">
+  <p style="color:#fff;font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;margin:0;letter-spacing:1px;text-shadow:0 2px 8px rgba(0,0,0,.2);">SPED ALM</p>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite 0s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .18s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .36s;"></span>
+  </div>
+  <p style="color:rgba(255,255,255,.65);font-family:'Poppins',sans-serif;font-size:13px;font-weight:400;margin:0;">Loading, please wait...</p>
+</div>
+<style>
+@keyframes spedLdBounce{0%,80%,100%{transform:translateY(0);opacity:.5}40%{transform:translateY(-16px);opacity:1}}
+@keyframes spedLdPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+</style>
+<script>
+(function(){
+  function hideLoader(){
+    var e=document.getElementById('spedLoading');
+    if(!e) return;
+    e.style.opacity='0';
+    e.style.pointerEvents='none';
+    setTimeout(function(){ if(e.parentNode) e.parentNode.removeChild(e); }, 520);
+  }
+  if(document.readyState==='complete'){ setTimeout(hideLoader,200); }
+  else { window.addEventListener('load', function(){ setTimeout(hideLoader,200); }); }
+})();
+</script>
+  <!-- SIDEBAR -->
+  <aside class="student-sidebar">
+    <div class="student-sidebar-logo">
+      <img alt="SPED ALM Logo" class="student-sidebar-logo-img" src="../ASSETS/logo.png" />
+      <div class="student-sidebar-logo-text">
+        <span class="student-sidebar-title">SPED ALM</span>
+        <span class="student-sidebar-sub">Student Portal</span>
+      </div>
+    </div>
+    <nav class="student-sidebar-nav">
+      <a class="student-nav-item" href="Student_dashboard.html">
+        <i>🏠</i>
+        <span>Dashboard</span>
+      </a>
+      <a class="student-nav-item" href="Student_mymaterials.html">
+        <i>📚</i>
+        <span>My Materials</span>
+      </a>
+      <a class="student-nav-item student-active" href="Student_progress.html">
+        <i>⭐</i>
+        <span>My Progress</span>
+        <i class="student-nav-arrow">›</i>
+      </a>
+      <a class="student-nav-item" href="Student_settings.html">
+        <i>⚙️</i>
+        <span>Settings</span>
+      </a>
+    </nav>
+    <div class="student-sidebar-footer">
+      <div class="student-sidebar-user">
+        <div class="student-user-avatar" id="progSideAvatar">S</div>
+        <div class="student-user-info">
+          <span class="student-user-name">Student</span>
+          <span class="student-user-role">Student</span>
+        </div>
+      </div>
+      <a class="student-signout-btn" href="#" onclick="var _id=sessionStorage.getItem('student_id');fetch('../ADMIN_FILES/ADMIN_BACKEND/logout.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'admin_id='+encodeURIComponent(_id||'')}).finally(function(){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html';});return false;">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        <span>Sign Out</span>
+      </a>
+    </div>
+  </aside>
+    <!-- MAIN -->
+    <main class="student-main">
+        <!-- PAGE HEADER -->
+        <header class="student-page-header">
+            <div class="student-page-header-left">
+                <h1 class="student-page-title">Student Progress Report</h1>
+                <p class="student-page-sub">Generated Date: —  ·  School Year: 2025–2026</p>
+            </div>
+            <div class="student-page-header-right">
+                <button class="student-export-btn" type="button">⬇ Export PDF</button>
+                <a class="student-notif-btn" href="Student_notif.html">
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="student-notif-badge"></span>
+                </a>
+            </div>
+        </header>
+        <!-- STUDENT OVERVIEW CARD -->
+        <div class="student-overview-card">
+            <div class="student-ov-avatar" id="progOvAvatar">JS</div>
+            <div class="student-ov-info">
+                <div class="student-ov-name">—</div>
+                <div class="student-ov-chips">
+                    <span class="student-chip student-chip--blue">—</span>
+                    <span class="student-chip student-chip--gray">—</span>
+                </div>
+            </div>
+            <div class="student-ov-divider"></div>
+            <!-- Overall Progress circle -->
+            <div class="student-ov-stat">
+                <div class="student-circle-wrap">
+                    <svg height="80" viewBox="0 0 80 80" width="80">
+                        <circle class="student-circle-track" cx="40" cy="40" r="32"></circle>
+                        <circle class="student-circle-fill student-circle-fill--blue" cx="40" cy="40" r="32"
+                            stroke-dasharray="201" stroke-dashoffset="201"></circle>
+                    </svg>
+                    <div class="student-circle-text">
+                        <span class="student-circle-num">—</span>
+                        <span class="student-circle-denom">/100</span>
+                    </div>
+                </div>
+                <div class="student-ov-stat-label">Overall Progress</div>
+                <div class="student-ov-stat-sub">avg score</div>
+            </div>
+            <div class="student-ov-divider"></div>
+            <!-- Activities Completed circle -->
+            <div class="student-ov-stat">
+                <div class="student-circle-wrap">
+                    <svg height="80" viewBox="0 0 80 80" width="80">
+                        <circle class="student-circle-track" cx="40" cy="40" r="32"></circle>
+                        <circle class="student-circle-fill student-circle-fill--green" cx="40" cy="40" r="32"
+                            stroke-dasharray="201" stroke-dashoffset="201"></circle>
+                    </svg>
+                    <div class="student-circle-text">
+                        <span class="student-circle-num">—</span>
+                        <span class="student-circle-denom">/—</span>
+                    </div>
+                </div>
+                <div class="student-ov-stat-label">Activities Completed</div>
+            </div>
+        </div>
+        <!-- CONTENT GRID -->
+        <div class="student-content-grid">
+            <!-- Performance by Activity -->
+            <div class="student-perf-card">
+                <div class="student-perf-header">
+                    <span class="student-perf-title">Performance by Activity</span>
+                    <span class="student-perf-tag" id="perfCount">— Activities</span>
+                </div>
+                <div id="perfList">
+                    <div class="student-perf-empty">
+                        <div class="student-perf-empty-icon">📊</div>
+                        <p class="student-perf-empty-title">No performance data yet</p>
+                        <p class="student-perf-empty-desc">Scores will appear here after you submit activities.</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Teacher's Notes -->
+            <div class="student-notes-card">
+                <div class="student-notes-title">Teacher's Notes / Recommendations</div>
+                <div class="student-notes-empty">
+                    <div class="student-notes-empty-icon">📝</div>
+                    <p class="student-notes-empty-title">No notes yet</p>
+                    <p class="student-notes-empty-desc">Your teacher's feedback and recommendations will appear here.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <!-- ACTIVITY HISTORY -->
+        <div class="student-history-card">
+            <div class="student-history-header">
+                <span class="student-history-title">Activity History</span>
+                <span class="student-history-count" id="historyCount">— records</span>
+            </div>
+            <table class="student-history-table">
+                <thead>
+                    <tr>
+                        <th>Date Submitted</th>
+                        <th>Activity</th>
+                        <th>Type · Grading</th>
+                        <th>Score</th>
+                        <th>Retakes</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="historyBody">
+                    <tr><td class="student-history-empty" colspan="6">No activity history yet.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+    function fmtDate(iso) {
+        if (!iso) return '—';
+        return new Date(iso).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+    }
+    function scoreColor(pct) {
+        if (pct >= 80) return '#16a34a';
+        if (pct >= 50) return '#d97706';
+        return '#ef4444';
+    }
+
+    function loadProgress() {
+        var srid = sessionStorage.getItem('student_record_id') || '';
+        var tid  = sessionStorage.getItem('teacher_id') || '';
+
+        // Update profile and notif badge regardless of enrollment
+        loadProfileAndNotifs();
+
+        if (!srid || !tid) { renderProgressUI([], 0, 0); return; }
+
+        fetch('STUDENT_BACKEND/student_get_progress.php?student_record_id=' + encodeURIComponent(srid) + '&teacher_id=' + encodeURIComponent(tid))
+            .then(function(r){ return r.json(); })
+            .then(function(d) {
+                if (!d.success) { renderProgressUI([], 0, 0, []); return; }
+                renderProgressUI(d.activities || [], d.avg_score || 0, d.total_activities || 0, d.notes || []);
+            })
+            .catch(function(){ renderProgressUI([], 0, 0, []); });
+    }
+
+    function renderProgressUI(activities, avgScore, totalActivities, notes) {
+        var CIRC = 201;
+        var completed = activities.length;
+
+        // Overall progress circle
+        var fillBlue = document.querySelector('.student-circle-fill--blue');
+        if (fillBlue) {
+            fillBlue.style.strokeDashoffset = CIRC - (CIRC * avgScore / 100);
+            fillBlue.closest('.student-ov-stat').querySelector('.student-circle-num').textContent = avgScore;
+        }
+
+        // Completed circle
+        var fillGreen = document.querySelector('.student-circle-fill--green');
+        if (fillGreen) {
+            var compPct = totalActivities > 0 ? Math.round((completed / totalActivities) * 100) : 0;
+            fillGreen.style.strokeDashoffset = CIRC - (CIRC * compPct / 100);
+            fillGreen.closest('.student-ov-stat').querySelector('.student-circle-num').textContent = completed;
+            fillGreen.closest('.student-ov-stat').querySelector('.student-circle-denom').textContent = '/' + totalActivities;
+        }
+
+        // Performance cards
+        var perfList = document.getElementById('perfList');
+        document.getElementById('perfCount').textContent = completed + ' Activit' + (completed === 1 ? 'y' : 'ies');
+        if (completed === 0) {
+            perfList.innerHTML = '<div class="student-perf-empty"><div class="student-perf-empty-icon">📊</div><p class="student-perf-empty-title">No performance data yet</p><p class="student-perf-empty-desc">Scores will appear here after you submit activities.</p></div>';
+        } else {
+            perfList.innerHTML = activities.map(function(r) {
+                var sc = r.score || 0;
+                var col = scoreColor(sc);
+                return '<div style="padding:10px 0;border-bottom:1px solid #f1f5f9;">'
+                    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
+                    + '<span style="font-weight:700;font-size:14px;color:#1e293b;">' + r.activity_title + '</span>'
+                    + '<span style="font-weight:800;font-size:15px;color:' + col + ';">' + sc + '%</span>'
+                    + '</div>'
+                    + '<div style="background:#e2e8f0;border-radius:6px;height:8px;overflow:hidden;">'
+                    + '<div style="width:' + sc + '%;height:100%;background:' + col + ';border-radius:6px;transition:width .5s;"></div>'
+                    + '</div>'
+                    + '<div style="font-size:11px;color:#94a3b8;margin-top:4px;">' + (r.subject || 'Activity') + ' · ' + (r.status_label || '') + '</div>'
+                    + '</div>';
+            }).join('');
+        }
+
+        // History table
+        document.getElementById('historyCount').textContent = completed + ' record' + (completed === 1 ? '' : 's');
+        var tbody = document.getElementById('historyBody');
+        if (completed === 0) {
+            tbody.innerHTML = '<tr><td class="student-history-empty" colspan="6">No activity history yet.</td></tr>';
+        } else {
+            tbody.innerHTML = activities.map(function(r) {
+                var sc = r.score || 0;
+                var col = scoreColor(sc);
+                var badge = sc >= 80
+                    ? '<span style="background:#dcfce7;color:#16a34a;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;">Passed</span>'
+                    : sc >= 50
+                    ? '<span style="background:#fef9c3;color:#ca8a04;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;">Fair</span>'
+                    : '<span style="background:#fee2e2;color:#ef4444;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;">Needs Practice</span>';
+                return '<tr>'
+                    + '<td>' + fmtDate(r.assessment_date) + '</td>'
+                    + '<td style="font-weight:600;">' + r.activity_title + '</td>'
+                    + '<td>' + (r.subject || '—') + '</td>'
+                    + '<td style="font-weight:800;color:' + col + ';">' + sc + '%</td>'
+                    + '<td>—</td>'
+                    + '<td>' + badge + '</td>'
+                    + '</tr>';
+            }).join('');
+        }
+
+        // Teacher's Notes
+        var notesCard = document.querySelector('.student-notes-card');
+        if (notesCard) {
+            var notesHtml = '<div class="student-notes-title">Teacher\'s Notes / Recommendations</div>';
+            if (!notes || notes.length === 0) {
+                notesHtml += '<div class="student-notes-empty">'
+                    + '<div class="student-notes-empty-icon">📝</div>'
+                    + '<p class="student-notes-empty-title">No notes yet</p>'
+                    + '<p class="student-notes-empty-desc">Your teacher\'s feedback and recommendations will appear here.</p>'
+                    + '</div>';
+            } else {
+                notesHtml += '<div style="display:flex;flex-direction:column;gap:12px;margin-top:4px;">';
+                notes.forEach(function(n) {
+                    var noteText = (typeof n === 'object' && n.note) ? n.note : String(n);
+                    var dateStr  = (typeof n === 'object' && n.created_at)
+                        ? new Date(n.created_at).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})
+                        : '';
+                    notesHtml += '<div style="background:#f0f9ff;border-left:3px solid #3b82f6;border-radius:0 10px 10px 0;padding:12px 14px;">'
+                        + '<p style="font-size:13px;color:#1e293b;line-height:1.6;margin:0;">' + escStr(noteText) + '</p>'
+                        + (dateStr ? '<p style="font-size:11px;color:#94a3b8;margin:6px 0 0;">' + dateStr + '</p>' : '')
+                        + '</div>';
+                });
+                notesHtml += '</div>';
+            }
+            notesCard.innerHTML = notesHtml;
+        }
+
+        // Date
+        document.querySelector('.student-page-sub').textContent =
+            'Generated: ' + new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) + '  ·  School Year: 2025–2026';
+    }
+
+    function escStr(s) {
+        return String(s)
+            .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function loadProfileAndNotifs() {
+        // Notification badge
+        var notifs = [];
+        try { notifs = JSON.parse(localStorage.getItem('student_notifications') || '[]'); } catch(e) {}
+        var unread = notifs.filter(function(n){ return !n.isRead; }).length;
+        var badge = document.querySelector('.student-notif-badge');
+        if (badge) badge.textContent = unread > 0 ? (unread > 9 ? '9+' : unread) : '';
+
+        var sp = {};
+        try { sp = JSON.parse(localStorage.getItem('student_profile') || '{}'); } catch(e) {}
+        var sessionName  = sessionStorage.getItem('student_name') || '';
+        var sessionParts = sessionName.trim().split(/\s+/);
+        var spFirst = (sp.firstName || sessionParts[0] || '').trim();
+        var spLast  = (sp.lastName  || sessionParts.slice(1).join(' ') || '').trim();
+        var spFull  = [spFirst, spLast].filter(Boolean).join(' ') || 'Student';
+        var spInit  = ((spFirst[0]||'S') + (spLast[0]||'')).toUpperCase().trim() || 'S';
+        var spGrade = sp.grade || sessionStorage.getItem('student_grade') || '';
+        var spCond  = sp.condition || sessionStorage.getItem('student_condition') || '';
+
+        function setAvatar(el, photo, initials) {
+            if (!el) return;
+            if (photo) { el.innerHTML = '<img src="' + photo + '" style="width:100%;height:100%;object-fit:cover;display:block;" />'; }
+            else { el.textContent = initials; }
+        }
+        setAvatar(document.getElementById('progSideAvatar'), sp.photo, spInit);
+        document.querySelector('.student-sidebar .student-user-name').textContent = spFull;
+        document.querySelector('.student-sidebar .student-user-role').textContent = [spGrade, spCond].filter(Boolean).join(' — ') || 'Student';
+        setAvatar(document.getElementById('progOvAvatar'), sp.photo, spInit);
+        if (!sp.photo) {
+            var _progSid = sessionStorage.getItem('student_id') || '';
+            if (_progSid) {
+                fetch('STUDENT_BACKEND/student_get_profile.php?admin_account_id=' + encodeURIComponent(_progSid))
+                    .then(function(r){ return r.json(); })
+                    .then(function(pd){
+                        if (pd.profile_photo) {
+                            sp.photo = pd.profile_photo;
+                            try { localStorage.setItem('student_profile', JSON.stringify(sp)); } catch(e){}
+                            setAvatar(document.getElementById('progSideAvatar'), pd.profile_photo, spInit);
+                            setAvatar(document.getElementById('progOvAvatar'), pd.profile_photo, spInit);
+                        }
+                    }).catch(function(){});
+            }
+        }
+        var ovName = document.querySelector('.student-ov-name');
+        if (ovName) ovName.textContent = spFull || 'Student';
+        var ovChips = document.querySelectorAll('.student-chip');
+        if (ovChips[0]) ovChips[0].textContent = spCond || spGrade || '—';
+        if (ovChips[1]) ovChips[1].textContent = sp.nickname || spFirst || '—';
+    }
+
+    document.addEventListener('visibilitychange', function(){ if (!document.hidden) loadProgress(); });
+    loadProgress();
+    </script>
+</body>
+
+</html>

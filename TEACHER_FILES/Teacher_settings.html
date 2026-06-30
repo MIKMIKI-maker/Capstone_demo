@@ -1,0 +1,544 @@
+﻿<!--
+    CHANGED: Teacher_settings.html — full rewrite of settings page
+    - Removed all hardcoded data (Maria Teresa Cruz, mcruz@mamatides.edu.ph, etc.)
+    - Added dynamic profile loading from teacher_get_profile.php on page load
+    - Replaced inline onclick attributes with addEventListener inside DOMContentLoaded
+      (inline onclick was causing navigation tabs and Save Changes to silently fail)
+    - Save Changes now POSTs to teacher_settings_management.php via fetch
+    - Change Password modal wired to teacher_settings_management.php change_password action
+    - Added bio field, save success/error message display, and button loading state
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
+    <title>Settings – SPED ALM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
+    <link href="TEACHER_CSS/Teacher_settings.css" rel="stylesheet" />
+</head>
+<body>
+<div id="spedLoading" style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 60%,#2563eb 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .5s ease;pointer-events:all;">
+  <img src="../ASSETS/logo.png" alt="SPED ALM" onerror="this.style.display='none'" style="width:88px;height:88px;border-radius:22px;background:#fff;padding:6px;box-shadow:0 10px 36px rgba(0,0,0,.35);animation:spedLdPulse 2s ease-in-out infinite;">
+  <p style="color:#fff;font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;margin:0;letter-spacing:1px;text-shadow:0 2px 8px rgba(0,0,0,.2);">SPED ALM</p>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite 0s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .18s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .36s;"></span>
+  </div>
+  <p style="color:rgba(255,255,255,.65);font-family:'Poppins',sans-serif;font-size:13px;font-weight:400;margin:0;">Loading, please wait...</p>
+</div>
+<style>
+@keyframes spedLdBounce{0%,80%,100%{transform:translateY(0);opacity:.5}40%{transform:translateY(-16px);opacity:1}}
+@keyframes spedLdPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+</style>
+<script>
+(function(){
+  function hideLoader(){
+    var e=document.getElementById('spedLoading');
+    if(!e) return;
+    e.style.opacity='0';
+    e.style.pointerEvents='none';
+    setTimeout(function(){ if(e.parentNode) e.parentNode.removeChild(e); }, 520);
+  }
+  if(document.readyState==='complete'){ setTimeout(hideLoader,200); }
+  else { window.addEventListener('load', function(){ setTimeout(hideLoader,200); }); }
+})();
+</script>
+<div class="teacher-container">
+
+    <!-- SIDEBAR -->
+    <aside class="teacher-sidebar">
+        <div class="teacher-sidebar-logo">
+            <img alt="SPED ALM Logo" class="teacher-sidebar-logo-img" src="../ASSETS/logo.png" />
+            <div>
+                <span class="teacher-sidebar-title">SPED ALM</span>
+                <span class="teacher-sidebar-sub">Teacher Portal</span>
+            </div>
+        </div>
+        <nav class="teacher-sidebar-nav">
+            <a class="teacher-nav-item" href="Teacher_dashboard.html"><i class="fa-solid fa-table-cells-large"></i><span>Dashboard</span></a>
+            <a class="teacher-nav-item" href="Teacher_IEP.html"><i class="fa-solid fa-file-circle-plus"></i><span>IEP Materials</span></a>
+            <a class="teacher-nav-item" href="Teacher_learners.html"><i class="fa-solid fa-users"></i><span>My Learners</span></a>
+            <a class="teacher-nav-item" href="Teacher_report.html"><i class="fa-solid fa-chart-column"></i><span>Reports</span></a>
+            <a class="teacher-nav-item active" href="Teacher_settings.html"><i class="fa-solid fa-gear"></i><span>Settings</span><i class="fa-solid fa-chevron-right teacher-nav-arrow"></i></a>
+        </nav>
+        <div class="teacher-sidebar-footer">
+            <div class="teacher-profile">
+                <div class="teacher-avatar" id="sidebar-avatar">M</div>
+                <div>
+                    <span class="teacher-name" id="sidebar-name">Teacher</span>
+                    <span class="teacher-role">SPED Teacher</span>
+                </div>
+            </div>
+            <a class="teacher-signout-btn" href="#" id="teacher-signout-btn" onclick="var _id=sessionStorage.getItem('admin_id');fetch('../ADMIN_FILES/ADMIN_BACKEND/logout.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'admin_id='+encodeURIComponent(_id||'')}).finally(function(){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html';});return false;">
+                <i class="fa-solid fa-right-from-bracket"></i><span>Sign Out</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="teacher-main">
+        <div class="teacher-topbar">
+            <div>
+                <h1>Settings</h1>
+                <p>Manage your profile, academic calendar, and notification preferences</p>
+            </div>
+            <a class="teacher-notif-btn" href="Teacher_notif.html">
+                <i class="fa-regular fa-bell"></i>
+                <span class="teacher-notif-badge"></span>
+            </a>
+        </div>
+
+        <div class="teacher-settings-container">
+
+            <!-- LEFT PANEL -->
+            <div class="teacher-left-panel">
+                <div class="teacher-profile-box">
+                    <div class="profile-avatar" id="panel-avatar">M</div>
+                    <h3 id="panel-name">Teacher</h3>
+                    <p id="panel-spec">SPED Teacher</p>
+                    <div class="teacher-status-badge">
+                        <span class="teacher-status-dot"></span>Active
+                    </div>
+                </div>
+                <div class="teacher-settings-menu">
+                    <button class="teacher-menu-item active" id="btn-tab-profile" type="button">
+                        <i class="fa-solid fa-user" style="width:16px;"></i>
+                        My Profile
+                        <span class="teacher-menu-dot"></span>
+                    </button>
+                    <button class="teacher-menu-item" id="btn-tab-notifications" type="button">
+                        <i class="fa-solid fa-bell" style="width:16px;"></i>
+                        Notifications
+                        <span class="teacher-menu-dot" style="background:#f5a623;"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- MY PROFILE PANEL -->
+            <div class="teacher-content-panel active" id="teacher-panel-profile">
+                <div class="teacher-panel-heading">
+                    <span class="teacher-panel-heading-dot"></span>
+                    <h2>My Profile</h2>
+                </div>
+                <div class="teacher-profile-header-card">
+                    <div class="teacher-profile-header-avatar-wrap">
+                        <div class="teacher-profile-header-avatar" id="header-avatar">M</div>
+                        <button class="teacher-edit-avatar-btn" id="btn-edit-avatar" type="button" title="Upload profile picture">
+                            <i class="fa-solid fa-camera" style="font-size:10px;"></i>
+                        </button>
+                        <input type="file" id="avatar-upload" accept="image/*" aria-label="Upload profile picture" />
+                    </div>
+                    <div class="teacher-profile-header-info">
+                        <h3 id="header-name">Teacher</h3>
+                        <p class="teacher-role-text">Special Education Teacher</p>
+                        <p class="teacher-email-text" id="header-email">teacher@spedschool.edu.ph</p>
+                    </div>
+                </div>
+                <div class="teacher-form-grid">
+                    <div class="teacher-form-group">
+                        <label>First Name</label>
+                        <input id="field-first-name" placeholder="First name" type="text" />
+                    </div>
+                    <div class="teacher-form-group">
+                        <label>Last Name</label>
+                        <input id="field-last-name" placeholder="Last name" type="text" />
+                    </div>
+                    <div class="teacher-form-group">
+                        <label>Email Address</label>
+                        <input id="field-email" placeholder="Email address" type="email" readonly style="background:#f0f0f0;cursor:not-allowed;" />
+                    </div>
+                    <div class="teacher-form-group">
+                        <label>Phone Number</label>
+                        <input id="field-phone" placeholder="Phone number" type="tel" />
+                    </div>
+                    <div class="teacher-form-group teacher-full">
+                        <label>Subject / Specialization</label>
+                        <select id="field-spec">
+                            <option value="">Select specialization</option>
+                            <option value="Special Education">Special Education</option>
+                            <option value="Early Intervention">Early Intervention</option>
+                            <option value="Inclusive Education">Inclusive Education</option>
+                        </select>
+                    </div>
+                    <div class="teacher-form-group teacher-full">
+                        <label>Bio / About</label>
+                        <textarea id="field-bio" placeholder="Write a short bio..." rows="4"></textarea>
+                    </div>
+                </div>
+                <div id="save-message" style="display:none;margin-bottom:8px;padding:10px 14px;border-radius:8px;font-size:14px;font-weight:500;"></div>
+                <div class="teacher-pwd-card">
+                    <div class="teacher-pwd-card-left">
+                        <div class="teacher-pwd-icon"><i class="fa-solid fa-lock"></i></div>
+                        <div class="teacher-pwd-card-info">
+                            <h4>Password &amp; Security</h4>
+                            <p>Change your account password</p>
+                        </div>
+                    </div>
+                    <button class="teacher-btn-change-pwd" id="btn-open-pwd" type="button">Change Password</button>
+                </div>
+                <button class="teacher-btn-save" id="btn-save-profile" type="button">
+                    <i class="fa-solid fa-floppy-disk"></i> Save Changes
+                </button>
+                <div style="clear:both;"></div>
+            </div>
+
+            <!-- NOTIFICATIONS PANEL -->
+            <div class="teacher-content-panel" id="teacher-panel-notifications">
+                <div class="teacher-panel-heading">
+                    <span class="teacher-panel-heading-dot"></span>
+                    <h2>Notification Preferences</h2>
+                </div>
+                <p class="teacher-notif-desc">Control which notifications you receive and how they are delivered.</p>
+                <div class="teacher-toggle-row">
+                    <div class="teacher-toggle-info">
+                        <h3>Student Progress Updates</h3>
+                        <p>Daily summary of learner scores and activity completion</p>
+                    </div>
+                    <label class="teacher-switch">
+                        <input checked type="checkbox" /><span class="teacher-switch-slider"></span>
+                    </label>
+                </div>
+                <div class="teacher-toggle-row">
+                    <div class="teacher-toggle-info">
+                        <h3>IEP Deadline Reminders</h3>
+                        <p>Reminders for upcoming IEP submission deadlines</p>
+                    </div>
+                    <label class="teacher-switch">
+                        <input checked type="checkbox" /><span class="teacher-switch-slider"></span>
+                    </label>
+                </div>
+                <div class="teacher-toggle-row">
+                    <div class="teacher-toggle-info">
+                        <h3>System &amp; App Updates</h3>
+                        <p>Updates about new features and maintenance windows</p>
+                    </div>
+                    <label class="teacher-switch">
+                        <input type="checkbox" /><span class="teacher-switch-slider"></span>
+                    </label>
+                </div>
+                <div class="teacher-notif-save-row">
+                    <button class="teacher-btn-save" style="float:none;" type="button">Save Preferences</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- PASSWORD MODAL -->
+<div class="teacher-modal-overlay hidden" id="teacher-pwdModal">
+    <div class="teacher-modal">
+        <button class="teacher-modal-close" id="btn-close-pwd" type="button">×</button>
+        <p class="teacher-modal-title">Reset Password</p>
+        <p class="teacher-modal-sub">Enter your current password and choose a new one.</p>
+        <div class="teacher-modal-form-group">
+            <label>Current Password</label>
+            <div style="display:flex;align-items:center;border:1.5px solid #e3e8f0;border-radius:14px;overflow:hidden;">
+                <input id="pwd-current" placeholder="Enter current password" type="password" style="flex:1;background:transparent;border:none;outline:none;padding:11px 14px;font-size:13.5px;font-family:'Poppins',sans-serif;color:#1e2a3a;min-width:0;" />
+                <button type="button" onclick="togglePwd('pwd-current',this)" style="background:none;border:none;cursor:pointer;color:#666;padding:0 12px;font-size:18px;line-height:1;flex-shrink:0;user-select:none;" tabindex="-1"><i class="fa-solid fa-eye"></i></button>
+            </div>
+        </div>
+        <div class="teacher-modal-form-group">
+            <label>New Password</label>
+            <div style="display:flex;align-items:center;border:1.5px solid #e3e8f0;border-radius:14px;overflow:hidden;">
+                <input id="pwd-new" placeholder="At least 8 characters" type="password" style="flex:1;background:transparent;border:none;outline:none;padding:11px 14px;font-size:13.5px;font-family:'Poppins',sans-serif;color:#1e2a3a;min-width:0;" />
+                <button type="button" onclick="togglePwd('pwd-new',this)" style="background:none;border:none;cursor:pointer;color:#666;padding:0 12px;font-size:18px;line-height:1;flex-shrink:0;user-select:none;" tabindex="-1"><i class="fa-solid fa-eye"></i></button>
+            </div>
+            <span class="teacher-pwd-hint">Min. 8 characters with a number and symbol</span>
+        </div>
+        <div class="teacher-modal-form-group">
+            <label>Confirm New Password</label>
+            <div style="display:flex;align-items:center;border:1.5px solid #e3e8f0;border-radius:14px;overflow:hidden;">
+                <input id="pwd-confirm" placeholder="Re-enter new password" type="password" style="flex:1;background:transparent;border:none;outline:none;padding:11px 14px;font-size:13.5px;font-family:'Poppins',sans-serif;color:#1e2a3a;min-width:0;" />
+                <button type="button" onclick="togglePwd('pwd-confirm',this)" style="background:none;border:none;cursor:pointer;color:#666;padding:0 12px;font-size:18px;line-height:1;flex-shrink:0;user-select:none;" tabindex="-1"><i class="fa-solid fa-eye"></i></button>
+            </div>
+        </div>
+        <div id="pwd-message" style="display:none;margin-bottom:8px;padding:10px 14px;border-radius:8px;font-size:14px;font-weight:500;"></div>
+        <div class="teacher-modal-actions">
+            <button class="teacher-btn-modal-cancel" id="btn-cancel-pwd" type="button">Cancel</button>
+            <button class="teacher-btn-modal-save" id="btn-submit-pwd" type="button">Update Password</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function togglePwd(inputId, btn) {
+    var input = document.getElementById(inputId);
+    var icon = btn.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fa-solid fa-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'fa-solid fa-eye';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    /* ── Utilities ── */
+    function getTeacherId() {
+        return parseInt(sessionStorage.getItem('teacher_id') || '1');
+    }
+
+    /* ── Load stored name / profile pic immediately (no flash of Loading...) ── */
+    function initDefaults() {
+        var name = sessionStorage.getItem('teacher_name') || 'Teacher';
+        var initial = name.trim().charAt(0).toUpperCase();
+        setText('sidebar-avatar', initial);
+        setText('sidebar-name',   name);
+        setText('panel-avatar',   initial);
+        setText('panel-name',     name);
+        setText('header-avatar',  initial);
+        setText('header-name',    name);
+        var email = sessionStorage.getItem('teacher_email') || 'teacher@spedschool.edu.ph';
+        setText('header-email', email);
+        applyProfilePic();
+    }
+
+    /* ── Apply stored profile picture to all avatar elements ── */
+    function applyProfilePic() {
+        var pic = sessionStorage.getItem('teacher_profile_pic');
+        if (!pic) return;
+        ['sidebar-avatar', 'panel-avatar', 'header-avatar'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.textContent = '';
+            el.style.background = 'transparent';
+            el.style.padding = '0';
+            el.innerHTML = '<img src="' + pic + '" alt="Profile" class="avatar-uploaded-img" />';
+        });
+    }
+
+    /* ── Profile picture upload ── */
+    document.getElementById('btn-edit-avatar').addEventListener('click', function () {
+        document.getElementById('avatar-upload').click();
+    });
+
+    function _compressTeacherPhoto(dataURL, cb) {
+        var img = new Image();
+        img.onload = function () {
+            var max = 200, w = img.width, h = img.height;
+            if (w > h) { if (w > max) { h = Math.round(h * max / w); w = max; } }
+            else        { if (h > max) { w = Math.round(w * max / h); h = max; } }
+            var c = document.createElement('canvas');
+            c.width = w; c.height = h;
+            c.getContext('2d').drawImage(img, 0, 0, w, h);
+            cb(c.toDataURL('image/jpeg', 0.82));
+        };
+        img.src = dataURL;
+    }
+
+    document.getElementById('avatar-upload').addEventListener('change', function () {
+        var file = this.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            _compressTeacherPhoto(e.target.result, function (pic) {
+                sessionStorage.setItem('teacher_profile_pic', pic);
+                applyProfilePic();
+                // Persist to database so it shows across all portals
+                var tid = sessionStorage.getItem('teacher_id') || '';
+                if (tid) {
+                    var fd = new FormData();
+                    fd.append('teacher_id', tid);
+                    fd.append('photo', pic);
+                    fetch('TEACHER_BACKEND/teacher_save_photo.php', { method: 'POST', body: fd })
+                        .then(function(r){ return r.json(); })
+                        .then(function(d){ if (!d.success) console.warn('Photo save failed:', d); })
+                        .catch(function(err){ console.warn('Photo save error:', err); });
+                }
+            });
+        };
+        reader.readAsDataURL(file);
+        this.value = '';
+    });
+
+    initDefaults();
+
+    function showMsg(elId, text, ok) {
+        var el = document.getElementById(elId);
+        if (!el) return;
+        el.textContent = text;
+        el.style.display = 'block';
+        el.style.background = ok ? '#d1fae5' : '#fee2e2';
+        el.style.color     = ok ? '#065f46' : '#991b1b';
+        clearTimeout(el._timer);
+        el._timer = setTimeout(function () { el.style.display = 'none'; }, 4000);
+    }
+
+    /* ── Tab navigation ── */
+    function showPanel(panelId, activeBtnId) {
+        document.querySelectorAll('.teacher-content-panel').forEach(function (p) {
+            p.classList.remove('active');
+        });
+        document.querySelectorAll('.teacher-menu-item').forEach(function (b) {
+            b.classList.remove('active');
+        });
+        var panel = document.getElementById(panelId);
+        var btn   = document.getElementById(activeBtnId);
+        if (panel) panel.classList.add('active');
+        if (btn)   btn.classList.add('active');
+    }
+
+    document.getElementById('btn-tab-profile').addEventListener('click', function () {
+        showPanel('teacher-panel-profile', 'btn-tab-profile');
+    });
+    document.getElementById('btn-tab-notifications').addEventListener('click', function () {
+        showPanel('teacher-panel-notifications', 'btn-tab-notifications');
+    });
+
+    /* ── Password modal ── */
+    function openPwdModal()  { document.getElementById('teacher-pwdModal').classList.remove('hidden'); }
+    function closePwdModal() {
+        document.getElementById('teacher-pwdModal').classList.add('hidden');
+        document.getElementById('pwd-current').value = '';
+        document.getElementById('pwd-new').value     = '';
+        document.getElementById('pwd-confirm').value = '';
+        document.getElementById('pwd-message').style.display = 'none';
+    }
+
+    document.getElementById('btn-open-pwd').addEventListener('click',   openPwdModal);
+    document.getElementById('btn-close-pwd').addEventListener('click',  closePwdModal);
+    document.getElementById('btn-cancel-pwd').addEventListener('click', closePwdModal);
+    document.getElementById('teacher-pwdModal').addEventListener('click', function (e) {
+        if (e.target === this) closePwdModal();
+    });
+
+    /* ── Load profile ── */
+    function loadProfile() {
+        var fd = new FormData();
+        fd.append('teacher_id', getTeacherId());
+
+        fetch('TEACHER_BACKEND/teacher_get_profile.php', { method: 'POST', body: fd })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data.success || !data.teacher) return;
+                var t = data.teacher;
+                var initial = t.avatarLetter || (t.name || 'M').charAt(0).toUpperCase();
+
+                sessionStorage.setItem('teacher_name',  t.name  || '');
+                sessionStorage.setItem('teacher_email', t.email || '');
+
+                setText('sidebar-avatar', initial);
+                setText('sidebar-name',   t.name || '');
+                setText('panel-avatar',   initial);
+                setText('panel-name',     t.name || '');
+                setText('panel-spec',     t.specialization || 'SPED Teacher');
+                setText('header-avatar',  initial);
+                setText('header-name',    t.name || '');
+                setText('header-email',   t.email || '');
+
+                applyProfilePic();
+
+                setVal('field-first-name', t.firstName || '');
+                setVal('field-last-name',  t.lastName  || '');
+                setVal('field-email',      t.email     || '');
+                setVal('field-phone',      t.phone     || '');
+                setVal('field-bio',        t.bio       || '');
+
+                var sel = document.getElementById('field-spec');
+                if (sel && t.specialization) {
+                    for (var i = 0; i < sel.options.length; i++) {
+                        if (sel.options[i].value === t.specialization) {
+                            sel.selectedIndex = i; break;
+                        }
+                    }
+                }
+            })
+            .catch(function (err) { console.error('Profile load error:', err); });
+    }
+
+    function setText(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+    function setVal(id, val)  { var el = document.getElementById(id); if (el) el.value = val; }
+
+    /* ── Save profile ── */
+    document.getElementById('btn-save-profile').addEventListener('click', function () {
+        var btn = this;
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+
+        var params = new URLSearchParams();
+        params.append('action',          'update_profile');
+        params.append('teacher_id',      getTeacherId());
+        params.append('first_name',      (document.getElementById('field-first-name').value || '').trim());
+        params.append('last_name',       (document.getElementById('field-last-name').value  || '').trim());
+        params.append('phone_number',    (document.getElementById('field-phone').value       || '').trim());
+        params.append('specialization',   document.getElementById('field-spec').value        || '');
+        params.append('bio',             (document.getElementById('field-bio').value         || '').trim());
+
+        fetch('TEACHER_BACKEND/teacher_settings_management.php', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body:    params.toString()
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.success) {
+                showMsg('save-message', '✓ Profile saved successfully!', true);
+                loadProfile();
+            } else {
+                showMsg('save-message', '✗ ' + (data.message || 'Could not save.'), false);
+            }
+        })
+        .catch(function () {
+            showMsg('save-message', '✗ Network error. Please try again.', false);
+        })
+        .then(function () {
+            btn.disabled    = false;
+            btn.innerHTML   = '<i class="fa-solid fa-floppy-disk"></i> Save Changes';
+        });
+    });
+
+    /* ── Change password ── */
+    document.getElementById('btn-submit-pwd').addEventListener('click', function () {
+        var current = document.getElementById('pwd-current').value;
+        var newPwd  = document.getElementById('pwd-new').value;
+        var confirm = document.getElementById('pwd-confirm').value;
+
+        if (!current || !newPwd || !confirm) {
+            showMsg('pwd-message', 'All fields are required.', false); return;
+        }
+        if (newPwd !== confirm) {
+            showMsg('pwd-message', 'New passwords do not match.', false); return;
+        }
+        if (newPwd.length < 6) {
+            showMsg('pwd-message', 'Password must be at least 6 characters.', false); return;
+        }
+
+        var params = new URLSearchParams();
+        params.append('action',           'change_password');
+        params.append('teacher_id',       getTeacherId());
+        params.append('current_password', current);
+        params.append('new_password',     newPwd);
+        params.append('confirm_password', confirm);
+
+        fetch('TEACHER_BACKEND/teacher_settings_management.php', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body:    params.toString()
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.success) {
+                showMsg('pwd-message', '✓ Password updated!', true);
+                setTimeout(closePwdModal, 1800);
+            } else {
+                showMsg('pwd-message', '✗ ' + (data.message || 'Failed.'), false);
+            }
+        })
+        .catch(function () {
+            showMsg('pwd-message', '✗ Network error.', false);
+        });
+    });
+
+    /* ── Init ── */
+    loadProfile();
+});
+</script>
+</body>
+</html>

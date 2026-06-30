@@ -1,0 +1,537 @@
+﻿<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
+    <title>Teacher Dashboard – SPED ALM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
+    <link href="TEACHER_CSS/Teacher_dashboard.css?v=2" rel="stylesheet" />
+</head>
+
+<body>
+<div id="spedLoading" style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 60%,#2563eb 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .5s ease;pointer-events:all;">
+  <img src="../ASSETS/logo.png" alt="SPED ALM" onerror="this.style.display='none'" style="width:88px;height:88px;border-radius:22px;background:#fff;padding:6px;box-shadow:0 10px 36px rgba(0,0,0,.35);animation:spedLdPulse 2s ease-in-out infinite;">
+  <p style="color:#fff;font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;margin:0;letter-spacing:1px;text-shadow:0 2px 8px rgba(0,0,0,.2);">SPED ALM</p>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite 0s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .18s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .36s;"></span>
+  </div>
+  <p style="color:rgba(255,255,255,.65);font-family:'Poppins',sans-serif;font-size:13px;font-weight:400;margin:0;">Loading, please wait...</p>
+</div>
+<style>
+@keyframes spedLdBounce{0%,80%,100%{transform:translateY(0);opacity:.5}40%{transform:translateY(-16px);opacity:1}}
+@keyframes spedLdPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+</style>
+<script>
+(function(){
+  function hideLoader(){
+    var e=document.getElementById('spedLoading');
+    if(!e) return;
+    e.style.opacity='0';
+    e.style.pointerEvents='none';
+    setTimeout(function(){ if(e.parentNode) e.parentNode.removeChild(e); }, 520);
+  }
+  if(document.readyState==='complete'){ setTimeout(hideLoader,200); }
+  else { window.addEventListener('load', function(){ setTimeout(hideLoader,200); }); }
+})();
+</script>
+    <div class="teacher-app-wrapper">
+        <!-- SIDEBAR -->
+        <aside class="teacher-sidebar">
+            <div class="teacher-sidebar-logo">
+                <img alt="SPED ALM Logo" class="teacher-sidebar-logo-img" src="../ASSETS/logo.png" />
+                <div class="teacher-sidebar-logo-text">
+                    <span class="teacher-sidebar-title">SPED ALM</span>
+                    <span class="teacher-sidebar-sub">Teacher Portal</span>
+                </div>
+            </div>
+            <nav class="teacher-sidebar-nav">
+                <a class="teacher-nav-item active" href="Teacher_dashboard.html">
+                    <i class="fa-solid fa-table-cells-large"></i>
+                    <span>Dashboard</span>
+                    <i class="fa-solid fa-chevron-right teacher-nav-arrow"></i>
+                </a>
+                <a class="teacher-nav-item" href="Teacher_IEP.html">
+                    <i class="fa-solid fa-file-circle-plus"></i>
+                    <span>IEP Materials</span>
+                </a>
+                <a class="teacher-nav-item" href="Teacher_learners.html">
+                    <i class="fa-solid fa-users"></i>
+                    <span>My Learners</span>
+                </a>
+                <a class="teacher-nav-item" href="Teacher_report.html">
+                    <i class="fa-solid fa-chart-column"></i>
+                    <span>Reports</span>
+                </a>
+                <a class="teacher-nav-item" href="Teacher_settings.html">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            <div class="teacher-sidebar-footer">
+                <div class="teacher-profile">
+                    <div class="teacher-avatar" id="teacher-avatar-letter">M</div>
+                    <div class="teacher-info">
+                        <span class="teacher-name" id="teacher-name-sidebar">Teacher</span>
+                        <span class="teacher-role">SPED Teacher</span>
+                    </div>
+                </div>
+                <a class="teacher-signout-btn" href="#" id="teacher-signout-btn" onclick="var _id=sessionStorage.getItem('admin_id');fetch('../ADMIN_FILES/ADMIN_BACKEND/logout.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'admin_id='+encodeURIComponent(_id||'')}).finally(function(){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html';});return false;">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Sign Out</span>
+                </a>
+            </div>
+        </aside>
+        <!-- MAIN CONTENT -->
+        <main class="teacher-main-content">
+            <!-- TOP BAR -->
+            <header class="teacher-topbar">
+                <div>
+                    <h1 class="teacher-greeting" id="teacher-greeting">Good morning, Teacher 👋</h1>
+                    <p class="teacher-greeting-sub" id="teacher-greeting-sub"></p>
+                </div>
+                <div class="teacher-topbar-right">
+                    
+                    <a class="teacher-notif-btn" href="Teacher_notif.html">
+                        <i class="fa-regular fa-bell"></i>
+                        <span class="teacher-notif-badge"></span>
+                    </a>
+                </div>
+            </header>
+            <!-- WELCOME BANNER -->
+            <section class="teacher-welcome-banner">
+                <div class="teacher-welcome-left">
+                    <div class="teacher-welcome-avatar">
+                        <div class="teacher-welcome-avatar-inner" id="welcome-avatar-wrap">
+                            <span id="welcome-avatar-initial">M</span>
+                        </div>
+                        <span class="teacher-online-dot"></span>
+                    </div>
+                    <div class="teacher-welcome-text">
+               <h2><span id="dashboard-teacher-name"><strong>[Full Name Here]</strong></span></h2>
+                    <p>Special Education Teacher</p>
+                </div>
+                </div>
+                <div class="teacher-welcome-stat">
+                    <i class="fa-solid fa-users teacher-stat-icon"></i>
+                    <div>
+                        <span class="teacher-stat-number" id="dashboard-assigned-learners">0</span>
+                        <span class="teacher-stat-label">Assigned Learners</span>
+                    </div>
+                </div>
+            </section>
+            <!-- DASHBOARD GRID -->
+            <div class="teacher-dashboard-grid">
+                <!-- LEFT COLUMN: Learning Activity Plan + Tasks + Recent Activity -->
+                <div class="teacher-left-col">
+                    <!-- LEARNING ACTIVITY PLAN -->
+                    <section class="teacher-plan-section">
+                        <h3 class="teacher-section-title">Learning Activity Plan</h3>
+                        <div class="teacher-plan-grid">
+                            <div class="teacher-plan-card">
+                                <span class="teacher-grading-badge badge-blue">First Grading</span>
+                                <ul class="teacher-plan-items">
+                                    <li>Cognitive Development</li>
+                                    <li>Communication Skills</li>
+                                    <li>Fine Motor Skills</li>
+                                    <li>Attention &amp; Routine</li>
+                                </ul>
+                            </div>
+                            <div class="teacher-plan-card">
+                                <span class="teacher-grading-badge badge-pink">Second Grading</span>
+                                <ul class="teacher-plan-items">
+                                    <li>Social Skills</li>
+                                    <li>Emotional Regulation</li>
+                                    <li>Gross Motor Skills</li>
+                                    <li>Behavior Support</li>
+                                </ul>
+                            </div>
+                            <div class="teacher-plan-card">
+                                <span class="teacher-grading-badge badge-orange">Third Grading</span>
+                                <ul class="teacher-plan-items">
+                                    <li>Life Skills</li>
+                                    <li>Self-Help Skills</li>
+                                    <li>Functional Communication</li>
+                                    <li>Evaluation &amp; Progress Monitoring</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </section>
+                    <!-- BOTTOM: Tasks + Recent Activity side by side -->
+                    <div class="teacher-bottom-row">
+                        <!-- TODAY'S TASKS -->
+                        <section class="teacher-panel teacher-tasks-panel">
+                            <div class="teacher-panel-header teacher-tasks-header">
+                                <h3 style="cursor:pointer;" onclick="openTasksModal()">
+                                    <span class="teacher-panel-icon">📋</span>
+                                    My Tasks
+                                </h3>
+                                <div style="display:flex;gap:8px;align-items:center;">
+                                    <span class="teacher-task-count-badge" id="teacher-task-count"></span>
+                                    <button class="teacher-task-add-btn" onclick="openTasksModal()" title="View / add tasks">+</button>
+                                </div>
+                            </div>
+                            <div class="teacher-panel-body" id="teacher-tasks-container"></div>
+                        </section>
+                        <!-- RECENT ACTIVITY -->
+                        <section class="teacher-panel teacher-activity-panel">
+                            <div class="teacher-panel-header teacher-activity-header">
+                                <h3>
+                                    <span class="teacher-panel-icon">⚡</span>
+                                    Recent Activity
+                                </h3>
+                                <a class="teacher-view-all-link" href="Teacher_activies.html">View All</a>
+                            </div>
+                            <div class="teacher-panel-body" id="teacher-activity-container"></div>
+                        </section>
+                    </div><!-- /teacher-bottom-row -->
+                </div><!-- /teacher-left-col -->
+                <!-- RIGHT COLUMN: Student Progress -->
+                <aside class="teacher-progress-panel teacher-panel">
+                    <div class="teacher-panel-header teacher-progress-header">
+                        <h3>
+                            <span class="teacher-icon-circle blue">
+                                <i class="fa-solid fa-graduation-cap"></i>
+                            </span>
+                            Student Progress
+                        </h3>
+                        <a class="teacher-view-all-link" href="Teacher_learners.html">View All</a>
+                    </div>
+                    <div class="teacher-panel-body" id="teacher-student-progress-container"></div>
+                    <div class="teacher-progress-footer" id="teacher-progress-footer"></div>
+                </aside>
+            </div>
+        </main>
+    </div>
+
+    <!-- ===== TASKS MODAL ===== -->
+    <div class="t-modal-overlay" id="tasks-modal" onclick="handleTasksOverlayClick(event)">
+        <div class="t-modal-box">
+            <div class="t-modal-header">
+                <span class="t-modal-title">📋 My Tasks</span>
+                <button class="t-modal-close" type="button" onclick="closeTasksModal()">✕</button>
+            </div>
+            <div class="t-modal-tabs">
+                <button class="t-modal-tab active" type="button" onclick="switchTab(this,'all')">All</button>
+                <button class="t-modal-tab" type="button" onclick="switchTab(this,'todo')">To Do</button>
+                <button class="t-modal-tab" type="button" onclick="switchTab(this,'done')">Done</button>
+                <button class="t-modal-tab t-modal-tab-clear" type="button" onclick="clearDoneTasks()">Clear done</button>
+            </div>
+            <div class="t-modal-body" id="tasks-modal-body"></div>
+            <div class="t-modal-footer">
+                <div class="t-add-row">
+                    <input class="t-add-input" id="task-input" placeholder="Write a new task..." type="text"
+                        onkeydown="if(event.key==='Enter') addTask()" />
+                    <button class="t-add-btn" type="button" onclick="addTask()">Add</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var currentTaskFilter = 'all';
+
+        function getCurrentTeacherId() {
+            return parseInt(sessionStorage.getItem('teacher_id') || '1');
+        }
+
+        function applyProfilePic() {
+            var pic = sessionStorage.getItem('teacher_profile_pic');
+            var wrap = document.getElementById('welcome-avatar-wrap');
+            var sidebarAvatar = document.getElementById('teacher-avatar-letter');
+            if (pic) {
+                if (wrap) wrap.innerHTML = '<img src="' + pic + '" alt="Profile" class="welcome-avatar-img" />';
+                if (sidebarAvatar) {
+                    sidebarAvatar.innerHTML = '<img src="' + pic + '" alt="Profile" class="sidebar-avatar-img" />';
+                    sidebarAvatar.style.background = 'transparent';
+                    sidebarAvatar.style.padding = '0';
+                    sidebarAvatar.style.overflow = 'hidden';
+                }
+            } else {
+                var name = sessionStorage.getItem('teacher_name') || 'Teacher';
+                var initial = name.trim().charAt(0).toUpperCase();
+                var initialEl = document.getElementById('welcome-avatar-initial');
+                if (initialEl) initialEl.textContent = initial;
+                if (sidebarAvatar) sidebarAvatar.textContent = initial;
+            }
+        }
+
+        function initDefaults() {
+            var name = sessionStorage.getItem('teacher_name') || 'Teacher';
+            var now = new Date();
+            var opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            var dateStr = now.toLocaleDateString('en-US', opts);
+            var hour = now.getHours();
+            var tod = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+            document.getElementById('teacher-greeting').textContent = 'Good ' + tod + ', ' + name + ' 👋';
+            document.getElementById('teacher-greeting-sub').textContent = dateStr;
+            document.getElementById('dashboard-teacher-name').textContent = name;
+            document.getElementById('teacher-name-sidebar').textContent = name;
+            document.getElementById('teacher-avatar-letter').textContent = name.trim().charAt(0).toUpperCase();
+            applyProfilePic();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initDefaults();
+            loadTeacherProfile();
+            loadDashboardStats();
+        });
+
+        function loadTeacherProfile() {
+            var teacherId = getCurrentTeacherId();
+            var formData = new FormData();
+            formData.append('teacher_id', teacherId);
+            fetch('TEACHER_BACKEND/teacher_get_profile.php', { method: 'POST', body: formData })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (!data.success || !data.teacher) return;
+                    var t = data.teacher;
+                    sessionStorage.setItem('teacher_id', t.id);
+                    sessionStorage.setItem('teacher_name', t.name);
+                    sessionStorage.setItem('teacher_email', t.email);
+                    sessionStorage.setItem('teacher_school', t.schoolName);
+
+                    document.getElementById('teacher-avatar-letter').textContent = t.avatarLetter;
+                    document.getElementById('teacher-name-sidebar').textContent = t.name;
+                    document.getElementById('dashboard-teacher-name').textContent = t.name || 'Teacher';
+                    if (t.profilePhoto) sessionStorage.setItem('teacher_profile_pic', t.profilePhoto);
+
+                    var now = new Date();
+                    var hour = now.getHours();
+                    var tod = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+                    var firstName = t.firstName || t.name.split(' ')[0];
+                    document.getElementById('teacher-greeting').textContent = 'Good ' + tod + ', ' + firstName + ' 👋';
+
+                    var opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                    var dateStr = now.toLocaleDateString('en-US', opts);
+                    document.getElementById('teacher-greeting-sub').textContent = t.schoolName ? dateStr + ' · ' + t.schoolName : dateStr;
+
+                    applyProfilePic();
+                })
+                .catch(function() {});
+        }
+
+        function loadDashboardStats() {
+            var teacherId = getCurrentTeacherId();
+            fetch('TEACHER_BACKEND/teacher_dashboard_stats.php?teacher_id=' + teacherId)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    document.getElementById('dashboard-assigned-learners').textContent = data.assigned_learners || 0;
+                    renderRecentActivities(data.recent_activities || []);
+                    renderTodaysTasks(data.today_tasks || []);
+                    renderStudentProgress(data.student_progress || [], data.assigned_learners || 0);
+                })
+                .catch(function() {});
+        }
+
+        // ── RECENT ACTIVITY ──────────────────────────────────────────────
+        var dotMap = { publish: 'dot-green', draft: 'dot-muted', enroll: 'dot-orange', score: 'dot-pink' };
+
+        function renderRecentActivities(activities) {
+            var container = document.getElementById('teacher-activity-container');
+            if (!activities || activities.length === 0) {
+                container.innerHTML = '<div class="teacher-empty-state"><div class="tds-icon">⚡</div>No recent activity yet</div>';
+                return;
+            }
+            container.innerHTML = activities.map(function(a) {
+                var dc = dotMap[a.type] || '';
+                return '<div class="teacher-activity-item">'
+                    + '<span class="teacher-activity-dot ' + dc + '"></span>'
+                    + '<div class="teacher-activity-text">'
+                    + '<p class="teacher-activity-title">' + escHtml(a.title) + '</p>'
+                    + '<p class="teacher-activity-time">' + getTimeAgo(new Date(a.date)) + '</p>'
+                    + '</div></div>';
+            }).join('');
+        }
+
+        // ── TODAY'S TASKS (dashboard mini-list) ─────────────────────────
+        function renderTodaysTasks(tasks) {
+            var container = document.getElementById('teacher-tasks-container');
+            var badge = document.getElementById('teacher-task-count');
+            var pending = (tasks || []).filter(function(t) { return !t.is_done; });
+            badge.textContent = pending.length ? pending.length + ' pending' : 'All done';
+
+            if (!tasks || tasks.length === 0) {
+                container.innerHTML = '<div class="teacher-empty-state"><div class="tds-icon">✅</div>No tasks yet. Tap + to add one!</div>';
+                return;
+            }
+            var preview = tasks.slice(0, 4);
+            var html = preview.map(function(t) {
+                return '<div class="teacher-task-mini" onclick="quickToggleTask(' + t.id + ',this)">'
+                    + '<div class="teacher-task-mini-cb' + (t.is_done ? ' done' : '') + '"></div>'
+                    + '<span class="teacher-task-mini-text' + (t.is_done ? ' done' : '') + '">' + escHtml(t.title) + '</span>'
+                    + '</div>';
+            }).join('');
+            if (tasks.length > 4) {
+                html += '<button class="teacher-tasks-viewall" type="button" onclick="openTasksModal()">View all ' + tasks.length + ' tasks →</button>';
+            }
+            container.innerHTML = html;
+        }
+
+        // ── STUDENT PROGRESS CARDS ───────────────────────────────────────
+        function renderStudentProgress(students, totalCount) {
+            var container = document.getElementById('teacher-student-progress-container');
+            var footer = document.getElementById('teacher-progress-footer');
+            if (!students || students.length === 0) {
+                container.innerHTML = '<div class="teacher-empty-state"><div class="tds-icon">🎓</div>No learners enrolled yet</div>';
+                if (footer) footer.innerHTML = '';
+                return;
+            }
+            container.innerHTML = students.map(function(s) {
+                var scoreHtml = (s.last_score !== null && s.last_score !== undefined)
+                    ? '<span class="teacher-prog-score">' + s.last_score + '%</span>'
+                    : '<span class="teacher-prog-score score-none">No score</span>';
+                var acts = s.activity_count ? s.activity_count + ' activit' + (s.activity_count === 1 ? 'y' : 'ies') : '';
+                var sub = [s.condition || 'Student', acts].filter(Boolean).join(' · ');
+                return '<div class="teacher-progress-card">'
+                    + '<div class="teacher-prog-avatar">' + escHtml(s.initials) + '</div>'
+                    + '<div class="teacher-prog-info">'
+                    + '<div class="teacher-prog-name">' + escHtml(s.name) + '</div>'
+                    + '<div class="teacher-prog-sub">' + escHtml(sub) + '</div>'
+                    + '</div>'
+                    + scoreHtml
+                    + '</div>';
+            }).join('');
+            if (footer) {
+                var active = students.filter(function(s) { return s.status === 'active'; }).length;
+                footer.innerHTML = '<span class="teacher-prog-footer-txt">' + active + ' of ' + totalCount + ' learners active</span>';
+            }
+        }
+
+        // ── QUICK TOGGLE (from dashboard panel) ─────────────────────────
+        function quickToggleTask(taskId, el) {
+            var tid = getCurrentTeacherId();
+            var cb = el.querySelector('.teacher-task-mini-cb');
+            var txt = el.querySelector('.teacher-task-mini-text');
+            var isDone = cb.classList.contains('done') ? 0 : 1;
+            cb.classList.toggle('done', !!isDone);
+            if (txt) txt.classList.toggle('done', !!isDone);
+            var body = 'action=toggle&task_id=' + taskId + '&is_done=' + isDone + '&teacher_id=' + tid;
+            fetch('TEACHER_BACKEND/teacher_tasks.php?teacher_id=' + tid, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body
+            }).then(function() { loadDashboardStats(); }).catch(function() {});
+        }
+
+        // ── TASKS MODAL ──────────────────────────────────────────────────
+        function openTasksModal() {
+            document.getElementById('tasks-modal').classList.add('open');
+            loadTasks(currentTaskFilter);
+            setTimeout(function() { document.getElementById('task-input').focus(); }, 180);
+        }
+
+        function closeTasksModal() {
+            document.getElementById('tasks-modal').classList.remove('open');
+            loadDashboardStats();
+        }
+
+        function handleTasksOverlayClick(e) {
+            if (e.target === document.getElementById('tasks-modal')) closeTasksModal();
+        }
+
+        function switchTab(btn, filter) {
+            document.querySelectorAll('.t-modal-tab').forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            currentTaskFilter = filter;
+            loadTasks(filter);
+        }
+
+        function loadTasks(filter) {
+            var tid = getCurrentTeacherId();
+            fetch('TEACHER_BACKEND/teacher_tasks.php?teacher_id=' + tid + '&action=get&filter=' + (filter || 'all'))
+                .then(function(r) { return r.json(); })
+                .then(function(data) { if (data.success) renderTasksModal(data.tasks); })
+                .catch(function() {});
+        }
+
+        function renderTasksModal(tasks) {
+            var body = document.getElementById('tasks-modal-body');
+            if (!tasks || tasks.length === 0) {
+                body.innerHTML = '<div class="teacher-empty-state" style="padding:32px 16px;"><div class="tds-icon">📋</div>Nothing here. Add a task below!</div>';
+                return;
+            }
+            body.innerHTML = tasks.map(function(t) {
+                var done = t.is_done == 1;
+                return '<div class="t-task-item' + (done ? ' done-item' : '') + '" id="t-task-' + t.id + '">'
+                    + '<div class="t-task-cb' + (done ? ' checked' : '') + '" onclick="toggleTask(' + t.id + ',' + (done ? 0 : 1) + ')"></div>'
+                    + '<span class="t-task-text' + (done ? ' struck' : '') + '">' + escHtml(t.task_text) + '</span>'
+                    + '<button class="t-task-del" type="button" onclick="deleteTask(' + t.id + ')" title="Delete">✕</button>'
+                    + '</div>';
+            }).join('');
+        }
+
+        function addTask() {
+            var input = document.getElementById('task-input');
+            var text = (input.value || '').trim();
+            if (!text) { input.focus(); return; }
+            var tid = getCurrentTeacherId();
+            input.value = '';
+            input.focus();
+            fetch('TEACHER_BACKEND/teacher_tasks.php?teacher_id=' + tid, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'action=create&task_text=' + encodeURIComponent(text) + '&teacher_id=' + tid
+            }).then(function(r) { return r.json(); })
+              .then(function() { loadTasks(currentTaskFilter); })
+              .catch(function() {});
+        }
+
+        function toggleTask(taskId, newDone) {
+            var tid = getCurrentTeacherId();
+            fetch('TEACHER_BACKEND/teacher_tasks.php?teacher_id=' + tid, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'action=toggle&task_id=' + taskId + '&is_done=' + newDone + '&teacher_id=' + tid
+            }).then(function(r) { return r.json(); })
+              .then(function() { loadTasks(currentTaskFilter); })
+              .catch(function() {});
+        }
+
+        function deleteTask(taskId) {
+            var tid = getCurrentTeacherId();
+            fetch('TEACHER_BACKEND/teacher_tasks.php?teacher_id=' + tid, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'action=delete&task_id=' + taskId + '&teacher_id=' + tid
+            }).then(function(r) { return r.json(); })
+              .then(function() { loadTasks(currentTaskFilter); })
+              .catch(function() {});
+        }
+
+        function clearDoneTasks() {
+            var tid = getCurrentTeacherId();
+            fetch('TEACHER_BACKEND/teacher_tasks.php?teacher_id=' + tid, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'action=clear_done&teacher_id=' + tid
+            }).then(function(r) { return r.json(); })
+              .then(function() { loadTasks(currentTaskFilter); })
+              .catch(function() {});
+        }
+
+        // ── UTILITIES ────────────────────────────────────────────────────
+        function getTimeAgo(date) {
+            var now = new Date();
+            var s = Math.floor((now - date) / 1000);
+            if (s < 60) return 'just now';
+            if (s < 3600) return Math.floor(s / 60) + 'm ago';
+            if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+            return Math.floor(s / 86400) + 'd ago';
+        }
+
+        function escHtml(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+    </script>
+</body>
+
+</html>

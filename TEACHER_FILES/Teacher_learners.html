@@ -1,0 +1,547 @@
+﻿<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
+    <title>My Learners – SPED ALM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
+    <link href="TEACHER_CSS/Teacher_learners.css?v=2" rel="stylesheet" />
+</head>
+
+<body>
+<div id="spedLoading" style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 60%,#2563eb 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .5s ease;pointer-events:all;">
+  <img src="../ASSETS/logo.png" alt="SPED ALM" onerror="this.style.display='none'" style="width:88px;height:88px;border-radius:22px;background:#fff;padding:6px;box-shadow:0 10px 36px rgba(0,0,0,.35);animation:spedLdPulse 2s ease-in-out infinite;">
+  <p style="color:#fff;font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;margin:0;letter-spacing:1px;text-shadow:0 2px 8px rgba(0,0,0,.2);">SPED ALM</p>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite 0s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .18s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .36s;"></span>
+  </div>
+  <p style="color:rgba(255,255,255,.65);font-family:'Poppins',sans-serif;font-size:13px;font-weight:400;margin:0;">Loading, please wait...</p>
+</div>
+<style>
+@keyframes spedLdBounce{0%,80%,100%{transform:translateY(0);opacity:.5}40%{transform:translateY(-16px);opacity:1}}
+@keyframes spedLdPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+</style>
+<script>
+(function(){
+  function hideLoader(){
+    var e=document.getElementById('spedLoading');
+    if(!e) return;
+    e.style.opacity='0';
+    e.style.pointerEvents='none';
+    setTimeout(function(){ if(e.parentNode) e.parentNode.removeChild(e); }, 520);
+  }
+  if(document.readyState==='complete'){ setTimeout(hideLoader,200); }
+  else { window.addEventListener('load', function(){ setTimeout(hideLoader,200); }); }
+})();
+</script>
+    <div class="teacher-app-wrapper">
+        <!-- SIDEBAR -->
+        <aside class="teacher-sidebar">
+            <div class="teacher-sidebar-logo">
+                <img alt="SPED ALM Logo" class="teacher-sidebar-logo-img" src="../ASSETS/logo.png" />
+                <div>
+                    <span class="teacher-sidebar-title">SPED ALM</span>
+                    <span class="teacher-sidebar-sub">Teacher Portal</span>
+                </div>
+            </div>
+            <nav class="teacher-sidebar-nav">
+                <a class="teacher-nav-item" href="Teacher_dashboard.html">
+                    <i class="fa-solid fa-table-cells-large"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a class="teacher-nav-item" href="Teacher_IEP.html">
+                    <i class="fa-solid fa-file-circle-plus"></i>
+                    <span>IEP Materials</span>
+                </a>
+                <a class="teacher-nav-item active" href="Teacher_learners.html">
+                    <i class="fa-solid fa-users"></i>
+                    <span>My Learners</span>
+                    <i class="fa-solid fa-chevron-right teacher-nav-arrow"></i>
+                </a>
+                <a class="teacher-nav-item" href="Teacher_report.html">
+                    <i class="fa-solid fa-chart-column"></i>
+                    <span>Reports</span>
+                </a>
+                <a class="teacher-nav-item" href="Teacher_settings.html">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            <div class="teacher-sidebar-footer">
+                <div class="teacher-profile">
+                    <div class="teacher-avatar" id="teacher-avatar-letter">M</div>
+                    <div>
+                        <span class="teacher-name" id="teacher-name-sidebar">Teacher</span>
+                        <span class="teacher-role">SPED Teacher</span>
+                    </div>
+                </div>
+                <a class="teacher-signout-btn" href="#" id="teacher-signout-btn" onclick="var _id=sessionStorage.getItem('admin_id');fetch('../ADMIN_FILES/ADMIN_BACKEND/logout.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'admin_id='+encodeURIComponent(_id||'')}).finally(function(){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html';});return false;">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Sign Out</span>
+                </a>
+            </div>
+        </aside>
+        <!-- MAIN CONTENT -->
+        <main class="teacher-main-content">
+            <header class="teacher-topbar">
+                <div>
+                    <h1 class="teacher-page-title">My Learners</h1>
+                    <p class="teacher-page-sub">View and manage your assigned students</p>
+                </div>
+                <a class="teacher-notif-btn" href="Teacher_notif.html">
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="teacher-notif-badge"></span>
+                </a>
+            </header>
+            <hr class="teacher-divider" />
+            <!-- STAT CARDS -->
+            <div class="teacher-stats-container">
+                <div class="teacher-stat-card teacher-stat-orange">
+                    <span class="teacher-stat-num" id="total-students">0</span>
+                    <span class="teacher-stat-label">Students</span>
+                </div>
+                <div class="teacher-stat-card teacher-stat-pink">
+                    <span class="teacher-stat-num" id="active-learners">0</span>
+                    <span class="teacher-stat-label">Active Learners</span>
+                </div>
+                <div class="teacher-stat-card teacher-stat-green">
+                    <span class="teacher-stat-title">My Section</span>
+                    <span class="teacher-stat-name" id="teacher-section">—</span>
+                </div>
+            </div>
+            <!-- TOOLBAR -->
+            <div class="teacher-toolbar">
+                <div class="teacher-status-dropdown">
+                    <select class="teacher-status-select" id="teacher-statusFilter" name="teacher_statusfilter">
+                        <option value="">Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                    <i class="fa-solid fa-chevron-down teacher-sel-chevron"></i>
+                </div>
+                <div class="teacher-search-wrap">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input id="teacher-searchInput" name="teacher_searchinput" placeholder="Search student or parent..."
+                        type="text" />
+                </div>
+                <button class="btn-search" onclick="filterTable()" type="button">Search</button>
+                <button class="btn-add" onclick="openModal()" type="submit">+ Add Student</button>
+            </div>
+            <!-- TABLE -->
+            <div class="teacher-table-container">
+                <table id="teacher-learnersTable">
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Age</th>
+                            <th>Parent Name</th>
+                            <th>Contact</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Students will be loaded here by JavaScript -->
+                    </tbody>
+                </table>
+                <div class="teacher-pagination">
+                    <button class="teacher-pg-text" type="button">« Prev</button>
+                    <button class="teacher-current" type="button">1</button>
+                    <button type="button">2</button>
+                    <button class="teacher-pg-text" type="button">Next »</button>
+                </div>
+            </div>
+        </main>
+    </div>
+    <!-- ENROLL STUDENT MODAL -->
+    <div class="teacher-modal-overlay hidden" id="teacher-addModal">
+        <div class="teacher-modal teacher-modal--enroll">
+
+            <!-- ── Header ── -->
+            <div class="enroll-modal-header">
+                <div>
+                    <h2 class="teacher-modal-title">Enroll a Learner</h2>
+                    <p class="teacher-modal-sub">Select a student from the list, then fill in the enrollment details</p>
+                </div>
+                <button class="teacher-modal-close enroll-close-btn" onclick="closeModal()" type="button">×</button>
+            </div>
+
+            <!-- ── Two-column body ── -->
+            <div class="enroll-modal-body">
+
+                <!-- LEFT: Student Selection -->
+                <div class="enroll-left-col">
+                    <div class="enroll-col-title">
+                        <i class="fa-solid fa-users"></i>
+                        Available Students
+                        <span class="enroll-student-count" id="enroll-student-count">—</span>
+                    </div>
+                    <div class="enroll-search-wrap">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="enroll-search-input" placeholder="Search students…" oninput="filterPickerList()" />
+                    </div>
+                    <div class="student-picker-list enroll-picker-list" id="student-picker-list">
+                        <div class="picker-empty"><i class="fa-solid fa-spinner fa-spin"></i>&nbsp; Loading…</div>
+                    </div>
+                </div>
+
+                <!-- RIGHT: Enrollment Form -->
+                <div class="enroll-right-col">
+                    <div class="enroll-col-title" style="margin-bottom:14px">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                        Enrollment Information
+                    </div>
+
+                    <!-- Selected-student indicator -->
+                    <div class="enroll-selected-info" id="enroll-selected-info">
+                        <div class="enroll-selected-empty" id="enroll-selected-empty">
+                            <i class="fa-regular fa-hand-pointer"></i>
+                            <span>Select a student on the left to begin</span>
+                        </div>
+                        <div class="enroll-selected-pill" id="enroll-selected-pill" style="display:none">
+                            <div class="enroll-pill-avatar" id="enroll-pill-avatar">—</div>
+                            <div class="enroll-pill-info">
+                                <span class="enroll-pill-name" id="selected-student-name">—</span>
+                                <span class="enroll-pill-sub" id="enroll-pill-condition">—</span>
+                            </div>
+                            <i class="fa-solid fa-circle-check enroll-pill-check"></i>
+                        </div>
+                    </div>
+
+                    <hr class="teacher-modal-divider" style="margin:14px 0 16px" />
+
+                    <!-- Scrollable form fields -->
+                    <div class="enroll-form-scroll">
+                        <p class="teacher-section-label" style="margin-bottom:12px">
+                            Additional Info <span style="font-weight:400;text-transform:none;letter-spacing:0">(Optional)</span>
+                        </p>
+                        <div class="teacher-form-row">
+                            <div class="teacher-form-group">
+                                <label>Age</label>
+                                <input id="enroll-age" min="1" max="30" placeholder="e.g. 10" type="number" />
+                            </div>
+                            <div class="teacher-form-group">
+                                <label>Assigned Section</label>
+                                <input id="enroll-section" type="text" readonly
+                                    title="Assigned Section" placeholder="—"
+                                    class="enroll-section-readonly" />
+                            </div>
+                        </div>
+
+                        <hr class="teacher-modal-divider" style="margin:4px 0 16px" />
+                        <p class="teacher-section-label" style="margin-bottom:12px">Parent / Guardian</p>
+
+                        <div class="teacher-form-row">
+                            <div class="teacher-form-group">
+                                <label>Parent Name</label>
+                                <input id="enroll-parent-name" placeholder="e.g. Maria De Leon" type="text" />
+                            </div>
+                            <div class="teacher-form-group">
+                                <label>Contact Number</label>
+                                <input id="enroll-parent-phone" placeholder="e.g. 09XX XXX XXXX" type="text" />
+                            </div>
+                        </div>
+                        <div class="teacher-form-row">
+                            <div class="teacher-form-group">
+                                <label>Email Address</label>
+                                <input id="enroll-parent-email" placeholder="e.g. maria@email.com" type="email" />
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Footer ── -->
+            <div class="enroll-modal-footer">
+                <button class="btn-cancel" onclick="closeModal()" type="button">Cancel</button>
+                <button class="btn-enroll" id="btn-enroll-submit" disabled onclick="enrollStudent()" type="button">
+                    <i class="fa-solid fa-user-plus"></i> Enroll Student
+                </button>
+            </div>
+
+        </div>
+    </div>
+    <script>
+        var allStudents = [];
+        var selectedStudentData = null;
+        var availableStudentsRaw = [];   // raw data for client-side filtering
+        var TEACHER_ID = parseInt(sessionStorage.getItem('teacher_id') || '1');
+
+        /* ── Sidebar ── */
+        function _applyTeacherPhoto(pic) {
+            var el = document.getElementById('teacher-avatar-letter');
+            if (!el || !pic) return;
+            el.textContent = ''; el.style.cssText = 'background:transparent;padding:0';
+            el.innerHTML = '<img src="' + pic + '" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;" />';
+        }
+        function loadSidebar() {
+            var fd = new FormData(); fd.append('teacher_id', TEACHER_ID);
+            fetch('TEACHER_BACKEND/teacher_get_profile.php', { method: 'POST', body: fd })
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    if (d.success && d.teacher) {
+                        document.getElementById('teacher-avatar-letter').textContent = d.teacher.avatarLetter;
+                        document.getElementById('teacher-name-sidebar').textContent = d.teacher.name;
+                        sessionStorage.setItem('teacher_name', d.teacher.name);
+                        var sec = d.teacher.classSection || sessionStorage.getItem('teacher_section') || '';
+                        if (sec) {
+                            document.getElementById('teacher-section').textContent = sec;
+                            sessionStorage.setItem('teacher_section', sec);
+                        }
+                        if (d.teacher.profilePhoto) {
+                            sessionStorage.setItem('teacher_profile_pic', d.teacher.profilePhoto);
+                            _applyTeacherPhoto(d.teacher.profilePhoto);
+                        } else {
+                            _applyTeacherPhoto(sessionStorage.getItem('teacher_profile_pic'));
+                        }
+                    }
+                }).catch(function(){});
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSidebar();
+            loadLearners();
+            loadStats();
+            document.getElementById('teacher-statusFilter').addEventListener('change', filterTable);
+            document.getElementById('teacher-searchInput').addEventListener('keyup', filterTable);
+            document.getElementById('teacher-addModal').addEventListener('click', function(e) {
+                if (e.target === this) closeModal();
+            });
+        });
+
+        // Reload list when teacher switches back to this tab (picks up admin deletions in real time)
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) { loadLearners(); loadStats(); }
+        });
+
+        /* ── Stats ── */
+        function loadStats() {
+            fetch('TEACHER_BACKEND/teacher_stats.php?teacher_id=' + TEACHER_ID)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    document.getElementById('total-students').textContent = data.total_students || 0;
+                    document.getElementById('active-learners').textContent = data.active_students || 0;
+                    var sec = data.section || sessionStorage.getItem('teacher_section') || '';
+                    if (sec) document.getElementById('teacher-section').textContent = sec;
+                    var name = sessionStorage.getItem('teacher_name') || 'Teacher';
+                    document.getElementById('teacher-name-sidebar').textContent = name;
+                    var _av = document.getElementById('teacher-avatar-letter');
+                    if (_av && !_av.querySelector('img')) _av.textContent = name.trim().charAt(0).toUpperCase();
+                }).catch(function(){});
+        }
+
+        /* ── Learners table ── */
+        function loadLearners() {
+            fetch('TEACHER_BACKEND/teacher_list_learners.php?teacher_id=' + TEACHER_ID)
+                .then(function(r) { return r.json(); })
+                .then(function(data) { allStudents = data; renderTable(data); })
+                .catch(function(){});
+        }
+
+        function renderTable(students) {
+            var tbody = document.querySelector('#teacher-learnersTable tbody');
+            if (!students || !students.length) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:28px;color:#94A3B8;">No students enrolled yet</td></tr>';
+                return;
+            }
+            tbody.innerHTML = students.map(function(s) {
+                var disability = s.disability ? ' <span style="font-size:11px;color:#94A3B8;">(' + escHtml(s.disability) + ')</span>' : '';
+                var badgeCls = s.status === 'active' ? 'teacher-badge-active' : 'teacher-badge-inactive';
+                var statusTxt = s.status === 'active' ? 'Active' : 'Inactive';
+                return '<tr>'
+                    + '<td>' + escHtml(s.name) + disability + '</td>'
+                    + '<td>' + escHtml(s.age || '—') + '</td>'
+                    + '<td>' + escHtml(s.parent_name || '—') + '</td>'
+                    + '<td>' + escHtml(s.parent_phone || '—') + '</td>'
+                    + '<td>' + (s.parent_email ? '<a href="mailto:' + escHtml(s.parent_email) + '" style="color:#2563EB;text-decoration:none;font-size:12px;">' + escHtml(s.parent_email) + '</a>' : '<span style="color:#94A3B8;">—</span>') + '</td>'
+                    + '<td><span class="' + badgeCls + '">' + statusTxt + '</span></td>'
+                    + '<td><button class="btn-view" onclick="viewProgress(' + s.id + ')" type="button">View Progress</button></td>'
+                    + '</tr>';
+            }).join('');
+        }
+
+        function filterTable() {
+            var q = document.getElementById('teacher-searchInput').value.toLowerCase();
+            var st = document.getElementById('teacher-statusFilter').value;
+            var filtered = allStudents.filter(function(s) {
+                var matchQ = s.name.toLowerCase().includes(q) || (s.parent_name && s.parent_name.toLowerCase().includes(q));
+                var matchS = !st || s.status === st;
+                return matchQ && matchS;
+            });
+            renderTable(filtered);
+        }
+
+        function viewProgress(studentId) {
+            sessionStorage.setItem('selected_student_id', studentId);
+            window.location.href = 'Teacher_mylearners.html?student_id=' + studentId;
+        }
+
+        /* ── Modal open/close ── */
+        function openModal() {
+            selectedStudentData   = null;
+            availableStudentsRaw  = [];
+
+            document.getElementById('teacher-addModal').classList.remove('hidden');
+            document.getElementById('btn-enroll-submit').disabled = true;
+
+            // Reset search
+            document.getElementById('enroll-search-input').value = '';
+
+            // Reset selected-student pill → show empty hint
+            document.getElementById('enroll-selected-empty').style.display = '';
+            document.getElementById('enroll-selected-pill').style.display  = 'none';
+
+            // Reset form fields
+            ['enroll-age','enroll-parent-name','enroll-parent-phone','enroll-parent-email']
+                .forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
+            var sec = document.getElementById('enroll-section');
+            if (sec) sec.value = sessionStorage.getItem('teacher_section') || '';
+
+            // Show spinner in picker list
+            document.getElementById('student-picker-list').innerHTML =
+                '<div class="picker-empty"><i class="fa-solid fa-spinner fa-spin"></i>&nbsp; Loading…</div>';
+            document.getElementById('enroll-student-count').textContent = '—';
+
+            loadAvailableStudents();
+        }
+
+        function closeModal() {
+            document.getElementById('teacher-addModal').classList.add('hidden');
+            selectedStudentData  = null;
+            availableStudentsRaw = [];
+        }
+
+        /* ── Load available student accounts from admin DB ── */
+        function loadAvailableStudents() {
+            fetch('TEACHER_BACKEND/teacher_available_students.php?teacher_id=' + TEACHER_ID)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    availableStudentsRaw = data || [];
+                    document.getElementById('enroll-student-count').textContent = availableStudentsRaw.length;
+                    renderPickerList(availableStudentsRaw);
+                })
+                .catch(function() {
+                    availableStudentsRaw = [];
+                    document.getElementById('enroll-student-count').textContent = '0';
+                    document.getElementById('student-picker-list').innerHTML =
+                        '<div class="picker-empty">Failed to load student accounts</div>';
+                });
+        }
+
+        /* ── Render student cards into the picker ── */
+        function renderPickerList(data) {
+            var list = document.getElementById('student-picker-list');
+            if (!data || !data.length) {
+                list.innerHTML = '<div class="picker-empty">'
+                    + '<i class="fa-regular fa-face-sad-tear" style="font-size:28px;display:block;margin-bottom:8px;color:#CBD5E1;"></i>'
+                    + 'No registered student accounts found</div>';
+                return;
+            }
+            var selectedId = selectedStudentData ? String(selectedStudentData.admin_id) : null;
+            list.innerHTML = data.map(function(s) {
+                var initial     = (s.first_name || s.full_name || '?').charAt(0).toUpperCase();
+                var condBadge   = s.condition ? '<span class="badge-condition">' + escHtml(s.condition) + '</span>' : '';
+                var enrollBadge = s.enrolled  ? '<span class="badge-enrolled">Enrolled</span>' : '';
+                var isSelected  = selectedId && String(s.admin_id) === selectedId;
+                var cardCls     = 'student-pick-card'
+                    + (s.enrolled  ? ' enrolled'  : '')
+                    + (isSelected  ? ' selected'  : '');
+                var clickAttr   = s.enrolled ? '' :
+                    'onclick="selectStudent(this,\'' + s.admin_id + '\',\'' + escAttr(s.full_name) + '\',\'' + escAttr(s.condition) + '\')"';
+                return '<div class="' + cardCls + '" data-admin-id="' + s.admin_id + '" ' + clickAttr + '>'
+                    + '<div class="student-pick-avatar">' + initial + '</div>'
+                    + '<div class="student-pick-info">'
+                    +   '<div class="student-pick-name">' + escHtml(s.full_name) + '</div>'
+                    +   '<div class="student-pick-email">' + escHtml(s.email) + '</div>'
+                    +   '<div class="student-pick-badges">' + condBadge + enrollBadge + '</div>'
+                    + '</div>'
+                    + '<div class="pick-check"><i class="fa-solid fa-check"></i></div>'
+                    + '</div>';
+            }).join('');
+        }
+
+        /* ── Live search / filter picker list ── */
+        function filterPickerList() {
+            var q = document.getElementById('enroll-search-input').value.toLowerCase().trim();
+            if (!q) { renderPickerList(availableStudentsRaw); return; }
+            var filtered = availableStudentsRaw.filter(function(s) {
+                return s.full_name.toLowerCase().includes(q)
+                    || (s.email     || '').toLowerCase().includes(q)
+                    || (s.condition || '').toLowerCase().includes(q);
+            });
+            renderPickerList(filtered);
+        }
+
+        /* ── Select a student card ── */
+        function selectStudent(card, adminId, name, condition) {
+            document.querySelectorAll('.student-pick-card').forEach(function(c) { c.classList.remove('selected'); });
+            card.classList.add('selected');
+            selectedStudentData = { admin_id: adminId, name: name, condition: condition };
+
+            // Update right-panel pill
+            var initial = (name || '?').trim().charAt(0).toUpperCase();
+            document.getElementById('enroll-pill-avatar').textContent    = initial;
+            document.getElementById('selected-student-name').textContent = name;
+            document.getElementById('enroll-pill-condition').textContent  = condition || 'No condition specified';
+            document.getElementById('enroll-selected-empty').style.display = 'none';
+            document.getElementById('enroll-selected-pill').style.display  = '';
+
+            document.getElementById('btn-enroll-submit').disabled = false;
+        }
+
+        /* ── Submit enrollment ── */
+        function enrollStudent() {
+            if (!selectedStudentData) return;
+            var btn = document.getElementById('btn-enroll-submit');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enrolling…';
+
+            var fd = new FormData();
+            fd.append('teacher_id',       TEACHER_ID);
+            fd.append('admin_account_id',  selectedStudentData.admin_id || 0);
+            fd.append('student_name',      selectedStudentData.name);
+            fd.append('disability_type',   selectedStudentData.condition);
+            fd.append('age',               document.getElementById('enroll-age').value || '0');
+            fd.append('grade_level',       document.getElementById('enroll-section').value || '');
+            fd.append('parent_name',       document.getElementById('enroll-parent-name').value);
+            fd.append('parent_phone',      document.getElementById('enroll-parent-phone').value);
+            fd.append('parent_email',      document.getElementById('enroll-parent-email').value);
+
+            fetch('TEACHER_BACKEND/teacher_add_learner.php', { method: 'POST', body: fd })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        closeModal();
+                        loadLearners();
+                        loadStats();
+                    } else {
+                        alert('Error: ' + (data.message || 'Failed to enroll student'));
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Enroll Student';
+                    }
+                }).catch(function() {
+                    alert('Failed to enroll student. Please try again.');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Enroll Student';
+                });
+        }
+
+        function escHtml(str) {
+            return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+        function escAttr(str) {
+            return String(str || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        }
+    </script>
+</body>
+
+</html>

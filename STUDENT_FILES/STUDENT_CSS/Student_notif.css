@@ -1,0 +1,181 @@
+/* ======================================================
+   SPED ALM — Notifications (Game Mode 3D)
+   Location: STUDENT_CSS/Student_notif.css
+   Same sidebar as the dashboard. Soft pastel theme.
+   ====================================================== */
+
+:root {
+  --font-head: "Fredoka", "Nunito", "Poppins", system-ui, sans-serif;
+  --font-body: "Fredoka", "Poppins", "Inter", system-ui, sans-serif;
+
+  --blue:#2f6fed; --blue-dark:#1b4fb8;
+  --gold:#ffc34d; --gold-dark:#d2920f;
+  --teal:#19a87c; --teal-dark:#0f7556;
+  --purple:#7b6ef0; --purple-dark:#5546c4;
+  --coral:#ff8a5b;
+
+  --ink:#243a5e; --ink-soft:#5d7299; --card:#fff;
+  --r-lg:24px; --r-md:16px;
+}
+
+* { box-sizing:border-box; margin:0; padding:0; }
+
+body {
+  font-family:var(--font-body); color:var(--ink); min-height:100vh; display:flex;
+  background:linear-gradient(180deg,#f5f8ff,#eaf1fc);
+}
+
+
+/* ============================================================
+   SIDEBAR — identical to dashboard
+   ============================================================ */
+.student-sidebar {
+  width:230px; flex:none; padding:22px 16px;
+  display:flex; flex-direction:column;
+  border-radius:0 30px 30px 0;
+  background:linear-gradient(180deg,#2f6fed,#1b4fb8);
+  box-shadow:10px 0 28px rgba(27,79,184,.25);
+  position:sticky; top:0; align-self:flex-start; height:100vh;
+}
+.student-sidebar-logo { display:flex; align-items:center; gap:12px; margin-bottom:18px; padding-bottom:18px; border-bottom:1px solid rgba(255,255,255,.2); }
+.student-sidebar-logo-img { width:46px; height:46px; padding:4px; border-radius:16px; background:#fff; object-fit:contain; box-shadow:0 5px 0 #cdd9ef; }
+.student-sidebar-logo-text { display:flex; flex-direction:column; line-height:1.15; }
+.student-sidebar-title { font-family:var(--font-head); font-weight:800; font-size:18px; color:#fff; }
+.student-sidebar-sub { font-size:12px; font-weight:600; color:#bdd4ff; }
+.student-sidebar-nav { display:flex; flex-direction:column; gap:8px; margin-top:6px; }
+.student-nav-item {
+  display:flex; align-items:center; gap:13px; padding:13px 15px; border-radius:var(--r-md);
+  text-decoration:none; color:#e6f0ff; font-family:var(--font-head); font-weight:700; font-size:15px;
+  transition:transform .12s ease, background .12s ease;
+}
+.student-nav-item i { font-style:normal; }
+.student-nav-item i:first-child { width:22px; font-size:18px; text-align:center; }
+.student-nav-arrow { margin-left:auto; font-size:13px; opacity:.7; }
+.student-nav-item:hover { background:rgba(255,255,255,.12); transform:translateX(4px); }
+.student-nav-item.student-active { background:#fff; color:var(--blue); box-shadow:0 6px 0 #cdd9ef; }
+.student-sidebar-footer { margin-top:auto; display:flex; flex-direction:column; gap:10px; padding-top:18px; border-top:1px solid rgba(255,255,255,.2); }
+.student-sidebar-user { display:flex; align-items:center; gap:11px; padding:12px; border-radius:20px; background:rgba(255,255,255,.14); }
+.student-user-avatar { width:42px; height:42px; flex:none; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--gold); color:#5c3d00; font-family:var(--font-head); font-weight:800; box-shadow:0 5px 0 var(--gold-dark); }
+.student-user-info { display:flex; flex-direction:column; line-height:1.2; }
+.student-user-name { color:#fff; font-weight:700; font-size:14px; }
+.student-user-role { color:#bdd4ff; font-weight:600; font-size:12px; }
+.student-signout-btn { display:flex; align-items:center; gap:11px; padding:11px 15px; border-radius:var(--r-md); text-decoration:none; color:#cfe0ff; font-weight:700; font-size:14px; transition:background .12s ease; }
+.student-signout-btn:hover { background:rgba(255,255,255,.1); }
+
+
+/* ============================================================
+   MAIN
+   ============================================================ */
+.student-main { display:block; flex:1; padding:26px 32px; }
+
+.student-page-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:22px; }
+.student-page-title { font-family:var(--font-head); font-weight:700; font-size:32px; line-height:1; }
+.student-page-sub { margin-top:6px; color:var(--ink-soft); font-weight:500; font-size:14px; }
+.student-page-actions { display:flex; gap:10px; flex-wrap:wrap; }
+.student-action-btn {
+  cursor:pointer; border:none; padding:11px 16px; border-radius:var(--r-md);
+  background:#fff; color:var(--ink); font-family:var(--font-head); font-weight:700; font-size:13px;
+  box-shadow:0 4px 12px rgba(36,58,94,.10); transition:transform .1s ease;
+}
+.student-action-btn:hover { transform:translateY(-1px); }
+.student-action-btn--danger { color:#d6336c; }
+
+
+/* ---- Filter row ---- */
+.student-filter-row { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:18px; }
+.student-filter-tabs { display:flex; gap:10px; flex-wrap:wrap; }
+.student-ftab {
+  cursor:pointer; border:none; padding:11px 20px; border-radius:999px;
+  background:#fff; color:var(--ink-soft); font-family:var(--font-head); font-weight:600; font-size:14px;
+  box-shadow:0 3px 8px rgba(36,58,94,.08); transition:transform .1s ease;
+}
+.student-ftab:hover { transform:translateY(-1px); }
+.student-ftab.student-active { background:var(--blue); color:#fff; box-shadow:0 4px 12px rgba(47,111,237,.30); }
+.student-mark-all-btn {
+  cursor:pointer; border:none; padding:11px 18px; border-radius:var(--r-md);
+  background:#eef4ff; color:var(--blue); font-family:var(--font-head); font-weight:700; font-size:13px;
+  transition:background .12s ease;
+}
+.student-mark-all-btn:hover { background:#e2ecfd; }
+
+
+/* ---- Notification list ---- */
+.student-notif-list { display:flex; flex-direction:column; gap:14px; }
+
+.notif-item {
+  display:flex; align-items:flex-start; gap:16px;
+  padding:18px 20px; border-radius:var(--r-lg); background:var(--card);
+  box-shadow:0 8px 20px rgba(36,58,94,.08);
+  transition:transform .14s ease, box-shadow .14s ease;
+}
+.notif-item:hover { transform:translateY(-2px); box-shadow:0 12px 26px rgba(36,58,94,.12); }
+.notif-item.unread {
+  background:#f3f8ff;
+  box-shadow:0 8px 20px rgba(47,111,237,.12);
+  border-left:5px solid var(--blue);
+  padding-left:15px;
+}
+
+.student-notif-icon {
+  width:50px; height:50px; flex:none; border-radius:15px;
+  display:flex; align-items:center; justify-content:center; font-size:24px;
+  box-shadow:0 4px 10px rgba(36,58,94,.10);
+}
+.student-notif-icon--blue { background:#e7f0ff; }
+.student-notif-icon--gold { background:#fff3da; }
+.student-notif-icon--purple { background:#eeebfe; }
+.student-notif-icon--green { background:#e6f7ec; }
+
+.student-notif-body { flex:1; min-width:0; }
+.student-notif-row1 { display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+.student-notif-title { font-family:var(--font-head); font-weight:700; font-size:16px; color:var(--ink); }
+.student-notif-time { color:var(--ink-soft); font-weight:600; font-size:12px; flex:none; }
+.student-notif-text { margin-top:4px; color:var(--ink-soft); font-weight:500; font-size:14px; line-height:1.45; }
+
+.mark-read-btn {
+  flex:none; cursor:pointer; border:none; align-self:center;
+  padding:9px 16px; border-radius:12px;
+  background:var(--blue); color:#fff; font-family:var(--font-head); font-weight:700; font-size:13px;
+  transition:transform .08s ease, opacity .12s ease;
+}
+.mark-read-btn:hover { transform:translateY(-1px); }
+.mark-read-btn:disabled { background:#eef2f8; color:var(--ink-soft); cursor:default; }
+
+
+/* ---- Empty state ---- */
+.student-notif-empty {
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+  padding:56px 18px; text-align:center; border-radius:var(--r-lg); background:var(--card);
+  box-shadow:0 8px 20px rgba(36,58,94,.07);
+}
+.student-notif-empty-icon { font-size:54px; animation:float 3.6s ease-in-out infinite; }
+.student-notif-empty-title { font-family:var(--font-head); font-weight:700; font-size:18px; color:var(--ink); }
+.student-notif-empty-desc { max-width:360px; color:var(--ink-soft); font-weight:500; font-size:14px; line-height:1.45; }
+
+
+/* ============================================================
+   ANIMATION
+   ============================================================ */
+@keyframes float { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-6px); } }
+
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width:900px) {
+  body { flex-direction:column; }
+  .student-sidebar { width:100%; flex-direction:row; flex-wrap:wrap; align-items:center; border-radius:0 0 28px 28px; position:static; height:auto; }
+  .student-sidebar-nav { flex-direction:row; flex-wrap:wrap; margin:0; }
+  .student-sidebar-footer { flex-direction:row; margin:0 0 0 auto; }
+  .student-main { padding:20px; }
+  .notif-item { flex-wrap:wrap; }
+  .mark-read-btn { align-self:flex-start; }
+}
+
+
+/* ============================================================
+   ACCESSIBILITY (ASD-friendly)
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation:none !important; transition:none !important; }
+}

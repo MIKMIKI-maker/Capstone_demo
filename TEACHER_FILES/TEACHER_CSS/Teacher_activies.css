@@ -1,0 +1,213 @@
+/* Teacher_activies.css – SPED ALM */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+
+:root {
+    --sidebar-bg: #1E3A8A;
+    --sidebar-w: 260px;
+    --accent: #2563EB;
+    --orange: #F59E0B;
+    --green: #10B981;
+    --red: #EF4444;
+    --text: #1E293B;
+    --muted: #64748B;
+    --bg: #F8F5F2;
+    --white: #FFFFFF;
+    --shadow-sm: 0 2px 8px rgba(0,0,0,.06);
+    --shadow-md: 0 6px 20px rgba(0,0,0,.10);
+    --transition: .25s ease;
+}
+
+body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-serif; height: 100vh; }
+
+/* ── LAYOUT ── */
+.teacher-app-wrapper { display: flex; height: 100vh; overflow: hidden; }
+
+/* ── SIDEBAR ── */
+.teacher-sidebar { width: var(--sidebar-w); background: var(--sidebar-bg); display: flex; flex-direction: column; height: 100vh; overflow-y: auto; flex-shrink: 0; }
+.teacher-sidebar-logo { display: flex; align-items: center; gap: 12px; padding: 26px 20px 22px; border-bottom: 1px solid rgba(255,255,255,.10); }
+.teacher-sidebar-logo-img{
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+    border-radius: 50%; /* bilog */
+    background: transparent;
+}
+.teacher-sidebar-title { display: block; color: #fff; font-weight: 700; font-size: 15px; line-height: 1.2; }
+.teacher-sidebar-sub { display: block; color: rgba(255,255,255,.55); font-size: 11px; }
+.teacher-sidebar-nav { flex: 1; padding: 20px 12px; display: flex; flex-direction: column; gap: 4px; }
+.teacher-nav-item { display: flex; align-items: center; gap: 12px; padding: 13px 16px; border-radius: 12px; color: rgba(255,255,255,.65); text-decoration: none; font-size: 14px; font-weight: 500; transition: var(--transition); }
+.teacher-nav-item i:first-child { font-size: 16px; width: 18px; }
+.teacher-nav-arrow { margin-left: auto; font-size: 11px !important; opacity: 0; transition: var(--transition); }
+.teacher-nav-item:hover { background: rgba(255,255,255,.10); color: #fff; }
+.teacher-nav-item.active { background: rgba(255,255,255,.18); color: #fff; font-weight: 600; }
+.teacher-nav-item.active .teacher-nav-arrow { opacity: 1; }
+.teacher-sidebar-footer { padding: 16px 12px 20px; border-top: 1px solid rgba(255,255,255,.10); display: flex; flex-direction: column; gap: 10px; }
+.teacher-profile { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: rgba(255,255,255,.08); border-radius: 12px; }
+.teacher-avatar { width: 38px; height: 38px; background: var(--orange); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+.teacher-name { display: block; color: #fff; font-size: 13px; font-weight: 600; line-height: 1.2; }
+.teacher-role { display: block; color: rgba(255,255,255,.50); font-size: 11px; }
+.teacher-signout-btn { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px; color: rgba(255,255,255,.55); text-decoration: none; font-size: 13px; font-weight: 500; transition: var(--transition); }
+.teacher-signout-btn:hover { background: rgba(255,255,255,.08); color: #fff; }
+
+/* ── MAIN CONTENT ── */
+.teacher-main-content { flex: 1; padding: 28px 32px 32px; overflow-y: auto; height: 100vh; min-width: 0; }
+
+/* ── TOPBAR ── */
+.teacher-topbar { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; }
+.teacher-page-title { font-size: 24px; font-weight: 700; color: var(--text); }
+.teacher-page-sub { font-size: 13px; color: var(--muted); margin-top: 3px; }
+.teacher-notif-btn {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    background: var(--white);
+    border: 1px solid #E2E8F0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+    color: var(--accent);
+    font-size: 17px;
+}
+
+.teacher-divider { border: none; border-top: 1px solid #E5DDD5; margin-bottom: 20px; }
+
+/* ── SEARCH BAR ── */
+.teacher-search-bar { display: flex; gap: 12px; margin-bottom: 20px; }
+.teacher-search-wrap { display: flex; align-items: center; gap: 10px; background: var(--white); border: 1.5px solid #E2E8F0; border-radius: 30px; padding: 0 18px; flex: 1; box-shadow: var(--shadow-sm); }
+.teacher-search-wrap i { color: var(--muted); font-size: 14px; }
+.teacher-search-wrap input { border: none; outline: none; background: transparent; font-family: 'Poppins', sans-serif; font-size: 13px; padding: 13px 0; width: 100%; color: var(--text); }
+.teacher-search-wrap input::placeholder { color: #94A3B8; }
+.btn-search { background: var(--accent); color: #fff; border: none; border-radius: 14px; padding: 13px 28px; font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: var(--transition); box-shadow: 0 4px 12px rgba(37,99,235,.25); }
+.btn-search:hover { background: #1D4ED8; }
+
+/* ── TABLE CARD ── */
+.teacher-table-card { background: var(--white); border-radius: 18px; border: 1px solid #EDE8E3; overflow: hidden; box-shadow: var(--shadow-sm); margin-bottom: 20px; }
+.teacher-table-info { padding: 14px 22px; font-size: 13px; color: var(--muted); border-bottom: 1px solid #F1F5F9; }
+.teacher-table-info strong { color: var(--text); }
+
+table { width: 100%; border-collapse: collapse; }
+thead th { background: #F8FAFC; padding: 14px 22px; text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); border-bottom: 1px solid #EDE8E3; white-space: nowrap; }
+thead th .teacher-sort-arrow { margin-left: 4px; font-size: 10px; opacity: .6; }
+tbody td { padding: 16px 22px; border-top: 1px solid #F1F5F9; font-size: 13px; color: var(--text); }
+tbody tr:hover { background: #FAFBFF; }
+.teacher-activity-title { font-weight: 700; color: var(--text); }
+
+/* ── CONDITION TAGS ── */
+.teacher-tag { display: inline-flex; align-items: center; padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+.teacher-tag-asd { background: #DBEAFE; color: #1D4ED8; }
+.teacher-tag-id  { background: #FEF3C7; color: #B45309; }
+
+/* ── ACTION BUTTONS ── */
+.teacher-actions-cell { display: flex; gap: 8px; align-items: center; }
+.btn-view { display: inline-flex; align-items: center; gap: 6px; background: var(--white); border: 2px solid var(--accent); color: var(--accent); padding: 8px 18px; border-radius: 12px; font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; transition: var(--transition); }
+.btn-view:hover { background: #EFF6FF; }
+.btn-edit { display: inline-flex; align-items: center; gap: 6px; background: #0D47A1; color: #fff; border: none; padding: 8px 18px; border-radius: 12px; font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; transition: var(--transition); }
+.btn-edit:hover { background: #1565C0; }
+
+/* ── TABLE FOOTER / PAGINATION ── */
+.teacher-table-footer { display: flex; justify-content: space-between; align-items: center; padding: 14px 22px; border-top: 1px solid #F1F5F9; }
+.teacher-table-footer-info { font-size: 13px; color: var(--muted); }
+.teacher-pagination { display: flex; align-items: center; gap: 6px; }
+.teacher-pagination button { border: none; background: #F1F5F9; color: var(--text); padding: 7px 13px; border-radius: 8px; font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: var(--transition); }
+.teacher-pagination button:hover { background: #E2E8F0; }
+.teacher-pagination button.current { background: var(--accent); color: #fff; font-weight: 700; }
+.teacher-pagination .teacher-pg-arrow { background: transparent; color: var(--muted); }
+
+/* ── BACK BUTTON ── */
+.btn-back-iep { display: inline-flex; align-items: center; gap: 8px; background: var(--white); border: 1.5px solid #E2E8F0; color: var(--text); text-decoration: none; padding: 12px 22px; border-radius: 12px; font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 600; transition: var(--transition); box-shadow: var(--shadow-sm); cursor: pointer; }
+.btn-back-iep:hover { background: #F1F5F9; border-color: #CBD5E1; }
+
+/* ── TABS ── */
+.activities-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border-radius: 30px;
+    border: 1.5px solid #E2E8F0;
+    background: var(--white);
+    font-family: 'Poppins', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: var(--shadow-sm);
+}
+
+.tab-btn:hover { background: #F1F5F9; color: var(--text); }
+
+.tab-btn.active {
+    background: #1E3A8A;
+    color: #fff;
+    border-color: #1E3A8A;
+}
+
+.tab-count {
+    background: rgba(255,255,255,.22);
+    color: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    min-width: 22px;
+    text-align: center;
+}
+
+.tab-btn:not(.active) .tab-count        { background: #F1F5F9; color: var(--muted); }
+.tab-btn:not(.active) .tab-count-draft  { background: #FEF3C7; color: #B45309; }
+.tab-btn:not(.active) .tab-count-published { background: #DCFCE7; color: #15803D; }
+
+/* ── STATUS BADGES ── */
+.teacher-tag-draft {
+    background: #FEF3C7;
+    color: #B45309;
+    gap: 5px;
+}
+
+.teacher-tag-published {
+    background: #DCFCE7;
+    color: #15803D;
+    gap: 5px;
+}
+
+/* ── DELETE BUTTON ── */
+.btn-delete {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #FEF2F2;
+    border: 1.5px solid #FECACA;
+    color: #DC2626;
+    padding: 8px 14px;
+    border-radius: 12px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-delete:hover { background: #FEE2E2; border-color: #FCA5A5; }
+
+/* ── EMPTY ROW ── */
+.empty-row {
+    text-align: center;
+    padding: 36px 20px !important;
+    color: var(--muted);
+    font-size: 13.5px;
+}
+
+/* ── DATE CELL ── */
+.date-cell { color: var(--muted); font-size: 12.5px; white-space: nowrap; }

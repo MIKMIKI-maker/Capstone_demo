@@ -1,0 +1,523 @@
+﻿<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
+    <title>Review Activities – SPED ALM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
+    <link href="TEACHER_CSS/Teacher_activies.css" rel="stylesheet" />
+</head>
+
+<body>
+<div id="spedLoading" style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 60%,#2563eb 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .5s ease;pointer-events:all;">
+  <img src="../ASSETS/logo.png" alt="SPED ALM" onerror="this.style.display='none'" style="width:88px;height:88px;border-radius:22px;background:#fff;padding:6px;box-shadow:0 10px 36px rgba(0,0,0,.35);animation:spedLdPulse 2s ease-in-out infinite;">
+  <p style="color:#fff;font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;margin:0;letter-spacing:1px;text-shadow:0 2px 8px rgba(0,0,0,.2);">SPED ALM</p>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite 0s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .18s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .36s;"></span>
+  </div>
+  <p style="color:rgba(255,255,255,.65);font-family:'Poppins',sans-serif;font-size:13px;font-weight:400;margin:0;">Loading, please wait...</p>
+</div>
+<style>
+@keyframes spedLdBounce{0%,80%,100%{transform:translateY(0);opacity:.5}40%{transform:translateY(-16px);opacity:1}}
+@keyframes spedLdPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+</style>
+<script>
+(function(){
+  function hideLoader(){
+    var e=document.getElementById('spedLoading');
+    if(!e) return;
+    e.style.opacity='0';
+    e.style.pointerEvents='none';
+    setTimeout(function(){ if(e.parentNode) e.parentNode.removeChild(e); }, 520);
+  }
+  if(document.readyState==='complete'){ setTimeout(hideLoader,200); }
+  else { window.addEventListener('load', function(){ setTimeout(hideLoader,200); }); }
+})();
+</script>
+    <div class="teacher-app-wrapper">
+        <!-- SIDEBAR -->
+        <aside class="teacher-sidebar">
+            <div class="teacher-sidebar-logo">
+                <img alt="SPED ALM Logo" class="teacher-sidebar-logo-img" src="../ASSETS/logo.png" />
+                <div>
+                    <span class="teacher-sidebar-title">SPED ALM</span>
+                    <span class="teacher-sidebar-sub">Teacher Portal</span>
+                </div>
+            </div>
+            <nav class="teacher-sidebar-nav">
+                <a class="teacher-nav-item" href="Teacher_dashboard.html">
+                    <i class="fa-solid fa-table-cells-large"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a class="teacher-nav-item active" href="Teacher_IEP.html">
+                    <i class="fa-solid fa-file-circle-plus"></i>
+                    <span>IEP Materials</span>
+                    <i class="fa-solid fa-chevron-right teacher-nav-arrow"></i>
+                </a>
+                <a class="teacher-nav-item" href="Teacher_learners.html">
+                    <i class="fa-solid fa-users"></i>
+                    <span>My Learners</span>
+                </a>
+                <a class="teacher-nav-item" href="Teacher_report.html">
+                    <i class="fa-solid fa-chart-column"></i>
+                    <span>Reports</span>
+                </a>
+                <a class="teacher-nav-item" href="Teacher_settings.html">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            <div class="teacher-sidebar-footer">
+                <div class="teacher-profile">
+                    <div class="teacher-avatar" id="teacher-avatar-letter">M</div>
+                    <div>
+                        <span class="teacher-name" id="teacher-name-sidebar">Teacher</span>
+                        <span class="teacher-role">SPED Teacher</span>
+                    </div>
+                </div>
+                <a class="teacher-signout-btn" href="#" id="teacher-signout-btn" onclick="var _id=sessionStorage.getItem('admin_id');fetch('../ADMIN_FILES/ADMIN_BACKEND/logout.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'admin_id='+encodeURIComponent(_id||'')}).finally(function(){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html';});return false;">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Sign Out</span>
+                </a>
+            </div>
+        </aside>
+        <!-- MAIN CONTENT -->
+        <main class="teacher-main-content">
+            <!-- TOPBAR -->
+            <header class="teacher-topbar">
+                <div>
+                    <h1 class="teacher-page-title">Review Activities</h1>
+                    <p class="teacher-page-sub">View and edit personalized IEP learning materials</p>
+                </div>
+            </header>
+            <hr class="teacher-divider" />
+            <!-- SEARCH BAR -->
+            <div class="teacher-search-bar">
+                <div class="teacher-search-wrap">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input id="teacher-searchInput" name="teacher_searchinput" oninput="filterTable()"
+                        placeholder="Search activity, learner, or category..." type="text" />
+                </div>
+                <button class="btn-search" onclick="filterTable()" type="button">Search</button>
+            </div>
+            <!-- TABS -->
+            <div class="activities-tabs">
+                <button class="tab-btn active" id="tab-all" type="button" onclick="switchTab('all')">
+                    All <span class="tab-count" id="count-all">0</span>
+                </button>
+                <button class="tab-btn" id="tab-draft" type="button" onclick="switchTab('draft')">
+                    Drafts <span class="tab-count tab-count-draft" id="count-draft">0</span>
+                </button>
+                <button class="tab-btn" id="tab-published" type="button" onclick="switchTab('published')">
+                    Published <span class="tab-count tab-count-published" id="count-published">0</span>
+                </button>
+            </div>
+
+            <!-- TABLE CARD -->
+            <div class="teacher-table-card">
+                <div class="teacher-table-info">Showing <span id="activity-count">0</span> of <strong id="activity-total">0</strong> activities</div>
+                <table id="teacher-activitiesTable">
+                    <thead>
+                        <tr>
+                            <th>Activity Title <span class="teacher-sort-arrow">↑</span></th>
+                            <th>Type</th>
+                            <th>Learner</th>
+                            <th>Date &amp; Time</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activitiesTableBody">
+                    </tbody>
+                </table>
+                <!-- TABLE FOOTER -->
+                <div class="teacher-table-footer">
+                    <span class="teacher-table-footer-info">Showing <span id="pagination-info">0</span> activities</span>
+                </div>
+            </div>
+            <!-- BACK BUTTON -->
+            <button class="btn-back-iep" onclick="window.location.href='Teacher_IEP.html'" type="button">
+                <i class="fa-solid fa-arrow-left"></i>
+                Back to IEP Materials
+            </button>
+        </main>
+    </div>
+    <script>
+        var allActivities = [];   // combined: backend + localStorage drafts
+        var currentTab = 'all';
+
+        /* ── Sidebar / profile pic ── */
+        function _applyTeacherPhoto(pic) {
+            var el = document.getElementById('teacher-avatar-letter');
+            if (!el || !pic) return;
+            el.textContent = ''; el.style.cssText = 'background:transparent;padding:0';
+            el.innerHTML = '<img src="' + pic + '" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;" />';
+        }
+        function loadSidebar() {
+            var name = sessionStorage.getItem('teacher_name');
+            if (name) {
+                document.getElementById('teacher-avatar-letter').textContent = name.trim().charAt(0).toUpperCase();
+                document.getElementById('teacher-name-sidebar').textContent = name;
+                _applyTeacherPhoto(sessionStorage.getItem('teacher_profile_pic'));
+            } else {
+                var fd = new FormData(); fd.append('teacher_id', TEACHER_ID || sessionStorage.getItem('teacher_id') || 1);
+                fetch('TEACHER_BACKEND/teacher_get_profile.php', { method: 'POST', body: fd })
+                    .then(function(r){ return r.json(); })
+                    .then(function(d){
+                        if (d.success && d.teacher) {
+                            document.getElementById('teacher-avatar-letter').textContent = d.teacher.avatarLetter;
+                            document.getElementById('teacher-name-sidebar').textContent = d.teacher.name;
+                            sessionStorage.setItem('teacher_name', d.teacher.name);
+                            if (d.teacher.profilePhoto) {
+                                sessionStorage.setItem('teacher_profile_pic', d.teacher.profilePhoto);
+                                _applyTeacherPhoto(d.teacher.profilePhoto);
+                            }
+                        }
+                    }).catch(function(){});
+            }
+        }
+
+        /* ── Read drafts from localStorage ── */
+        function getLocalDrafts() {
+            try { return JSON.parse(localStorage.getItem('teacher_drafts') || '[]'); }
+            catch (e) { return []; }
+        }
+
+        /* ── Read published activities from localStorage ── */
+        function getLocalPublished() {
+            try { return JSON.parse(localStorage.getItem('published_activities') || '[]'); }
+            catch (e) { return []; }
+        }
+
+        /* ── Sync un-synced localStorage drafts to DB so admin can see them ── */
+        function syncDraftsToDb() {
+            var _tid = sessionStorage.getItem('teacher_id') || '';
+            if (!_tid) return;
+            var rawDrafts = getLocalDrafts();
+            rawDrafts.forEach(function(d) {
+                if (d.db_draft_id) return; // already synced
+                fetch('TEACHER_BACKEND/teacher_save_draft.php', {
+                    method: 'POST',
+                    body: new URLSearchParams({
+                        teacher_id:     _tid,
+                        activity_title: d.title || 'Untitled Draft',
+                        activity_type:  d.type  || '',
+                        db_draft_id:    0
+                    })
+                }).then(function(r){ return r.json(); }).then(function(resp){
+                    if (resp && resp.success && resp.db_draft_id) {
+                        var _all = [];
+                        try { _all = JSON.parse(localStorage.getItem('teacher_drafts') || '[]'); } catch(e){}
+                        var _idx = _all.findIndex(function(x){ return x.id === d.id; });
+                        if (_idx >= 0) {
+                            _all[_idx].db_draft_id = resp.db_draft_id;
+                            localStorage.setItem('teacher_drafts', JSON.stringify(_all));
+                        }
+                    }
+                }).catch(function(){});
+            });
+        }
+
+        /* ── Load activities: localStorage drafts + localStorage published + backend ── */
+        function loadActivities() {
+            syncDraftsToDb();
+
+            var rawDrafts    = getLocalDrafts();
+            var rawPublished = getLocalPublished();
+
+            var localDrafts = rawDrafts.map(function(d) {
+                return {
+                    id:           d.id,
+                    title:        d.title        || 'Untitled Draft',
+                    type:         d.type         || '—',
+                    learner:      d.learner       || 'ALL',
+                    savedAt:      d.savedAt       || '',
+                    status:       'draft',
+                    templateFile: d.templateFile  || '',
+                    db_draft_id:  d.db_draft_id   || null,
+                    _isLocal:     true
+                };
+            });
+
+            var localPublished = rawPublished.map(function(p) {
+                return {
+                    id:             p.id,
+                    title:          p.title        || 'Untitled Activity',
+                    type:           p.type         || '—',
+                    learner:        p.learner       || 'ALL',
+                    savedAt:        p.publishedAt   || '',
+                    status:         'published',
+                    grading:        p.grading       || '',
+                    deadline:       p.deadline      || '',
+                    templateFile:   '',
+                    db_activity_id: p.db_activity_id || null,
+                    _isLocal:       true
+                };
+            });
+
+            // DB integer IDs already represented by local items
+            var coveredDbIds = new Set();
+            localPublished.forEach(function(p) { if (p.db_activity_id) coveredDbIds.add(String(p.db_activity_id)); });
+            localDrafts.forEach(function(d)    { if (d.db_draft_id)    coveredDbIds.add(String(d.db_draft_id));    });
+
+            // Titles covered by local PUBLISHED items — backend rows with same title are
+            // redundant in the Published tab (local entry is richer: learner, grading, Unpublish)
+            var localPubTitles = new Set(localPublished.map(function(p) { return p.title.trim().toLowerCase(); }));
+
+            function _merge(backendRows) {
+                var backend = (backendRows || []).map(function(a) {
+                    return {
+                        id:       a.id,
+                        title:    a.title         || 'Untitled',
+                        type:     a.activity_type || a.subject || '—',
+                        learner:  '—',
+                        savedAt:  a.created_at    || '',
+                        status:   (a.status || '').toLowerCase() === 'draft' ? 'draft' : 'published',
+                        _isLocal: false
+                    };
+                });
+
+                // Exclude backend rows:
+                // 1. Covered by local DB ID (exact match)
+                // 2. Published rows whose title is already covered by a local published entry
+                //    (avoid showing "—" learner duplicate alongside the richer local entry)
+                var dedupedBackend = backend.filter(function(a) {
+                    if (coveredDbIds.has(String(a.id))) return false;
+                    if (a.status === 'published' && localPubTitles.has(a.title.trim().toLowerCase())) return false;
+                    return true;
+                });
+
+                // allActivities keeps ALL local drafts + ALL local published + filtered backend
+                // Tab filtering and All-tab dedup happen in applyTabAndFilter()
+                allActivities = localDrafts.concat(localPublished).concat(dedupedBackend);
+                applyTabAndFilter();
+            }
+
+            var _tid = sessionStorage.getItem('teacher_id') || '';
+            fetch('TEACHER_BACKEND/teacher_list_activities.php?teacher_id=' + encodeURIComponent(_tid))
+                .then(function(r) { return r.json(); })
+                .then(_merge)
+                .catch(function() { _merge([]); });
+        }
+
+        /* ── Tab switching ── */
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+            document.getElementById('tab-' + tab).classList.add('active');
+            applyTabAndFilter();
+        }
+
+        /* ── Filter by tab + search query ── */
+        function applyTabAndFilter() {
+            var q = document.getElementById('teacher-searchInput').value.toLowerCase();
+
+            var base;
+            if (currentTab === 'draft') {
+                base = allActivities.filter(function(a) { return a.status === 'draft'; });
+            } else if (currentTab === 'published') {
+                base = allActivities.filter(function(a) { return a.status === 'published'; });
+            } else {
+                // All tab: show every item combined (drafts + published, no dedup)
+                base = allActivities;
+            }
+
+            var filtered = base.filter(function(a) {
+                return !q ||
+                       a.title.toLowerCase().includes(q) ||
+                       a.type.toLowerCase().includes(q)  ||
+                       a.learner.toLowerCase().includes(q);
+            });
+
+            updateTabCounts();
+            renderActivities(filtered);
+        }
+
+        function filterTable() { applyTabAndFilter(); }
+
+        /* ── Update tab count badges ── */
+        function updateTabCounts() {
+            var drafts    = allActivities.filter(function(a) { return a.status === 'draft'; }).length;
+            var published = allActivities.filter(function(a) { return a.status === 'published'; }).length;
+            document.getElementById('count-all').textContent       = allActivities.length;
+            document.getElementById('count-draft').textContent     = drafts;
+            document.getElementById('count-published').textContent = published;
+        }
+
+        /* ── Render table rows ── */
+        function renderActivities(activities) {
+            var tbody = document.getElementById('activitiesTableBody');
+
+            if (!activities || !activities.length) {
+                var msg = currentTab === 'draft'
+                    ? 'No drafts saved yet.'
+                    : currentTab === 'published'
+                        ? 'No published activities yet.'
+                        : 'No activities yet.';
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-row">' + esc(msg) + '</td></tr>';
+                document.getElementById('activity-count').textContent = '0';
+                document.getElementById('activity-total').textContent = '0';
+                document.getElementById('pagination-info').textContent = '0';
+                return;
+            }
+
+            tbody.innerHTML = activities.map(function (a) {
+                var statusBadge = a.status === 'draft'
+                    ? '<span class="teacher-tag teacher-tag-draft"><i class="fa-solid fa-pen-to-square"></i> Draft</span>'
+                    : '<span class="teacher-tag teacher-tag-published"><i class="fa-solid fa-circle-check"></i> Published</span>';
+
+                var dateStr = a.savedAt ? formatDate(a.savedAt) : '—';
+
+                var actions;
+                if (a.status === 'draft' && a._isLocal) {
+                    actions = '<button class="btn-edit" onclick="editDraft(\'' + esc(a.id) + '\',\'' + esc(a.templateFile) + '\')" type="button">'
+                            + '<i class="fa-solid fa-pen"></i> Edit</button>'
+                            + '<button class="btn-delete" onclick="deleteDraft(\'' + esc(a.id) + '\')" type="button">'
+                            + '<i class="fa-solid fa-trash"></i> Delete</button>';
+                } else if (a.status === 'published' && a._isLocal) {
+                    actions = '<button class="btn-delete" onclick="deletePublished(\'' + esc(a.id) + '\')" type="button">'
+                            + '<i class="fa-solid fa-trash"></i> Unpublish</button>';
+                } else if (a.status === 'published' && !a._isLocal) {
+                    // Backend-only published: allow direct DB unpublish
+                    actions = '<button class="btn-delete" onclick="deleteBackendPublished(' + a.id + ')" type="button">'
+                            + '<i class="fa-solid fa-trash"></i> Unpublish</button>';
+                } else {
+                    // Backend-only draft: Edit (open matching template) + Delete
+                    var _tmplMap = { 'Matching':'TEMPLATES/Matching_Type_Template.html', 'Sorting':'TEMPLATES/Sorting_Type_Template.html', 'Sequencing':'TEMPLATES/Sequencing_Type_Template.html' };
+                    var _tmpl = _tmplMap[a.type] || '';
+                    actions = (_tmpl ? '<button class="btn-edit" onclick="editBackendDraft(' + a.id + ',\'' + esc(_tmpl) + '\')" type="button"><i class="fa-solid fa-pen"></i> Edit</button>' : '')
+                            + '<button class="btn-delete" onclick="deleteBackendDraft(' + a.id + ')" type="button"><i class="fa-solid fa-trash"></i> Delete</button>';
+                }
+
+                var learnerCell = a.grading
+                    ? esc(a.learner) + ' <span style="color:#64748b;font-size:11px;">(' + esc(a.grading) + ' Grading)</span>'
+                    : esc(a.learner);
+
+                return '<tr>'
+                    + '<td class="teacher-activity-title">' + esc(a.title) + '</td>'
+                    + '<td>' + esc(a.type) + '</td>'
+                    + '<td>' + learnerCell + '</td>'
+                    + '<td class="date-cell">' + dateStr + '</td>'
+                    + '<td>' + statusBadge + '</td>'
+                    + '<td class="teacher-actions-cell">' + actions + '</td>'
+                    + '</tr>';
+            }).join('');
+
+            document.getElementById('activity-count').textContent = activities.length;
+            document.getElementById('activity-total').textContent = allActivities.length;
+            document.getElementById('pagination-info').textContent = activities.length;
+        }
+
+        /* ── Draft actions ── */
+        function editDraft(id, templateFile) {
+            localStorage.setItem('edit_draft_id', id);
+            window.location.href = templateFile + '?draft_id=' + encodeURIComponent(id);
+        }
+
+        function deleteDraft(id) {
+            if (!confirm('Delete this draft? This cannot be undone.')) return;
+            var allDrafts = getLocalDrafts();
+            var target    = allDrafts.find(function(d) { return d.id === id; });
+            var dbId      = target && target.db_draft_id ? target.db_draft_id : null;
+            localStorage.setItem('teacher_drafts', JSON.stringify(allDrafts.filter(function(d) { return d.id !== id; })));
+            if (dbId) {
+                var _tid = sessionStorage.getItem('teacher_id') || '';
+                fetch('TEACHER_BACKEND/teacher_delete_activity.php', {
+                    method: 'POST',
+                    body: new URLSearchParams({ teacher_id: _tid, activity_id: dbId })
+                }).catch(function(){});
+            }
+            loadActivities();
+        }
+
+        /* shared IDB helper for deleting pub_data_ entries */
+        var _idb = (function(){
+            var DB='sped_alm_db', VER=1, ST='blobs';
+            function open(cb){var r=indexedDB.open(DB,VER);r.onupgradeneeded=function(e){e.target.result.createObjectStore(ST);};r.onsuccess=function(e){cb(null,e.target.result);};r.onerror=function(e){cb(e.target.error,null);};}
+            return { del:function(key,cb){open(function(err,db){if(err){cb&&cb(err);return;}var tx=db.transaction(ST,'readwrite');tx.objectStore(ST).delete(key);tx.oncomplete=function(){cb&&cb(null);};});} };
+        })();
+
+        function deletePublished(id) {
+            if (!confirm('Unpublish this activity? It will be removed from the student portal.')) return;
+            var allPubs = getLocalPublished();
+            var target  = allPubs.find(function(p) { return p.id === id; });
+            var dbId    = target && target.db_activity_id ? target.db_activity_id : null;
+            // Remove from localStorage + IndexedDB immediately
+            localStorage.setItem('published_activities', JSON.stringify(allPubs.filter(function(p) { return p.id !== id; })));
+            _idb.del('pub_data_' + id, null);
+            try { localStorage.removeItem('pub_data_' + id); } catch(e){}
+            // Remove related notifications
+            var notifs = [];
+            try { notifs = JSON.parse(localStorage.getItem('student_notifications') || '[]'); } catch(e){}
+            notifs = notifs.filter(function(n){ return n.activityId !== id; });
+            try { localStorage.setItem('student_notifications', JSON.stringify(notifs)); } catch(e){}
+            // Delete from DB so admin portal and backend fetch both reflect the unpublish
+            if (dbId) {
+                var _tid = sessionStorage.getItem('teacher_id') || '';
+                fetch('TEACHER_BACKEND/teacher_delete_activity.php', {
+                    method: 'POST',
+                    body: new URLSearchParams({ teacher_id: _tid, activity_id: dbId })
+                }).catch(function(){});
+            }
+            loadActivities();
+        }
+
+        /* ── Unpublish a backend-only published activity (no localStorage entry) ── */
+        function deleteBackendPublished(dbId) {
+            if (!confirm('Unpublish this activity? It will be removed from the student portal.')) return;
+            var _tid = sessionStorage.getItem('teacher_id') || '';
+            fetch('TEACHER_BACKEND/teacher_delete_activity.php', {
+                method: 'POST',
+                body: new URLSearchParams({ teacher_id: _tid, activity_id: dbId })
+            }).then(function() { loadActivities(); })
+              .catch(function() { loadActivities(); });
+        }
+
+        function deleteBackendDraft(dbId) {
+            if (!confirm('Delete this draft? This cannot be undone.')) return;
+            var _tid = sessionStorage.getItem('teacher_id') || '';
+            fetch('TEACHER_BACKEND/teacher_delete_activity.php', {
+                method: 'POST',
+                body: new URLSearchParams({ teacher_id: _tid, activity_id: dbId })
+            }).then(function() { loadActivities(); })
+              .catch(function() { loadActivities(); });
+        }
+
+        function editBackendDraft(dbId, templateFile) {
+            sessionStorage.setItem('edit_backend_draft_id', String(dbId));
+            window.location.href = templateFile;
+        }
+
+        function viewActivity(id) { window.location.href = 'Teacher_reviewact.html?id=' + id; }
+        function editActivity(id) { window.location.href = 'Teacher_reviewact.html?id=' + id; }
+
+        /* ── Helpers ── */
+        function esc(str) {
+            return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function formatDate(str) {
+            try {
+                var d = new Date(str);
+                var datePart = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                var timePart = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                return datePart + ' · ' + timePart;
+            } catch (e) { return str; }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            loadSidebar();
+            loadActivities();
+            document.getElementById('teacher-searchInput').addEventListener('input', filterTable);
+        });
+    </script>
+</body>
+
+</html>

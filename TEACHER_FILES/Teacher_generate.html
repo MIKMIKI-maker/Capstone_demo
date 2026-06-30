@@ -1,0 +1,262 @@
+﻿<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
+    <title>Generate Materials – SPED ALM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
+    <link href="TEACHER_CSS/Teacher_generate.css" rel="stylesheet" />
+</head>
+
+<body>
+<div id="spedLoading" style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 60%,#2563eb 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .5s ease;pointer-events:all;">
+  <img src="../ASSETS/logo.png" alt="SPED ALM" onerror="this.style.display='none'" style="width:88px;height:88px;border-radius:22px;background:#fff;padding:6px;box-shadow:0 10px 36px rgba(0,0,0,.35);animation:spedLdPulse 2s ease-in-out infinite;">
+  <p style="color:#fff;font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;margin:0;letter-spacing:1px;text-shadow:0 2px 8px rgba(0,0,0,.2);">SPED ALM</p>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite 0s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .18s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .36s;"></span>
+  </div>
+  <p style="color:rgba(255,255,255,.65);font-family:'Poppins',sans-serif;font-size:13px;font-weight:400;margin:0;">Loading, please wait...</p>
+</div>
+<style>
+@keyframes spedLdBounce{0%,80%,100%{transform:translateY(0);opacity:.5}40%{transform:translateY(-16px);opacity:1}}
+@keyframes spedLdPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+</style>
+<script>
+(function(){
+  function hideLoader(){
+    var e=document.getElementById('spedLoading');
+    if(!e) return;
+    e.style.opacity='0';
+    e.style.pointerEvents='none';
+    setTimeout(function(){ if(e.parentNode) e.parentNode.removeChild(e); }, 520);
+  }
+  if(document.readyState==='complete'){ setTimeout(hideLoader,200); }
+  else { window.addEventListener('load', function(){ setTimeout(hideLoader,200); }); }
+})();
+</script>
+    <div class="teacher-app-wrapper">
+        <aside class="teacher-sidebar">
+            <div class="teacher-sidebar-logo">
+                <img alt="SPED ALM Logo" class="teacher-sidebar-logo-img" src="../ASSETS/logo.png" />
+                <div class="teacher-sidebar-logo-text">
+                    <span class="teacher-sidebar-title">SPED ALM</span>
+                    <span class="teacher-sidebar-sub">Teacher Portal</span>
+                </div>
+            </div>
+            <nav class="teacher-sidebar-nav">
+                <a class="teacher-nav-item" href="Teacher_dashboard.html">
+                    <i class="fa-solid fa-table-cells-large"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a class="teacher-nav-item active" href="Teacher_IEP.html">
+                    <i class="fa-solid fa-file-circle-plus"></i>
+                    <span>IEP Materials</span>
+                    <i class="fa-solid fa-chevron-right teacher-nav-arrow"></i>
+                </a>
+                <a class="teacher-nav-item" href="Teacher_learners.html">
+                    <i class="fa-solid fa-users"></i>
+                    <span>My Learners</span>
+                </a>
+                <a class="teacher-nav-item" href="Teacher_report.html">
+                    <i class="fa-solid fa-chart-column"></i>
+                    <span>Reports</span>
+                </a>
+                <a class="teacher-nav-item" href="Teacher_settings.html">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            <div class="teacher-sidebar-footer">
+                <div class="teacher-profile">
+                    <div class="teacher-avatar" id="sidebar-avatar">M</div>
+                    <div class="teacher-info">
+                        <span class="teacher-name" id="sidebar-name">Teacher</span>
+                        <span class="teacher-role">SPED Teacher</span>
+                    </div>
+                </div>
+                <a class="teacher-signout-btn" href="#" onclick="var _id=sessionStorage.getItem('admin_id');fetch('../ADMIN_FILES/ADMIN_BACKEND/logout.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'admin_id='+encodeURIComponent(_id||'')}).finally(function(){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html';});return false;">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Sign Out</span>
+                </a>
+            </div>
+        </aside>
+        <main class="teacher-main-content">
+            <!-- TOPBAR -->
+            <header class="teacher-topbar">
+                <div>
+                    <h1 class="teacher-page-title">Generate Materials</h1>
+                    <p class="teacher-page-sub">Select a structural format and configure specific elements for a child's
+                        needs</p>
+                </div>
+            </header>
+            <hr class="teacher-divider" />
+            <!-- FILTER BAR -->
+            <div class="gen-teacher-filter-bar">
+                <div class="teacher-gf-item">
+                    <span class="teacher-gf-label">Select Learner Profile</span>
+                    <div class="teacher-select-wrap">
+                        <select id="teacher-learnerProfile" name="teacher_learnerprofile" onchange="setCondition()">
+                            <option value="">ALL</option>
+                        </select>
+                        <i class="fa-solid fa-chevron-down teacher-sel-arrow"></i>
+                    </div>
+                </div>
+                <div class="teacher-gf-item">
+                    <span class="teacher-gf-label">Select Condition <span
+                            class="teacher-autofill-tag">Auto-filled</span></span>
+                    <div class="teacher-condition-pill" id="teacher-conditionPill">ALL</div>
+                </div>
+            </div>
+            <!-- SECTION HEADER -->
+            <div class="teacher-section-header">
+                <h2 class="teacher-section-title">Define Materials and Content</h2>
+                <p class="teacher-section-sub">Select an Activity Type Template</p>
+            </div>
+            <!-- TEMPLATE GRID -->
+            <div class="teacher-template-grid" id="teacher-templateGrid">
+                <div class="teacher-tpl-card" onclick="selectTemplate(1)">
+                    <div class="teacher-tpl-icon tpl-blue"><i class="fa-solid fa-table-cells"></i></div>
+                    <div class="teacher-tpl-body">
+                        <h3>Picture Matching</h3>
+                        <p>Match picture to word or object</p>
+                        <div class="teacher-tpl-meta">
+                            <div class="teacher-tpl-meta-row"><span class="teacher-meta-label">Goal:</span><span
+                                    class="teacher-meta-val">Cognitive / Matching</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="teacher-tpl-card" onclick="selectTemplate(2)">
+                    <div class="teacher-tpl-icon tpl-yellow"><i class="fa-solid fa-layer-group"></i></div>
+                    <div class="teacher-tpl-body">
+                        <h3>Sorting / Categorization</h3>
+                        <p>Group items such as animals vs fruits, big vs small</p>
+                        <div class="teacher-tpl-meta">
+                            <div class="teacher-tpl-meta-row"><span class="teacher-meta-label">Goal:</span><span
+                                    class="teacher-meta-val">Cognitive / Classification</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="teacher-tpl-card" onclick="selectTemplate(3)">
+                    <div class="teacher-tpl-icon tpl-green"><i class="fa-solid fa-list-ol"></i></div>
+                    <div class="teacher-tpl-body">
+                        <h3>Sequencing / Arrange in Order</h3>
+                        <p>Put steps in correct order</p>
+                        <div class="teacher-tpl-meta">
+                            <div class="teacher-tpl-meta-row"><span class="teacher-meta-label">Goal:</span><span
+                                    class="teacher-meta-val">Daily Living / Self-Help</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /teacher-template-grid -->
+            <!-- ACTION ROW -->
+            <div class="teacher-action-row">
+                <a class="btn-back-iep" href="Teacher_IEP.html">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    Back to IEP Materials
+                </a>
+            </div>
+        </main>
+    </div>
+    <script>
+        var TEACHER_ID = parseInt(sessionStorage.getItem('teacher_id') || '1');
+
+        function _applyGenPhoto(pic) {
+            var av = document.getElementById('sidebar-avatar');
+            if (!av || !pic) return;
+            av.textContent = ''; av.style.cssText = 'background:transparent;padding:0;overflow:hidden';
+            av.innerHTML = '<img src="' + pic + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;" alt="Profile" />';
+        }
+        document.addEventListener('DOMContentLoaded', function () {
+            var name = sessionStorage.getItem('teacher_name');
+            if (name) {
+                var initials = name.trim().split(/\s+/).map(function(w){ return w[0]; }).join('').toUpperCase().substring(0, 2) || 'T';
+                document.getElementById('sidebar-name').textContent = name;
+                document.getElementById('sidebar-avatar').textContent = initials;
+                _applyGenPhoto(sessionStorage.getItem('teacher_profile_pic'));
+            } else {
+                var fd2 = new FormData(); fd2.append('teacher_id', TEACHER_ID);
+                fetch('TEACHER_BACKEND/teacher_get_profile.php', { method: 'POST', body: fd2 })
+                    .then(function(r){ return r.json(); })
+                    .then(function(d){
+                        if (d.success && d.teacher) {
+                            document.getElementById('sidebar-name').textContent = d.teacher.name;
+                            document.getElementById('sidebar-avatar').textContent = d.teacher.avatarLetter;
+                            sessionStorage.setItem('teacher_name', d.teacher.name);
+                            if (d.teacher.profilePhoto) {
+                                sessionStorage.setItem('teacher_profile_pic', d.teacher.profilePhoto);
+                                _applyGenPhoto(d.teacher.profilePhoto);
+                            }
+                        }
+                    }).catch(function(){});
+            }
+
+            // Load learners from backend, then pre-select from sessionStorage
+            fetch('TEACHER_BACKEND/teacher_list_learners.php?teacher_id=' + encodeURIComponent(TEACHER_ID))
+                .then(function(r){ return r.json(); })
+                .then(function(students) {
+                    var sel = document.getElementById('teacher-learnerProfile');
+                    students.forEach(function(s) {
+                        var cond = s.disability || 'General';
+                        var opt = document.createElement('option');
+                        opt.value = s.name + '|' + cond;
+                        opt.dataset.studentId = s.id;
+                        opt.textContent = s.name;
+                        sel.appendChild(opt);
+                    });
+                    // Restore selection from IEP page
+                    var saved = sessionStorage.getItem('selected_learner') || '';
+                    if (saved) {
+                        sel.value = saved;
+                        if (sel.value !== saved) {
+                            // Try matching by name only
+                            var savedName = saved.split('|')[0];
+                            for (var i = 0; i < sel.options.length; i++) {
+                                if (sel.options[i].value.split('|')[0] === savedName) {
+                                    sel.selectedIndex = i;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    setCondition();
+                })
+                .catch(function(){});
+        });
+
+        function setCondition() {
+            var sel = document.getElementById('teacher-learnerProfile');
+            var val = sel.value;
+            var cond = val ? val.split('|')[1] : 'ALL';
+            document.getElementById('teacher-conditionPill').textContent = cond || 'ALL';
+            var opt = sel.options[sel.selectedIndex];
+            sessionStorage.setItem('selected_learner', val || '');
+            sessionStorage.setItem('selected_condition', val ? val.split('|')[1] : '');
+            sessionStorage.setItem('selected_learner_id', opt ? (opt.dataset.studentId || '') : '');
+        }
+
+        var templateDestinations = {
+            1: 'TEMPLATES/Matching_Type_Template.html',
+            2: 'TEMPLATES/Sorting_Type_Template.html',
+            3: 'TEMPLATES/Sequencing_Type_Template.html'
+        };
+
+        function selectTemplate(idx) {
+            var sel = document.getElementById('teacher-learnerProfile');
+            var val = sel.value;
+            var opt = sel.options[sel.selectedIndex];
+            sessionStorage.setItem('selected_learner', val || '');
+            sessionStorage.setItem('selected_condition', val ? val.split('|')[1] : '');
+            sessionStorage.setItem('selected_learner_id', opt ? (opt.dataset.studentId || '') : '');
+            window.location.href = templateDestinations[idx];
+        }
+    </script>
+</body>
+
+</html>

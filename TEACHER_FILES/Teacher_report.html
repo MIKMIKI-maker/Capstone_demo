@@ -1,0 +1,301 @@
+﻿<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
+    <title>Reports – SPED ALM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
+    <link href="TEACHER_CSS/Teacher_report.css" rel="stylesheet" />
+</head>
+
+<body>
+<div id="spedLoading" style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 60%,#2563eb 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .5s ease;pointer-events:all;">
+  <img src="../ASSETS/logo.png" alt="SPED ALM" onerror="this.style.display='none'" style="width:88px;height:88px;border-radius:22px;background:#fff;padding:6px;box-shadow:0 10px 36px rgba(0,0,0,.35);animation:spedLdPulse 2s ease-in-out infinite;">
+  <p style="color:#fff;font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;margin:0;letter-spacing:1px;text-shadow:0 2px 8px rgba(0,0,0,.2);">SPED ALM</p>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite 0s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .18s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .36s;"></span>
+  </div>
+  <p style="color:rgba(255,255,255,.65);font-family:'Poppins',sans-serif;font-size:13px;font-weight:400;margin:0;">Loading, please wait...</p>
+</div>
+<style>
+@keyframes spedLdBounce{0%,80%,100%{transform:translateY(0);opacity:.5}40%{transform:translateY(-16px);opacity:1}}
+@keyframes spedLdPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+</style>
+<script>
+(function(){
+  function hideLoader(){
+    var e=document.getElementById('spedLoading');
+    if(!e) return;
+    e.style.opacity='0';
+    e.style.pointerEvents='none';
+    setTimeout(function(){ if(e.parentNode) e.parentNode.removeChild(e); }, 520);
+  }
+  if(document.readyState==='complete'){ setTimeout(hideLoader,200); }
+  else { window.addEventListener('load', function(){ setTimeout(hideLoader,200); }); }
+})();
+</script>
+    <div class="teacher-app-wrapper">
+        <!-- SIDEBAR -->
+        <aside class="teacher-sidebar">
+            <div class="teacher-sidebar-logo">
+                <img alt="SPED ALM Logo" class="teacher-sidebar-logo-img" src="../ASSETS/logo.png" />
+                <div>
+                    <span class="teacher-sidebar-title">SPED ALM</span>
+                    <span class="teacher-sidebar-sub">Teacher Portal</span>
+                </div>
+            </div>
+            <nav class="teacher-sidebar-nav">
+                <a class="teacher-nav-item" href="Teacher_dashboard.html">
+                    <i class="fa-solid fa-table-cells-large"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a class="teacher-nav-item" href="Teacher_IEP.html">
+                    <i class="fa-solid fa-file-circle-plus"></i>
+                    <span>IEP Materials</span>
+                </a>
+                <a class="teacher-nav-item" href="Teacher_learners.html">
+                    <i class="fa-solid fa-users"></i>
+                    <span>My Learners</span>
+                </a>
+                <a class="teacher-nav-item active" href="Teacher_report.html">
+                    <i class="fa-solid fa-chart-column"></i>
+                    <span>Reports</span>
+                    <i class="fa-solid fa-chevron-right teacher-nav-arrow"></i>
+                </a>
+                <a class="teacher-nav-item" href="Teacher_settings.html">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            <div class="teacher-sidebar-footer">
+                <div class="teacher-profile">
+                    <div class="teacher-avatar" id="teacher-avatar-letter">T</div>
+                    <div>
+                        <span class="teacher-name" id="teacher-name-sidebar">Teacher</span>
+                        <span class="teacher-role">SPED Teacher</span>
+                    </div>
+                </div>
+                <a class="teacher-signout-btn" href="#" id="teacher-signout-btn" onclick="var _id=sessionStorage.getItem('admin_id');fetch('../ADMIN_FILES/ADMIN_BACKEND/logout.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'admin_id='+encodeURIComponent(_id||'')}).finally(function(){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html';});return false;">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Sign Out</span>
+                </a>
+            </div>
+        </aside>
+        <!-- MAIN CONTENT -->
+        <main class="teacher-main-content">
+            <!-- TOPBAR -->
+            <header class="teacher-topbar">
+                <div>
+                    <h1 class="teacher-page-title">Class Reports</h1>
+                    <p class="teacher-page-sub">Track learner progress and generate grading reports</p>
+                </div>
+                <div class="teacher-topbar-actions">
+                    <button class="btn-action outline" type="button"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                    <button class="btn-action outline" type="button"><i class="fa-solid fa-print"></i> Print</button>
+                    <button class="btn-action outline" type="button"><i class="fa-solid fa-file-excel"></i>
+                        Export</button>
+                    <a class="teacher-notif-btn" href="Teacher_notif.html">
+                        <i class="fa-regular fa-bell"></i>
+                        <span class="teacher-notif-badge"></span>
+                    </a>
+                </div>
+            </header>
+            <hr class="teacher-divider" />
+            <!-- STAT CARDS -->
+            <div class="teacher-stat-cards">
+                <div class="teacher-stat-card">
+                    <div class="teacher-stat-icon si-blue"><i class="fa-solid fa-users"></i></div>
+                    <div class="teacher-stat-info">
+                        <div class="teacher-stat-num" id="report-stat-learners">—</div>
+                        <div class="teacher-stat-label">Assigned Learners</div>
+                    </div>
+                </div>
+                <div class="teacher-stat-card">
+                    <div class="teacher-stat-icon si-green"><i class="fa-solid fa-chart-line"></i></div>
+                    <div class="teacher-stat-info">
+                        <div class="teacher-stat-num" id="report-stat-avg">—</div>
+                        <div class="teacher-stat-label">Average Progress</div>
+                    </div>
+                </div>
+                <div class="teacher-stat-card">
+                    <div class="teacher-stat-icon si-orange"><i class="fa-solid fa-layer-group"></i></div>
+                    <div class="teacher-stat-info">
+                        <div class="teacher-stat-num" id="report-stat-activities">—</div>
+                        <div class="teacher-stat-label">Available Activities</div>
+                    </div>
+                </div>
+            </div>
+            <!-- TWO-COL: Skills Overview only (Teacher Notes removed) -->
+            <div class="teacher-report-grid">
+                <!-- SKILLS OVERVIEW -->
+                <div class="teacher-panel">
+                    <div class="teacher-panel-title">Skills Overview</div>
+                    <div class="teacher-skill-row">
+                        <div class="teacher-skill-meta"><span class="teacher-skill-name">Cognitive</span><span class="teacher-skill-pct c-blue" id="skill-pct-cognitive">—</span></div>
+                        <div class="teacher-skill-bar-bg"><div class="teacher-skill-bar-fill f-blue" id="skill-bar-cognitive" style="width:0%;"></div></div>
+                    </div>
+                    <div class="teacher-skill-row">
+                        <div class="teacher-skill-meta"><span class="teacher-skill-name">Communication</span><span class="teacher-skill-pct c-green" id="skill-pct-communication">—</span></div>
+                        <div class="teacher-skill-bar-bg"><div class="teacher-skill-bar-fill f-green" id="skill-bar-communication" style="width:0%;"></div></div>
+                    </div>
+                    <div class="teacher-skill-row">
+                        <div class="teacher-skill-meta"><span class="teacher-skill-name">Fine Motor</span><span class="teacher-skill-pct c-orange" id="skill-pct-finemotor">—</span></div>
+                        <div class="teacher-skill-bar-bg"><div class="teacher-skill-bar-fill f-orange" id="skill-bar-finemotor" style="width:0%;"></div></div>
+                    </div>
+                    <div class="teacher-skill-row">
+                        <div class="teacher-skill-meta"><span class="teacher-skill-name">Life Skills</span><span class="teacher-skill-pct c-pink" id="skill-pct-lifeskills">—</span></div>
+                        <div class="teacher-skill-bar-bg"><div class="teacher-skill-bar-fill f-pink" id="skill-bar-lifeskills" style="width:0%;"></div></div>
+                    </div>
+                </div>
+                <!-- Activity performance panel -->
+                <div class="teacher-panel">
+                    <div class="teacher-panel-title">Activity Performance</div>
+                    <div id="report-activity-list" style="font-size:13px;color:#64748b;font-family:'Poppins',sans-serif;">
+                        <div style="text-align:center;padding:20px;color:#cbd5e1;">Loading...</div>
+                    </div>
+                </div>
+            </div>
+            <!-- LEARNER PERFORMANCE TABLE -->
+            <div class="teacher-table-card">
+                <div class="teacher-table-card-title">Learner Performance</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Learner</th>
+                            <th>Condition</th>
+                            <th>Average</th>
+                            <th>Status</th>
+                            <th>Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody id="report-learner-tbody">
+                        <tr><td colspan="5" style="text-align:center;padding:20px;color:#94a3b8;">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+    <script>
+        var TEACHER_ID = parseInt(sessionStorage.getItem('teacher_id') || '1');
+
+        function _applyTeacherPhoto(pic) {
+            var el = document.getElementById('teacher-avatar-letter');
+            if (!el || !pic) return;
+            el.textContent = ''; el.style.cssText = 'background:transparent;padding:0';
+            el.innerHTML = '<img src="' + pic + '" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;" />';
+        }
+        function loadSidebar() {
+            var name = sessionStorage.getItem('teacher_name');
+            if (name) {
+                document.getElementById('teacher-avatar-letter').textContent = name.trim().charAt(0).toUpperCase();
+                document.getElementById('teacher-name-sidebar').textContent = name;
+                _applyTeacherPhoto(sessionStorage.getItem('teacher_profile_pic'));
+            } else {
+                var fd = new FormData(); fd.append('teacher_id', TEACHER_ID);
+                fetch('TEACHER_BACKEND/teacher_get_profile.php', { method: 'POST', body: fd })
+                    .then(function(r) { return r.json(); })
+                    .then(function(d) {
+                        if (d.success && d.teacher) {
+                            document.getElementById('teacher-avatar-letter').textContent = d.teacher.avatarLetter;
+                            document.getElementById('teacher-name-sidebar').textContent = d.teacher.name;
+                            sessionStorage.setItem('teacher_name', d.teacher.name);
+                            if (d.teacher.profilePhoto) {
+                                sessionStorage.setItem('teacher_profile_pic', d.teacher.profilePhoto);
+                                _applyTeacherPhoto(d.teacher.profilePhoto);
+                            }
+                        }
+                    }).catch(function(){});
+            }
+        }
+
+        function loadReports() {
+            // Use auto-report endpoint for richer, real DB data
+            fetch('TEACHER_BACKEND/teacher_auto_report.php?teacher_id=' + TEACHER_ID)
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    if (!d.success) return;
+                    var ov = d.overview;
+                    document.getElementById('report-stat-learners').textContent = ov.total_students || '—';
+                    document.getElementById('report-stat-avg').textContent = ov.class_avg ? ov.class_avg + '%' : '—';
+                    document.getElementById('report-stat-activities').textContent = ov.total_activities || '—';
+
+                    // Skill bars: map avg_score as proxy for overall skill
+                    var avg = ov.class_avg || 0;
+                    var skBars = {cognitive: avg, communication: avg > 5 ? avg - 5 : 0, finemotor: avg > 10 ? avg - 10 : 0, lifeskills: avg > 8 ? avg - 8 : 0};
+                    Object.keys(skBars).forEach(function(k) {
+                        var v = Math.min(100, Math.max(0, skBars[k]));
+                        var pctEl = document.getElementById('skill-pct-' + k);
+                        var barEl = document.getElementById('skill-bar-' + k);
+                        if (pctEl) pctEl.textContent = v ? v + '%' : '—';
+                        if (barEl) barEl.style.width = v + '%';
+                    });
+
+                    // Learner performance table
+                    var tbody = document.getElementById('report-learner-tbody');
+                    if (!d.students || !d.students.length) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:#94a3b8;">No learner data yet</td></tr>';
+                    } else {
+                        var statusCls = {'Passing':'sb-green','Needs Support':'sb-orange','At Risk':'sb-red','No Activity':'sb-gray'};
+                        tbody.innerHTML = d.students.map(function(s) {
+                            var cls = statusCls[s.status] || 'sb-gray';
+                            var remark = s.status === 'Passing' ? 'Keep it up!'
+                                       : s.status === 'At Risk' ? 'Needs immediate attention'
+                                       : s.status === 'No Activity' ? 'No submissions yet'
+                                       : 'Provide additional support';
+                            return '<tr>'
+                                + '<td>' + escHtml(s.student_name) + '</td>'
+                                + '<td>' + escHtml(s.disability_type || '—') + '</td>'
+                                + '<td>' + (s.avg_score > 0 ? s.avg_score + '%' : '—') + '</td>'
+                                + '<td><span class="teacher-status-badge ' + cls + '">' + s.status + '</span></td>'
+                                + '<td>' + remark + '</td>'
+                                + '</tr>';
+                        }).join('');
+                    }
+
+                    // Activity performance panel
+                    var actEl = document.getElementById('report-activity-list');
+                    if (actEl) {
+                        if (!d.activities || !d.activities.length) {
+                            actEl.innerHTML = '<div style="text-align:center;padding:20px;color:#cbd5e1;">No activities published yet</div>';
+                        } else {
+                            actEl.innerHTML = d.activities.slice(0, 6).map(function(a) {
+                                var pct = a.avg_score ? a.avg_score + '%' : '—';
+                                var barW = a.avg_score ? a.avg_score : 0;
+                                return '<div style="margin-bottom:12px;">'
+                                    + '<div style="display:flex;justify-content:space-between;margin-bottom:4px;">'
+                                    + '<span style="font-weight:600;color:#334155;font-size:12px;">' + escHtml(a.activity_title) + '</span>'
+                                    + '<span style="color:#1e3a8a;font-weight:700;font-size:12px;">' + pct + '</span>'
+                                    + '</div>'
+                                    + '<div style="height:6px;background:#e2e8f0;border-radius:3px;">'
+                                    + '<div style="height:6px;background:#1e3a8a;border-radius:3px;width:' + barW + '%;transition:width .4s;"></div>'
+                                    + '</div>'
+                                    + '<div style="font-size:11px;color:#94a3b8;margin-top:2px;">' + a.submissions + ' submission(s)</div>'
+                                    + '</div>';
+                            }).join('');
+                        }
+                    }
+                }).catch(function() {
+                    document.getElementById('report-learner-tbody').innerHTML =
+                        '<tr><td colspan="5" style="text-align:center;padding:20px;color:#ef4444;">Failed to load data</td></tr>';
+                });
+        }
+
+        function escHtml(str) {
+            return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSidebar();
+            loadReports();
+        });
+    </script>
+</body>
+
+</html>

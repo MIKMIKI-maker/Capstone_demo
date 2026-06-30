@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SPED ALM — Matching Type Template Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<style>
+  :root{
+    --blue:#2f6fed; --blue-dark:#1b4fb8;
+    --purple:#7b6ef0; --purple-dark:#5546c4;
+    --green:#2fbf57; --green-dark:#1f9d44;
+    --red:#e23b54; --red-dark:#b9263c;
+    --gold:#ffc34d; --ink:#243a5e; --ink-soft:#5d7299;
+    --field:#f7f9fd; --field-border:#e6ebf4; --line:#eef2f8;
+    --font:"Fredoka","Nunito",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html, body{ height:100%; overflow:hidden; }
+  body{ font-family:var(--font); color:var(--ink); background:#eef2f9; display:flex; flex-direction:column; }
+
+  /* ===== TOP BAR ===== */
+  .mtg-top{
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap; flex:none;
+    background:#fff; padding:14px 22px; border-bottom:1px solid var(--line);
+  }
+  .mtg-logo{ width:46px; height:46px; border-radius:14px; flex:none;
+    background:linear-gradient(135deg,#ff8a5b,#7b6ef0); display:flex; align-items:center; justify-content:center; font-size:24px; }
+  .mtg-top h1{ font-weight:700; font-size:21px; line-height:1.1; }
+  .mtg-top .mtg-tsub{ color:var(--ink-soft); font-size:12px; font-weight:500; }
+  .mtg-top-actions{ margin-left:auto; display:flex; gap:10px; flex-wrap:wrap; }
+  .mtg-btn{ cursor:pointer; border:none; font-family:var(--font); font-weight:700; font-size:14px;
+    padding:11px 18px; border-radius:13px; display:inline-flex; align-items:center; gap:7px;
+    transition:transform .08s ease, filter .1s ease; }
+  .mtg-btn:active{ transform:translateY(2px); }
+  .mtg-btn--ghost{ background:#fff; color:var(--ink); border:1.5px solid var(--field-border); }
+  .mtg-btn--ghost:hover{ background:#f7f9fd; }
+  .mtg-btn--print{ background:var(--gold); color:#5c4400; box-shadow:0 4px 0 #d9a416; }
+  .mtg-btn--pub{ background:var(--green); color:#fff; box-shadow:0 4px 0 var(--green-dark); }
+
+  /* ===== BODY GRID ===== */
+  .mtg-body{ display:grid; grid-template-columns:280px 1fr 270px; gap:16px; padding:16px; align-items:stretch;
+    flex:1; min-height:0; overflow:hidden; }
+  .mtg-left-col, .mtg-preview-col, .mtg-right-col{ overflow-y:auto; min-height:0; padding-right:2px;
+    scrollbar-width:thin; scrollbar-color:#c7d3e8 transparent; }
+  .mtg-left-col::-webkit-scrollbar, .mtg-preview-col::-webkit-scrollbar, .mtg-right-col::-webkit-scrollbar{ width:6px; }
+  .mtg-left-col::-webkit-scrollbar-track, .mtg-preview-col::-webkit-scrollbar-track, .mtg-right-col::-webkit-scrollbar-track{ background:transparent; }
+  .mtg-left-col::-webkit-scrollbar-thumb, .mtg-preview-col::-webkit-scrollbar-thumb, .mtg-right-col::-webkit-scrollbar-thumb{ background:#c7d3e8; border-radius:10px; }
+  .mtg-left-col::-webkit-scrollbar-thumb:hover, .mtg-preview-col::-webkit-scrollbar-thumb:hover, .mtg-right-col::-webkit-scrollbar-thumb:hover{ background:#aebedb; }
+  .mtg-card{ background:#fff; border:1px solid var(--line); border-radius:18px; padding:16px; }
+  .mtg-card + .mtg-card{ margin-top:16px; }
+  .mtg-step{ font-size:12px; font-weight:800; letter-spacing:.04em; color:var(--ink-soft); text-transform:uppercase; margin-bottom:12px; }
+  .mtg-step .mtg-edit-link{ color:var(--purple); cursor:pointer; font-weight:700; text-transform:none; letter-spacing:0; }
+
+  /* ----- Activity Slides (multi-activity) navigator ----- */
+  .mtg-slidebar{ display:flex; align-items:center; gap:8px; }
+  .mtg-slidebar button{ width:30px; height:30px; flex:none; border-radius:9px; border:1.5px solid var(--field-border); background:#fff; cursor:pointer; font-size:14px; color:var(--ink); }
+  .mtg-slidebar button:hover:not(:disabled){ background:#f1f4fa; }
+  .mtg-slidebar button:disabled{ opacity:.35; cursor:default; }
+  .mtg-slide-label{ flex:1; text-align:center; font-weight:700; font-size:13px; color:var(--ink); }
+  .mtg-slide-actions{ display:flex; gap:8px; margin-top:10px; }
+  .mtg-slide-actions button{ flex:1; cursor:pointer; border:1.5px dashed var(--purple); background:#f3f1fe; color:var(--purple);
+    font-family:var(--font); font-weight:700; font-size:12.5px; padding:8px; border-radius:11px; }
+  .mtg-slide-actions button.danger{ border-color:#f0a8b4; background:#fdeef1; color:#c43a55; }
+
+  /* Activity type card */
+  .mtg-type{ display:flex; align-items:center; gap:12px; border:2px solid var(--purple); background:#f3f1fe; border-radius:14px; padding:13px; }
+  .mtg-type-ic{ width:40px; height:40px; border-radius:11px; background:#fff; display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 3px 0 #ddd8f7; }
+  .mtg-type b{ font-weight:700; font-size:15px; }
+  .mtg-type-desc{ color:var(--ink-soft); font-size:12.5px; font-weight:500; line-height:1.5; margin-top:12px; }
+
+  /* Items list */
+  .mtg-item-row{ display:flex; align-items:flex-start; gap:8px; padding:9px 0; border-bottom:1px solid var(--line); position:relative; }
+  .mtg-item-row:last-of-type{ border-bottom:none; }
+  .mtg-side{ display:flex; flex-direction:column; align-items:center; gap:4px; flex:1; min-width:0; }
+  .mtg-side-name{ width:100%; padding:5px 6px; border-radius:8px; border:1.5px solid var(--field-border); background:var(--field); font-family:var(--font); font-size:11px; text-align:center; outline:none; color:var(--ink); }
+  .mtg-side-name::placeholder{ color:#aab4c5; }
+  .mtg-side-name:focus{ border-color:var(--purple); background:#fff; }
+  .mtg-thumb{ width:100%; height:46px; flex:none; border-radius:10px; border:1.5px solid var(--field-border);
+    background:var(--field); display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden; font-size:24px; }
+  .mtg-thumb img{ width:100%; height:100%; object-fit:cover; }
+  .mtg-row-arrow{ align-self:center; }
+  .mtg-row-arrow{ color:var(--ink-soft); font-size:14px; }
+  .mtg-item-menu{ margin-left:auto; align-self:center; cursor:pointer; border:none; background:none; color:var(--ink-soft); font-size:18px; width:28px; height:28px; border-radius:8px; }
+  .mtg-item-menu:hover{ background:#f1f4fa; }
+  .mtg-pop{ position:absolute; right:0; top:34px; z-index:5; background:#fff; border:1px solid var(--field-border); border-radius:12px; box-shadow:0 8px 24px rgba(36,58,94,.18); padding:6px; display:none; }
+  .mtg-pop.show{ display:block; }
+  .mtg-pop button{ display:block; width:100%; text-align:left; border:none; background:none; cursor:pointer; font-family:var(--font); font-size:13px; padding:8px 14px; border-radius:8px; color:var(--ink); }
+  .mtg-pop button:hover{ background:#f1f4fa; }
+  .mtg-pop button.del{ color:#d6336c; }
+  .mtg-add{ cursor:pointer; width:100%; margin-top:10px; border:1.5px dashed var(--purple); background:#f3f1fe; color:var(--purple); font-family:var(--font); font-weight:700; font-size:13px; padding:9px; border-radius:12px; }
+
+  /* Thumbnail upload */
+  .mtg-thumbbox{ position:relative; border:2px dashed #cbb8f3; background:#faf7ff; border-radius:14px; padding:10px; text-align:center; }
+  .mtg-thumbbox img{ width:100%; border-radius:10px; display:block; }
+  .mtg-thumb-empty{ height:96px; display:flex; align-items:center; justify-content:center; color:var(--ink-soft); font-size:12px; font-weight:600; }
+  .mtg-thumb-check{ position:absolute; top:-8px; right:-8px; width:24px; height:24px; border-radius:50%; background:var(--purple); color:#fff; display:none; align-items:center; justify-content:center; font-size:13px; }
+  .mtg-thumb-check.show{ display:flex; }
+  .mtg-change{ cursor:pointer; width:100%; margin-top:10px; border:1.5px solid var(--field-border); background:#fff; color:var(--ink); font-family:var(--font); font-weight:700; font-size:13px; padding:9px; border-radius:11px; }
+
+  /* Template Guide (cream box) */
+  .mtg-tip{ background:#fef6e6; border:1px solid #f6e2b3; border-radius:14px; padding:13px; }
+  .mtg-tip b{ font-size:13px; display:flex; align-items:center; gap:6px; }
+  .mtg-tip p{ color:#7a5e1d; font-size:12px; font-weight:500; line-height:1.5; margin-top:6px; }
+  .mtg-guide-settings-btn{ margin-left:auto; cursor:pointer; border:1.5px solid #cbb8f3; background:#f3f1fe; color:var(--purple);
+    font-family:var(--font); font-weight:800; font-size:13px; padding:7px 12px; border-radius:10px; white-space:nowrap; }
+  .mtg-guide-settings-btn:hover{ background:#e6e1fb; }
+
+  /* ===== CENTER PREVIEW ===== */
+  .mtg-preview-col .mtg-step{ margin-bottom:12px; }
+  .mtg-stage{
+    position:relative; overflow:hidden; border-radius:20px;
+    border:1px solid var(--line);
+    background:#fdf6d8; padding:30px;
+    --mtg-text:#243a5e; font-family:'Comic Sans MS','Comic Sans',cursive; font-size:40px;
+  }
+  .mtg-deco{ position:absolute; inset:0; pointer-events:none; }
+  .mtg-stage.no-deco .mtg-deco{ display:none; }
+  .mtg-deco .d-sun{ position:absolute; top:14px; right:22px; font-size:42px; }
+  .mtg-deco .d-cloud1{ position:absolute; top:18px; left:24px; font-size:30px; opacity:.9; }
+  .mtg-deco .d-cloud2{ position:absolute; top:46%; right:10px; font-size:26px; opacity:.8; }
+  .mtg-deco .d-grass{ position:absolute; left:0; right:0; bottom:0; height:64px;
+    background:linear-gradient(180deg, rgba(126,217,124,0), #aee08a 70%); }
+  .mtg-deco .d-flower1{ position:absolute; bottom:8px; left:18px; font-size:24px; }
+  .mtg-deco .d-flower2{ position:absolute; bottom:6px; right:26px; font-size:22px; }
+
+  .mtg-stage-inner{ position:relative; z-index:2; transform-origin:top center; }
+  .mtg-title{ text-align:center; font-weight:700; font-size:1.25em; color:var(--mtg-text); }
+  .mtg-instr{ text-align:center; font-size:.5em; font-weight:500; color:var(--mtg-text); opacity:.85; margin:6px 0 22px; }
+  .mtg-match{ position:relative; z-index:2; display:grid; grid-template-columns:1fr 1fr; gap:110px; }
+  .mtg-col{ display:flex; flex-direction:column; gap:16px; }
+  .mtg-pitem{
+    background:#fff; border:3px solid #e2c98f; border-radius:18px; padding:12px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    cursor:pointer; user-select:none; position:relative; touch-action:none;
+    box-shadow:0 4px 12px rgba(36,58,94,.08); transition:transform .08s ease, border-color .12s ease;
+  }
+  .mtg-pitem:hover{ transform:translateY(-2px); }
+  .mtg-pitem.sel{ border-color:var(--blue) !important; }
+  .mtg-pitem-img{ width:100%; height:3.6em; object-fit:contain; display:block; }
+  .mtg-pitem-emoji{ font-size:3em; line-height:1; }
+  .mtg-pitem-name{ font-weight:700; font-size:.6em; margin-top:8px; color:var(--mtg-text); }
+  .mtg-dot{ position:absolute; top:50%; width:12px; height:12px; border-radius:50%; background:#cfd8e8; transform:translateY(-50%); }
+  .mtg-col-left .mtg-dot{ right:-22px; }
+  .mtg-col-right .mtg-dot{ left:-22px; }
+  .mtg-lines{ position:absolute; inset:0; pointer-events:none; overflow:visible; z-index:1; }
+
+  /* border style variants */
+  .mtg-stage.bs-dashed .mtg-pitem{ border-style:dashed; }
+  .mtg-stage.bs-solid .mtg-pitem{ border-radius:8px; }
+
+  .mtg-stage-controls{ display:flex; flex-direction:column; align-items:center; gap:10px; margin-top:22px; position:relative; z-index:2; }
+  .mtg-stage-btnrow{ display:flex; justify-content:center; gap:10px; }
+  .mtg-mini{ cursor:pointer; border:none; font-family:var(--font); font-weight:700; font-size:.5em; padding:.55em 1.2em; border-radius:12px; }
+  .mtg-mini--reset{ background:#eef3fb; color:var(--ink-soft); }
+  .mtg-mini--check{ background:var(--green); color:#fff; }
+  .mtg-hint{ font-size:.46em; font-weight:700; min-height:1.3em; text-align:center; color:var(--red-dark); }
+  .mtg-stage-nav{ display:flex; align-items:center; gap:14px; margin-top:6px; }
+  .mtg-stage-nav button{ cursor:pointer; border:none; background:#eef3fb; color:var(--ink-soft); font-family:var(--font); font-weight:700; font-size:.42em; padding:.55em 1em; border-radius:10px; }
+  .mtg-stage-nav button:disabled{ opacity:.35; cursor:default; }
+  .mtg-stage-nav span{ font-weight:700; font-size:.42em; color:var(--mtg-text); opacity:.8; }
+
+  /* accessibility reminders */
+  .mtg-reminders{ background:#f6f2fe; border:1px solid #e4dcfa; border-radius:16px; padding:14px 16px; margin-top:16px; }
+  .mtg-reminders .r-title{ font-size:11px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:var(--purple); margin-bottom:12px; }
+  .mtg-rem-list{ display:flex; gap:10px; flex-wrap:wrap; justify-content:space-between; }
+  .mtg-rem{ display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; flex:1; min-width:80px; color:var(--ink-soft); font-size:11.5px; font-weight:600; }
+  .mtg-rem .r-ic{ font-size:20px; }
+
+  /* ===== RIGHT SETTINGS ===== */
+  .mtg-right-col{ position:relative; }
+  .mtg-set-title{ display:flex; align-items:center; gap:8px; font-weight:700; font-size:15px; margin-bottom:16px; }
+  .mtg-collapse-btn{ cursor:pointer; border:1.5px solid var(--field-border); background:#fff; width:30px; height:30px; flex:none;
+    border-radius:9px; font-size:14px; color:var(--ink-soft); margin-left:auto; }
+  .mtg-collapse-btn:hover{ background:#f1f4fa; }
+  .mtg-right-panel-guide{ display:none; }
+  body.mtg-right-collapsed .mtg-right-panel-full{ display:none; }
+  body.mtg-right-collapsed .mtg-right-panel-guide{ display:block; }
+  .mtg-set-label{ font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-soft); margin:0 0 9px; }
+  .mtg-set-group{ margin-bottom:18px; }
+  .mtg-swatches{ display:flex; gap:8px; flex-wrap:wrap; }
+  .mtg-sw{ width:38px; height:38px; border-radius:11px; cursor:pointer; border:2px solid #fff; box-shadow:0 0 0 1.5px var(--field-border); position:relative; }
+  .mtg-sw.sel{ box-shadow:0 0 0 2.5px var(--purple); }
+  .mtg-sw.sel::after{ content:"✓"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--purple); font-weight:800; font-size:14px; }
+  .mtg-input, .mtg-select{ width:100%; padding:11px 13px; border-radius:12px; border:1.5px solid var(--field-border); background:#fff; font-family:var(--font); font-size:14px; color:var(--ink); outline:none; }
+  .mtg-input:focus, .mtg-select:focus{ border-color:var(--purple); }
+  .mtg-size-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .mtg-size-num{ width:54px; text-align:center; padding:5px; border:1.5px solid var(--field-border); border-radius:8px; font-family:var(--font); font-weight:700; }
+  .mtg-size-row{ display:flex; align-items:center; gap:10px; }
+  .mtg-size-row input[type=range]{ flex:1; accent-color:var(--purple); }
+  .mtg-size-row .a-sm{ font-size:13px; font-weight:700; } .mtg-size-row .a-lg{ font-size:20px; font-weight:700; }
+  .mtg-color-row{ display:flex; align-items:center; gap:8px; }
+  .mtg-color-row input[type=color]{ width:46px; height:34px; border:none; border-radius:9px; background:none; cursor:pointer; }
+  .mtg-seg{ display:flex; gap:8px; }
+  .mtg-seg button{ flex:1; cursor:pointer; border:1.5px solid var(--field-border); background:#fff; border-radius:11px; padding:10px 4px; font-family:var(--font); font-weight:600; font-size:12px; color:var(--ink-soft); display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .mtg-seg button.sel{ border-color:var(--purple); background:#f3f1fe; color:var(--purple); }
+  .mtg-seg .seg-box{ width:30px; height:20px; border:2.5px solid var(--ink-soft); }
+  .mtg-seg button.sel .seg-box{ border-color:var(--purple); }
+  .seg-rounded{ border-radius:8px; } .seg-dashed{ border-style:dashed; border-radius:8px; } .seg-solid{ border-radius:2px; }
+  .mtg-spacing{ display:flex; align-items:center; gap:12px; }
+  .mtg-spacing button{ width:34px; height:34px; border-radius:10px; border:1.5px solid var(--field-border); background:#fff; cursor:pointer; font-size:18px; font-weight:700; color:var(--ink); }
+  .mtg-spacing span{ font-weight:700; font-size:14px; flex:1; text-align:center; }
+  .mtg-check{ display:flex; align-items:center; gap:9px; padding:7px 0; cursor:pointer; font-size:14px; font-weight:600; }
+  .mtg-check input{ width:18px; height:18px; accent-color:var(--purple); }
+  .mtg-set-actions{ display:flex; gap:10px; margin-top:8px; }
+  .mtg-set-actions button{ flex:1; cursor:pointer; border:none; font-family:var(--font); font-weight:700; font-size:14px; padding:12px; border-radius:12px; }
+  .mtg-reset{ background:#eef2f8; color:var(--ink-soft); }
+  .mtg-apply{ background:var(--purple); color:#fff; box-shadow:0 4px 0 var(--purple-dark); }
+
+  /* preview-only mode — show ONLY the activity itself, the same view
+     the student will see when actually answering it. */
+  body.mtg-preview-only .mtg-left-col,
+  body.mtg-preview-only .mtg-right-col,
+  body.mtg-preview-only .mtg-top,
+  body.mtg-preview-only .mtg-preview-col > .mtg-step,
+  body.mtg-preview-only .mtg-reminders{ display:none; }
+  body.mtg-preview-only { background: #fdf6d8; }
+  body.mtg-preview-only .mtg-body{ grid-template-columns:1fr; min-height:100vh; padding:0; overflow:hidden; }
+  body.mtg-preview-only .mtg-preview-col{ width:100%; max-width:100%; overflow:hidden; }
+  body.mtg-preview-only .mtg-stage{
+    width:100%; min-height:100vh; border-radius:0; border:none;
+    padding:50px 40px 70px; display:flex; flex-direction:column; justify-content:center;
+  }
+  body.mtg-preview-only .mtg-match,
+  body.mtg-preview-only .mtg-title,
+  body.mtg-preview-only .mtg-instr{ max-width:900px; width:100%; margin-left:auto; margin-right:auto; }
+
+  /* ===== FLOATING EXIT BUTTON (preview / fullscreen mode) — same style as Sequencing ===== */
+  .mtg-exit-float{
+    display:none; position:fixed; top:14px; right:14px; z-index:100;
+    align-items:center; gap:6px; cursor:pointer; border:none;
+    background:rgba(36,58,94,.85); color:#fff; font-family:var(--font); font-weight:700; font-size:13px;
+    padding:10px 18px; border-radius:30px; box-shadow:0 6px 18px rgba(0,0,0,.25);
+  }
+  .mtg-exit-float:hover{ background:rgba(36,58,94,1); }
+  body.mtg-preview-only .mtg-exit-float{ display:flex; }
+
+  /* ===== SCORE MODAL (shown after "Check answers") ===== */
+  .mtg-modal-overlay{ position:fixed; inset:0; background:rgba(36,58,94,.55); z-index:80;
+    display:none; align-items:center; justify-content:center; padding:20px; }
+  .mtg-modal-overlay.show{ display:flex; }
+  .mtg-modal-card{ background:#fff; border-radius:26px; padding:34px 30px; max-width:360px; width:100%;
+    text-align:center; box-shadow:0 24px 60px rgba(0,0,0,.3); animation:mtgPop .22s ease; }
+  @keyframes mtgPop{ from{ transform:scale(.85); opacity:0; } to{ transform:scale(1); opacity:1; } }
+  .mtg-modal-emoji{ width:110px; height:110px; object-fit:contain; margin-bottom:12px; animation:mtgRewardFloat 2s ease-in-out infinite; }
+  @keyframes mtgRewardFloat{ 0%,100%{ transform:translateY(0) scale(1); } 50%{ transform:translateY(-10px) scale(1.06); } }
+  .mtg-modal-score{ font-size:26px; font-weight:800; color:var(--ink); margin:4px 0 8px; }
+  .mtg-modal-msg{ font-size:14px; font-weight:600; color:var(--ink-soft); margin-bottom:22px; line-height:1.5; }
+  .mtg-modal-actions{ display:flex; gap:10px; }
+  .mtg-modal-actions button{ flex:1; cursor:pointer; border:none; font-family:var(--font); font-weight:700; font-size:14px; padding:13px; border-radius:14px; }
+  .mtg-modal-try{ background:var(--purple); color:#fff; box-shadow:0 4px 0 var(--purple-dark); }
+  .mtg-modal-close{ background:#eef2f8; color:var(--ink-soft); }
+
+  /* ===== PUBLISH MODAL (shown when "Publish" is clicked) ===== */
+  .mtg-publish-card{ max-width:380px; text-align:left; }
+  .mtg-publish-card h3{ text-align:center; font-size:18px; font-weight:800; color:var(--ink); margin-bottom:16px; }
+  .mtg-publish-thumb-wrap{ border:1.5px solid var(--field-border); background:var(--field); border-radius:14px;
+    padding:8px; margin-bottom:16px; }
+  .mtg-publish-thumb-wrap img{ width:100%; border-radius:10px; display:block; }
+  .mtg-publish-thumb-empty{ height:120px; display:flex; align-items:center; justify-content:center;
+    color:var(--ink-soft); font-size:12.5px; font-weight:600; text-align:center; padding:0 10px; }
+  .mtg-publish-field{ margin-bottom:18px; }
+  .mtg-publish-field label{ display:block; font-size:12.5px; font-weight:700; color:var(--ink-soft);
+    margin-bottom:6px; }
+  .mtg-publish-field input[type="date"]{ width:100%; padding:10px 12px; border-radius:10px;
+    border:1.5px solid var(--field-border); background:#fff; font-family:var(--font); font-size:14px;
+    color:var(--ink); outline:none; }
+  .mtg-publish-field input[type="date"]:focus{ border-color:var(--purple); }
+  .mtg-publish-field .mtg-publish-hint{ font-size:11.5px; color:var(--ink-soft); font-weight:500; margin-top:5px; }
+  .mtg-publish-confirm{ background:var(--green); color:#fff; box-shadow:0 4px 0 var(--green-dark); }
+  .mtg-grading-radios{ display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+  .mtg-grad-opt{ display:flex; align-items:center; gap:5px; font-size:13px; font-weight:600;
+    color:var(--ink); cursor:pointer; padding:6px 10px; border:1.5px solid var(--field-border);
+    border-radius:8px; background:#fff; transition:border-color .15s,background .15s; }
+  .mtg-grad-opt:has(input:checked){ border-color:var(--purple); background:#f5f3ff; color:var(--purple); }
+  .mtg-grad-opt input[type="radio"]{ accent-color:var(--purple); cursor:pointer; }
+
+  @media (max-width:1100px){
+    .mtg-body{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+<div id="spedLoading" style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 60%,#2563eb 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .5s ease;pointer-events:all;">
+  <img src="../../ASSETS/logo.png" alt="SPED ALM" onerror="this.style.display='none'" style="width:88px;height:88px;border-radius:22px;background:#fff;padding:6px;box-shadow:0 10px 36px rgba(0,0,0,.35);animation:spedLdPulse 2s ease-in-out infinite;">
+  <p style="color:#fff;font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;margin:0;letter-spacing:1px;text-shadow:0 2px 8px rgba(0,0,0,.2);">SPED ALM</p>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite 0s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .18s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .36s;"></span>
+  </div>
+  <p style="color:rgba(255,255,255,.65);font-family:'Poppins',sans-serif;font-size:13px;font-weight:400;margin:0;">Loading, please wait...</p>
+</div>
+<style>
+@keyframes spedLdBounce{0%,80%,100%{transform:translateY(0);opacity:.5}40%{transform:translateY(-16px);opacity:1}}
+@keyframes spedLdPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+</style>
+<script>
+(function(){
+  function hideLoader(){
+    var e=document.getElementById('spedLoading');
+    if(!e) return;
+    e.style.opacity='0';
+    e.style.pointerEvents='none';
+    setTimeout(function(){ if(e.parentNode) e.parentNode.removeChild(e); }, 520);
+  }
+  if(document.readyState==='complete'){ setTimeout(hideLoader,200); }
+  else { window.addEventListener('load', function(){ setTimeout(hideLoader,200); }); }
+})();
+</script>
+
+  <!-- Floating exit button (visible only in preview/fullscreen mode — works even on phones without an ESC key) -->
+  <button class="mtg-exit-float" id="mtgExitFloatBtn" type="button">✖ Exit</button>
+
+  <!-- TOP BAR -->
+  <div class="mtg-top">
+    <div class="mtg-logo">🧩</div>
+    <div>
+      <h1>Matching Type Template Generator</h1>
+      <div class="mtg-tsub">Create matching type activities for learners (ASD / Intellectual Disability)</div>
+    </div>
+    <div class="mtg-top-actions">
+      <button class="mtg-btn mtg-btn--print" id="mtgPrintBtn" type="button">🖨️ Generate Printable</button>
+      <button class="mtg-btn mtg-btn--ghost" id="mtgPreviewBtn" type="button">👁 Preview</button>
+      <button class="mtg-btn mtg-btn--ghost" id="mtgDraftBtn" type="button">💾 Save Draft</button>
+      <button class="mtg-btn mtg-btn--pub" id="mtgPubBtn" type="button">🌐 Publish</button>
+    </div>
+  </div>
+
+  <!-- BODY -->
+  <div class="mtg-body">
+
+    <!-- LEFT COLUMN -->
+    <div class="mtg-left-col">
+
+      <!-- Multiple activities (slides) inside one activity set -->
+      <div class="mtg-card">
+        <div class="mtg-step">Activity Slides <span class="mtg-edit-link">(suggested: ~5 per set)</span></div>
+        <div class="mtg-slidebar">
+          <button id="mtgPrevSlide" type="button">◂</button>
+          <div class="mtg-slide-label" id="mtgSlideLabel">Slide 1 of 1</div>
+          <button id="mtgNextSlide" type="button">▸</button>
+        </div>
+        <div class="mtg-slide-actions">
+          <button id="mtgAddSlide" type="button">+ Add Slide</button>
+          <button id="mtgDeleteSlide" type="button" class="danger">🗑 Delete</button>
+        </div>
+      </div>
+
+      <div class="mtg-card">
+        <div class="mtg-step">1. Activity Type</div>
+        <div class="mtg-type">
+          <div class="mtg-type-ic">🧩</div>
+          <b>Matching Type</b>
+        </div>
+        <p class="mtg-type-desc">Learners match pictures from the left column to the correct items on the right.</p>
+      </div>
+
+      <div class="mtg-card">
+        <div class="mtg-step">2. Items <span class="mtg-edit-link">(left ↔ right = correct pair)</span></div>
+        <div id="mtgItems"></div>
+        <button class="mtg-add" id="mtgAddItem" type="button">+ Add Item</button>
+      </div>
+
+      <div class="mtg-card">
+        <div class="mtg-step">3. Thumbnail Image <span class="mtg-edit-link">(Upload)</span></div>
+        <div class="mtg-thumbbox">
+          <div class="mtg-thumb-check" id="mtgThumbCheck">✓</div>
+          <img id="mtgThumbImg" alt="Thumbnail" style="display:none" />
+          <div class="mtg-thumb-empty" id="mtgThumbEmpty">No thumbnail yet.<br>Upload or press Publish.</div>
+        </div>
+        <label class="mtg-change">⬆ Change Image<input type="file" accept="image/*" id="mtgThumbUpload" hidden /></label>
+      </div>
+    </div>
+
+    <!-- CENTER PREVIEW -->
+    <div class="mtg-preview-col">
+      <div class="mtg-step">4. Activity Preview</div>
+      <div class="mtg-stage" id="mtgStage">
+        <div class="mtg-deco">
+          <span class="d-sun">☀️</span><span class="d-cloud1">☁️</span><span class="d-cloud2">☁️</span>
+          <div class="d-grass"></div><span class="d-flower1">🌼</span><span class="d-flower2">🌸</span>
+        </div>
+        <div class="mtg-stage-inner" id="mtgStageInner">
+          <div class="mtg-title" id="mtgTitle"></div>
+          <div class="mtg-instr" id="mtgInstr"></div>
+          <div class="mtg-match" id="mtgMatch">
+            <svg class="mtg-lines" id="mtgLines"></svg>
+            <div class="mtg-col mtg-col-left" id="mtgLeft"></div>
+            <div class="mtg-col mtg-col-right" id="mtgRight"></div>
+          </div>
+          <div class="mtg-stage-controls">
+            <div class="mtg-hint" id="mtgHint"></div>
+            <div class="mtg-stage-btnrow">
+              <button class="mtg-mini mtg-mini--reset" id="mtgReset" type="button">↺ Try Again</button>
+              <button class="mtg-mini mtg-mini--check" id="mtgCheck" type="button">✓ Check answers</button>
+            </div>
+            <div class="mtg-stage-nav" id="mtgStageNav">
+              <button id="mtgStagePrev" type="button">◂ Previous</button>
+              <span id="mtgStageSlideLabel">Slide 1 of 1</span>
+              <button id="mtgStageNext" type="button">Next ▸</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mtg-reminders">
+        <div class="r-title">♿ Accessibility Reminders</div>
+        <div class="mtg-rem-list">
+          <div class="mtg-rem"><span class="r-ic">🖼️</span>Use clear real images</div>
+          <div class="mtg-rem"><span class="r-ic">🎨</span>High contrast colors</div>
+          <div class="mtg-rem"><span class="r-ic">🔠</span>Large fonts</div>
+          <div class="mtg-rem"><span class="r-ic">💬</span>Simple instructions</div>
+          <div class="mtg-rem"><span class="r-ic">✅</span>One concept per page</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT SETTINGS -->
+    <div class="mtg-right-col" id="mtgRightCol">
+      <div class="mtg-card mtg-right-panel-full" id="mtgRightPanelFull">
+        <div class="mtg-set-title">🎨 Design &amp; Settings
+          <button class="mtg-collapse-btn" id="mtgCollapseBtn" type="button" title="Hide panel">⮜</button>
+        </div>
+
+        <div class="mtg-set-group">
+          <div class="mtg-set-label">Background Color</div>
+          <div class="mtg-swatches" id="mtgSwatches"></div>
+        </div>
+
+        <div class="mtg-set-group">
+          <div class="mtg-set-label">Fonts</div>
+          <select class="mtg-select" id="mtgFont">
+            <option value="'Comic Sans MS','Comic Sans',cursive">Comic Sans MS</option>
+            <option value="'Fredoka',sans-serif">Fredoka</option>
+            <option value="'Nunito',sans-serif">Nunito</option>
+            <option value="'Poppins',sans-serif">Poppins</option>
+            <option value="Verdana,sans-serif">Verdana</option>
+            <option value="Arial,sans-serif">Arial</option>
+          </select>
+        </div>
+
+        <div class="mtg-set-group">
+          <div class="mtg-size-head">
+            <div class="mtg-set-label" style="margin:0">Font Size</div>
+            <input class="mtg-size-num" id="mtgSizeNum" type="number" min="20" max="64" />
+          </div>
+          <div class="mtg-size-row">
+            <span class="a-sm">A</span>
+            <input type="range" id="mtgSize" min="20" max="64" step="1" />
+            <span class="a-lg">A</span>
+          </div>
+        </div>
+
+        <div class="mtg-set-group">
+          <div class="mtg-set-label">Text Color</div>
+          <div class="mtg-color-row">
+            <input type="color" id="mtgTextColor" />
+            <span style="font-size:13px;color:var(--ink-soft);font-weight:600">Title &amp; labels</span>
+          </div>
+        </div>
+
+        <div class="mtg-set-group">
+          <div class="mtg-set-label">Border Style</div>
+          <div class="mtg-seg" id="mtgBorder">
+            <button data-b="rounded" class="sel" type="button"><span class="seg-box seg-rounded"></span>Rounded</button>
+            <button data-b="dashed" type="button"><span class="seg-box seg-dashed"></span>Dashed</button>
+            <button data-b="solid" type="button"><span class="seg-box seg-solid"></span>Solid</button>
+          </div>
+        </div>
+
+        <div class="mtg-set-group">
+          <div class="mtg-set-label">Spacing</div>
+          <div class="mtg-spacing">
+            <button id="mtgSpaceMinus" type="button">−</button>
+            <span id="mtgSpaceVal">Medium</span>
+            <button id="mtgSpacePlus" type="button">+</button>
+          </div>
+        </div>
+
+        <div class="mtg-set-group">
+          <div class="mtg-set-label">Instruction Text</div>
+          <input class="mtg-input" id="mtgInstrInput" type="text" />
+        </div>
+
+        <div class="mtg-set-group">
+          <div class="mtg-set-label">Title</div>
+          <input class="mtg-input" id="mtgTitleInput" type="text" />
+        </div>
+
+        <div class="mtg-set-group">
+          <div class="mtg-set-label">Other Options</div>
+          <label class="mtg-check"><input type="checkbox" id="mtgShowTitle" checked /> Show title</label>
+          <label class="mtg-check"><input type="checkbox" id="mtgShowInstr" checked /> Show instructions</label>
+          <label class="mtg-check"><input type="checkbox" id="mtgShowDeco" checked /> Show decorations</label>
+        </div>
+
+        <div class="mtg-set-actions">
+          <button class="mtg-reset" id="mtgResetAll" type="button">↻ Reset</button>
+          <button class="mtg-apply" id="mtgApply" type="button">✓ Apply Changes</button>
+        </div>
+      </div>
+
+      <!-- Shown instead of the settings panel whenever it is hidden,
+           so this space is never left empty. -->
+      <div class="mtg-tip mtg-right-panel-guide" id="mtgRightPanelGuide">
+        <b>💡 Template Guide
+          <button class="mtg-guide-settings-btn" id="mtgShowSettingsBtn" type="button" title="Show Design & Settings">🎨 Settings</button>
+        </b>
+        <p>
+          • Upload your own images.<br>
+          • Add optional text labels.<br>
+          • Change colors, fonts, and spacing.<br>
+          • Preview before publishing.<br>
+          • Create as many matching pairs as needed.
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SCORE MODAL (appears after "Check answers") -->
+  <div class="mtg-modal-overlay" id="mtgModalOverlay">
+    <div class="mtg-modal-card">
+      <img class="mtg-modal-emoji" id="mtgModalEmoji" src="" alt="Result" />
+      <div class="mtg-modal-score" id="mtgModalScore">0 / 0 correct</div>
+      <div class="mtg-modal-msg" id="mtgModalMsg">Great job!</div>
+      <div id="mtgRetakeInfo" style="display:none;font-size:12px;color:#64748b;margin-bottom:4px;"></div>
+      <div class="mtg-modal-actions">
+        <button class="mtg-modal-close" id="mtgModalCloseBtn" type="button">✖ Close</button>
+        <button class="mtg-modal-try" id="mtgModalTryBtn" type="button">🔁 Try Again</button>
+        <button class="mtg-modal-try mtg-publish-confirm" id="mtgStudentSubmitBtn" type="button" style="display:none;">✅ Submit Final Answer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PUBLISH MODAL (appears when "Publish" is clicked) -->
+  <div class="mtg-modal-overlay" id="mtgPublishOverlay">
+    <div class="mtg-modal-card mtg-publish-card">
+      <h3>🌐 Publish Activity</h3>
+      <div class="mtg-publish-thumb-wrap" id="mtgPublishThumbWrap">
+        <div class="mtg-publish-thumb-empty" id="mtgPublishThumbEmpty">No thumbnail uploaded yet.</div>
+        <img id="mtgPublishThumbImg" alt="Activity thumbnail preview" style="display:none" />
+      </div>
+      <div class="mtg-publish-field">
+        <label>📚 Grading Period</label>
+        <div class="mtg-grading-radios">
+          <label class="mtg-grad-opt"><input type="radio" name="mtgGrading" value="First" checked /> 1st Grading</label>
+          <label class="mtg-grad-opt"><input type="radio" name="mtgGrading" value="Second" /> 2nd Grading</label>
+          <label class="mtg-grad-opt"><input type="radio" name="mtgGrading" value="Third" /> 3rd Grading</label>
+        </div>
+      </div>
+      <div class="mtg-publish-field">
+        <label>👤 Assign to Learner</label>
+        <select id="mtgLearnerSelect" title="Assigned learner" style="width:100%;padding:8px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;color:#475569;background:#f1f5f9;margin-top:4px;pointer-events:none;appearance:none;-webkit-appearance:none;cursor:default;">
+          <option value="">Loading learners...</option>
+        </select>
+        <div class="mtg-publish-hint">Pre-filled from your selected learner profile.</div>
+      </div>
+      <div class="mtg-publish-field">
+        <label for="mtgDeadlineInput">📅 Deadline</label>
+        <input type="date" id="mtgDeadlineInput" />
+        <div class="mtg-publish-hint">Choose the last day the activity can still be submitted.</div>
+      </div>
+      <div class="mtg-modal-actions">
+        <button class="mtg-modal-close" id="mtgPublishCancelBtn" type="button">✖ Cancel</button>
+        <button class="mtg-modal-try mtg-publish-confirm" id="mtgPublishConfirmBtn" type="button">✅ Confirm Publish</button>
+      </div>
+    </div>
+  </div>
+
+
+<script>
+/* =====================================================================
+   MATCHING TYPE TEMPLATE GENERATOR — main script
+   Sections below:
+     1. STATE            – design settings + the list of activity slides
+     2. SLIDE NAVIGATION – switching / adding / deleting activity slides
+     3. ITEMS EDITOR     – the left-hand "Items" list (teacher input)
+     4. ACTIVITY PREVIEW – the left↔right matching interaction
+     5. SCORE MODAL      – popup shown after "Check answers"
+     6. APPEARANCE       – design & settings panel (right column)
+     7. TOP BAR ACTIONS  – preview / save / collapse panel / publish
+     8. INIT             – first render on page load
+   ===================================================================== */
+
+  const $ = id => document.getElementById(id);
+
+  /* student-mode flags (set by initStudentMode below) */
+  var _stuMode = false, _stuPubId = '', _stuRetake = 0,
+      _stuLastScore = null, _stuLastTotal = null, _stuProg = [];
+
+  /* ── IndexedDB helper (large data — no quota limit) ─────────── */
+  var _idb = (function(){
+    var DB='sped_alm_db', VER=1, ST='blobs';
+    function open(cb){
+      var r=indexedDB.open(DB,VER);
+      r.onupgradeneeded=function(e){e.target.result.createObjectStore(ST);};
+      r.onsuccess=function(e){cb(null,e.target.result);};
+      r.onerror=function(e){cb(e.target.error,null);};
+    }
+    return {
+      save:function(key,val,cb){open(function(err,db){if(err){cb&&cb(err);return;}var tx=db.transaction(ST,'readwrite');tx.objectStore(ST).put(val,key);tx.oncomplete=function(){cb&&cb(null);};tx.onerror=function(e){cb&&cb(e.target.error);};});},
+      load:function(key,cb){open(function(err,db){if(err){cb(err,null);return;}var tx=db.transaction(ST,'readonly');var r=tx.objectStore(ST).get(key);r.onsuccess=function(){cb(null,r.result||null);};r.onerror=function(e){cb(e.target.error,null);};});},
+      del:function(key,cb){open(function(err,db){if(err){cb&&cb(err);return;}var tx=db.transaction(ST,'readwrite');tx.objectStore(ST).delete(key);tx.oncomplete=function(){cb&&cb(null);};});}
+    };
+  })();
+
+  /* ------------------------------------------------------------- *
+   * 1. STATE
+   * ------------------------------------------------------------- */
+
+  // Design settings are shared by every slide, so the whole activity
+  // set keeps one consistent look.
+  const DEFAULT_DESIGN = {
+    bg:"#fdf6d8", font:"'Comic Sans MS','Comic Sans',cursive", fontSize:40,
+    textColor:"#243a5e", border:"rounded", spacing:"Medium",
+    showTitle:true, showInstr:true, showDeco:true
+  };
+  const BG_SWATCHES = ["#fdf6d8","#eaf2ff","#e8faf0","#f0eefc","#fdebf2","#ffffff"];
+  const SPACINGS = ["Small","Medium","Large"];
+  const SPACE_GAP = { Small:10, Medium:16, Large:24 };
+
+  // One "activity" = one matching task (its own title, instruction, pairs).
+  function makeDefaultActivity(){
+    return {
+      title:"Match the Pictures",
+      instruction:"Draw a line to match the same pictures.",
+      items:[
+        {left:{img:null,emoji:"🍎"}, right:{img:null,emoji:"🍎"}},
+        {left:{img:null,emoji:"⚽"}, right:{img:null,emoji:"⚽"}},
+        {left:{img:null,emoji:"🐱"}, right:{img:null,emoji:"🐱"}},
+        {left:{img:null,emoji:"☕"}, right:{img:null,emoji:"☕"}},
+        {left:{img:null,emoji:"🚗"}, right:{img:null,emoji:"🚗"}}
+      ]
+    };
+  }
+  function makeBlankActivity(slideNumber){
+    return {
+      title:"New Activity "+slideNumber,
+      instruction:"Draw a line to match the same pictures.",
+      items:[
+        {left:{img:null,emoji:"⭐"}, right:{img:null,emoji:"⭐"}},
+        {left:{img:null,emoji:"⭐"}, right:{img:null,emoji:"⭐"}}
+      ]
+    };
+  }
+
+  const state = {
+    ...structuredClone(DEFAULT_DESIGN),
+    thumb:null,
+    activities:[ makeDefaultActivity() ], // the slides in this activity set
+    currentIndex:0                         // which slide is being edited/previewed
+  };
+
+  // Shortcut used everywhere below: "the slide we are currently working on".
+  function currentActivity(){ return state.activities[state.currentIndex]; }
+
+  // Matching interaction state — reset whenever a new slide is shown.
+  let shuffled = [], selectedLeft = null, matches = {};
+  // How much the stage is currently scaled down to fit the screen in
+  // preview mode (1 = no scaling). Used to keep the SVG lines aligned.
+  let stageScale = 1;
+
+  const stage = $("mtgStage"), stageInner = $("mtgStageInner"), leftCol = $("mtgLeft"), rightCol = $("mtgRight"),
+        linesSvg = $("mtgLines"), matchBox = $("mtgMatch");
+
+  /* ------------------------------------------------------------- *
+   * 2. SLIDE NAVIGATION (multiple activities in one set)
+   * ------------------------------------------------------------- */
+
+  function renderSlideNav(){
+    const total = state.activities.length;
+    $("mtgSlideLabel").textContent = `Slide ${state.currentIndex+1} of ${total}`;
+    $("mtgPrevSlide").disabled = state.currentIndex === 0;
+    $("mtgNextSlide").disabled = state.currentIndex === total-1;
+    $("mtgDeleteSlide").disabled = total <= 1;
+
+    // Keep the in-stage navigator (visible even in student/preview mode) in sync.
+    $("mtgStageSlideLabel").textContent = `Slide ${state.currentIndex+1} of ${total}`;
+    $("mtgStagePrev").disabled = state.currentIndex === 0;
+    $("mtgStageNext").disabled = state.currentIndex === total-1;
+    $("mtgStageNav").style.display = total > 1 ? "flex" : "none";
+  }
+
+  // Re-draws everything that depends on which slide is active.
+  function refreshSlideUI(){
+    renderItems();
+    $("mtgTitleInput").value = currentActivity().title;
+    $("mtgInstrInput").value = currentActivity().instruction;
+    renderActivity();
+    renderSlideNav();
+  }
+
+  function goToSlide(index){
+    state.currentIndex = Math.max(0, Math.min(state.activities.length-1, index));
+    refreshSlideUI();
+  }
+
+  $("mtgPrevSlide").addEventListener("click", ()=> goToSlide(state.currentIndex-1));
+  $("mtgNextSlide").addEventListener("click", ()=> goToSlide(state.currentIndex+1));
+  $("mtgStagePrev").addEventListener("click", ()=> goToSlide(state.currentIndex-1));
+  $("mtgStageNext").addEventListener("click", ()=> goToSlide(state.currentIndex+1));
+
+  $("mtgAddSlide").addEventListener("click", ()=>{
+    state.activities.push(makeBlankActivity(state.activities.length+1));
+    goToSlide(state.activities.length-1); // jump straight to the new slide
+  });
+
+  $("mtgDeleteSlide").addEventListener("click", ()=>{
+    if (state.activities.length <= 1){ alert("Keep at least one slide."); return; }
+    state.activities.splice(state.currentIndex, 1);
+    goToSlide(Math.min(state.currentIndex, state.activities.length-1));
+  });
+
+  /* ------------------------------------------------------------- *
+   * 3. ITEMS EDITOR (left column "Items" list)
+   * ------------------------------------------------------------- */
+
+  function sideEditor(itemIndex, side){
+    const items = currentActivity().items;
+    const it = items[itemIndex][side];
+    const box = document.createElement("div"); box.className = "mtg-side";
+    const lbl = document.createElement("label"); lbl.className = "mtg-thumb";
+    if (it.img){ const im = document.createElement("img"); im.src = it.img; lbl.appendChild(im); }
+    else { lbl.textContent = it.emoji || "+"; }
+    const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*"; inp.hidden = true;
+    inp.addEventListener("change", e=>{
+      const f = e.target.files[0]; if (!f) return;
+      const r = new FileReader();
+      r.onload = ev=>{ items[itemIndex][side].img = ev.target.result; renderItems(); renderActivity(); };
+      r.readAsDataURL(f);
+    });
+    lbl.appendChild(inp); box.appendChild(lbl);
+    const name = document.createElement("input");
+    name.className = "mtg-side-name"; name.placeholder = "Name (optional)"; name.value = it.name || "";
+    name.addEventListener("input", e=>{ items[itemIndex][side].name = e.target.value; renderActivity(); });
+    box.appendChild(name);
+    return box;
+  }
+
+  function renderItems(){
+    const wrap = $("mtgItems"); wrap.innerHTML = "";
+    const items = currentActivity().items;
+    items.forEach((it, i)=>{
+      const row = document.createElement("div"); row.className = "mtg-item-row";
+      row.appendChild(sideEditor(i, "left"));
+      const ar = document.createElement("span"); ar.className = "mtg-row-arrow"; ar.textContent = "→"; row.appendChild(ar);
+      row.appendChild(sideEditor(i, "right"));
+      const menu = document.createElement("button"); menu.className = "mtg-item-menu"; menu.type = "button"; menu.textContent = "⋮";
+      const pop = document.createElement("div"); pop.className = "mtg-pop";
+      const del = document.createElement("button"); del.className = "del"; del.type = "button"; del.textContent = "🗑 Remove item";
+      del.addEventListener("click", ()=>{
+        if (items.length <= 2){ alert("Keep at least 2 items."); return; }
+        items.splice(i, 1); renderItems(); renderActivity();
+      });
+      pop.appendChild(del);
+      menu.addEventListener("click", e=>{
+        e.stopPropagation();
+        document.querySelectorAll(".mtg-pop").forEach(p=>{ if (p !== pop) p.classList.remove("show"); });
+        pop.classList.toggle("show");
+      });
+      row.appendChild(menu); row.appendChild(pop);
+      wrap.appendChild(row);
+    });
+  }
+  document.addEventListener("click", ()=> document.querySelectorAll(".mtg-pop").forEach(p=> p.classList.remove("show")));
+
+  $("mtgAddItem").addEventListener("click", ()=>{
+    currentActivity().items.push({ left:{img:null,emoji:"⭐"}, right:{img:null,emoji:"⭐"} });
+    renderItems(); renderActivity();
+  });
+
+  /* ------------------------------------------------------------- *
+   * 4. ACTIVITY PREVIEW (left ↔ right matching interaction)
+   * ------------------------------------------------------------- */
+
+  function shuffle(array){
+    const copy = array.slice();
+    for (let i = copy.length-1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i+1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  let dragFromIndex = null, dragStartX = 0, dragStartY = 0, dragMoved = false, tempLine = null;
+
+  function pitem(itemIndex, side){
+    const it = currentActivity().items[itemIndex][side];
+    const el = document.createElement("div"); el.className = "mtg-pitem"; el.dataset.i = itemIndex;
+    if (it.img){ const im = document.createElement("img"); im.className = "mtg-pitem-img"; im.src = it.img; el.appendChild(im); }
+    else { const sp = document.createElement("div"); sp.className = "mtg-pitem-emoji"; sp.textContent = it.emoji || "?"; el.appendChild(sp); }
+    if (it.name){ const nm = document.createElement("div"); nm.className = "mtg-pitem-name"; nm.textContent = it.name; el.appendChild(nm); }
+    const dot = document.createElement("span"); dot.className = "mtg-dot"; el.appendChild(dot);
+
+    if (side === "left"){
+      // Press-and-drag from a left picture straight to its right pair —
+      // the connecting line follows the finger/cursor as you drag.
+      el.addEventListener("pointerdown", e=> startDrag(itemIndex, el, e));
+    } else {
+      // Right-side pictures are the drop targets. Plain tapping still
+      // works too (select a left item, then tap its right pair) for
+      // learners who find press-and-drag harder.
+      el.addEventListener("click", ()=> selectRight(itemIndex));
+    }
+    return el;
+  }
+
+  // Renders the whole matching board for the slide that is currently active.
+  function renderActivity(){
+    const activity = currentActivity();
+    $("mtgTitle").textContent = activity.title;
+    $("mtgInstr").textContent = activity.instruction;
+    $("mtgTitle").style.display = state.showTitle ? "block" : "none";
+    $("mtgInstr").style.display = state.showInstr ? "block" : "none";
+
+    selectedLeft = null; matches = {};
+    shuffled = shuffle(activity.items.map((_, i)=> i));
+    leftCol.innerHTML = ""; rightCol.innerHTML = "";
+    activity.items.forEach((_, i)=> leftCol.appendChild(pitem(i, "left")));
+    shuffled.forEach(i=> rightCol.appendChild(pitem(i, "right")));
+    $("mtgHint").textContent = "";
+    drawLines();
+    if (document.body.classList.contains("mtg-preview-only")) setTimeout(fitStageToScreen, 30);
+  }
+
+  // ----- Tap-to-connect (select a left item, then tap its right pair) -----
+  function selectLeft(itemIndex, el){
+    selectedLeft = itemIndex;
+    leftCol.querySelectorAll(".mtg-pitem").forEach(x=> x.classList.remove("sel"));
+    el.classList.add("sel");
+  }
+  function selectRight(itemIndex){
+    if (selectedLeft === null) return;
+    matches[selectedLeft] = itemIndex;
+    leftCol.querySelectorAll(".mtg-pitem").forEach(x=> x.classList.remove("sel"));
+    selectedLeft = null;
+    $("mtgHint").textContent = "";
+    drawLines();
+  }
+
+  // ----- Drag-to-connect (press a left item and drag a line to its pair) -----
+  function startDrag(itemIndex, el, e){
+    e.preventDefault();
+    dragFromIndex = itemIndex; dragStartX = e.clientX; dragStartY = e.clientY; dragMoved = false;
+    selectLeft(itemIndex, el);
+    tempLine = document.createElementNS(SVG_NS, "line");
+    tempLine.setAttribute("stroke", "#000"); tempLine.setAttribute("stroke-width", "5");
+    tempLine.setAttribute("stroke-linecap", "round"); tempLine.setAttribute("stroke-dasharray", "10,8");
+    linesSvg.appendChild(tempLine);
+    document.addEventListener("pointermove", onDragMove);
+    document.addEventListener("pointerup", onDragEnd, { once:true });
+  }
+  function onDragMove(e){
+    if (dragFromIndex === null || !tempLine) return;
+    if (Math.abs(e.clientX-dragStartX) > 4 || Math.abs(e.clientY-dragStartY) > 4) dragMoved = true;
+    const lEl = leftCol.querySelector('[data-i="'+dragFromIndex+'"]');
+    const a = ctr(lEl), b = matchBox.getBoundingClientRect();
+    const x2 = (e.clientX-b.left)/stageScale, y2 = (e.clientY-b.top)/stageScale;
+    tempLine.setAttribute("x1", a.x); tempLine.setAttribute("y1", a.y);
+    tempLine.setAttribute("x2", x2); tempLine.setAttribute("y2", y2);
+  }
+  function onDragEnd(e){
+    document.removeEventListener("pointermove", onDragMove);
+    if (tempLine){ tempLine.remove(); tempLine = null; }
+    const fromIndex = dragFromIndex; dragFromIndex = null;
+    if (fromIndex === null || !dragMoved) return; // a plain tap — let selectLeft's highlight stand, waiting for a tap on the right side
+    const dropTarget = document.elementFromPoint(e.clientX, e.clientY);
+    const rightEl = dropTarget ? dropTarget.closest(".mtg-pitem") : null;
+    if (rightEl && rightCol.contains(rightEl)){
+      matches[fromIndex] = +rightEl.dataset.i;
+      selectedLeft = null;
+      leftCol.querySelectorAll(".mtg-pitem").forEach(x=> x.classList.remove("sel"));
+      $("mtgHint").textContent = "";
+    }
+    drawLines();
+  }
+
+  function ctr(el){
+    const dot = el.querySelector(".mtg-dot");
+    const target = dot || el;
+    const r = target.getBoundingClientRect(), b = matchBox.getBoundingClientRect();
+    // Divide out the current zoom-to-fit scale: the rectangles above are
+    // already in real screen pixels (post-scale), but the <line> we draw
+    // lives inside the same scaled wrapper, so it would get scaled a
+    // second time unless we compensate here.
+    return {
+      x:(r.left + r.width/2 - b.left)/stageScale,
+      y:(r.top + r.height/2 - b.top)/stageScale
+    };
+  }
+  function line(x1, y1, x2, y2, color){
+    const ln = document.createElementNS(SVG_NS, "line");
+    ln.setAttribute("x1", x1); ln.setAttribute("y1", y1); ln.setAttribute("x2", x2); ln.setAttribute("y2", y2);
+    ln.setAttribute("stroke", color); ln.setAttribute("stroke-width", "5"); ln.setAttribute("stroke-linecap", "round");
+    linesSvg.appendChild(ln);
+  }
+  function drawLines(){
+    linesSvg.innerHTML = "";
+    Object.keys(matches).forEach(li=>{
+      const ri = matches[li];
+      const lEl = leftCol.querySelector('[data-i="'+li+'"]'), rEl = rightCol.querySelector('[data-i="'+ri+'"]');
+      if (!lEl || !rEl) return;
+      const a = ctr(lEl), c = ctr(rEl), color = "#000000";
+      line(a.x, a.y, c.x, c.y, color); lEl.style.borderColor = color; rEl.style.borderColor = color;
+    });
+  }
+
+  function resetMatches(){
+    matches = {}; selectedLeft = null;
+    document.querySelectorAll(".mtg-pitem").forEach(x=>{ x.classList.remove("sel"); x.style.borderColor = ""; });
+    $("mtgHint").textContent = "";
+    drawLines();
+  }
+  $("mtgReset").addEventListener("click", resetMatches);
+
+  $("mtgCheck").addEventListener("click", ()=>{
+    const totalItems = currentActivity().items.length;
+    if (Object.keys(matches).length < totalItems){
+      $("mtgHint").textContent = "Match all the items first before checking.";
+      return;
+    }
+    document.querySelectorAll(".mtg-pitem").forEach(x=> x.style.borderColor = ""); linesSvg.innerHTML = "";
+    let correctCount = 0;
+    Object.keys(matches).forEach(li=>{
+      const ri = matches[li], isCorrect = (+li === +ri), color = isCorrect ? "#1f9d44" : "#e23b54";
+      if (isCorrect) correctCount++;
+      const lEl = leftCol.querySelector('[data-i="'+li+'"]'), rEl = rightCol.querySelector('[data-i="'+ri+'"]');
+      const a = ctr(lEl), c = ctr(rEl); line(a.x, a.y, c.x, c.y, color); lEl.style.borderColor = color; rEl.style.borderColor = color;
+    });
+    openScoreModal(correctCount, totalItems);
+  });
+  window.addEventListener("resize", ()=>{
+    if (document.body.classList.contains("mtg-preview-only")) fitStageToScreen();
+    else drawLines();
+  });
+
+  /* ------------------------------------------------------------- *
+   * 5. SCORE MODAL
+   * ------------------------------------------------------------- */
+
+  function openScoreModal(correctCount, totalItems){
+    const percent = correctCount / totalItems;
+    let image, message;
+    if (percent === 1){
+      image = "images/perfect.png";
+      message = "Perfect! You got them all correct! 🎊";
+      confetti({ particleCount:200, spread:120, startVelocity:40, origin:{ y:0.6 } });
+      setTimeout(()=>{
+        confetti({ particleCount:100, spread:80, origin:{ x:0.2, y:0.6 } });
+        confetti({ particleCount:100, spread:80, origin:{ x:0.8, y:0.6 } });
+      }, 300);
+    }
+    else if (percent >= 0.5){ image = "images/goodjob.png"; message = "Good job! Just a little more practice! ⭐"; }
+    else { image = "images/tryagain.png"; message = "Let's try again! Practice makes perfect! 💪"; }
+
+    $("mtgModalEmoji").src = image;
+    $("mtgModalScore").textContent = `${correctCount} / ${totalItems} correct`;
+    $("mtgModalMsg").textContent = message;
+    $("mtgModalOverlay").classList.add("show");
+
+    if (_stuMode) {
+      _stuLastScore = correctCount; _stuLastTotal = totalItems;
+      $("mtgModalCloseBtn").style.display = "none";
+      $("mtgModalTryBtn").textContent = "🔁 Retake";
+      $("mtgStudentSubmitBtn").style.display = "";
+      var ri = $("mtgRetakeInfo");
+      ri.style.display = _stuRetake > 0 ? "" : "none";
+      if (_stuRetake > 0) ri.textContent = "Retakes so far: " + _stuRetake;
+    }
+  }
+  function closeScoreModal(){ $("mtgModalOverlay").classList.remove("show"); }
+
+  $("mtgModalCloseBtn").addEventListener("click", closeScoreModal);
+  $("mtgModalTryBtn").addEventListener("click", ()=>{
+    if (_stuMode) _stuRetake++;
+    closeScoreModal(); resetMatches();
+  });
+
+  /* ------------------------------------------------------------- *
+   * 6. APPEARANCE (Design & Settings panel)
+   * ------------------------------------------------------------- */
+
+  function applyAppearance(){
+    stage.style.background = state.bg;
+    stage.style.fontFamily = state.font;
+    stage.style.fontSize = state.fontSize + "px";
+    stage.style.setProperty("--mtg-text", state.textColor);
+    stage.classList.toggle("bs-dashed", state.border === "dashed");
+    stage.classList.toggle("bs-solid", state.border === "solid");
+    stage.classList.toggle("no-deco", !state.showDeco);
+    const gap = SPACE_GAP[state.spacing];
+    leftCol.style.gap = gap + "px"; rightCol.style.gap = gap + "px";
+  }
+
+  function renderSwatches(){
+    const wrap = $("mtgSwatches"); wrap.innerHTML = "";
+    BG_SWATCHES.forEach(color=>{
+      const swatch = document.createElement("div");
+      swatch.className = "mtg-sw" + (color === state.bg ? " sel" : "");
+      swatch.style.background = color;
+      swatch.addEventListener("click", ()=>{ state.bg = color; applyAppearance(); renderSwatches(); });
+      wrap.appendChild(swatch);
+    });
+  }
+
+  $("mtgFont").addEventListener("change", e=>{ state.font = e.target.value; applyAppearance(); });
+
+  function setFontSize(value){
+    value = Math.max(20, Math.min(64, value));
+    state.fontSize = value;
+    $("mtgSize").value = value; $("mtgSizeNum").value = value;
+    applyAppearance(); drawLines();
+  }
+  $("mtgSize").addEventListener("input", e=> setFontSize(+e.target.value));
+  $("mtgSizeNum").addEventListener("input", e=> setFontSize(+e.target.value || 40));
+
+  $("mtgTextColor").addEventListener("input", e=>{ state.textColor = e.target.value; applyAppearance(); });
+
+  document.querySelectorAll("#mtgBorder button").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      state.border = btn.dataset.b;
+      document.querySelectorAll("#mtgBorder button").forEach(b=> b.classList.remove("sel"));
+      btn.classList.add("sel");
+      applyAppearance();
+    });
+  });
+
+  function setSpacing(delta){
+    let index = SPACINGS.indexOf(state.spacing) + delta;
+    index = Math.max(0, Math.min(SPACINGS.length-1, index));
+    state.spacing = SPACINGS[index];
+    $("mtgSpaceVal").textContent = state.spacing;
+    applyAppearance(); drawLines();
+  }
+  $("mtgSpaceMinus").addEventListener("click", ()=> setSpacing(-1));
+  $("mtgSpacePlus").addEventListener("click", ()=> setSpacing(1));
+
+  $("mtgInstrInput").addEventListener("input", e=>{
+    currentActivity().instruction = e.target.value;
+    $("mtgInstr").textContent = e.target.value;
+  });
+  $("mtgTitleInput").addEventListener("input", e=>{
+    currentActivity().title = e.target.value;
+    $("mtgTitle").textContent = e.target.value;
+  });
+
+  $("mtgShowTitle").addEventListener("change", e=>{ state.showTitle = e.target.checked; renderActivity(); });
+  $("mtgShowInstr").addEventListener("change", e=>{ state.showInstr = e.target.checked; renderActivity(); });
+  $("mtgShowDeco").addEventListener("change", e=>{ state.showDeco = e.target.checked; applyAppearance(); });
+
+  $("mtgApply").addEventListener("click", ()=>{ applyAppearance(); drawLines(); flash($("mtgApply"), "✓ Applied"); });
+
+  // "Reset" only restores the design settings — it does not touch the
+  // teacher's items/content, so nothing the teacher typed gets lost.
+  $("mtgResetAll").addEventListener("click", ()=>{
+    Object.assign(state, structuredClone(DEFAULT_DESIGN));
+    syncDesignControls(); applyAppearance(); renderActivity();
+  });
+
+  function syncDesignControls(){
+    $("mtgFont").value = state.font;
+    $("mtgSize").value = state.fontSize; $("mtgSizeNum").value = state.fontSize;
+    $("mtgTextColor").value = state.textColor;
+    $("mtgSpaceVal").textContent = state.spacing;
+    $("mtgShowTitle").checked = state.showTitle; $("mtgShowInstr").checked = state.showInstr;
+    $("mtgShowDeco").checked = state.showDeco;
+    document.querySelectorAll("#mtgBorder button").forEach(b=> b.classList.toggle("sel", b.dataset.b === state.border));
+    renderSwatches();
+  }
+
+  /* ------------------------------------------------------------- *
+   * 7. TOP BAR ACTIONS
+   * ------------------------------------------------------------- */
+
+  function flash(button, text){
+    const original = button.textContent;
+    button.textContent = text;
+    setTimeout(()=> button.textContent = original, 1100);
+  }
+
+  // Cross-browser helpers — different browsers still use different
+  // (vendor-prefixed) names for the Fullscreen API.
+  function requestFullscreen(el){
+    const request = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+    if (request) request.call(el).catch(()=>{ /* ignore — not every device/browser allows it */ });
+  }
+  function exitFullscreen(){
+    const exit = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+    if (document.fullscreenElement || document.webkitFullscreenElement){
+      if (exit) exit.call(document).catch(()=>{});
+    }
+  }
+
+  function enterPreview(){
+    document.body.classList.add("mtg-preview-only");
+    requestFullscreen(document.documentElement);
+    setTimeout(fitStageToScreen, 120);
+  }
+  function exitPreview(){
+    document.body.classList.remove("mtg-preview-only");
+    exitFullscreen();
+    stageScale = 1;
+    stageInner.style.transform = "";
+    setTimeout(drawLines, 60);
+  }
+  $("mtgPreviewBtn").addEventListener("click", enterPreview);
+  $("mtgExitFloatBtn").addEventListener("click", exitPreview);
+  /* ── Save Draft to localStorage ── */
+  function saveDraft() {
+    var draftId = new URLSearchParams(location.search).get('draft_id') || ('draft_' + Date.now());
+    var firstTitle = (state.activities[0] && state.activities[0].title) || '';
+    var draft = {
+      id:           draftId,
+      title:        firstTitle || 'Untitled Draft',
+      type:         'Matching',
+      templateFile: 'TEMPLATES/Matching_Type_Template.html',
+      learner:      sessionStorage.getItem('selected_learner')   || 'ALL',
+      condition:    sessionStorage.getItem('selected_condition') || '',
+      teacherName:  sessionStorage.getItem('teacher_name')       || '—',
+      savedAt:      new Date().toISOString(),
+      data:         JSON.parse(JSON.stringify(state))
+    };
+    var drafts = [];
+    try { drafts = JSON.parse(localStorage.getItem('teacher_drafts') || '[]'); } catch(e) {}
+    var idx = drafts.findIndex(function(d){ return d.id === draftId; });
+    if (idx >= 0) drafts[idx] = draft; else drafts.push(draft);
+    try {
+      localStorage.setItem('teacher_drafts', JSON.stringify(drafts));
+      history.replaceState(null, '', '?draft_id=' + encodeURIComponent(draftId));
+      flash($('mtgDraftBtn'), '✓ Draft Saved!');
+      // Sync to DB so admin can see this draft
+      var _tid = sessionStorage.getItem('teacher_id') || '';
+      if (_tid) {
+        var _dbDraftId = draft.db_draft_id || 0;
+        fetch('../TEACHER_BACKEND/teacher_save_draft.php', {
+          method: 'POST',
+          keepalive: true,
+          body: new URLSearchParams({ teacher_id: _tid, activity_title: draft.title, activity_type: draft.type, db_draft_id: _dbDraftId })
+        }).then(function(r){ return r.json(); }).then(function(d){
+          if (d && d.success && d.db_draft_id) {
+            var _drafts = [];
+            try { _drafts = JSON.parse(localStorage.getItem('teacher_drafts') || '[]'); } catch(e){}
+            var _idx = _drafts.findIndex(function(x){ return x.id === draftId; });
+            if (_idx >= 0) { _drafts[_idx].db_draft_id = d.db_draft_id; localStorage.setItem('teacher_drafts', JSON.stringify(_drafts)); }
+          }
+        }).catch(function(){});
+      }
+      setTimeout(function(){ window.location.href = '../Teacher_activies.html'; }, 700);
+    } catch(e) { alert('Storage full – could not save draft.'); }
+  }
+
+  /* ── Load Draft from localStorage if ?draft_id= in URL ── */
+  function loadDraftIfAny() {
+    var draftId = new URLSearchParams(location.search).get('draft_id');
+    if (!draftId) return;
+    var drafts = [];
+    try { drafts = JSON.parse(localStorage.getItem('teacher_drafts') || '[]'); } catch(e) {}
+    var draft = drafts.find(function(d){ return d.id === draftId; });
+    if (!draft || !draft.data) return;
+    Object.assign(state, draft.data);
+    if (state.thumb) setThumb(state.thumb);
+    refreshSlideUI();
+    syncDesignControls();
+    applyAppearance();
+  }
+
+  $("mtgDraftBtn").addEventListener("click", saveDraft);
+
+  // Shrinks the whole activity (title, instruction, pairs, buttons) just
+  // enough so it always fits on screen in preview mode — no scrollbar,
+  // nothing cut off, the exact view the student will answer.
+  function fitStageToScreen(){
+    if (!document.body.classList.contains("mtg-preview-only")) return;
+    stageInner.style.transform = "none";
+    stageScale = 1;
+    const available = window.innerHeight;
+    const naturalHeight = stageInner.scrollHeight;
+    stageScale = naturalHeight > available ? available / naturalHeight : 1;
+    stageInner.style.transform = `scale(${stageScale})`;
+    drawLines();
+  }
+
+  // If the student/teacher exits fullscreen another way (ESC key on desktop,
+  // swipe-down on some devices), make sure our own preview mode follows suit.
+  ["fullscreenchange", "webkitfullscreenchange"].forEach(evt=>{
+    document.addEventListener(evt, ()=>{
+      const stillFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+      if (!stillFullscreen) document.body.classList.remove("mtg-preview-only");
+    });
+  });
+
+  // Collapse / expand the right-hand "Design & Settings" panel. When it's
+  // hidden, the Template Guide card is shown in that same space instead.
+  $("mtgCollapseBtn").addEventListener("click", ()=> document.body.classList.add("mtg-right-collapsed"));
+  $("mtgShowSettingsBtn").addEventListener("click", ()=> document.body.classList.remove("mtg-right-collapsed"));
+
+  // Thumbnail upload
+  $("mtgThumbUpload").addEventListener("change", function(){
+    const f = this.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = ev=> setThumb(ev.target.result);
+    r.readAsDataURL(f);
+  });
+  function setThumb(dataURL){
+    state.thumb = dataURL;
+    $("mtgThumbImg").src = dataURL; $("mtgThumbImg").style.display = "block";
+    $("mtgThumbEmpty").style.display = "none"; $("mtgThumbCheck").classList.add("show");
+  }
+
+  // Publish = open a confirmation modal showing the activity's Thumbnail
+  // Image (step 3) plus a deadline date field.
+  function openPublishModal(){
+    $("mtgPublishOverlay").classList.add("show");
+
+    if (state.thumb){
+      $("mtgPublishThumbImg").src = state.thumb;
+      $("mtgPublishThumbImg").style.display = "block";
+      $("mtgPublishThumbEmpty").style.display = "none";
+    } else {
+      $("mtgPublishThumbImg").style.display = "none";
+      $("mtgPublishThumbEmpty").style.display = "flex";
+      $("mtgPublishThumbEmpty").textContent = "No thumbnail uploaded yet. Add one in step 3.";
+    }
+
+    // Load teacher's learners into the assign dropdown
+    var _tid   = sessionStorage.getItem('teacher_id') || '';
+    var _preId = sessionStorage.getItem('selected_learner_id') || '';
+    var _lSel  = $('mtgLearnerSelect');
+    if (_lSel) {
+      _lSel.innerHTML = '<option value="">-- Select a learner --</option>';
+      if (_tid) {
+        fetch('../TEACHER_BACKEND/teacher_list_learners.php?teacher_id=' + _tid)
+          .then(function(r){ return r.json(); })
+          .then(function(data){
+            (data||[]).forEach(function(s){
+              var o = document.createElement('option');
+              o.value = s.id;
+              o.textContent = s.name + ' (' + (s.disability||'General') + ')';
+              if (String(s.id) === String(_preId)) o.selected = true;
+              _lSel.appendChild(o);
+            });
+          }).catch(function(){});
+      }
+    }
+  }
+
+  function closePublishModal(){
+    $("mtgPublishOverlay").classList.remove("show");
+  }
+
+  $("mtgPubBtn").addEventListener("click", openPublishModal);
+  $("mtgPublishCancelBtn").addEventListener("click", closePublishModal);
+
+  function compressThumb(dataURL, callback) {
+    if (!dataURL) { callback(''); return; }
+    var img = new Image();
+    img.onload = function() {
+      var MAX = 160;
+      var ratio = Math.min(MAX / img.width, MAX / img.height, 1);
+      var cv = document.createElement('canvas');
+      cv.width = Math.round(img.width * ratio);
+      cv.height = Math.round(img.height * ratio);
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      callback(cv.toDataURL('image/jpeg', 0.55));
+    };
+    img.onerror = function() { callback(''); };
+    img.src = dataURL;
+  }
+
+  function confirmPublish() {
+    var deadline = $("mtgDeadlineInput").value;
+    if (!deadline) { alert("Please set a deadline date before publishing."); return; }
+
+    var _lSel2 = $('mtgLearnerSelect');
+    var assignedId = _lSel2 ? parseInt(_lSel2.value || '0') : 0;
+    if (!assignedId) { alert('Please select a learner from the dropdown before publishing.'); return; }
+    var assignedIds = [assignedId];
+
+    var grading = document.querySelector('input[name="mtgGrading"]:checked').value;
+    var firstTitle = (state.activities[0] && state.activities[0].title) || 'Untitled Activity';
+    compressThumb(state.thumb, function(smallThumb) {
+    var pub = {
+      id:          'pub-' + Date.now(),
+      title:       firstTitle,
+      type:        'Matching',
+      grading:     grading,
+      deadline:    deadline,
+      thumbnail:   smallThumb,
+      teacherName: sessionStorage.getItem('teacher_name') || '—',
+      teacherId:   sessionStorage.getItem('teacher_id')   || '',
+      learner:     sessionStorage.getItem('selected_learner')   || 'ALL',
+      condition:   sessionStorage.getItem('selected_condition') || '',
+      publishedAt: new Date().toISOString()
+    };
+    var existing = [];
+    try { existing = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+    existing.push(pub);
+    try { localStorage.setItem('published_activities', JSON.stringify(existing)); } catch(e){ alert('Storage full – try clearing old drafts first.'); return; }
+    // Save full activity data in IndexedDB (no quota limit)
+    _idb.save('pub_data_' + pub.id, JSON.parse(JSON.stringify(state)), function(err){
+      if (err) console.warn('IDB save failed:', err);
+    });
+    // Save to DB with student assignments
+    var _pubRef = pub;
+    var _assignedIds = assignedIds;
+    fetch('../TEACHER_BACKEND/teacher_create_activity.php', {
+      method: 'POST',
+      body: new URLSearchParams({
+        teacher_id: _pubRef.teacherId,
+        activity_title: _pubRef.title,
+        activity_type: 'Matching',
+        status: 'published',
+        assigned_student_ids: JSON.stringify(_assignedIds)
+      })
+    }).then(function(r){ return r.json(); }).then(function(d){
+      if (d.success && d.activity_id) {
+        var acts = []; try { acts = JSON.parse(localStorage.getItem('published_activities')||'[]'); } catch(e){}
+        var i = acts.findIndex(function(a){ return a.id === _pubRef.id; });
+        if (i >= 0) { acts[i].db_activity_id = d.activity_id; try { localStorage.setItem('published_activities', JSON.stringify(acts)); } catch(e){} }
+      }
+    }).catch(function(){});
+    closePublishModal();
+    setTimeout(function(){ window.location.href = '../Teacher_activies.html'; }, 400);
+    }); // end compressThumb
+  }
+  $("mtgPublishConfirmBtn").addEventListener("click", confirmPublish);
+
+  /* ------------------------------------------------------------- *
+   * 8. INIT
+   * ------------------------------------------------------------- */
+
+  renderItems();
+  renderSwatches();
+  syncDesignControls();
+  applyAppearance();
+  renderActivity();
+  renderSlideNav();
+  loadDraftIfAny();
+
+  /* ── STUDENT MODE ─────────────────────────────────────────── */
+  (function () {
+    var p = new URLSearchParams(location.search);
+    if (p.get('student_mode') !== '1') return;
+    _stuMode = true;
+    _stuPubId = p.get('pub_id') || '';
+
+    // load prior progress / retake count
+    try { _stuProg = JSON.parse(localStorage.getItem('student_progress') || '[]'); } catch(e){}
+    var prev = _stuProg.find(function(r){ return r.pubId === _stuPubId; });
+    if (prev) _stuRetake = prev.retakes || 0;
+
+    function showNotAvailable() {
+      document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Poppins,sans-serif;gap:16px;padding:32px;text-align:center;">'
+        + '<div style="font-size:72px;">📭</div>'
+        + '<h2 style="color:#1e3a8a;margin:0;">Activity Not Available</h2>'
+        + '<p style="color:#64748b;max-width:340px;margin:0;">The activity content could not be loaded. Ask your teacher to republish it.</p>'
+        + '<button onclick="window.history.back()" style="margin-top:8px;background:#1e3a8a;color:#fff;border:none;padding:12px 28px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;">← Exit</button>'
+        + '</div>';
+    }
+
+    function applyStudentMode(saved) {
+      if (!saved) { showNotAvailable(); return; }
+
+      // Pre-load state but don't render yet — show splash first
+      Object.assign(state, saved);
+
+      // Get pub metadata for splash info
+      var pubs = [];
+      try { pubs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+      var pub = pubs.find(function(r){ return r.id === _stuPubId; }) || {};
+      var splashThumb = pub.thumbnail
+        ? '<img src="' + pub.thumbnail + '" style="width:120px;height:120px;object-fit:cover;border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.35);" />'
+        : '<div style="font-size:80px;line-height:1;">🔗</div>';
+      var dueText = pub.deadline
+        ? '<p style="color:#fde68a;font-size:15px;margin:0;">📅 Due: ' + new Date(pub.deadline+'T00:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) + '</p>'
+        : '';
+      var retakeText = _stuRetake > 0
+        ? '<p style="color:#fca5a5;font-size:13px;margin:0;">You have retaken this ' + _stuRetake + ' time(s).</p>'
+        : '';
+
+      var splash = document.createElement('div');
+      splash.id = 'stuSplash';
+      splash.style.cssText = 'position:fixed;inset:0;background:linear-gradient(145deg,#1e3a8a 0%,#1e40af 60%,#1d4ed8 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:99999;padding:32px;text-align:center;';
+      splash.innerHTML = splashThumb
+        + '<h1 style="color:#fff;font-family:Fredoka,Poppins,sans-serif;font-size:32px;font-weight:700;margin:0;max-width:520px;line-height:1.2;">' + (pub.title || state.activities[0]&&state.activities[0].title || 'Activity') + '</h1>'
+        + '<p style="color:#93c5fd;font-size:15px;margin:0;">Matching Type &nbsp;·&nbsp; ' + (pub.grading||'') + ' Grading</p>'
+        + dueText + retakeText
+        + '<button id="stuSplashBtn" style="margin-top:12px;background:#22c55e;color:#fff;border:none;padding:18px 56px;border-radius:18px;font-family:Fredoka,Poppins,sans-serif;font-size:24px;font-weight:700;cursor:pointer;box-shadow:0 6px 0 #15803d;transition:transform .1s;">▶ Start Activity</button>'
+        + '<button onclick="window.history.back()" style="background:transparent;color:#93c5fd;border:none;font-size:14px;cursor:pointer;margin-top:4px;">← Exit</button>';
+      document.body.appendChild(splash);
+
+      function _stuGoBack() {
+        _stuMode = false;
+        if (document.fullscreenElement) document.exitFullscreen();
+        var ret = sessionStorage.getItem('stu_return_url');
+        sessionStorage.removeItem('stu_return_url');
+        if (ret && ret.indexOf('Student_') !== -1) { window.location.href = ret; return; }
+        var base = window.location.href.split('/TEACHER_FILES/')[0];
+        window.location.href = base + '/STUDENT_FILES/Student_mymaterials.html';
+      }
+
+      document.getElementById('stuSplashBtn').addEventListener('click', function(e) {
+        e.stopPropagation();
+        var fs = document.documentElement;
+        if (fs.requestFullscreen) fs.requestFullscreen().catch(function(){});
+        else if (fs.webkitRequestFullscreen) fs.webkitRequestFullscreen();
+        splash.remove();
+
+        if (state.thumb) setThumb(state.thumb);
+        renderItems(); renderSwatches(); syncDesignControls(); applyAppearance(); renderActivity(); renderSlideNav();
+        document.body.classList.add('mtg-preview-only');
+        setTimeout(fitStageToScreen, 50);
+
+        // Pressing Escape exits fullscreen — immediately go back to student portal
+        document.addEventListener('fullscreenchange', function() {
+          if (!document.fullscreenElement && _stuMode) _stuGoBack();
+        });
+        document.addEventListener('webkitfullscreenchange', function() {
+          if (!document.webkitFullscreenElement && _stuMode) _stuGoBack();
+        });
+
+        // Replace exit button (strips original teacher handlers)
+        var origExit = document.querySelector('.mtg-exit-float');
+        if (origExit) {
+          var newExit = origExit.cloneNode(false);
+          newExit.textContent = '← Exit';
+          origExit.parentNode.replaceChild(newExit, origExit);
+          newExit.addEventListener('click', function(ev) { ev.preventDefault(); ev.stopPropagation(); _stuGoBack(); });
+        }
+
+        $('mtgStudentSubmitBtn').addEventListener('click', function() {
+          if (_stuLastScore === null) { alert('Please check your answers first before submitting.'); return; }
+          var pct = Math.round((_stuLastScore / _stuLastTotal) * 100);
+          var record = { pubId:_stuPubId, title:pub.title||'Activity', type:'Matching',
+            grading:pub.grading||'', deadline:pub.deadline||'',
+            score:_stuLastScore, total:_stuLastTotal, percent:pct, retakes:_stuRetake,
+            submittedAt:new Date().toISOString() };
+          var idx = _stuProg.findIndex(function(r){ return r.pubId === _stuPubId; });
+          if (idx >= 0) _stuProg[idx] = record; else _stuProg.push(record);
+          try { localStorage.setItem('student_progress', JSON.stringify(_stuProg)); } catch(e){}
+          var notifs = [];
+          try { notifs = JSON.parse(localStorage.getItem('student_notifications') || '[]'); } catch(e){}
+          notifs.unshift({ id:'notif-'+Date.now(), type:'achievement',
+            title:'Activity Submitted! 🌟',
+            message:'You scored '+pct+'% on "'+(pub.title||'Activity')+'"'+(_stuRetake>0?' after '+_stuRetake+' retake(s)':'')+'. Great job!',
+            isRead:false, createdAt:new Date().toISOString() });
+          try { localStorage.setItem('student_notifications', JSON.stringify(notifs)); } catch(e){}
+          // Mirror completion to DB so teacher reports show real student progress
+          var _stuId = sessionStorage.getItem('student_record_id');
+          closeScoreModal();
+          if (pub.db_activity_id && pub.teacherId && _stuId) {
+            fetch('../TEACHER_BACKEND/teacher_complete_activity.php', {
+              method: 'POST',
+              keepalive: true,
+              body: new URLSearchParams({ teacher_id: pub.teacherId, student_id: _stuId, activity_id: pub.db_activity_id, score: pct })
+            }).finally(function(){ _stuGoBack(); });
+          } else {
+            _stuGoBack();
+          }
+        });
+      });
+    }
+
+    // load from IndexedDB (large storage, no quota issues)
+    _idb.load('pub_data_' + _stuPubId, function(err, saved) {
+      if (saved) { applyStudentMode(saved); return; }
+      // fallback: try legacy localStorage key
+      var ls = null;
+      try { ls = JSON.parse(localStorage.getItem('pub_data_' + _stuPubId) || 'null'); } catch(e){}
+      applyStudentMode(ls);
+    });
+  })();
+</script>
+</body>
+</html>

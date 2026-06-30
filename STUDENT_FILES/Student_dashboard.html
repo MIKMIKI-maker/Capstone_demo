@@ -1,0 +1,453 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>SPED ALM - Student Dashboard</title>
+
+  <link href="STUDENT_CSS/Student_dashboard.css" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;family=Nunito:wght@400;600;700;800;900&amp;family=Inter:wght@400;500;600&amp;display=swap"
+    rel="stylesheet" />
+  <!-- Fredoka = the rounded game font from the design -->
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&amp;display=swap"
+    rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
+</head>
+
+<body>
+<div id="spedLoading" style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 60%,#2563eb 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .5s ease;pointer-events:all;">
+  <img src="../ASSETS/logo.png" alt="SPED ALM" onerror="this.style.display='none'" style="width:88px;height:88px;border-radius:22px;background:#fff;padding:6px;box-shadow:0 10px 36px rgba(0,0,0,.35);animation:spedLdPulse 2s ease-in-out infinite;">
+  <p style="color:#fff;font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;margin:0;letter-spacing:1px;text-shadow:0 2px 8px rgba(0,0,0,.2);">SPED ALM</p>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite 0s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .18s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .36s;"></span>
+  </div>
+  
+  <p style="color:rgba(255,255,255,.65);font-family:'Poppins',sans-serif;font-size:13px;font-weight:400;margin:0;">Loading, please wait...</p>
+</div>
+<style>
+@keyframes spedLdBounce{0%,80%,100%{transform:translateY(0);opacity:.5}40%{transform:translateY(-16px);opacity:1}}
+@keyframes spedLdPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+</style>
+<script>
+(function(){
+  function hideLoader(){
+    var e=document.getElementById('spedLoading');
+    if(!e) return;
+    e.style.opacity='0';
+    e.style.pointerEvents='none';
+    setTimeout(function(){ if(e.parentNode) e.parentNode.removeChild(e); }, 520);
+  }
+  if(document.readyState==='complete'){ setTimeout(hideLoader,200); }
+  else { window.addEventListener('load', function(){ setTimeout(hideLoader,200); }); }
+})();
+</script>
+  <!-- SIDEBAR -->
+  <aside class="student-sidebar">
+    <div class="student-sidebar-logo">
+      <img alt="SPED ALM Logo" class="student-sidebar-logo-img" src="../ASSETS/logo.png" />
+      <div class="student-sidebar-logo-text">
+        <span class="student-sidebar-title">SPED ALM</span>
+        <span class="student-sidebar-sub">Student Portal</span>
+      </div>
+    </div>
+    <nav class="student-sidebar-nav">
+      <a class="student-nav-item student-active" href="Student_dashboard.html">
+        <i>🏠</i>
+        <span>Dashboard</span>
+        <i class="student-nav-arrow">›</i>
+      </a>
+      <a class="student-nav-item" href="Student_mymaterials.html">
+        <i>📚</i>
+        <span>My Materials</span>
+      </a>
+      <a class="student-nav-item" href="Student_progress.html">
+        <i>⭐</i>
+        <span>My Progress</span>
+      </a>
+      <a class="student-nav-item" href="Student_settings.html">
+        <i>⚙️</i>
+        <span>Settings</span>
+      </a>
+    </nav>
+    <div class="student-sidebar-footer">
+      <div class="student-sidebar-user">
+        <div class="student-user-avatar" id="dashSideAvatar">S</div>
+        <div class="student-user-info">
+          <span class="student-user-name">Student</span>
+          <span class="student-user-role"></span>
+        </div>
+      </div>
+      <a class="student-signout-btn" href="#" onclick="var _id=sessionStorage.getItem('student_id');fetch('../ADMIN_FILES/ADMIN_BACKEND/logout.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'admin_id='+encodeURIComponent(_id||'')}).finally(function(){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html';});return false;">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        <span>Sign Out</span>
+      </a>
+    </div>
+  </aside>
+  
+  <!-- MAIN -->
+  <main class="student-main">
+    <!-- TOPBAR -->
+    <header class="student-topbar">
+      <div class="student-topbar-left">
+        <span class="student-greeting-star">⭐</span>
+        <div>
+          <h1 class="student-greeting">Hello!</h1>
+          <p class="student-greeting-sub">Monday, May 25, 2026</p>
+        </div>
+      </div>
+      <a class="student-notif-btn" href="Student_notif.html">
+        <i class="fa-regular fa-bell"></i>
+        <span class="student-notif-badge"></span>
+      </a>
+    </header>
+   <!-- PROFILE CARDS -->
+<section class="student-profile-cards">
+  <!-- Student Card -->
+  <div class="student-profile-card">
+    <div class="student-pcard-photo-wrap">
+      <img class="student-pcard-photo" id="student-dashPhoto"
+           src="ASSETS/student_profile.png" alt="Student profile"
+           onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+      <!-- sample profile (lalabas kapag wala pang naka-upload na larawan) -->
+      <svg class="student-pcard-photo-sample" viewBox="0 0 96 96" aria-hidden="true">
+        <circle cx="48" cy="48" r="48" fill="#d7e7fb"/>
+        <circle cx="48" cy="39" r="16" fill="#7fa9e8"/>
+        <path d="M22 84a26 26 0 0 1 52 0Z" fill="#7fa9e8"/>
+      </svg>
+    </div>
+    <div class="student-pcard-info">
+      <div class="student-pcard-label">STUDENT</div>
+      <div class="student-pcard-name"></div>
+      <div class="student-pcard-sub"></div>
+      <span class="student-badge-active">● Active</span>
+    </div>
+  </div>
+  <!-- Teacher Card -->
+  <div class="student-profile-card">
+    <div class="student-pcard-photo-wrap">
+      <img class="student-pcard-photo" id="dash-teacher-photo" src="ASSETS/teacher_profile.png" alt="Teacher profile"
+           onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+      <svg class="student-pcard-photo-sample" id="dash-teacher-avatar" viewBox="0 0 96 96" aria-hidden="true">
+        <circle cx="48" cy="48" r="48" fill="#e7e2fb"/>
+        <circle cx="48" cy="39" r="16" fill="#a99cee"/>
+        <path d="M22 84a26 26 0 0 1 52 0Z" fill="#a99cee"/>
+      </svg>
+    </div>
+    <div class="student-pcard-info">
+      <div class="student-pcard-label">YOUR TEACHER</div>
+      <div class="student-pcard-name" id="dash-teacher-name">—</div>
+      <div class="student-pcard-sub">Special Education Teacher</div>
+      <span class="student-badge-active">● Active</span>
+    </div>
+  </div>
+</section>
+    </section>
+    <!-- PROGRESS BANNER -->
+    <section class="student-progress-banner">
+      <div class="student-progress-left">
+        <p class="student-progress-label">YOUR PROGRESS THIS WEEK</p>
+        <p class="student-progress-msg">No data yet</p>
+        <div class="student-progress-bar-wrap">
+          <div class="student-progress-bar">
+            <div class="student-progress-fill" style="width:0%"></div>
+          </div>
+          <span class="student-progress-text">—/100</span>
+        </div>
+        <div class="student-progress-stars">
+          <span>⭐</span>
+          <span>⭐</span>
+          <span>⭐</span>
+        </div>
+      </div>
+      <div class="student-progress-right">
+        <div class="student-star-badge">
+          <span class="student-star-icon">🏆</span>
+          <span class="student-star-label">Star learner!</span>
+        </div>
+      </div>
+      <div class="student-banner-deco-circle"></div>
+    </section>
+    <!-- ACTIVITIES -->
+    <section class="student-activities-card">
+      <div class="student-activities-header">
+        <div class="student-act-tabs">
+          <button class="student-act-tab student-active" onclick="switchTab(this, 'today')" type="button">Today's
+            Activities</button>
+          <button class="student-act-tab" onclick="switchTab(this, 'materials')" type="button">All Materials</button>
+        </div>
+        <span class="student-act-done" id="student-act-done-count">0/0 done</span>
+      </div>
+      <!-- Today's Activities Panel -->
+      <div class="student-act-panel" id="student-panel-today"></div>
+      <!-- All Materials Panel -->
+      <div class="student-act-panel" id="student-panel-materials" style="display:none;"></div>
+    </section>
+    <script>
+      var TYPE_COLOR = { 'Matching': 'purple', 'Sorting': 'blue', 'Sequencing': 'green' };
+      var COLOR_CYCLE = ['orange', 'blue', 'purple', 'green', 'amber', 'pink'];
+
+      function escD(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      }
+
+      function getBadgeD(deadline) {
+        if (!deadline) return { text: 'NEW', cls: 'act-badge-new' };
+        var d = new Date(deadline + 'T23:59:59'), now = new Date();
+        if (d < now) return { text: 'CLOSED', cls: 'act-badge-closed' };
+        if (Math.ceil((d - now) / 86400000) <= 1) return { text: 'DUE TODAY', cls: 'act-badge-due' };
+        return { text: 'NEW', cls: 'act-badge-new' };
+      }
+
+      function getEmojiD(type) {
+        return type === 'Matching' ? '🔗' : type === 'Sorting' ? '🧩' : '📋';
+      }
+
+      function renderActRow(act, idx) {
+        var color = TYPE_COLOR[act.type] || COLOR_CYCLE[idx % COLOR_CYCLE.length];
+        var badge = getBadgeD(act.deadline);
+        var thumb = act.thumbnail
+          ? '<img src="' + escD(act.thumbnail) + '" alt="thumb" style="width:44px;height:44px;object-fit:cover;border-radius:10px;" />'
+          : '<span style="font-size:30px;line-height:1;">' + getEmojiD(act.type) + '</span>';
+        var due = act.deadline
+          ? ' · Due ' + new Date(act.deadline + 'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})
+          : '';
+        return '<div class="student-act-row student-act-row--' + color + '">' +
+          '<div class="student-act-row-thumb">' + thumb + '</div>' +
+          '<div class="student-act-row-info">' +
+            '<div class="student-act-row-title">' + escD(act.title) + '</div>' +
+            '<div class="student-act-row-sub">' + escD(act.type) + ' · ' + act.grading + ' Grading' + due + '</div>' +
+          '</div>' +
+          '<span class="student-act-row-badge ' + badge.cls + '">' + badge.text + '</span>' +
+          '<button class="student-act-row-btn" type="button" onclick="startActivity(\'' + escD(act.id) + '\',\'' + escD(act.type) + '\')">▶ Start</button>' +
+          '</div>';
+      }
+
+      function showNotEnrolled() {
+        var todayPanel = document.getElementById('student-panel-today');
+        var allPanel   = document.getElementById('student-panel-materials');
+        var msg = '<div class="student-act-empty">' +
+          '<div class="student-act-empty-icon">🏫</div>' +
+          '<p class="student-act-empty-title">Not yet enrolled</p>' +
+          '<p class="student-act-empty-desc">You are not yet enrolled in a teacher\'s class. Please wait for your teacher to assign you.</p>' +
+          '</div>';
+        if (todayPanel) todayPanel.innerHTML = msg;
+        if (allPanel)   allPanel.innerHTML   = msg;
+        document.getElementById('student-act-done-count').textContent = '0/0 done';
+        // Teacher card shows no teacher
+        var teacherEl = document.getElementById('dash-teacher-name');
+        if (teacherEl) teacherEl.textContent = 'No teacher assigned';
+      }
+
+      function renderActivities(rawMaterials) {
+        // Normalize DB field names to what renderActRow expects
+        var materials = rawMaterials.map(function(m) {
+          return {
+            id:              m.id,
+            title:           m.activity_title || m.title || 'Untitled',
+            type:            m.activity_type  || m.type  || 'Matching',
+            grading:         m.grading || 'First',
+            deadline:        m.deadline || '',
+            thumbnail:       m.thumbnail || '',
+            progress_status: m.progress_status || 'new',
+            created_at:      m.created_at || ''
+          };
+        });
+
+        var todayPanel = document.getElementById('student-panel-today');
+        var allPanel   = document.getElementById('student-panel-materials');
+
+        // "Recent" = published within the last 7 days (use created_at from DB)
+        var cutoff = Date.now() - 7 * 86400000;
+        var recent = materials.filter(function(a) {
+          return a.created_at && (new Date(a.created_at).getTime() >= cutoff);
+        });
+
+        if (recent.length === 0) {
+          todayPanel.innerHTML = '<div class="student-act-empty"><div class="student-act-empty-icon">📋</div>' +
+            '<p class="student-act-empty-title">No activities yet</p>' +
+            '<p class="student-act-empty-desc">Your teacher\'s assigned activities will appear here once available.</p></div>';
+        } else {
+          todayPanel.innerHTML = recent.map(renderActRow).join('');
+        }
+
+        if (materials.length === 0) {
+          allPanel.innerHTML = '<div class="student-act-empty"><div class="student-act-empty-icon">📚</div>' +
+            '<p class="student-act-empty-title">No materials yet</p>' +
+            '<p class="student-act-empty-desc">Learning materials assigned by your teacher will appear here.</p></div>';
+        } else {
+          allPanel.innerHTML = materials.map(renderActRow).join('');
+        }
+
+        var doneCount = materials.filter(function(a){ return a.progress_status === 'completed'; }).length;
+        document.getElementById('student-act-done-count').textContent = doneCount + '/' + materials.length + ' done';
+      }
+
+      function loadDashboard() {
+        // sync profile from settings / session
+        var sp = {};
+        try { sp = JSON.parse(localStorage.getItem('student_profile') || '{}'); } catch(e) {}
+        var sessionName  = sessionStorage.getItem('student_name') || '';
+        var sessionParts = sessionName.trim().split(/\s+/);
+        var spFirst = (sp.firstName || sessionParts[0] || '').trim();
+        var spLast  = (sp.lastName  || sessionParts.slice(1).join(' ') || '').trim();
+        var spFull  = [spFirst, spLast].filter(Boolean).join(' ') || 'Student';
+        var spInit  = ((spFirst[0] || 'S') + (spLast[0] || '')).toUpperCase().trim() || 'S';
+        var spGrade = sp.grade || sessionStorage.getItem('student_grade') || '';
+        var spCond  = sp.condition || sessionStorage.getItem('student_condition') || '';
+
+        // If no local photo, pull from DB once and cache in localStorage
+        if (!sp.photo) {
+          var _dashSid = sessionStorage.getItem('student_id') || '';
+          if (_dashSid) {
+            fetch('STUDENT_BACKEND/student_get_profile.php?admin_account_id=' + encodeURIComponent(_dashSid))
+              .then(function(r){ return r.json(); })
+              .then(function(pd){
+                if (pd.profile_photo) {
+                  sp.photo = pd.profile_photo;
+                  try { localStorage.setItem('student_profile', JSON.stringify(sp)); } catch(e){}
+                  var _el = document.getElementById('dashSideAvatar');
+                  if (_el) _el.innerHTML = '<img src="' + pd.profile_photo + '" style="width:100%;height:100%;object-fit:cover;display:block;" />';
+                  var _dp = document.getElementById('student-dashPhoto');
+                  if (_dp) { _dp.src = pd.profile_photo; _dp.style.display = 'block'; }
+                }
+              }).catch(function(){});
+          }
+        }
+
+        // sidebar
+        (function(el, photo, init) {
+          if (!el) return;
+          el.innerHTML = photo
+            ? '<img src="' + photo + '" style="width:100%;height:100%;object-fit:cover;display:block;" />'
+            : init;
+        })(document.getElementById('dashSideAvatar'), sp.photo, spInit);
+        document.querySelector('.student-sidebar .student-user-name').textContent = spFull;
+        document.querySelector('.student-sidebar .student-user-role').textContent = [spGrade, spCond].filter(Boolean).join(' — ') || 'Student';
+
+        // greeting
+        var greetEl = document.querySelector('.student-greeting');
+        if (greetEl) greetEl.textContent = 'Hello, ' + (sp.nickname || spFirst || 'Student') + '!';
+        var greetSubEl = document.querySelector('.student-greeting-sub');
+        if (greetSubEl) {
+          var todayStr = new Date().toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric', year:'numeric'});
+          greetSubEl.textContent = todayStr + (spGrade ? ' · ' + spGrade : '');
+        }
+
+        // student profile card
+        var pcardName = document.querySelector('.student-pcard-name');
+        if (pcardName) pcardName.textContent = spFull;
+        var pcardSub = document.querySelector('.student-pcard-sub');
+        if (pcardSub) pcardSub.textContent = [spGrade, spCond].filter(Boolean).join(' — ') || '';
+
+        if (sp.photo) {
+          var dashPhoto = document.getElementById('student-dashPhoto');
+          if (dashPhoto) {
+            dashPhoto.src = sp.photo;
+            dashPhoto.style.display = 'block';
+            var svgFallback = dashPhoto.nextElementSibling;
+            if (svgFallback) svgFallback.style.display = 'none';
+          }
+        }
+
+        // Always verify enrollment from server so the portal syncs immediately
+        // when a teacher enrolls the student (no re-login required).
+        var _sid  = sessionStorage.getItem('student_id')   || '';
+        var _snam = sessionStorage.getItem('student_name') || '';
+        if (!_sid) { showNotEnrolled(); return; }
+
+        fetch('STUDENT_BACKEND/student_check_enrollment.php?student_id=' + encodeURIComponent(_sid) + '&student_name=' + encodeURIComponent(_snam))
+          .then(function(r){ return r.json(); })
+          .then(function(d) {
+            if (!d.enrolled) { showNotEnrolled(); return; }
+
+            var srid = String(d.student_record_id);
+            var tid  = String(d.teacher_id);
+            sessionStorage.setItem('student_record_id', srid);
+            sessionStorage.setItem('teacher_id', tid);
+            if (d.condition) sessionStorage.setItem('student_condition', d.condition);
+            if (d.grade)     sessionStorage.setItem('student_grade', d.grade);
+
+            // Fetch assigned activities from DB
+            fetch('STUDENT_BACKEND/student_get_materials.php?student_record_id=' + encodeURIComponent(srid) + '&teacher_id=' + encodeURIComponent(tid))
+              .then(function(r) { return r.json(); })
+              .then(function(d) {
+                if (!d.enrolled || !d.success) {
+                  showNotEnrolled();
+                  return;
+                }
+                renderActivities(d.materials || []);
+
+                // Teacher name + photo
+                if (tid) {
+                  var _fd = new FormData(); _fd.append('teacher_id', tid);
+                  fetch('../TEACHER_FILES/TEACHER_BACKEND/teacher_get_profile.php', { method:'POST', body:_fd })
+                    .then(function(r){ return r.json(); })
+                    .then(function(td){
+                      if (td.success && td.teacher) {
+                        var el = document.getElementById('dash-teacher-name');
+                        if (el && td.teacher.name) el.textContent = td.teacher.name;
+                        if (td.teacher.profilePhoto) {
+                          var tPhoto = document.getElementById('dash-teacher-photo');
+                          var tAvatar = document.getElementById('dash-teacher-avatar');
+                          if (tPhoto) { tPhoto.src = td.teacher.profilePhoto; tPhoto.style.display = 'block'; }
+                          if (tAvatar) tAvatar.style.display = 'none';
+                        }
+                      }
+                    }).catch(function(){});
+                }
+
+                // Notification badge
+                fetch('STUDENT_BACKEND/student_get_notifications.php?student_record_id=' + srid + '&teacher_id=' + tid)
+                  .then(function(r){ return r.json(); })
+                  .then(function(nd){
+                    var unread = nd.success ? (nd.unread || 0) : 0;
+                    var badge = document.querySelector('.student-notif-badge');
+                    if (badge) { badge.textContent = unread > 0 ? (unread > 9 ? '9+' : unread) : ''; }
+                  }).catch(function(){});
+              })
+              .catch(function() {
+                showNotEnrolled();
+              });
+          })
+          .catch(function(){ showNotEnrolled(); });
+
+      }
+
+      var _TPL = {
+        'Matching':         '../TEACHER_FILES/TEMPLATES/Matching_Type_Template.html',
+        'Sorting':          '../TEACHER_FILES/TEMPLATES/Sorting_Type_Template.html',
+        'Sequencing':       '../TEACHER_FILES/TEMPLATES/Sequencing_Type_Template.html',
+        'Picture Matching': '../TEACHER_FILES/TEMPLATES/Picture_Matching_Template.html'
+      };
+      function startActivity(dbId, type) {
+        var tpl = _TPL[type];
+        if (!tpl) { alert('Activity type not supported yet.'); return; }
+        // Map DB activity id back to localStorage pub id so the template can
+        // find the full activity content stored in IndexedDB
+        var lsActs = [];
+        try { lsActs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e) {}
+        var match = lsActs.find(function(a) { return String(a.db_activity_id) === String(dbId); });
+        var pubId = match ? match.id : String(dbId);
+        sessionStorage.setItem('stu_return_url', window.location.href);
+        window.location.href = tpl + '?student_mode=1&pub_id=' + encodeURIComponent(pubId);
+      }
+
+      function switchTab(btn, panel) {
+        document.querySelectorAll('.student-act-tab').forEach(function(t){ t.classList.remove('student-active'); });
+        btn.classList.add('student-active');
+        document.querySelectorAll('.student-act-panel').forEach(function(p){ p.style.display = 'none'; });
+        document.getElementById('student-panel-' + panel).style.display = 'flex';
+      }
+
+      document.addEventListener('visibilitychange', function(){ if (!document.hidden) loadDashboard(); });
+      loadDashboard();
+
+    </script>
+  </main>
+</body>
+
+</html>

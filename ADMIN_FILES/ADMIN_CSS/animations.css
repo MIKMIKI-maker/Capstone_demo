@@ -1,0 +1,55 @@
+/* ===== ANIMATIONS ===== */
+
+/* Fade Down */
+@keyframes anim-fade-down {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.anim-fade-down {
+  animation: anim-fade-down 0.6s ease-out forwards;
+}
+
+/* Fade Up */
+@keyframes anim-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.anim-fade-up {
+  animation: anim-fade-up 0.6s ease-out forwards;
+}
+
+/* Scale In */
+@keyframes anim-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.anim-scale-in {
+  animation: anim-scale-in 0.5s ease-out forwards;
+}
+
+/* Animation delays */
+.anim-d1 { animation-delay: 0.1s; }
+.anim-d2 { animation-delay: 0.2s; }
+.anim-d3 { animation-delay: 0.3s; }
+.anim-d4 { animation-delay: 0.4s; }

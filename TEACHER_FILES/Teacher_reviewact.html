@@ -1,0 +1,231 @@
+﻿<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
+    <title>Review Activities – SPED ALM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
+    <link href="TEACHER_CSS/Teacher_reviewact.css" rel="stylesheet" />
+</head>
+
+<body>
+<div id="spedLoading" style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 60%,#2563eb 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .5s ease;pointer-events:all;">
+  <img src="../ASSETS/logo.png" alt="SPED ALM" onerror="this.style.display='none'" style="width:88px;height:88px;border-radius:22px;background:#fff;padding:6px;box-shadow:0 10px 36px rgba(0,0,0,.35);animation:spedLdPulse 2s ease-in-out infinite;">
+  <p style="color:#fff;font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;margin:0;letter-spacing:1px;text-shadow:0 2px 8px rgba(0,0,0,.2);">SPED ALM</p>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite 0s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .18s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .36s;"></span>
+  </div>
+  <p style="color:rgba(255,255,255,.65);font-family:'Poppins',sans-serif;font-size:13px;font-weight:400;margin:0;">Loading, please wait...</p>
+</div>
+<style>
+@keyframes spedLdBounce{0%,80%,100%{transform:translateY(0);opacity:.5}40%{transform:translateY(-16px);opacity:1}}
+@keyframes spedLdPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+</style>
+<script>
+(function(){
+  function hideLoader(){
+    var e=document.getElementById('spedLoading');
+    if(!e) return;
+    e.style.opacity='0';
+    e.style.pointerEvents='none';
+    setTimeout(function(){ if(e.parentNode) e.parentNode.removeChild(e); }, 520);
+  }
+  if(document.readyState==='complete'){ setTimeout(hideLoader,200); }
+  else { window.addEventListener('load', function(){ setTimeout(hideLoader,200); }); }
+})();
+</script>
+    <div class="teacher-app-wrapper">
+        <aside class="teacher-sidebar">
+            <div class="teacher-sidebar-logo">
+                <img alt="SPED ALM Logo" class="teacher-sidebar-logo-img" src="../ASSETS/logo.png" />
+                <div class="teacher-sidebar-logo-text">
+                    <span class="teacher-sidebar-title">SPED ALM</span>
+                    <span class="teacher-sidebar-sub">Teacher Portal</span>
+                </div>
+            </div>
+            <nav class="teacher-sidebar-nav">
+                <a class="teacher-nav-item" href="Teacher_dashboard.html">
+                    <i class="fa-solid fa-table-cells-large"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a class="teacher-nav-item active" href="Teacher_IEP.html">
+                    <i class="fa-solid fa-file-circle-plus"></i>
+                    <span>IEP Materials</span>
+                    <i class="fa-solid fa-chevron-right teacher-nav-arrow"></i>
+                </a>
+                <a class="teacher-nav-item" href="Teacher_learners.html">
+                    <i class="fa-solid fa-users"></i>
+                    <span>My Learners</span>
+                </a>
+                <a class="teacher-nav-item" href="Teacher_report.html">
+                    <i class="fa-solid fa-chart-column"></i>
+                    <span>Reports</span>
+                </a>
+                <a class="teacher-nav-item" href="Teacher_settings.html">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            <div class="teacher-sidebar-footer">
+                <div class="teacher-profile">
+                    <div class="teacher-avatar" id="teacher-avatar-letter">T</div>
+                    <div class="teacher-info">
+                        <span class="teacher-name" id="teacher-name-sidebar">Teacher</span>
+                        <span class="teacher-role">SPED Teacher</span>
+                    </div>
+                </div>
+                <a class="teacher-signout-btn" href="#" id="teacher-signout-btn" onclick="var _id=sessionStorage.getItem('admin_id');fetch('../ADMIN_FILES/ADMIN_BACKEND/logout.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'admin_id='+encodeURIComponent(_id||'')}).finally(function(){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html';});return false;">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Sign Out</span>
+                </a>
+            </div>
+        </aside>
+        <main class="teacher-main-content">
+            <header class="teacher-topbar">
+                <div class="teacher-back-link">
+                    <a class="btn-back" href="Teacher_activies.html">
+                        <i class="fa-solid fa-arrow-left"></i>
+                        Back to Review Activities
+                    </a>
+                </div>
+                <div class="teacher-topbar-right">
+                    <a class="teacher-notif-btn" href="Teacher_notif.html">
+                        <i class="fa-regular fa-bell"></i>
+                        <span class="teacher-notif-badge"></span>
+                    </a>
+                </div>
+            </header>
+            <div class="teacher-page-header">
+                <h1 class="teacher-page-title" id="activity-title">Loading...</h1>
+                <p class="teacher-page-sub" id="activity-meta">View and manage learning activity details</p>
+            </div>
+            <!-- ACTIVITY DETAIL CARD -->
+            <div id="activity-detail-wrap" style="display:none;">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px;">
+                    <div style="background:#f0f7ff;border-radius:10px;padding:14px 18px;">
+                        <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.05em;">Category</div>
+                        <div style="font-weight:600;color:#1e293b;margin-top:4px;" id="detail-subject">—</div>
+                    </div>
+                    <div style="background:#f0fdf4;border-radius:10px;padding:14px 18px;">
+                        <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.05em;">Grade Level</div>
+                        <div style="font-weight:600;color:#1e293b;margin-top:4px;" id="detail-grade">—</div>
+                    </div>
+                    <div style="background:#fff7ed;border-radius:10px;padding:14px 18px;">
+                        <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.05em;">Difficulty</div>
+                        <div style="font-weight:600;color:#1e293b;margin-top:4px;" id="detail-difficulty">—</div>
+                    </div>
+                    <div style="background:#fdf4ff;border-radius:10px;padding:14px 18px;">
+                        <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.05em;">Status</div>
+                        <div style="font-weight:600;color:#1e293b;margin-top:4px;" id="detail-status">—</div>
+                    </div>
+                </div>
+                <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:16px;">
+                    <div style="font-size:13px;font-weight:700;color:#334155;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em;">Description</div>
+                    <div id="detail-description" style="font-size:14px;color:#475569;line-height:1.6;">—</div>
+                </div>
+                <div id="detail-materials-wrap" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:16px;display:none;">
+                    <div style="font-size:13px;font-weight:700;color:#334155;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em;">Learning Materials</div>
+                    <div id="detail-materials" style="font-size:14px;color:#475569;line-height:1.6;white-space:pre-wrap;">—</div>
+                </div>
+                <div id="detail-instructions-wrap" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:16px;display:none;">
+                    <div style="font-size:13px;font-weight:700;color:#334155;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em;">Instructions</div>
+                    <div id="detail-instructions" style="font-size:14px;color:#475569;line-height:1.6;white-space:pre-wrap;">—</div>
+                </div>
+            </div>
+            <div id="activity-error" style="display:none;text-align:center;padding:40px;color:#94a3b8;">
+                <i class="fa-solid fa-circle-exclamation" style="font-size:36px;margin-bottom:12px;"></i>
+                <div>Activity not found or failed to load.</div>
+                <a href="Teacher_activies.html" style="color:#3b82f6;font-size:13px;margin-top:8px;display:inline-block;">Back to list</a>
+            </div>
+        </main>
+    </div>
+    <script>
+        var TEACHER_ID = parseInt(sessionStorage.getItem('teacher_id') || '1');
+
+        function _applyTeacherPhoto(pic) {
+            var el = document.getElementById('teacher-avatar-letter');
+            if (!el || !pic) return;
+            el.textContent = ''; el.style.cssText = 'background:transparent;padding:0';
+            el.innerHTML = '<img src="' + pic + '" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;" />';
+        }
+        function loadSidebar() {
+            var name = sessionStorage.getItem('teacher_name');
+            if (name) {
+                document.getElementById('teacher-avatar-letter').textContent = name.trim().charAt(0).toUpperCase();
+                document.getElementById('teacher-name-sidebar').textContent = name;
+                _applyTeacherPhoto(sessionStorage.getItem('teacher_profile_pic'));
+            } else {
+                var fd = new FormData(); fd.append('teacher_id', TEACHER_ID);
+                fetch('TEACHER_BACKEND/teacher_get_profile.php', { method: 'POST', body: fd })
+                    .then(function(r) { return r.json(); })
+                    .then(function(d) {
+                        if (d.success && d.teacher) {
+                            document.getElementById('teacher-avatar-letter').textContent = d.teacher.avatarLetter;
+                            document.getElementById('teacher-name-sidebar').textContent = d.teacher.name;
+                            sessionStorage.setItem('teacher_name', d.teacher.name);
+                            if (d.teacher.profilePhoto) {
+                                sessionStorage.setItem('teacher_profile_pic', d.teacher.profilePhoto);
+                                _applyTeacherPhoto(d.teacher.profilePhoto);
+                            }
+                        }
+                    }).catch(function(){});
+            }
+        }
+
+        function loadActivity() {
+            var params = new URLSearchParams(window.location.search);
+            var id = parseInt(params.get('id') || '0');
+            if (!id) {
+                document.getElementById('activity-title').textContent = 'No Activity Selected';
+                document.getElementById('activity-error').style.display = '';
+                return;
+            }
+            fetch('TEACHER_BACKEND/teacher_list_activities.php?id=' + id)
+                .then(function(r) { return r.json(); })
+                .then(function(a) {
+                    if (!a) { showError(); return; }
+                    document.getElementById('activity-title').textContent = a.title || 'Untitled Activity';
+                    document.getElementById('activity-meta').textContent =
+                        (a.subject || 'General') + ' · ' + (a.grade_level || 'N/A') + ' · Created ' + fmtDate(a.created_at);
+                    document.getElementById('detail-subject').textContent = a.subject || '—';
+                    document.getElementById('detail-grade').textContent = a.grade_level || '—';
+                    document.getElementById('detail-difficulty').textContent = a.difficulty || '—';
+                    document.getElementById('detail-status').textContent = a.status || '—';
+                    document.getElementById('detail-description').textContent = a.description || 'No description provided.';
+                    if (a.learning_materials) {
+                        document.getElementById('detail-materials').textContent = a.learning_materials;
+                        document.getElementById('detail-materials-wrap').style.display = '';
+                    }
+                    if (a.instructions) {
+                        document.getElementById('detail-instructions').textContent = a.instructions;
+                        document.getElementById('detail-instructions-wrap').style.display = '';
+                    }
+                    document.getElementById('activity-detail-wrap').style.display = '';
+                }).catch(function() { showError(); });
+        }
+
+        function showError() {
+            document.getElementById('activity-title').textContent = 'Activity Not Found';
+            document.getElementById('activity-error').style.display = '';
+        }
+
+        function fmtDate(ts) {
+            if (!ts) return '—';
+            return new Date(ts.replace(' ','T')).toLocaleDateString('en-US', {year:'numeric',month:'short',day:'numeric'});
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSidebar();
+            loadActivity();
+        });
+    </script>
+</body>
+
+</html>

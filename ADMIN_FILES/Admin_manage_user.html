@@ -1,0 +1,1524 @@
+﻿<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
+  <title>SPED ALM - Manage Users</title>
+  <link href="ADMIN_CSS/animations.css" rel="stylesheet" />
+   <link href="ADMIN_CSS/Admin_manage_user.css?v=6" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;family=Nunito:wght@400;600;700;800;900&amp;family=Inter:wght@400;500;600&amp;display=swap"
+    rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
+</head>
+
+<body>
+<div id="spedLoading" style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 60%,#2563eb 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .5s ease;pointer-events:all;">
+  <img src="../ASSETS/logo.png" alt="SPED ALM" onerror="this.style.display='none'" style="width:88px;height:88px;border-radius:22px;background:#fff;padding:6px;box-shadow:0 10px 36px rgba(0,0,0,.35);animation:spedLdPulse 2s ease-in-out infinite;">
+  <p style="color:#fff;font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;margin:0;letter-spacing:1px;text-shadow:0 2px 8px rgba(0,0,0,.2);">SPED ALM</p>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite 0s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .18s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .36s;"></span>
+  </div>
+  <p style="color:rgba(255,255,255,.65);font-family:'Poppins',sans-serif;font-size:13px;font-weight:400;margin:0;">Loading, please wait...</p>
+</div>
+<style>
+@keyframes spedLdBounce{0%,80%,100%{transform:translateY(0);opacity:.5}40%{transform:translateY(-16px);opacity:1}}
+@keyframes spedLdPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+</style>
+<script>
+(function(){
+  function hideLoader(){
+    var e=document.getElementById('spedLoading');
+    if(!e) return;
+    e.style.opacity='0';
+    e.style.pointerEvents='none';
+    setTimeout(function(){ if(e.parentNode) e.parentNode.removeChild(e); }, 520);
+  }
+  if(document.readyState==='complete'){ setTimeout(hideLoader,200); }
+  else { window.addEventListener('load', function(){ setTimeout(hideLoader,200); }); }
+})();
+</script>
+  <!-- SIDEBAR -->
+  <aside class="admin-sidebar">
+    <div class="admin-sidebar-logo">
+      <img alt="SPED ALM Logo" class="admin-sidebar-logo-img" src="../ASSETS/logo.png" />
+      <div class="admin-sidebar-logo-text">
+        <span class="admin-sidebar-title">SPED ALM</span>
+        <span class="admin-sidebar-sub">Admin Portal</span>
+      </div>
+    </div>
+    <nav class="admin-sidebar-nav">
+      <a class="admin-nav-item" href="Admin_dashboard.html">
+        <i class="fa-solid fa-table-cells-large"></i>
+        <span>Dashboard</span>
+      </a>
+      <a class="admin-nav-item" href="Admin_activity_library.html">
+        <i class="fa-solid fa-book-bookmark"></i>
+        <span>Activity Library</span>
+      </a>
+      <a class="admin-nav-item active" href="Admin_manage_user.html">
+        <i class="fa-solid fa-users-gear"></i>
+        <span>Manage Users</span>
+        <i class="fa-solid fa-chevron-right admin-nav-arrow"></i>
+      </a>
+      <a class="admin-nav-item" href="Admin_setting.html">
+        <i class="fa-solid fa-gear"></i>
+        <span>Settings</span>
+      </a>
+    </nav>
+    <div class="admin-sidebar-footer">
+      <div class="admin-sidebar-user">
+        <div class="admin-user-avatar">PS</div>
+        <div class="admin-user-info">
+          <span class="admin-user-name">Admin</span>
+          <span class="admin-user-role">School Administrat...</span>
+        </div>
+      </div>
+      <a class="admin-signout-btn" href="#" onclick="var _id=sessionStorage.getItem('admin_id');fetch('ADMIN_BACKEND/logout.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'admin_id='+encodeURIComponent(_id||'')}).finally(function(){sessionStorage.clear();window.location.href='login_screen.html';});return false;">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        <span>Sign Out</span>
+      </a>
+    </div>
+  </aside>
+  <!-- MAIN -->
+  <main class="admin-main page-enter">
+    <header class="admin-topbar">
+      <div class="admin-topbar-left">
+        <h1 class="admin-page-title">Manage Users</h1>
+        <p class="admin-page-sub">Manage teachers, students and admin accounts</p>
+      </div>
+      <div class="admin-topbar-actions">
+        <a class="admin-trash-link" href="Admin_deleted_accounts.html">
+          <i class="fa-solid fa-trash-can"></i> Deleted Accounts
+        </a>
+        <a class="admin-notif-btn" href="Admin_notif.html">
+          <i class="fa-regular fa-bell"></i>
+          <span class="admin-notif-badge"></span>
+        </a>
+      </div>
+    </header>
+    <!-- STAT CARDS -->
+    <div class="admin-stat-cards">
+      <div class="admin-stat-card admin-stat-card--purple">
+        <span class="admin-stat-card-icon">👥</span>
+        <div class="admin-stat-card-body">
+          <div class="admin-stat-card-num" id="manage-total-users">—</div>
+          <div class="admin-stat-card-label">Total Users</div>
+        </div>
+      </div>
+      <div class="admin-stat-card admin-stat-card--yellow">
+        <span class="admin-stat-card-icon">🎓</span>
+        <div class="admin-stat-card-body">
+          <div class="admin-stat-card-num" id="manage-teachers">—</div>
+          <div class="admin-stat-card-label">Teachers</div>
+        </div>
+      </div>
+      <div class="admin-stat-card admin-stat-card--green">
+        <span class="admin-stat-card-icon">⭐</span>
+        <div class="admin-stat-card-body">
+          <div class="admin-stat-card-num" id="manage-students">—</div>
+          <div class="admin-stat-card-label">Students</div>
+        </div>
+      </div>
+      <div class="admin-stat-card admin-stat-card--pink">
+        <span class="admin-stat-card-icon">✅</span>
+        <div class="admin-stat-card-body">
+          <div class="admin-stat-card-num" id="manage-active-accounts">—</div>
+          <div class="admin-stat-card-label">Active Accounts</div>
+        </div>
+      </div>
+    </div>
+    <!-- FILTER + ACTIONS -->
+    <div class="admin-filter-row">
+      <div class="admin-filter-search">
+        <span>🔍</span>
+        <input name="search_user" placeholder="Search user..." type="text" />
+      </div>
+      <div class="admin-dropdown">
+        <button class="admin-filter-btn" onclick="toggleDD('admin-dd-roles')" type="button">All Roles <span
+            class="admin-dd-arrow">∨</span></button>
+        <div class="admin-dropdown-menu" id="admin-dd-roles">
+          <div class="admin-dd-item active" onclick="selectDD(this,'admin-dd-roles')">All Roles</div>
+          <div class="admin-dd-item" onclick="selectDD(this,'admin-dd-roles')">Teacher</div>
+          <div class="admin-dd-item" onclick="selectDD(this,'admin-dd-roles')">Admin</div>
+          <div class="admin-dd-item" onclick="selectDD(this,'admin-dd-roles')">Student</div>
+        </div>
+      </div>
+      <div class="admin-dropdown">
+        <button class="admin-filter-btn" onclick="toggleDD('admin-dd-status')" type="button">All Status <span
+            class="admin-dd-arrow">∨</span></button>
+        <div class="admin-dropdown-menu" id="admin-dd-status">
+          <div class="admin-dd-item active" onclick="selectDD(this,'admin-dd-status')">All Status</div>
+          <div class="admin-dd-item" onclick="selectDD(this,'admin-dd-status')">Active</div>
+          <div class="admin-dd-item" onclick="selectDD(this,'admin-dd-status')">Inactive</div>
+        </div>
+      </div>
+      <div class="admin-action-btns">
+        <button class="admin-btn-add" onclick="showModal('admin-modal-add')" type="button">⊕ Add Account</button>
+        <button class="admin-btn-delete" onclick="showModal('admin-modal-delete')" type="button">🗑 Delete
+          Account</button>
+      </div>
+    </div>
+    <!-- TABLE -->
+    <div class="admin-table-wrap">
+      <table class="admin-user-table">
+        <thead>
+          <tr>
+            <th>FULL NAME</th>
+            <th>ROLE</th>
+            <th>SECTION/CONDITION</th>
+            <th>STATUS</th>
+            <th>VIEW</th>
+            <th>EDIT</th>
+          </tr>
+        </thead>
+        <tbody id="manage-users-tbody">
+          <tr>
+            <td>
+              <div class="admin-user-cell">
+                <div class="admin-u-avatar" style="background:#c3cfe8"></div>
+                <div class="admin-u-details">
+                  <div class="admin-skel-bar admin-skel-name"></div>
+                  <div class="admin-skel-bar admin-skel-sub"></div>
+                </div>
+              </div>
+            </td>
+            <td><span class="admin-badge admin-badge--blue">—</span></td>
+            <td><span class="admin-text-condition">—</span></td>
+            <td><span class="admin-badge admin-badge--gray">—</span></td>
+            <td><button class="admin-btn-view" type="button"><i class="fa-regular fa-eye"></i> View</button></td>
+            <td><button class="admin-btn-edit" type="button"><i class="fa-solid fa-pen"></i> Edit</button></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="admin-table-empty" id="admin-table-empty-state">
+        <div class="admin-empty-icon">👥</div>
+        <p class="admin-empty-title">No users yet</p>
+        <p class="admin-empty-desc">User accounts will appear here once they are added or registered.</p>
+      </div>
+      <div class="admin-pagination-bar">
+        <span class="admin-pagination-info">Showing <strong>0</strong> of <strong>0</strong> users</span>
+        <div class="admin-pagination-controls">
+          <button class="admin-page-btn" disabled="" type="button">‹</button>
+          <button class="admin-page-btn active" type="button">1</button>
+          <button class="admin-page-btn" disabled="" type="button">Next ›</button>
+        </div>
+      </div>
+    </div>
+  </main>
+  <!-- ===== MODAL: VIEW TEACHER (Two-Column Layout) ===== -->
+  <div class="admin-modal-overlay" id="admin-modal-view-teacher">
+    <div class="admin-modal-box admin-modal-box--2col">
+      <!-- Left Panel: Teacher Information -->
+      <div class="admin-v2-left">
+        <div class="admin-v2-avatar" id="tv-avatar">—</div>
+        <h3 class="admin-v2-name" id="tv-name">Teacher Name</h3>
+        <span class="admin-v2-role-badge">Teacher</span>
+        <div class="admin-v2-info-card">
+          <div class="admin-v2-info-row">
+            <div class="admin-v2-info-icon"><i class="fa-regular fa-envelope"></i></div>
+            <div class="admin-v2-info-text">
+              <span class="admin-v2-info-label">Email</span>
+              <span class="admin-v2-info-val" id="tv-email">—</span>
+            </div>
+          </div>
+          <div class="admin-v2-info-row">
+            <div class="admin-v2-info-icon"><i class="fa-solid fa-user-tie"></i></div>
+            <div class="admin-v2-info-text">
+              <span class="admin-v2-info-label">Role</span>
+              <span class="admin-v2-info-val">Teacher</span>
+            </div>
+          </div>
+          <div class="admin-v2-info-row">
+            <div class="admin-v2-info-icon"><i class="fa-solid fa-chalkboard"></i></div>
+            <div class="admin-v2-info-text">
+              <span class="admin-v2-info-label">Assigned Section</span>
+              <span class="admin-v2-info-val" id="tv-section">—</span>
+            </div>
+          </div>
+          <div class="admin-v2-info-row">
+            <div class="admin-v2-info-icon"><i class="fa-regular fa-calendar"></i></div>
+            <div class="admin-v2-info-text">
+              <span class="admin-v2-info-label">Date Created</span>
+              <span class="admin-v2-info-val" id="tv-created">—</span>
+            </div>
+          </div>
+          <div class="admin-v2-info-row">
+            <div class="admin-v2-info-icon"><i class="fa-solid fa-circle-dot"></i></div>
+            <div class="admin-v2-info-text">
+              <span class="admin-v2-info-label">Status</span>
+              <span id="tv-status" class="admin-badge admin-badge--green">active</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Right Panel: Students Handled -->
+      <div class="admin-v2-right">
+        <button class="admin-v2-close" onclick="hideModal('admin-modal-view-teacher')" type="button">✕</button>
+        <div class="admin-v2-right-title">
+          Students Handled
+          <span class="admin-v2-count-badge" id="tv-student-count">0</span>
+        </div>
+        <div class="admin-v2-search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" placeholder="Search students..." id="tv-student-search" oninput="filterTeacherStudents()" />
+        </div>
+        <div class="admin-v2-students-list" id="tv-students-list">
+          <div class="admin-v2-empty"><i class="fa-solid fa-user-graduate"></i>No students assigned yet.</div>
+        </div>
+      </div>
+      <!-- Footer (right column, row 2) -->
+      <div class="admin-v2-footer">
+        <button class="admin-v2-btn-close" onclick="hideModal('admin-modal-view-teacher')" type="button">Close</button>
+        <button class="admin-v2-btn-edit" onclick="hideModal('admin-modal-view-teacher'); editUser(selectedAccount.id)" type="button">Edit User</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: VIEW STUDENT (Two-Column Layout) ===== -->
+  <div class="admin-modal-overlay" id="admin-modal-view-student">
+    <div class="admin-modal-box admin-modal-box--2col">
+      <!-- Left Panel: Student Information -->
+      <div class="admin-v2-left">
+        <div class="admin-v2-avatar" id="sv-avatar">—</div>
+        <h3 class="admin-v2-name" id="sv-name">Student Name</h3>
+        <span class="admin-v2-role-badge">Student</span>
+        <div class="admin-v2-info-card">
+          <div class="admin-v2-info-row">
+            <div class="admin-v2-info-icon"><i class="fa-regular fa-envelope"></i></div>
+            <div class="admin-v2-info-text">
+              <span class="admin-v2-info-label">Email</span>
+              <span class="admin-v2-info-val" id="sv-email">—</span>
+            </div>
+          </div>
+          <div class="admin-v2-info-row">
+            <div class="admin-v2-info-icon"><i class="fa-solid fa-star"></i></div>
+            <div class="admin-v2-info-text">
+              <span class="admin-v2-info-label">Role</span>
+              <span class="admin-v2-info-val">Student</span>
+            </div>
+          </div>
+          <div class="admin-v2-info-row">
+            <div class="admin-v2-info-icon"><i class="fa-solid fa-chalkboard"></i></div>
+            <div class="admin-v2-info-text">
+              <span class="admin-v2-info-label">Assigned Section</span>
+              <span class="admin-v2-info-val" id="sv-section">—</span>
+            </div>
+          </div>
+          <div class="admin-v2-info-row">
+            <div class="admin-v2-info-icon"><i class="fa-solid fa-brain"></i></div>
+            <div class="admin-v2-info-text">
+              <span class="admin-v2-info-label">Disability / Condition</span>
+              <span class="admin-v2-info-val" id="sv-condition">—</span>
+            </div>
+          </div>
+          <div class="admin-v2-info-row">
+            <div class="admin-v2-info-icon"><i class="fa-regular fa-calendar"></i></div>
+            <div class="admin-v2-info-text">
+              <span class="admin-v2-info-label">Date Created</span>
+              <span class="admin-v2-info-val" id="sv-created">—</span>
+            </div>
+          </div>
+          <div class="admin-v2-info-row">
+            <div class="admin-v2-info-icon"><i class="fa-solid fa-circle-dot"></i></div>
+            <div class="admin-v2-info-text">
+              <span class="admin-v2-info-label">Status</span>
+              <span id="sv-status" class="admin-badge admin-badge--green">active</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Right Panel: Enrollment Details -->
+      <div class="admin-v2-right">
+        <button class="admin-v2-close" onclick="hideModal('admin-modal-view-student')" type="button">✕</button>
+        <div class="admin-v2-section-title">Enrollment Details</div>
+        <div class="admin-v2-detail-section">
+          <!-- Teacher Card -->
+          <div class="admin-v2-detail-card">
+            <div class="admin-v2-detail-card-title">
+              <i class="fa-solid fa-chalkboard-user"></i> Assigned Teacher
+            </div>
+            <div id="sv-teacher-content">
+              <div class="admin-v2-no-data"><i class="fa-regular fa-circle-xmark"></i> No teacher assigned.</div>
+            </div>
+          </div>
+          <!-- Guardian Card -->
+          <div class="admin-v2-detail-card">
+            <div class="admin-v2-detail-card-title">
+              <i class="fa-solid fa-people-roof"></i> Guardian Information
+            </div>
+            <div id="sv-guardian-content">
+              <div class="admin-v2-no-data"><i class="fa-regular fa-circle-xmark"></i> No guardian information available.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Footer (right column, row 2) -->
+      <div class="admin-v2-footer">
+        <button class="admin-v2-btn-close" onclick="hideModal('admin-modal-view-student')" type="button">Close</button>
+        <button class="admin-v2-btn-edit" onclick="hideModal('admin-modal-view-student'); editUser(selectedAccount.id)" type="button">Edit User</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL: VIEW ADMIN (fallback simple view) ===== -->
+  <div class="admin-modal-overlay" id="admin-modal-view">
+    <div class="admin-modal-box admin-modal-box--narrow">
+      <div class="admin-view-avatar-wrap">
+        <button class="admin-modal-close" onclick="hideModal('admin-modal-view')" type="button">✕</button>
+        <div class="admin-view-avatar">—</div>
+        <h3 class="admin-view-name">No User Selected</h3>
+        <span class="admin-badge admin-badge--blue">—</span>
+      </div>
+      <div class="admin-view-info-list">
+        <div class="admin-view-info-row" id="admin-vi-row-email"><span class="admin-vi-icon">📧</span><span class="admin-vi-label">Email</span><span class="admin-vi-val">—</span></div>
+        <div class="admin-view-info-row" id="admin-vi-row-role"><span class="admin-vi-icon">👤</span><span class="admin-vi-label">Role</span><span class="admin-vi-val">—</span></div>
+        <div class="admin-view-info-row" id="admin-vi-row-created"><span class="admin-vi-icon">📅</span><span class="admin-vi-label">Date Created</span><span class="admin-vi-val">—</span></div>
+        <div class="admin-view-info-row" id="admin-vi-row-status"><span class="admin-vi-icon">🔵</span><span class="admin-vi-label">Status</span><span class="admin-vi-val"><span class="admin-badge admin-badge--gray">—</span></span></div>
+      </div>
+      <div class="admin-modal-footer-row">
+        <button class="admin-btn-save" onclick="hideModal('admin-modal-view'); editUser(selectedAccount.id)" type="button">Edit User</button>
+        <button class="admin-btn-cancel" onclick="hideModal('admin-modal-view')" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+  <!-- ===== MODAL: EDIT USER ===== -->
+  <div class="admin-modal-overlay" id="admin-modal-edit">
+    <form action="ADMIN_BACKEND/admin_manage_user_save.php" id="admin_manage_user_form_1" method="post"
+      style="display: contents;">
+      <input type="hidden" name="user_id" value="" />
+      <div class="admin-modal-box">
+        <div class="admin-modal-header">
+          <h3 class="admin-modal-title">Edit User</h3>
+          <button class="admin-modal-close" onclick="hideModal('admin-modal-edit')" type="button">✕</button>
+        </div>
+        <div class="admin-modal-body admin-modal-scroll">
+          <div class="admin-field-group">
+            <label>Full Name</label>
+            <div class="admin-input-wrap"><span>👤</span><input id="admin-edit-full-name" name="full_name" placeholder="Full name..."
+                type="text" oninput="generateEmailFromNameEdit()" />
+            </div>
+          </div>
+          <div class="admin-field-group">
+            <label>Email Address</label>
+            <div class="admin-input-wrap"><span>🔔</span><input id="admin-edit-email" name="email_address" placeholder="Email address..."
+                type="email" /></div>
+            <div class="admin-field-note"><span id="admin-edit-email-hint" style="display: none; color: #0066cc; font-weight: 500;"></span></div>
+          </div>
+          <div class="admin-field-group">
+            <label>Phone Number</label>
+            <div class="admin-input-wrap"><span>📞</span><input name="phone_number" placeholder="Phone number..."
+                type="text" /></div>
+          </div>
+          <div class="admin-field-group">
+            <label>Role</label>
+            <div class="admin-role-cards">
+              <div class="admin-role-card admin-role-card--teacher admin-active-teacher"
+                onclick="pickRole(this,'edit','teacher')">
+                <span class="admin-role-card-icon">🎓</span>
+                <span class="admin-role-card-label">Teacher</span>
+                <span class="admin-role-dot"></span>
+              </div>
+              <div class="admin-role-card" onclick="pickRole(this,'edit','student')">
+                <span class="admin-role-card-icon">⭐</span>
+                <span class="admin-role-card-label">Student</span>
+                <span class="admin-role-dot"></span>
+              </div>
+            </div>
+            <input type="hidden" id="admin-edit-role-input" name="admin_edit_role_input" value="teacher" />
+          </div>
+          <div class="admin-field-group" id="admin-edit-section-wrap" style="display:none">
+            <label>Section</label>
+            <div class="admin-cond-dropdown-wrap">
+              <select class="admin-cond-select" id="admin-edit-section-select" name="grade_level">
+                <option value="">Select Section</option>
+                <option>Non-Graded Maya</option>
+                <option>Non-Graded Pipit</option>
+                <option>Non-Graded Aguila</option>
+                <option>Non-Graded Kilyawan</option>
+                <option>Non-Graded Tikling</option>
+              </select>
+            </div>
+          </div>
+          <div class="admin-field-group" id="admin-edit-condition-wrap" style="display:none">
+            <label>Condition</label>
+            <div class="admin-cond-dropdown-wrap">
+              <select class="admin-cond-select" id="admin-edit-cond-select" name="admin_edit_cond_select">
+                <option value="">Select condition...</option>
+                <option value="ASD">ASD (Autism Spectrum Disorder)</option>
+                <option value="ID">ID (Intellectual Disability)</option>
+                <option value="ADHD">ADHD</option>
+                <option value="Down Syndrome">Down Syndrome</option>
+                <option value="Cerebral Palsy">Cerebral Palsy</option>
+                <option value="Learning Disability">Learning Disability</option>
+                <option value="Speech and Language Disorder">Speech and Language Disorder</option>
+                <option value="Hearing Impairment">Hearing Impairment</option>
+                <option value="Visual Impairment">Visual Impairment</option>
+                <option value="Emotional and Behavioral Disorder">Emotional and Behavioral Disorder</option>
+                <option value="Orthopedic Impairment">Orthopedic Impairment</option>
+                <option value="Multiple Disabilities">Multiple Disabilities</option>
+                <option value="Traumatic Brain Injury">Traumatic Brain Injury</option>
+                <option value="Others">Others</option>
+              </select>
+            </div>
+          </div>
+          <div class="admin-field-group" id="admin-edit-parent-wrap" style="display:none">
+            <label>Parent/Guardian Full Name</label>
+            <div class="admin-input-wrap"><span>👤</span><input id="admin-edit-parent-name" name="parent_name" placeholder="Parent/Guardian full name..."
+                type="text" /></div>
+          </div>
+          <div class="admin-field-group" id="admin-edit-teacher-wrap" style="display:none">
+            <label>Assigned Teacher</label>
+            <div class="admin-cond-dropdown-wrap">
+              <select class="admin-cond-select" id="admin-edit-teacher-select" name="assigned_teacher_id">
+                <option value="">Select teacher...</option>
+              </select>
+            </div>
+            <div class="admin-field-note" id="admin-edit-teacher-note" style="display:none;color:#b45309;font-weight:500;">No teacher accounts yet. Add a teacher account first.</div>
+          </div>
+          <div class="admin-field-group">
+            <input type="hidden" id="admin-edit-status-input" name="admin_status_input" value="active" />
+          </div>
+          <div class="admin-reset-card">
+            <div>
+              <div class="admin-reset-title">🔑 Reset Password</div>
+              <div class="admin-reset-desc">Generate a temporary password for this user. They will be prompted to change
+                it upon
+                next login.</div>
+            </div>
+            <button class="admin-btn-reset" onclick="showResetPasswordModal()" type="button">Reset
+              Password</button>
+          </div>
+        </div>
+        <div class="admin-modal-footer-row">
+          <button class="admin-btn-cancel" onclick="hideModal('admin-modal-edit')" type="button">Cancel</button>
+          <button class="admin-btn-save" type="button" onclick="saveEditUser()">Save Changes</button>
+        </div>
+      </div>
+    </form>
+  </div>
+  <!-- ===== MODAL: ADD ACCOUNT ===== -->
+  <div class="admin-modal-overlay" id="admin-modal-add">
+    <form action="ADMIN_BACKEND/admin_add_account.php" id="admin_manage_user_form_2" method="post"
+      style="display: contents;">
+      <div class="admin-modal-box">
+        <div class="admin-modal-header">
+          <h3 class="admin-modal-title">Add Account</h3>
+          <button class="admin-modal-close" onclick="hideModal('admin-modal-add')" type="button">✕</button>
+        </div>
+        <div class="admin-modal-body">
+          <div class="admin-field-group">
+            <label>Full Name</label>
+            <div class="admin-input-wrap"><span>👤</span><input id="admin-add-full-name" name="enter_full_name" placeholder="Enter full name..."
+                type="text" oninput="generateEmailFromName()" /></div>
+          </div>
+          <div class="admin-field-group">
+            <label>Email Address</label>
+            <div class="admin-input-wrap"><span>🔔</span><input id="admin-add-email" name="enter_email_address"
+                placeholder="Enter email address..." type="email" pattern="^[a-zA-Z0-9._%+-]+@spedalm\.edu\.ph$"
+                title="Email must end with @spedalm.edu.ph" /></div>
+            <div class="admin-field-note">Only @spedalm.edu.ph addresses are accepted. <span id="admin-add-email-hint" style="display: none; color: #0066cc; font-weight: 500;"></span></div>
+          </div>
+          <div class="admin-field-group">
+            <label>Role</label>
+            <div class="admin-role-cards">
+              <div class="admin-role-card admin-role-card--teacher admin-active-teacher"
+                onclick="pickRole(this,'add','teacher')">
+                <span class="admin-role-card-icon">🎓</span>
+                <span class="admin-role-card-label">Teacher</span>
+                <span class="admin-role-dot"></span>
+              </div>
+              <div class="admin-role-card" onclick="pickRole(this,'add','student')">
+                <span class="admin-role-card-icon">⭐</span>
+                <span class="admin-role-card-label">Student</span>
+                <span class="admin-role-dot"></span>
+              </div>
+            </div>
+            <input type="hidden" name="enter_role" id="admin-add-role-input" value="teacher" />
+            <input type="hidden" name="enter_condition" id="admin-add-condition-input" value="" />
+            <input type="hidden" name="enter_password" id="admin-add-password-input" value="Teacher@123" />
+            <input type="hidden" name="enter_status" id="admin-add-status-input" value="inactive" />
+            <div class="admin-field-note">🔒 Status can't be set manually here — the account starts as <strong>Inactive</strong> and automatically switches to <strong>Active</strong> once the user logs in.</div>
+          </div>
+          <div class="admin-field-group" id="admin-add-section-wrap" style="display:block">
+            <label>Section</label>
+            <div class="admin-cond-dropdown-wrap">
+              <select class="admin-cond-select" id="admin-add-section-select" name="grade_level">
+                <option value="">Select Section</option>
+                <option>Non-Graded Maya</option>
+                <option>Non-Graded Pipit</option>
+                <option>Non-Graded Aguila</option>
+                <option>Non-Graded Kilyawan</option>
+                <option>Non-Graded Tikling</option>
+              </select>
+            </div>
+          </div>
+          <div class="admin-field-group" id="admin-add-condition-wrap" style="display:none">
+            <label>Condition</label>
+            <div class="admin-cond-dropdown-wrap">
+              <select class="admin-cond-select" id="admin-add-cond-select" name="admin_add_cond_select">
+                <option value="">Select condition...</option>
+                <option value="ASD">ASD (Autism Spectrum Disorder)</option>
+                <option value="ID">ID (Intellectual Disability)</option>
+                <option value="ADHD">ADHD</option>
+                <option value="Down Syndrome">Down Syndrome</option>
+                <option value="Cerebral Palsy">Cerebral Palsy</option>
+                <option value="Learning Disability">Learning Disability</option>
+                <option value="Speech and Language Disorder">Speech and Language Disorder</option>
+                <option value="Hearing Impairment">Hearing Impairment</option>
+                <option value="Visual Impairment">Visual Impairment</option>
+                <option value="Emotional and Behavioral Disorder">Emotional and Behavioral Disorder</option>
+                <option value="Orthopedic Impairment">Orthopedic Impairment</option>
+                <option value="Multiple Disabilities">Multiple Disabilities</option>
+                <option value="Traumatic Brain Injury">Traumatic Brain Injury</option>
+                <option value="Others">Others</option>
+              </select>
+            </div>
+          </div>
+          <div class="admin-field-group" id="admin-add-parent-wrap" style="display:none">
+            <label>Parent/Guardian Full Name</label>
+            <div class="admin-input-wrap"><span>👤</span><input id="admin-add-parent-name" name="enter_parent_name" placeholder="Enter parent/guardian full name..."
+                type="text" /></div>
+          </div>
+          <div class="admin-field-group" id="admin-add-teacher-wrap" style="display:none">
+            <label>Assigned Teacher</label>
+            <div class="admin-cond-dropdown-wrap">
+              <select class="admin-cond-select" id="admin-add-teacher-select" name="assigned_teacher_id">
+                <option value="">Select teacher...</option>
+              </select>
+            </div>
+            <div class="admin-field-note" id="admin-add-teacher-note" style="display:none;color:#b45309;font-weight:500;">No teacher accounts yet. Add a teacher account first — the list will appear here once one exists.</div>
+          </div>
+          <div class="admin-field-group">
+            <label>Date Created</label>
+            <div class="admin-input-wrap" style="pointer-events: none; opacity: 0.7;"><span>📅</span><input id="admin-add-date-created" placeholder="Date created..." type="text" disabled /></div>
+          </div>
+        </div>
+        <div class="admin-modal-footer-row">
+          <button class="admin-btn-cancel" onclick="hideModal('admin-modal-add')" type="button">Cancel</button>
+          <button class="admin-btn-save admin-btn-green" type="button" onclick="saveAddAccount()">Add Account</button>
+        </div>
+      </div>
+    </form>
+  </div>
+  <!-- ===== MODAL: DELETE ACCOUNT ===== -->
+  <div class="admin-modal-overlay" id="admin-modal-delete">
+    <div class="admin-modal-box">
+      <div class="admin-modal-header">
+        <h3 class="admin-modal-title">Delete Account</h3>
+        <p class="admin-modal-sub">Select the account you want to permanently delete.</p>
+        <button class="admin-modal-close" onclick="hideModal('admin-modal-delete')" type="button">✕</button>
+      </div>
+      <div class="admin-modal-body">
+        <div class="admin-del-search">
+          <span>🔍</span>
+          <input name="search_user_2" placeholder="Search user..." type="text" />
+        </div>
+        <div class="admin-del-count"><strong id="admin-delete-count">0</strong> account selected <span class="admin-del-clear" onclick="clearDeleteSelection()">Clear selection</span></div>
+        <div class="admin-del-list" id="admin-delete-list">
+          <div class="admin-del-empty admin-placeholder-bar admin-w-full">Loading accounts...</div>
+        </div>
+        <div class="admin-del-warning">
+          ⚠️ This action is permanent and cannot be undone. All data associated with the selected account(s) will be
+          removed.
+        </div>
+      </div>
+      <div class="admin-modal-footer-row">
+        <button class="admin-btn-cancel" onclick="hideModal('admin-modal-delete')" type="button">Cancel</button>
+        <button class="admin-btn-danger-solid" id="admin-delete-selected-btn" type="button" onclick="deleteSelectedAccounts()" disabled>🗑 Delete Selected (0)</button>
+      </div>
+    </div>
+  </div>
+  <!-- ===== MODAL: RESET PASSWORD ===== -->
+  <div class="admin-modal-overlay" id="admin-modal-reset" style="display:none">
+    <form action="ADMIN_BACKEND/admin_reset_password.php" id="admin_manage_user_form_3" method="post"
+      style="display: contents;">
+      <input type="hidden" name="user_id" value="" />
+      <div class="admin-modal-box admin-modal-box--narrow">
+        <div class="admin-reset-top">
+          <div class="admin-reset-modal-icon">🔑</div>
+          <h3 class="admin-reset-modal-title">Reset Password</h3>
+          <button class="admin-reset-close" onclick="hideModal('admin-modal-reset')" type="button">✕</button>
+        </div>
+        <hr class="admin-reset-divider" />
+        <div class="admin-modal-body">
+          <div class="admin-reset-user-card">
+            <div class="admin-u-avatar" id="admin-reset-avatar"
+              style="background:#1e8c4e; width:44px; height:44px; font-size:14px; flex-shrink:0">—
+            </div>
+            <div>
+              <div class="admin-reset-user-name" id="admin-reset-user-name">—</div>
+              <div class="admin-reset-user-sub" id="admin-reset-user-sub">—</div>
+            </div>
+          </div>
+          <div class="admin-reset-warning-card">
+            <span>⚠️</span>
+            <p>This will generate a temporary password for this user. Make sure to give the new password directly to the
+              user.</p>
+          </div>
+          <div class="admin-field-group" style="margin-bottom:6px">
+            <label>Temporary Password</label>
+            <div class="admin-temp-pass-wrap">
+              <input class="admin-temp-pass-input" name="enter_temporary_password"
+                placeholder="Enter temporary password..." type="text" value="Temp@1234" />
+              <span class="admin-copy-icon">⧉</span>
+            </div>
+          </div>
+          <p class="admin-gen-new-label">Generate New</p>
+          <p class="admin-pass-note">The user will be required to change this password upon their next login.</p>
+        </div>
+        <hr class="admin-reset-divider" />
+        <div class="admin-modal-footer-row">
+          <button class="admin-btn-cancel" onclick="hideModal('admin-modal-reset')" type="button">Cancel</button>
+          <button class="admin-btn-save" type="button" onclick="saveResetPassword()">Confirm Reset</button>
+        </div>
+      </div>
+    </form>
+  </div>
+  <script>
+    var accountList = [];
+    var deleteSelection = new Set();
+
+    function showModal(id) { 
+      document.getElementById(id).style.display = 'flex'; 
+    }
+    
+    function hideModal(id) { 
+      document.getElementById(id).style.display = 'none'; 
+    }
+
+    function showModal(id) {
+      document.getElementById(id).style.display = 'flex';
+      
+      // Reset and initialize Add Account form when opening
+      if (id === 'admin-modal-add') {
+        document.getElementById('admin_manage_user_form_2').reset();
+        document.getElementById('admin-add-role-input').value = 'teacher';
+        document.getElementById('admin-add-password-input').value = 'Teacher@123';
+        document.getElementById('admin-add-status-input').value = 'inactive';
+        document.getElementById('admin-add-condition-input').value = '';
+        document.getElementById('admin-add-cond-select').value = '';
+        document.getElementById('admin-add-condition-wrap').style.display = 'none';
+        // Default role is teacher: show Section, hide parent/teacher fields
+        document.getElementById('admin-add-section-wrap').style.display = 'block';
+        document.getElementById('admin-add-section-select').value = '';
+        document.getElementById('admin-add-parent-wrap').style.display = 'none';
+        document.getElementById('admin-add-teacher-wrap').style.display = 'none';
+        document.getElementById('admin-add-parent-name').value = '';
+        // Date Created is always "today" for a brand-new account
+        var todayFormatted = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        document.getElementById('admin-add-date-created').value = todayFormatted;
+        // Reset role cards
+        document.querySelectorAll('#admin-modal-add .admin-role-card').forEach(function(card) {
+          card.classList.remove('admin-active-teacher', 'admin-active-student');
+        });
+        document.querySelector('#admin-modal-add .admin-role-card--teacher').classList.add('admin-active-teacher');
+      }
+      
+      if (id === 'admin-modal-delete') {
+        loadAccounts();
+      }
+    }
+
+    function hideModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    function generateEmailFromName() {
+      var fullNameInput = document.getElementById('admin-add-full-name');
+      var emailInput = document.getElementById('admin-add-email');
+      var emailHint = document.getElementById('admin-add-email-hint');
+      var fullName = fullNameInput.value.trim();
+
+      if (!fullName) {
+        emailInput.value = '';
+        emailHint.style.display = 'none';
+        return;
+      }
+
+      // Remove extra spaces and split name into parts
+      var nameParts = fullName.split(/\s+/).filter(function(part) { return part.length > 0; });
+      
+      if (nameParts.length === 0) {
+        emailInput.value = '';
+        emailHint.style.display = 'none';
+        return;
+      }
+
+      // Create email: firstname.lastname@spedalm.edu.ph
+      // If only one name, use it as firstname
+      var email = nameParts.join('.').toLowerCase() + '@spedalm.edu.ph';
+      
+      // Auto-fill email field
+      emailInput.value = email;
+      
+      // Show suggestion hint
+      emailHint.textContent = 'Suggested: ' + email;
+      emailHint.style.display = 'inline';
+    }
+
+    function generateEmailFromNameEdit() {
+      var fullNameInput = document.getElementById('admin-edit-full-name');
+      var emailInput = document.getElementById('admin-edit-email');
+      var emailHint = document.getElementById('admin-edit-email-hint');
+      var fullName = fullNameInput.value.trim();
+
+      if (!fullName) {
+        emailHint.style.display = 'none';
+        return;
+      }
+
+      // Remove extra spaces and split name into parts
+      var nameParts = fullName.split(/\s+/).filter(function(part) { return part.length > 0; });
+      
+      if (nameParts.length === 0) {
+        emailHint.style.display = 'none';
+        return;
+      }
+
+      // Create email: firstname.lastname@spedalm.edu.ph
+      var email = nameParts.join('.').toLowerCase() + '@spedalm.edu.ph';
+      
+      // Show suggestion hint
+      emailHint.textContent = 'Suggested: ' + email;
+      emailHint.style.display = 'inline';
+    }
+
+    function clearDeleteSelection() {
+      deleteSelection.clear();
+      document.querySelectorAll('#admin-delete-list input[type="checkbox"]').forEach(function (checkbox) {
+        checkbox.checked = false;
+      });
+      updateDeleteCount();
+    }
+
+    function toggleDeleteSelection(id, checked) {
+      if (checked) {
+        deleteSelection.add(id);
+      } else {
+        deleteSelection.delete(id);
+      }
+      updateDeleteCount();
+    }
+
+    function updateDeleteCount() {
+      var count = deleteSelection.size;
+      document.getElementById('admin-delete-count').textContent = count;
+      var btn = document.getElementById('admin-delete-selected-btn');
+      btn.disabled = count === 0;
+      btn.textContent = '🗑 Delete Selected (' + count + ')';
+    }
+
+    function renderDeleteList(accounts) {
+      var list = document.getElementById('admin-delete-list');
+      if (!accounts.length) {
+        list.innerHTML = '<div class="admin-del-empty">No accounts found.</div>';
+        return;
+      }
+
+      list.innerHTML = accounts.map(function (account) {
+        return '<div class="admin-del-item">'
+          + '<input class="admin-del-check" type="checkbox" data-id="' + account.id + '" onclick="toggleDeleteSelection(' + account.id + ', this.checked)" />'
+          + '<div class="admin-u-avatar" style="background:#1a3a8f;width:36px;height:36px;font-size:12px">' + account.initials + '</div>'
+          + '<div class="admin-del-info">'
+          + '<div class="admin-u-name">' + account.full_name + '</div>'
+          + '<div class="admin-u-sub">' + account.role + (account.condition_info ? ' • ' + account.condition_info : '') + '</div>'
+          + '</div>'
+          + '<span class="admin-badge admin-badge--blue admin-ml-auto">' + account.status + '</span>'
+          + '</div>';
+      }).join('');
+    }
+
+    function _roleAvatarBg(role) {
+      return role === 'teacher' ? '#b45309' : role === 'student' ? '#6d28d9' : '#1a3a8f';
+    }
+    function _roleBadgeClass(role) {
+      return role === 'teacher' ? 'admin-badge--teacher'
+           : role === 'student' ? 'admin-badge--student'
+           : 'admin-badge--adminrole';
+    }
+
+    function renderAccountTable(accounts) {
+      var tbody = document.getElementById('manage-users-tbody');
+      var emptyState = document.getElementById('admin-table-empty-state');
+      if (!tbody) return;
+
+      if (!accounts.length) {
+        tbody.innerHTML = '';
+        if (emptyState) emptyState.classList.add('admin-table-empty--visible');
+        return;
+      }
+
+      if (emptyState) emptyState.classList.remove('admin-table-empty--visible');
+
+      tbody.innerHTML = accounts.map(function (account) {
+        var _aBg = _roleAvatarBg(account.role), _aIni = account.initials;
+        var avatarHtml = account.profile_photo
+          ? '<img src="' + account.profile_photo + '" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;" onerror="var p=this.parentNode;p.style.background=\'' + _aBg + '\';p.style.padding=\'\';p.textContent=\'' + account.initials.replace(/'/g,"\\'") + '\';" />'
+          : account.initials;
+        var avatarStyle = account.profile_photo
+          ? 'background:transparent;padding:0;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.12);'
+          : 'background:' + _aBg + ';';
+        var statusClass = account.status === 'active' ? 'admin-badge--green' : 'admin-badge--inactive';
+        return '<tr>'
+          + '<td><div class="admin-user-cell">'
+          + '<div class="admin-u-avatar" style="' + avatarStyle + '">' + avatarHtml + '</div>'
+          + '<div class="admin-u-details">'
+          + '<div class="admin-u-name">' + escapeHtml(account.full_name) + '</div>'
+          + '<div class="admin-u-email"><i class="fa-regular fa-envelope"></i>' + escapeHtml(account.admin_email) + '</div>'
+          + '</div></div></td>'
+          + '<td><span class="admin-badge ' + _roleBadgeClass(account.role) + '">' + account.role + '</span></td>'
+          + '<td><span class="admin-text-condition">' + escapeHtml(account.condition_info || '—') + '</span></td>'
+          + '<td><span class="admin-badge ' + statusClass + '">' + account.status + '</span></td>'
+          + '<td><button class="admin-btn-view" type="button" onclick="viewUser(' + account.id + ')"><i class="fa-regular fa-eye"></i> View</button></td>'
+          + '<td><button class="admin-btn-edit" type="button" onclick="editUser(' + account.id + ')"><i class="fa-solid fa-pen"></i> Edit</button></td>'
+          + '</tr>';
+      }).join('');
+    }
+
+    var selectedAccount = null;
+    var teacherStudentsData = [];
+
+    function viewUser(id) {
+      var account = accountList.find(function(acc) { return acc.id == id; });
+      if (!account) return;
+      selectedAccount = account;
+
+      if (account.role === 'teacher') {
+        showTeacherViewModal(account);
+      } else if (account.role === 'student') {
+        showStudentViewModal(account);
+      } else {
+        showAdminViewModal(account);
+      }
+    }
+
+    // ── helper: set avatar element to photo or initials ──
+    function setAvatar(id, photo, initials) {
+      var el = document.getElementById(id); if (!el) return;
+      if (photo) {
+        el.textContent = ''; el.style.cssText = 'background:transparent;padding:0;overflow:hidden';
+        var _ini = initials;
+        el.innerHTML = '<img src="' + photo + '" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;" onerror="var p=this.parentNode;p.removeAttribute(\'style\');p.textContent=\'' + initials.replace(/'/g,"\\'") + '\';" />';
+      } else { el.textContent = initials; el.removeAttribute('style'); }
+    }
+
+    // ── Teacher two-column view ──
+    function showTeacherViewModal(account) {
+      setAvatar('tv-avatar', account.profile_photo, account.initials);
+      document.getElementById('tv-name').textContent    = account.full_name;
+      document.getElementById('tv-email').textContent   = account.admin_email || '—';
+      document.getElementById('tv-section').textContent = account.condition_info || 'Not assigned';
+
+      if (account.created_at) {
+        document.getElementById('tv-created').textContent =
+          new Date(account.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+      } else {
+        document.getElementById('tv-created').textContent = '—';
+      }
+
+      var sb = document.getElementById('tv-status');
+      sb.textContent = account.status;
+      sb.className   = 'admin-badge ' + (account.status === 'active' ? 'admin-badge--green' : 'admin-badge--gray');
+
+      // Reset student panel while loading
+      document.getElementById('tv-student-count').textContent = '…';
+      document.getElementById('tv-student-search').value      = '';
+      document.getElementById('tv-students-list').innerHTML   =
+        '<div class="admin-v2-empty"><i class="fa-solid fa-spinner fa-spin"></i>Loading students…</div>';
+
+      fetch('ADMIN_BACKEND/admin_get_teacher_students.php?teacher_id=' + account.id)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          teacherStudentsData = data.students || [];
+          document.getElementById('tv-student-count').textContent = teacherStudentsData.length;
+          renderTeacherStudents(teacherStudentsData);
+        })
+        .catch(function() {
+          teacherStudentsData = [];
+          document.getElementById('tv-student-count').textContent = '0';
+          document.getElementById('tv-students-list').innerHTML =
+            '<div class="admin-v2-empty"><i class="fa-solid fa-triangle-exclamation"></i>Failed to load students.</div>';
+        });
+
+      showModal('admin-modal-view-teacher');
+    }
+
+    function renderTeacherStudents(students) {
+      var list = document.getElementById('tv-students-list');
+      if (!students.length) {
+        list.innerHTML = '<div class="admin-v2-empty"><i class="fa-solid fa-user-graduate"></i>No students assigned yet.</div>';
+        return;
+      }
+      list.innerHTML = students.map(function(s) {
+        var sectionText = s.section || (s.condition ? s.condition : '—');
+        var stuAv = s.profile_photo
+          ? '<img src="' + s.profile_photo + '" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;" onerror="var p=this.parentNode;p.removeAttribute(\'style\');p.textContent=\'' + (s.initials||'?').replace(/'/g,"\\'") + '\';" />'
+          : s.initials;
+        var stuAvStyle = s.profile_photo ? 'style="background:transparent;padding:0;overflow:hidden"' : '';
+        return '<div class="admin-v2-student-card">'
+          + '<div class="admin-v2-student-avatar" ' + stuAvStyle + '>' + stuAv + '</div>'
+          + '<div style="flex:1;min-width:0">'
+          + '<div class="admin-v2-student-name">' + escapeHtml(s.full_name) + '</div>'
+          + '<div class="admin-v2-student-section">' + escapeHtml(sectionText) + '</div>'
+          + '</div>'
+          + '<span class="admin-badge ' + (s.status === 'active' ? 'admin-badge--green' : 'admin-badge--gray') + '">' + s.status + '</span>'
+          + '</div>';
+      }).join('');
+    }
+
+    function filterTeacherStudents() {
+      var term = document.getElementById('tv-student-search').value.toLowerCase().trim();
+      var filtered = teacherStudentsData.filter(function(s) {
+        return !term
+          || s.full_name.toLowerCase().includes(term)
+          || (s.section || '').toLowerCase().includes(term)
+          || (s.condition || '').toLowerCase().includes(term);
+      });
+      renderTeacherStudents(filtered);
+    }
+
+    // ── Student two-column view ──
+    function showStudentViewModal(account) {
+      setAvatar('sv-avatar', account.profile_photo, account.initials);
+      document.getElementById('sv-name').textContent      = account.full_name;
+      document.getElementById('sv-email').textContent     = account.admin_email || '—';
+      document.getElementById('sv-condition').textContent = account.condition_info || 'Not specified';
+      document.getElementById('sv-section').textContent   = '—';
+
+      if (account.created_at) {
+        document.getElementById('sv-created').textContent =
+          new Date(account.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+      } else {
+        document.getElementById('sv-created').textContent = '—';
+      }
+
+      var sb = document.getElementById('sv-status');
+      sb.textContent = account.status;
+      sb.className   = 'admin-badge ' + (account.status === 'active' ? 'admin-badge--green' : 'admin-badge--gray');
+
+      var loadingHtml = '<div class="admin-v2-no-data"><i class="fa-solid fa-spinner fa-spin"></i> Loading…</div>';
+      document.getElementById('sv-teacher-content').innerHTML  = loadingHtml;
+      document.getElementById('sv-guardian-content').innerHTML = loadingHtml;
+
+      fetch('ADMIN_BACKEND/admin_get_student_details.php?student_id=' + account.id)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          // Section (from students table grade_level) + refresh photo from DB
+          if (data.student) {
+            if (data.student.section) document.getElementById('sv-section').textContent = data.student.section;
+            if (data.student.profile_photo) setAvatar('sv-avatar', data.student.profile_photo, account.initials);
+          }
+
+          // Teacher card
+          if (data.teacher) {
+            var t = data.teacher;
+            var tAvHtml = t.profile_photo
+              ? '<img src="' + t.profile_photo + '" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;" onerror="var p=this.parentNode;p.removeAttribute(\'style\');p.textContent=\'' + (t.initials||'?').replace(/'/g,"\\'") + '\';" />'
+              : t.initials;
+            var tAvStyle = t.profile_photo ? ' style="background:transparent;padding:0;overflow:hidden"' : '';
+            document.getElementById('sv-teacher-content').innerHTML =
+              '<div class="admin-v2-person-row">'
+              + '<div class="admin-v2-person-avatar"' + tAvStyle + '>' + tAvHtml + '</div>'
+              + '<div class="admin-v2-person-info">'
+              + '<div class="admin-v2-person-name">' + escapeHtml(t.name) + '</div>'
+              + '<div class="admin-v2-person-sub"><i class="fa-regular fa-envelope"></i>' + escapeHtml(t.email) + '</div>'
+              + (t.section ? '<div class="admin-v2-person-sub"><i class="fa-solid fa-chalkboard"></i>' + escapeHtml(t.section) + '</div>' : '')
+              + '</div>'
+              + '</div>';
+          } else {
+            document.getElementById('sv-teacher-content').innerHTML =
+              '<div class="admin-v2-no-data"><i class="fa-regular fa-circle-xmark"></i> No teacher assigned.</div>';
+          }
+
+          // Guardian card
+          if (data.guardian) {
+            var g = data.guardian;
+            document.getElementById('sv-guardian-content').innerHTML =
+              '<div class="admin-v2-person-row">'
+              + '<div class="admin-v2-person-avatar admin-v2-person-avatar--guardian">' + g.initials + '</div>'
+              + '<div class="admin-v2-person-info">'
+              + '<div class="admin-v2-person-name">' + escapeHtml(g.name) + '</div>'
+              + '<div class="admin-v2-person-sub"><i class="fa-solid fa-people-roof"></i>' + escapeHtml(g.relationship) + '</div>'
+              + (g.phone ? '<div class="admin-v2-person-sub"><i class="fa-solid fa-phone"></i>' + escapeHtml(g.phone) + '</div>' : '')
+              + (g.email ? '<div class="admin-v2-person-sub"><i class="fa-regular fa-envelope"></i>' + escapeHtml(g.email) + '</div>' : '')
+              + '</div>'
+              + '</div>';
+          } else {
+            document.getElementById('sv-guardian-content').innerHTML =
+              '<div class="admin-v2-no-data"><i class="fa-regular fa-circle-xmark"></i> No guardian information available.</div>';
+          }
+        })
+        .catch(function() {
+          var errHtml = '<div class="admin-v2-no-data"><i class="fa-solid fa-triangle-exclamation"></i> Failed to load.</div>';
+          document.getElementById('sv-teacher-content').innerHTML  = errHtml;
+          document.getElementById('sv-guardian-content').innerHTML = errHtml;
+        });
+
+      showModal('admin-modal-view-student');
+    }
+
+    // ── Admin fallback view ──
+    function showAdminViewModal(account) {
+      var modal = document.getElementById('admin-modal-view');
+      modal.querySelector('.admin-view-avatar').textContent = account.initials;
+      modal.querySelector('.admin-view-name').textContent   = account.full_name;
+      modal.querySelector('.admin-view-avatar-wrap .admin-badge').textContent = account.role;
+
+      function setRow(rowId, value) {
+        var row = document.getElementById(rowId);
+        if (!row) return;
+        if (value) {
+          row.style.display = 'flex';
+          row.querySelector('.admin-vi-val').textContent = value;
+        } else {
+          row.style.display = 'none';
+        }
+      }
+
+      setRow('admin-vi-row-email', account.admin_email);
+      setRow('admin-vi-row-role', account.role);
+
+      if (account.created_at) {
+        setRow('admin-vi-row-created', new Date(account.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }));
+      } else {
+        setRow('admin-vi-row-created', '');
+      }
+
+      document.getElementById('admin-vi-row-status').style.display = 'flex';
+      var statusBadge = document.querySelector('#admin-vi-row-status .admin-badge');
+      statusBadge.textContent = account.status;
+      statusBadge.className   = 'admin-badge ' + (account.status === 'active' ? 'admin-badge--green' : 'admin-badge--gray');
+
+      showModal('admin-modal-view');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function editUser(id) {
+      var account = accountList.find(function(acc) { return acc.id == id; });
+      if (!account) return;
+      selectedAccount = account;
+
+      var modal = document.getElementById('admin-modal-edit');
+      modal.querySelector('input[name="full_name"]').value = account.full_name;
+      modal.querySelector('input[name="email_address"]').value = account.admin_email;
+      modal.querySelector('input[name="phone_number"]').value = account.phone_number || '';
+
+      // Set role
+      var roleCards = modal.querySelectorAll('.admin-role-card');
+      roleCards.forEach(function(card) { card.classList.remove('admin-active-teacher', 'admin-active-student'); });
+      
+      var targetRole = account.role === 'teacher' ? 0 : 1;
+      if (roleCards[targetRole]) {
+        roleCards[targetRole].classList.add(account.role === 'teacher' ? 'admin-active-teacher' : 'admin-active-student');
+      }
+
+      // Show/hide condition field
+      var conditionWrap = document.getElementById('admin-edit-condition-wrap');
+      conditionWrap.style.display = account.role === 'student' ? 'block' : 'none';
+      if (account.role === 'student' && account.condition_info) {
+        document.getElementById('admin-edit-cond-select').value = account.condition_info;
+      } else {
+        document.getElementById('admin-edit-cond-select').value = '';
+      }
+
+      // Show/hide Section (teacher) vs Parent Name + Assigned Teacher (student)
+      var sectionWrap = document.getElementById('admin-edit-section-wrap');
+      var parentWrap = document.getElementById('admin-edit-parent-wrap');
+      var teacherWrap = document.getElementById('admin-edit-teacher-wrap');
+      sectionWrap.style.display = account.role === 'teacher' ? 'block' : 'none';
+      parentWrap.style.display = account.role === 'student' ? 'block' : 'none';
+      teacherWrap.style.display = account.role === 'student' ? 'block' : 'none';
+
+      document.getElementById('admin-edit-section-select').value = account.role === 'teacher' ? (account.condition_info || '') : '';
+      document.getElementById('admin-edit-parent-name').value = account.role === 'student' ? (account.parent_name || '') : '';
+      if (account.role === 'student') {
+        populateTeacherSelect('edit');
+        document.getElementById('admin-edit-teacher-select').value = account.assigned_teacher_id || '';
+      }
+
+      // Set hidden inputs
+      document.getElementById('admin-edit-role-input').value = account.role;
+      document.getElementById('admin-edit-status-input').value = account.status;
+      modal.querySelector('input[name="user_id"]').value = account.id;
+
+      showModal('admin-modal-edit');
+    }
+
+    function filterAndSearch() {
+      var searchInput1 = document.querySelector('input[name="search_user"]');
+      var searchInput2 = document.querySelector('input[name="search"]');
+      var searchTerm1 = (searchInput1 ? searchInput1.value.toLowerCase() : '').trim();
+      var searchTerm2 = (searchInput2 ? searchInput2.value.toLowerCase() : '').trim();
+      var searchTerm = searchTerm1 || searchTerm2; // Use whichever has text
+
+      // Get selected role filter
+      var rolesMenu = document.getElementById('admin-dd-roles');
+      var selectedRoleEl = rolesMenu ? rolesMenu.querySelector('.admin-dd-item.active') : null;
+      var selectedRole = selectedRoleEl ? selectedRoleEl.textContent.trim() : 'All Roles';
+
+      // Get selected status filter
+      var statusMenu = document.getElementById('admin-dd-status');
+      var selectedStatusEl = statusMenu ? statusMenu.querySelector('.admin-dd-item.active') : null;
+      var selectedStatus = selectedStatusEl ? selectedStatusEl.textContent.trim() : 'All Status';
+
+      var filtered = accountList.filter(function(account) {
+        // Search filter
+        var matchesSearch = !searchTerm || 
+          account.full_name.toLowerCase().includes(searchTerm) ||
+          account.admin_email.toLowerCase().includes(searchTerm);
+
+        // Role filter
+        var matchesRole = selectedRole === 'All Roles' || 
+          account.role.toLowerCase() === selectedRole.toLowerCase();
+
+        // Status filter
+        var matchesStatus = selectedStatus === 'All Status' || 
+          account.status.toLowerCase() === selectedStatus.toLowerCase();
+
+        return matchesSearch && matchesRole && matchesStatus;
+      });
+
+      renderAccountTable(filtered);
+    }
+
+    function saveEditUser() {
+      var editForm = document.getElementById('admin_manage_user_form_1');
+      var formData = new FormData(editForm);
+
+      // Close modal immediately
+      hideModal('admin-modal-edit');
+      
+      // Send data to backend
+      fetch('ADMIN_BACKEND/admin_manage_user_save.php', {
+        method: 'POST',
+        body: formData
+      })
+      .then(function(response) { return response.json(); })
+      .then(function(result) {
+        // Reload data in background
+        loadAccounts();
+        updateStats();
+      })
+      .catch(function(error) {});
+    }
+
+    function saveAddAccount() {
+      var addForm = document.getElementById('admin_manage_user_form_2');
+      var formData = new FormData(addForm);
+
+      // Close modal immediately
+      hideModal('admin-modal-add');
+      
+      // Send data to backend
+      fetch('ADMIN_BACKEND/admin_add_account.php', {
+        method: 'POST',
+        body: formData
+      })
+      .then(function(response) { 
+        return response.json();
+      })
+      .then(function(result) {
+        if (result.success) {
+          // Reload data after successful addition
+          loadAccounts();
+          updateStats();
+        } else {
+          // Show error message and reopen modal
+          alert('Error: ' + result.message);
+          showModal('admin-modal-add');
+        }
+      })
+      .catch(function(error) {
+        // Reopen modal to show error
+        showModal('admin-modal-add');
+        alert('Failed to add account. Please try again.');
+      });
+    }
+
+    function loadAccounts() {
+      fetch('ADMIN_BACKEND/admin_list_accounts.php')
+        .then(function (response) { return response.json(); })
+        .then(function (data) {
+          accountList = data.map(function (account) {
+            var fullName = [account.first_name, account.last_name].filter(Boolean).join(' ').trim();
+            return Object.assign({}, account, {
+              full_name: fullName || account.admin_email,
+              initials: fullName ? fullName.split(' ').map(function (part) { return part.charAt(0); }).join('').substring(0,2).toUpperCase() : account.admin_email.charAt(0).toUpperCase()
+            });
+          });
+          renderAccountTable(accountList);
+          renderDeleteList(accountList);
+          clearDeleteSelection();
+        })
+        .catch(function () {
+          document.getElementById('admin-delete-list').innerHTML = '<div class="admin-del-empty">Unable to load accounts.</div>';
+        });
+    }
+
+    function deleteSelectedAccounts() {
+      if (!deleteSelection.size) return;
+      if (!confirm('Move selected account(s) to Deleted Accounts? You can restore them later.')) {
+        return;
+      }
+
+      fetch('ADMIN_BACKEND/admin_delete_account.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: Array.from(deleteSelection) })
+      })
+      .then(function (response) { return response.json(); })
+      .then(function (result) {
+        if (result.success) {
+          loadAccounts();
+          updateDeleteCount();
+          updateStats();
+          alert('Account(s) moved to Deleted Accounts.');
+        } else {
+          alert('Delete failed.');
+        }
+      })
+      .catch(function () {
+        alert('Delete request failed.');
+      });
+    }
+
+    function updateStats() {
+      fetch('ADMIN_BACKEND/admin_stats.php')
+        .then(function(response) { return response.json(); })
+        .then(function(stats) {
+          var totalUsers = stats.total_users || 0;
+          var teachers = stats.teachers || 0;
+          var students = stats.student_accounts || 0;
+          var activeAccounts = stats.active_accounts || 0;
+
+          var totalUsersEl = document.getElementById('manage-total-users');
+          var teachersEl = document.getElementById('manage-teachers');
+          var studentsEl = document.getElementById('manage-students');
+          var activeAccountsEl = document.getElementById('manage-active-accounts');
+
+          if (totalUsersEl) totalUsersEl.textContent = totalUsers;
+          if (teachersEl) teachersEl.textContent = teachers;
+          if (studentsEl) studentsEl.textContent = students;
+          if (activeAccountsEl) activeAccountsEl.textContent = activeAccounts;
+        })
+        .catch(function () {
+          // ignore stats failure
+        });
+    }
+
+    function showResetPasswordModal() {
+      if (!selectedAccount) {
+        alert('No user selected');
+        return;
+      }
+
+      // Populate reset modal with user info
+      var avatar = document.getElementById('admin-reset-avatar');
+      if (avatar) {
+        avatar.textContent = selectedAccount.initials;
+      }
+
+      var userName = document.getElementById('admin-reset-user-name');
+      if (userName) {
+        userName.textContent = selectedAccount.full_name || selectedAccount.admin_email;
+      }
+
+      var userSub = document.getElementById('admin-reset-user-sub');
+      if (userSub) {
+        userSub.textContent = selectedAccount.role + (selectedAccount.condition_info ? ' · ' + selectedAccount.condition_info : '');
+      }
+
+      // Set user_id in hidden input
+      var userIdInput = document.querySelector('#admin_manage_user_form_3 input[name="user_id"]');
+      if (userIdInput) {
+        userIdInput.value = selectedAccount.id;
+      }
+
+      showModal('admin-modal-reset');
+    }
+
+    function saveResetPassword() {
+      var resetForm = document.getElementById('admin_manage_user_form_3');
+      var formData = new FormData(resetForm);
+
+      // Close modal immediately
+      hideModal('admin-modal-reset');
+
+      // Send data to backend
+      fetch('ADMIN_BACKEND/admin_reset_password.php', {
+        method: 'POST',
+        body: formData
+      })
+      .then(function(response) { return response.json(); })
+      .then(function(result) {
+        if (result.success) {
+          // Reload data after successful reset
+          loadAccounts();
+          alert('Password reset successfully. Temporary password: ' + result.temp_password);
+        } else {
+          alert('Error: ' + result.message);
+          showModal('admin-modal-reset');
+        }
+      })
+      .catch(function(error) {
+        alert('Failed to reset password. Please try again.');
+        showModal('admin-modal-reset');
+      });
+    }
+
+    function pickRole(el, prefix, role) {
+      var modal = document.getElementById('admin-modal-' + (prefix === 'edit' ? 'edit' : 'add'));
+      modal.querySelectorAll('.admin-role-card').forEach(c => c.classList.remove('admin-active-teacher', 'admin-active-student'));
+      el.classList.add(role === 'teacher' ? 'admin-active-teacher' : 'admin-active-student');
+      document.getElementById('admin-' + prefix + '-condition-wrap').style.display = role === 'student' ? 'block' : 'none';
+
+      // Section field: teacher only. Parent name + assigned teacher: student only.
+      var sectionWrap = document.getElementById('admin-' + prefix + '-section-wrap');
+      var parentWrap = document.getElementById('admin-' + prefix + '-parent-wrap');
+      var teacherWrap = document.getElementById('admin-' + prefix + '-teacher-wrap');
+      if (sectionWrap) sectionWrap.style.display = role === 'teacher' ? 'block' : 'none';
+      if (parentWrap) parentWrap.style.display = role === 'student' ? 'block' : 'none';
+      if (teacherWrap) teacherWrap.style.display = role === 'student' ? 'block' : 'none';
+      if (role === 'student') {
+        populateTeacherSelect(prefix);
+      }
+
+      var roleInput = document.getElementById('admin-' + prefix + '-role-input');
+      if (roleInput) {
+        roleInput.value = role;
+      }
+      
+      // Set default password based on role
+      if (prefix === 'add') {
+        var passwordInput = document.getElementById('admin-add-password-input');
+        if (passwordInput) {
+          if (role === 'teacher') {
+            passwordInput.value = 'Teacher@123';
+          } else if (role === 'student') {
+            passwordInput.value = 'Student@123';
+          }
+        }
+        
+        var condInput = document.getElementById('admin-add-condition-input');
+        if (condInput && role !== 'student') {
+          condInput.value = '';
+          document.getElementById('admin-add-cond-select').value = '';
+        }
+
+        if (role !== 'teacher') {
+          var sectionSelect = document.getElementById('admin-add-section-select');
+          if (sectionSelect) sectionSelect.value = '';
+        }
+      }
+    }
+
+    // Fills the "Assigned Teacher" dropdown (add/edit) with teacher accounts that
+    // admin has already created. Shows a warning note if none exist yet.
+    function populateTeacherSelect(prefix) {
+      var select = document.getElementById('admin-' + prefix + '-teacher-select');
+      var note = document.getElementById('admin-' + prefix + '-teacher-note');
+      if (!select) return;
+
+      var currentValue = select.value;
+      var teachers = accountList.filter(function (acc) { return acc.role === 'teacher'; });
+
+      select.innerHTML = '<option value="">Select teacher...</option>' +
+        teachers.map(function (t) {
+          return '<option value="' + t.id + '">' + t.full_name + (t.grade_level ? ' — ' + t.grade_level : '') + '</option>';
+        }).join('');
+
+      if (note) note.style.display = teachers.length ? 'none' : 'block';
+      select.disabled = teachers.length === 0;
+
+      if (currentValue && teachers.some(function (t) { return String(t.id) === String(currentValue); })) {
+        select.value = currentValue;
+      }
+    }
+
+    function pickCond(el) {
+      el.closest('.admin-condition-btns').querySelectorAll('.admin-cond-btn').forEach(b => b.classList.remove('cond-active'));
+      el.classList.add('cond-active');
+    }
+
+    function toggleDD(id) {
+      document.getElementById(id).style.display = document.getElementById(id).style.display === 'block' ? 'none' : 'block';
+    }
+
+    function selectDD(el, dropdownId) {
+      var menu = document.getElementById(dropdownId);
+      menu.querySelectorAll('.admin-dd-item').forEach(function(item) { item.classList.remove('active'); });
+      el.classList.add('active');
+      
+      var button = menu.previousElementSibling;
+      var arrow = button.querySelector('.admin-dd-arrow');
+      button.innerHTML = el.textContent + ' <span class="admin-dd-arrow">∨</span>';
+      menu.style.display = 'none';
+      
+      filterAndSearch();
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      // Search functionality - trigger on every keystroke
+      var searchInput1 = document.querySelector('input[name="search_user"]');
+      var searchInput2 = document.querySelector('input[name="search"]');
+      
+      if (searchInput1) {
+        searchInput1.addEventListener('input', filterAndSearch);
+      }
+      
+      if (searchInput2) {
+        searchInput2.addEventListener('input', filterAndSearch);
+      }
+
+      /* Ripple effect on buttons only */
+      document.querySelectorAll(".admin-btn-signin, .admin-modal-got-it, .admin-signout-btn, .admin-btn-view, .admin-btn-edit, .admin-btn-danger-solid").forEach(function (btn) {
+        btn.addEventListener("click", function (e) {
+          var rect = this.getBoundingClientRect();
+          var size = Math.max(rect.width, rect.height);
+          var span = document.createElement("span");
+          span.className = "ripple-span";
+          span.style.width = span.style.height = size + "px";
+          span.style.left = (e.clientX - rect.left - size / 2) + "px";
+          span.style.top = (e.clientY - rect.top - size / 2) + "px";
+          this.style.position = "relative";
+          this.style.overflow = "hidden";
+          this.appendChild(span);
+          setTimeout(function () { span.remove(); }, 520);
+          if (this.classList.contains('admin-signout-btn')) {
+            window.location.href = this.getAttribute('href') || 'login_screen.html';
+          }
+        });
+      });
+      loadAccounts();
+      updateStats();
+
+      // Click on the dimmed backdrop (outside the modal box) closes the modal.
+      document.querySelectorAll('.admin-modal-overlay').forEach(function (overlay) {
+        overlay.addEventListener('click', function (e) {
+          if (e.target === overlay) {
+            hideModal(overlay.id);
+          }
+        });
+      });
+
+      // Escape key closes any open modal.
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          document.querySelectorAll('.admin-modal-overlay').forEach(function(overlay) {
+            if (overlay.style.display === 'flex') hideModal(overlay.id);
+          });
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>

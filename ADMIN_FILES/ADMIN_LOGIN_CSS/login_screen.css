@@ -1,0 +1,685 @@
+input[type="password"]::-ms-reveal,
+input[type="password"]::-webkit-contacts-auto-fill-button {
+  display: none;
+}
+
+/* ===== RESET & BASE ===== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  height: 100vh;
+  font-family: 'Inter', sans-serif;
+  background: #f5f0e8;
+}
+
+/* ===== LEFT PANEL ===== */
+.admin-left-panel {
+  width: 47%;
+  height: 100vh;
+  background: #1a3a8f;
+  padding: 40px 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Decorative circles */
+.admin-deco-circle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.admin-deco-circle-1 {
+  width: 340px;
+  height: 340px;
+  background: rgba(255, 255, 255, 0.06);
+  right: -60px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.admin-deco-circle-2 {
+  width: 180px;
+  height: 180px;
+  background: rgba(255, 255, 255, 0.05);
+  right: 120px;
+  bottom: 80px;
+}
+
+/* Logo */
+.admin-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 1;
+}
+
+.admin-logo-icon {
+  flex-shrink: 0;
+}
+
+.admin-logo-img {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.admin-logo-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-logo-title {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 900;
+  font-size: 18px;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+}
+
+.admin-logo-sub {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.65);
+  letter-spacing: 1.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+/* Hero text */
+.admin-hero-text {
+  z-index: 1;
+}
+
+.admin-hero-text h1 {
+  font-family: 'Nunito', sans-serif;
+  font-size: 42px;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1.2;
+  margin-bottom: 18px;
+}
+
+.admin-highlight {
+  color: #F5A623;
+}
+
+.admin-hero-desc {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.7;
+  max-width: 360px;
+}
+
+/* Feature cards */
+.admin-features {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  z-index: 1;
+}
+
+.admin-feature-card {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  backdrop-filter: blur(4px);
+}
+
+.admin-feature-icon {
+  font-size: 18px;
+  color: #F5A623;
+  flex-shrink: 0;
+}
+
+.admin-feature-title {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  color: #ffffff;
+}
+
+.admin-feature-sub {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 2px;
+}
+
+/* Footer */
+.admin-left-bottom {
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.admin-left-footer {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* Children image */
+.admin-children-img {
+  position: absolute;
+  bottom: 0;
+  right: -30px;
+  width: 790px;
+  object-fit: contain;
+  display: block;
+  opacity: 0.25;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ===== RIGHT PANEL ===== */
+.admin-right-panel {
+  flex: 1;
+  height: 100vh;
+  background: #f5f0e8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  overflow: hidden;
+}
+
+.admin-login-box {
+  width: 100%;
+  max-width: 400px;
+}
+
+/* School header */
+.admin-school-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 36px;
+}
+
+.admin-school-logo {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.admin-school-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.admin-school-name {
+  font-family: 'Nunito', sans-serif;
+  font-size: 22px;
+  font-weight: 900;
+  color: #1a1a2e;
+  line-height: 1.2;
+}
+
+.admin-school-sub {
+  font-size: 13px;
+  color: #888;
+}
+
+/* Form */
+.admin-form-group {
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+
+.admin-form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+
+.admin-form-group input {
+  padding: 13px 16px;
+  border: none;
+  border-radius: 10px;
+  background: #e8e3d9;
+  font-size: 14px;
+  color: #333;
+  outline: none;
+  transition: background 0.2s, box-shadow 0.2s;
+  font-family: 'Inter', sans-serif;
+}
+
+.admin-form-group input::placeholder {
+  color: #aaa;
+}
+
+.admin-form-group input:focus {
+  background: #ddd8ce;
+  box-shadow: 0 0 0 3px rgba(26, 58, 143, 0.15);
+}
+
+/* Password show/hide wrapper */
+.pwd-wrapper {
+  position: relative;
+  display: block;
+}
+
+.pwd-wrapper input {
+  width: 100%;
+  padding-right: 48px !important;
+  box-sizing: border-box;
+}
+
+.pwd-toggle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 46px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #555;
+  z-index: 5;
+}
+
+.pwd-toggle:hover {
+  color: #1a3a8f;
+}
+
+.admin-forgot {
+  font-size: 13px;
+  color: #1a3a8f;
+  text-decoration: none;
+  font-weight: 600;
+  align-self: flex-end;
+  margin-top: 4px;
+}
+
+.admin-forgot:hover {
+  text-decoration: underline;
+}
+
+/* Sign In button */
+.admin-btn-signin {
+  width: 100%;
+  padding: 15px;
+  background: #1a3a8f;
+  color: #ffffff;
+  font-family: 'Nunito', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.2s, transform 0.1s;
+  letter-spacing: 0.3px;
+}
+
+.admin-btn-signin:hover {
+  background: #14307a;
+}
+
+.admin-btn-signin:active {
+  transform: scale(0.98);
+}
+
+/* Contact note */
+.admin-contact-note {
+  text-align: center;
+  font-size: 13px;
+  color: #888;
+  margin-top: 24px;
+  line-height: 1.7;
+}
+
+.admin-coordinator-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #1a3a8f;
+  font-weight: 700;
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.admin-coordinator-link:hover {
+  text-decoration: underline;
+}
+
+/* Divider */
+.admin-divider {
+  border: none;
+  border-top: 1px solid #ddd4c4;
+  margin: 24px 0 16px;
+}
+
+/* Footer note */
+.admin-footer-note {
+  text-align: center;
+  font-size: 11px;
+  color: #bbb;
+}
+
+/* ===== MODAL ===== */
+.admin-modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 999;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(3px);
+  padding: 16px;
+}
+
+.admin-modal-overlay:target,
+.admin-modal-overlay.show {
+  display: flex !important;
+}
+
+.admin-modal-box {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 36px 32px 28px;
+  width: 100%;
+  max-width: 480px;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+
+.admin-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  font-size: 22px;
+  color: #aaa;
+  background: none;
+  border: none;
+  cursor: pointer;
+  line-height: 1;
+  font-family: inherit;
+}
+
+.admin-modal-close:hover {
+  color: #333;
+}
+
+.admin-modal-icon-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.admin-modal-icon {
+  font-size: 28px;
+  background: #1a3a8f;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-modal-title {
+  font-family: 'Nunito', sans-serif;
+  font-size: 20px;
+  font-weight: 900;
+  color: #1a3a8f;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.admin-modal-divider {
+  border: none;
+  border-top: 1px solid #eee;
+  margin-bottom: 18px;
+}
+
+.admin-modal-school-card {
+  background: #eef2fb;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.admin-modal-school-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.admin-modal-school-name {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: 15px;
+  color: #1a3a8f;
+}
+
+.admin-modal-school-loc {
+  font-size: 12px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.admin-modal-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.admin-modal-info-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: #333;
+}
+
+.admin-modal-info-icon {
+  font-size: 20px;
+  width: 28px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.admin-modal-note {
+  background: #fffbea;
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13px;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.admin-modal-note span {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.admin-modal-got-it {
+  display: block;
+  width: 100%;
+  padding: 15px;
+  background: #1a3a8f;
+  color: #ffffff;
+  font-family: 'Nunito', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  border: none;
+  border-radius: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  letter-spacing: 0.3px;
+}
+
+.admin-modal-got-it:hover {
+  background: #14307a;
+}
+
+.admin-modal-got-it:active {
+  transform: scale(0.98);
+}
+
+/* ===== RIPPLE ===== */
+.ripple-span {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(0);
+  animation: ripple-anim 0.5s linear;
+  pointer-events: none;
+}
+
+@keyframes ripple-anim {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* ===== MOBILE RESPONSIVE ===== */
+@media (max-width: 768px) {
+  html, body {
+    overflow: auto;
+    height: auto;
+  }
+
+  body {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .admin-left-panel {
+    display: none;
+  }
+
+  .admin-right-panel {
+    flex: 1;
+    width: 100%;
+    height: auto;
+    min-height: 100vh;
+    padding: 40px 24px;
+    align-items: flex-start;
+    overflow: auto;
+  }
+
+  .admin-login-box {
+    max-width: 100%;
+    padding-top: 20px;
+  }
+
+  .admin-school-header {
+    margin-bottom: 28px;
+  }
+
+  .admin-school-name {
+    font-size: 18px;
+  }
+
+  .admin-school-logo {
+    width: 48px;
+    height: 48px;
+  }
+
+  .admin-btn-signin {
+    padding: 14px;
+    font-size: 15px;
+  }
+
+  .admin-form-group input {
+    font-size: 16px;
+    padding: 14px 16px;
+  }
+
+  .admin-modal-box {
+    padding: 28px 20px 24px;
+    border-radius: 16px;
+  }
+
+  .admin-modal-title {
+    font-size: 17px;
+  }
+
+  .admin-modal-info-item {
+    font-size: 13px;
+  }
+
+  .admin-modal-got-it {
+    padding: 14px;
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 400px) {
+  .admin-right-panel {
+    padding: 32px 18px;
+  }
+
+  .admin-school-name {
+    font-size: 16px;
+  }
+}
+
+
+/* Remember Me row */
+.admin-remember-row {
+  margin: -4px 0 12px;
+}
+.admin-remember-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  color: #64748b;
+  cursor: pointer;
+  user-select: none;
+}
+.admin-remember-check {
+  width: 15px;
+  height: 15px;
+  accent-color: #1d4ed8;
+  cursor: pointer;
+}

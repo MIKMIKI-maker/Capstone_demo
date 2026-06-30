@@ -1,0 +1,612 @@
+/* ======================================================
+   SPED ALM — Student Dashboard (Game Mode 3D)
+   Location: STUDENT_CSS/Student_dashboard.css
+   Works with your existing HTML — no markup changes needed.
+   ====================================================== */
+
+:root {
+  /* Fonts — Fredoka is the rounded game font from the screenshot */
+  --font-head: "Fredoka", "Nunito", "Poppins", system-ui, sans-serif;
+  --font-body: "Fredoka", "Poppins", "Inter", system-ui, sans-serif;
+
+  /* Colors */
+  --sky-1: #cfe6ff;
+  --sky-2: #eef5ff;
+
+  --blue: #2f6fed;
+  --blue-dark: #1b4fb8;
+  --gold: #ffc34d;
+  --gold-dark: #d2920f;
+  --teal: #19a87c;
+  --teal-dark: #0f7556;
+  --purple: #7b6ef0;
+  --purple-dark: #5546c4;
+  --coral: #ff8a5b;
+
+  --ink: #243a5e;
+  --ink-soft: #5d7299;
+  --card: #ffffff;
+
+  /* Corner radius */
+  --r-lg: 26px;
+  --r-md: 18px;
+  --r-sm: 14px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--ink);
+  min-height: 100vh;
+  display: flex;
+  background: radial-gradient(circle at 18% -10%, var(--sky-2), var(--sky-1));
+}
+
+
+/* ============================================================
+   SIDEBAR  — EXACT same as Student_dashboard.css
+   ============================================================ */
+.student-sidebar {
+  width: 230px; flex: none; padding: 22px 16px;
+  display: flex; flex-direction: column;
+  border-radius: 0 30px 30px 0;
+  background: linear-gradient(180deg, #1E3A8A, #1b4fb8);
+  box-shadow: 10px 0 28px rgba(27, 79, 184, .25);
+  /* stays pinned while the main content scrolls */
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
+}
+.student-sidebar-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; padding-bottom: 18px; border-bottom: 1px solid rgba(255, 255, 255, .2); }
+.student-sidebar-logo-img {
+  width: 46px; height: 46px; padding: 4px; border-radius: 16px;
+  background: #fff; object-fit: contain; box-shadow: 0 5px 0 #cdd9ef;
+}
+.student-sidebar-logo-text { display: flex; flex-direction: column; line-height: 1.15; }
+.student-sidebar-title { font-family: var(--font-head); font-weight: 800; font-size: 18px; color: #fff; }
+.student-sidebar-sub { font-size: 12px; font-weight: 600; color: #bdd4ff; }
+.student-sidebar-nav { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+.student-nav-item {
+  display: flex; align-items: center; gap: 13px;
+  padding: 13px 15px; border-radius: var(--r-md);
+  text-decoration: none; color: #e6f0ff;
+  font-family: var(--font-head); font-weight: 700; font-size: 15px;
+  transition: transform .12s ease, background .12s ease;
+}
+.student-nav-item i { font-style: normal; }
+.student-nav-item i:first-child { width: 22px; font-size: 18px; text-align: center; }
+.student-nav-arrow { margin-left: auto; font-size: 13px; opacity: .7; }
+.student-nav-item:hover { background: rgba(255, 255, 255, .12); transform: translateX(4px); }
+.student-nav-item.student-active { background: #fff; color: var(--blue); box-shadow: 0 6px 0 #cdd9ef; }
+.student-sidebar-footer { margin-top: auto; display: flex; flex-direction: column; gap: 10px; padding-top: 18px; border-top: 1px solid rgba(255, 255, 255, .2); }
+.student-sidebar-user {
+  display: flex; align-items: center; gap: 11px;
+  padding: 12px; border-radius: 20px; background: rgba(255, 255, 255, .14);
+}
+.student-user-avatar {
+  width: 42px; height: 42px; flex: none; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--gold); color: #5c3d00;
+  font-family: var(--font-head); font-weight: 800; box-shadow: 0 5px 0 var(--gold-dark);
+  overflow: hidden;
+}
+.student-user-info { display: flex; flex-direction: column; line-height: 1.2; }
+.student-user-name { color: #fff; font-weight: 700; font-size: 14px; }
+.student-user-role { color: #bdd4ff; font-weight: 600; font-size: 12px; }
+.student-signout-btn {
+  display: flex; align-items: center; gap: 11px;
+  padding: 11px 15px; border-radius: var(--r-md);
+  text-decoration: none; color: #cfe0ff; font-weight: 700; font-size: 14px;
+  transition: background .12s ease;
+}
+.student-signout-btn:hover { background: rgba(255, 255, 255, .1); }
+
+/* ============================================================
+   MAIN AREA
+   ============================================================ */
+
+   .student-pcard-photo-wrap { position: relative; width: 64px; height: 64px; flex: none; }
+.student-pcard-photo,
+.student-pcard-photo-sample {
+  width: 64px; height: 64px; border-radius: 50%; object-fit: cover; display: block;
+  box-shadow: 0 6px 0 rgba(36, 58, 94, .12);
+}
+.student-pcard-photo-sample { display: none; }  /* lalabas lang kapag walang totoong larawan */
+
+
+.student-main {
+  display: block;
+  flex: 1;
+  padding: 28px 34px;
+  perspective: 1500px;
+}
+
+/* ---- Top bar / greeting ---- */
+.student-topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.student-greeting {
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: 32px;
+  line-height: 1;
+}
+
+.student-greeting-sub {
+  margin-top: 6px;
+  color: var(--ink-soft);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* big gold star beside "Hello, Juan!" */
+.student-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.student-greeting-star {
+  font-size: 48px;
+  line-height: 1;
+  animation: float 3.4s ease-in-out infinite;
+}
+
+.student-notif-btn {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  flex: none;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  color: var(--coral);
+  font-size: 20px;
+  text-decoration: none;
+  box-shadow: 0 6px 0 #d8e2f5;
+  transition: transform .08s ease, box-shadow .08s ease;
+}
+
+.student-notif-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 #d8e2f5;
+}
+
+.student-notif-badge {
+  position: absolute;
+  top: 11px;
+  right: 12px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--coral);
+  box-shadow: 0 0 0 3px #fff;
+}
+
+
+/* ---- Profile cards (Student / Teacher) ---- */
+.student-profile-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.student-profile-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px;
+  border-radius: var(--r-lg);
+  background: var(--card);
+  box-shadow: 0 10px 0 rgba(36, 58, 94, .10),
+              0 18px 30px rgba(36, 58, 94, .12);
+  transform-style: preserve-3d;
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+
+.student-profile-card:hover {
+  transform: translateY(-4px) rotateX(4deg);
+  box-shadow: 0 16px 0 rgba(36, 58, 94, .10),
+              0 26px 40px rgba(36, 58, 94, .16);
+}
+
+.student-pcard-avatar {
+  width: 62px;
+  height: 62px;
+  flex: none;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: 20px;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .22);
+}
+
+/* student = blue, teacher = purple (overrides inline colors in HTML) */
+.student-profile-card:nth-child(1) .student-pcard-avatar {
+  background: var(--blue) !important;
+}
+
+.student-profile-card:nth-child(2) .student-pcard-avatar {
+  background: var(--purple) !important;
+}
+
+.student-pcard-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  color: var(--ink-soft);
+}
+
+.student-pcard-name {
+  margin: 3px 0;
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: 20px;
+}
+
+.student-pcard-sub {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.student-badge-active {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 5px 12px;
+  border-radius: 12px;
+  background: #e3f7ef;
+  color: var(--teal-dark);
+  font-weight: 700;
+  font-size: 12px;
+}
+
+
+/* ---- Progress banner (white "stars this week" panel) ---- */
+.student-progress-banner {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px 26px;
+  margin-bottom: 20px;
+  border-radius: var(--r-lg);
+  background: linear-gradient(135deg, #ffffff, #f4f8ff);
+  box-shadow: 0 10px 0 rgba(36, 58, 94, .10),
+              0 18px 30px rgba(36, 58, 94, .12);
+}
+
+.student-progress-left {
+  flex: 1;
+  position: relative;
+  z-index: 2;
+}
+
+.student-progress-label {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  color: var(--ink-soft);
+}
+
+.student-progress-score {
+  margin: 4px 0;
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: 34px;
+  color: var(--ink);
+}
+
+.student-progress-msg {
+  margin-bottom: 12px;
+  color: var(--ink-soft);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.student-progress-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.student-progress-bar {
+  flex: 1;
+  height: 20px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #e3ebf7;
+  box-shadow: inset 0 3px 6px rgba(36, 58, 94, .12);
+}
+
+.student-progress-fill {
+  height: 100%;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #19a87c, #3ed29c);
+  transition: width 1.2s cubic-bezier(.22, 1, .36, 1);
+}
+
+.student-progress-text {
+  flex: none;
+  color: var(--ink-soft);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+/* the three gold stars under the bar (like the screenshot) */
+.student-progress-stars {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.student-progress-stars span {
+  font-size: 34px;
+  line-height: 1;
+}
+
+.student-progress-right {
+  position: relative;
+  z-index: 2;
+}
+
+.student-star-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: 16px;
+  background: var(--gold);
+  box-shadow: 0 6px 0 var(--gold-dark);
+}
+
+.student-star-icon {
+  display: block;
+  font-size: 22px;
+  animation: float 3.4s ease-in-out infinite;
+}
+
+.student-star-label {
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: 13px;
+  line-height: 1.05;
+  color: #5c3d00;
+}
+
+.student-banner-deco-circle {
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: rgba(47, 111, 237, .05);
+  z-index: 1;
+}
+
+
+/* ---- Activities card ---- */
+.student-activities-card {
+  padding: 22px 24px;
+  border-radius: var(--r-lg);
+  background: var(--card);
+  box-shadow: 0 10px 0 rgba(36, 58, 94, .10),
+              0 18px 30px rgba(36, 58, 94, .12);
+}
+
+.student-activities-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.student-act-tabs {
+  display: flex;
+  gap: 10px;
+}
+
+/* TAB BUTTONS — softened: no thick dark-blue bottom edge anymore */
+.student-act-tab {
+  cursor: pointer;
+  border: none;
+  padding: 11px 18px;
+  border-radius: var(--r-md);
+  background: #eef3fb;
+  color: var(--ink-soft);
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 14px;
+  box-shadow: 0 2px 6px rgba(36, 58, 94, .10);   /* soft, light shadow */
+  transition: transform .1s ease, box-shadow .1s ease;
+}
+
+.student-act-tab:hover {
+  transform: translateY(-1px);
+}
+
+/* The active (blue) tab */
+.student-act-tab.student-active {
+  background: var(--blue);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(47, 111, 237, .30);  /* soft blue glow, NOT a hard border */
+  border-radius: var(--r-md);
+}
+
+.student-act-done {
+  padding: 7px 14px;
+  border-radius: 14px;
+  background: #fff3da;
+  color: var(--gold-dark);
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.student-act-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+/* Activity row card (shown in dashboard panels) */
+.student-act-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f8faff;
+  border: 1.5px solid #e8eef8;
+  transition: box-shadow .15s;
+}
+.student-act-row:hover { box-shadow: 0 3px 12px rgba(30,58,138,.10); }
+.student-act-row--purple { border-left: 4px solid #7c3aed; }
+.student-act-row--blue   { border-left: 4px solid #2563eb; }
+.student-act-row--green  { border-left: 4px solid #16a34a; }
+.student-act-row--orange { border-left: 4px solid #ea580c; }
+.student-act-row--amber  { border-left: 4px solid #d97706; }
+.student-act-row--pink   { border-left: 4px solid #db2777; }
+.student-act-row-thumb {
+  width: 46px; height: 46px; flex-shrink: 0;
+  border-radius: 10px; background: #eef2ff;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.student-act-row-info { flex: 1; min-width: 0; }
+.student-act-row-title {
+  font-weight: 700; font-size: 14px; color: #1e3a8a;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.student-act-row-sub { font-size: 12px; color: #64748b; font-weight: 500; margin-top: 2px; }
+.student-act-row-badge {
+  flex-shrink: 0; padding: 3px 9px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: .02em;
+}
+.act-badge-new    { background: #fbbf24; color: #5c3d00; }
+.act-badge-due    { background: #ef4444; color: #fff; }
+.act-badge-closed { background: #9ca3af; color: #fff; }
+.student-act-row-btn {
+  flex-shrink: 0; padding: 7px 14px; border-radius: 10px;
+  background: #22c55e; color: #fff; font-weight: 700; font-size: 13px;
+  border: none; cursor: pointer; box-shadow: 0 3px 0 #16a34a;
+  transition: transform .1s, box-shadow .1s;
+}
+.student-act-row-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #16a34a; }
+
+.student-act-empty {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 36px 16px;
+  text-align: center;
+}
+
+.student-act-empty-icon {
+  font-size: 52px;
+  animation: float 3.4s ease-in-out infinite;
+}
+
+.student-act-empty-title {
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: 18px;
+  color: var(--ink);
+}
+
+.student-act-empty-desc {
+  max-width: 340px;
+  color: var(--ink-soft);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+
+/* ============================================================
+   ANIMATION
+   ============================================================ */
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50%      { transform: translateY(-7px) rotate(4deg); }
+}
+
+
+/* ============================================================
+   RESPONSIVE (smaller screens)
+   ============================================================ */
+@media (max-width: 900px) {
+  body {
+    flex-direction: column;
+  }
+
+  .student-sidebar {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    border-radius: 0 0 28px 28px;
+  }
+
+  .student-sidebar-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin: 0;
+  }
+
+  .student-sidebar-footer {
+    flex-direction: row;
+    margin: 0 0 0 auto;
+  }
+
+  .student-profile-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .student-progress-banner {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .student-main {
+    padding: 20px;
+  }
+}
+
+
+/* ============================================================
+   ACCESSIBILITY (ASD-friendly)
+   Turns OFF all motion if the device has "reduce motion" on.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+
