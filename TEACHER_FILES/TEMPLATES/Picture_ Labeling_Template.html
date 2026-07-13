@@ -1,0 +1,1527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SPED ALM — Picture Labeling Template Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<style>
+:root{
+  --blue:#2f6fed; --blue-dark:#1b4fb8;
+  --purple:#7b6ef0; --purple-dark:#5546c4;
+  --green:#2fbf57; --green-dark:#1f9d44;
+  --red:#e23b54; --red-dark:#b9263c;
+  --gold:#ffc34d; --ink:#243a5e; --ink-soft:#5d7299;
+  --field:#f7f9fd; --field-border:#e6ebf4; --line:#eef2f8;
+  --font:"Fredoka","Nunito",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;}
+body{font-family:var(--font);color:var(--ink);background:#eef2f9;display:flex;flex-direction:column;}
+
+/* ===== TOP BAR ===== */
+.lbl-top{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;flex:none;
+  background:#fff;padding:14px 22px;border-bottom:1px solid var(--line);
+}
+.lbl-logo{width:46px;height:46px;border-radius:14px;flex:none;
+  background:linear-gradient(135deg,#5bc0eb,#7b6ef0);display:flex;align-items:center;justify-content:center;font-size:24px;}
+.lbl-top h1{font-weight:700;font-size:21px;line-height:1.1;}
+.lbl-top .lbl-tsub{color:var(--ink-soft);font-size:12px;font-weight:500;}
+.lbl-top-actions{margin-left:auto;display:flex;gap:10px;flex-wrap:wrap;}
+.lbl-btn{cursor:pointer;border:none;font-family:var(--font);font-weight:700;font-size:14px;
+  padding:11px 18px;border-radius:13px;display:inline-flex;align-items:center;gap:7px;
+  transition:transform .08s ease,filter .1s ease;}
+.lbl-btn:active{transform:translateY(2px);}
+.lbl-btn--ghost{background:#fff;color:var(--ink);border:1.5px solid var(--field-border);}
+.lbl-btn--ghost:hover{background:#f7f9fd;}
+.lbl-btn--print{background:var(--gold);color:#5c4400;box-shadow:0 4px 0 #d9a416;}
+.lbl-btn--pub{background:var(--green);color:#fff;box-shadow:0 4px 0 var(--green-dark);}
+
+/* ===== BODY GRID ===== */
+.lbl-body{display:grid;grid-template-columns:280px 1fr 270px;gap:16px;padding:16px;align-items:stretch;
+  flex:1;min-height:0;overflow:hidden;}
+.lbl-left-col,.lbl-preview-col,.lbl-right-col{overflow-y:auto;min-height:0;padding-right:2px;
+  scrollbar-width:thin;scrollbar-color:#c7d3e8 transparent;}
+.lbl-left-col::-webkit-scrollbar,.lbl-preview-col::-webkit-scrollbar,.lbl-right-col::-webkit-scrollbar{width:6px;}
+.lbl-left-col::-webkit-scrollbar-thumb,.lbl-preview-col::-webkit-scrollbar-thumb,.lbl-right-col::-webkit-scrollbar-thumb{background:#c7d3e8;border-radius:10px;}
+
+.lbl-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px;}
+.lbl-card+.lbl-card{margin-top:16px;}
+.lbl-step{font-size:12px;font-weight:800;letter-spacing:.04em;color:var(--ink-soft);text-transform:uppercase;margin-bottom:12px;}
+
+/* Slide navigator */
+.lbl-slidebar{display:flex;align-items:center;gap:8px;}
+.lbl-slidebar button{width:30px;height:30px;flex:none;border-radius:9px;border:1.5px solid var(--field-border);background:#fff;cursor:pointer;font-size:14px;color:var(--ink);}
+.lbl-slidebar button:hover:not(:disabled){background:#f1f4fa;}
+.lbl-slidebar button:disabled{opacity:.35;cursor:default;}
+.lbl-slide-label{flex:1;text-align:center;font-weight:700;font-size:13px;color:var(--ink);}
+.lbl-slide-actions{display:flex;gap:8px;margin-top:10px;}
+.lbl-slide-actions button{flex:1;cursor:pointer;border:1.5px dashed var(--purple);background:#f3f1fe;color:var(--purple);
+  font-family:var(--font);font-weight:700;font-size:12.5px;padding:8px;border-radius:11px;}
+.lbl-slide-actions button.danger{border-color:#f0a8b4;background:#fdeef1;color:#c43a55;}
+
+/* Activity type card */
+.lbl-type{display:flex;align-items:center;gap:12px;border:2px solid var(--purple);background:#f3f1fe;border-radius:14px;padding:13px;}
+.lbl-type-ic{width:40px;height:40px;border-radius:11px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 3px 0 #ddd8f7;}
+.lbl-type b{font-weight:700;font-size:15px;}
+.lbl-type-desc{color:var(--ink-soft);font-size:12.5px;font-weight:500;line-height:1.5;margin-top:12px;}
+
+/* Item cards in left panel */
+.lbl-item-card{border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--field);position:relative;margin-bottom:10px;}
+.lbl-item-num{font-size:11px;font-weight:800;letter-spacing:.04em;color:var(--purple);text-transform:uppercase;margin-bottom:8px;}
+.lbl-img-upload{width:100%;height:86px;border:2px dashed #cbb8f3;background:#faf7ff;border-radius:12px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;
+  position:relative;overflow:hidden;color:var(--ink-soft);font-size:12px;gap:4px;font-weight:600;
+  transition:border-color .2s;}
+.lbl-img-upload:hover{border-color:var(--purple);}
+.lbl-img-upload img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;}
+.lbl-img-upload input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.lbl-item-del{position:absolute;top:8px;right:8px;background:#fdeef1;border:none;border-radius:50%;
+  width:24px;height:24px;color:#c43a55;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;}
+.lbl-side-name{width:100%;padding:6px 8px;border-radius:8px;border:1.5px solid var(--field-border);
+  background:#fff;font-family:var(--font);font-size:12px;text-align:center;outline:none;color:var(--ink);margin-top:6px;}
+.lbl-side-name::placeholder{color:#aab4c5;}
+.lbl-side-name:focus{border-color:var(--purple);background:#fff;}
+
+/* Media (upload / link) tabs on item cards */
+.lbl-media-tabs{display:flex;gap:4px;margin-top:6px;}
+.lbl-media-tabs button{flex:1;cursor:pointer;border:1.5px solid var(--field-border);background:#fff;color:var(--ink-soft);
+  font-family:var(--font);font-weight:700;font-size:9.5px;padding:4px 2px;border-radius:7px;}
+.lbl-media-tabs button.sel{border-color:var(--purple);background:#f3f1fe;color:var(--purple);}
+.lbl-link-input{width:100%;margin-top:6px;padding:6px 8px;border-radius:8px;border:1.5px solid var(--field-border);
+  background:#fff;font-family:var(--font);font-size:11px;display:none;}
+.lbl-link-input.show{display:block;}
+
+.lbl-add{cursor:pointer;width:100%;border:1.5px dashed var(--purple);background:#f3f1fe;
+  color:var(--purple);font-family:var(--font);font-weight:700;font-size:13px;padding:9px;border-radius:12px;}
+.lbl-add:hover{background:#e8e4fd;}
+
+/* Thumbnail box */
+.lbl-thumbbox{position:relative;border:2px dashed #cbb8f3;background:#faf7ff;border-radius:14px;padding:10px;text-align:center;}
+.lbl-thumbbox img{width:100%;border-radius:10px;display:block;}
+.lbl-thumb-empty{height:96px;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-size:12px;font-weight:600;}
+.lbl-thumb-check{position:absolute;top:-8px;right:-8px;width:24px;height:24px;border-radius:50%;background:var(--purple);color:#fff;display:none;align-items:center;justify-content:center;font-size:13px;}
+.lbl-thumb-check.show{display:flex;}
+.lbl-change{cursor:pointer;width:100%;margin-top:10px;border:1.5px solid var(--field-border);background:#fff;
+  color:var(--ink);font-family:var(--font);font-weight:700;font-size:13px;padding:9px;border-radius:11px;display:block;text-align:center;}
+
+/* Distractor section */
+.lbl-distractor-row{display:flex;gap:6px;margin-bottom:8px;}
+.lbl-distractor-row input{flex:1;padding:7px 10px;border-radius:9px;border:1.5px solid var(--field-border);background:#fff;font-family:var(--font);font-size:13px;color:var(--ink);outline:none;}
+.lbl-distractor-row input:focus{border-color:var(--purple);}
+.lbl-distractor-row button{padding:7px 12px;background:var(--purple);border:none;border-radius:9px;color:#fff;font-family:var(--font);font-weight:700;font-size:13px;cursor:pointer;}
+.lbl-distractor-tags{display:flex;flex-wrap:wrap;gap:6px;}
+.lbl-dtag{display:flex;align-items:center;gap:4px;background:#f3f1fe;border:1px solid #e4dcfa;
+  border-radius:20px;padding:3px 10px;font-size:12px;color:var(--purple);font-weight:700;}
+.lbl-dtag button{background:none;border:none;color:#c0b4f0;cursor:pointer;font-size:13px;}
+
+/* Tip box */
+.lbl-tip{background:#fef6e6;border:1px solid #f6e2b3;border-radius:14px;padding:13px;}
+.lbl-tip b{font-size:13px;display:flex;align-items:center;gap:6px;}
+.lbl-tip p{color:#7a5e1d;font-size:12px;font-weight:500;line-height:1.5;margin-top:6px;}
+.lbl-guide-settings-btn{margin-left:auto;cursor:pointer;border:1.5px solid #cbb8f3;background:#f3f1fe;color:var(--purple);
+  font-family:var(--font);font-weight:800;font-size:13px;padding:7px 12px;border-radius:10px;white-space:nowrap;}
+.lbl-guide-settings-btn:hover{background:#e6e1fb;}
+
+/* ===== CENTER STAGE ===== */
+.lbl-preview-col .lbl-step{margin-bottom:12px;}
+.lbl-stage{
+  position:relative;overflow:hidden;border-radius:20px;
+  border:1px solid var(--line);
+  background:#fdf6d8;padding:30px;
+  --lbl-text:#243a5e;font-family:'Comic Sans MS','Comic Sans',cursive;font-size:36px;
+}
+.lbl-deco{position:absolute;inset:0;pointer-events:none;}
+.lbl-stage.no-deco .lbl-deco{display:none;}
+.lbl-deco .d-sun{position:absolute;top:14px;right:22px;font-size:42px;}
+.lbl-deco .d-cloud1{position:absolute;top:18px;left:24px;font-size:30px;opacity:.9;}
+.lbl-deco .d-cloud2{position:absolute;top:46%;right:10px;font-size:26px;opacity:.8;}
+.lbl-deco .d-grass{position:absolute;left:0;right:0;bottom:0;height:64px;background:linear-gradient(180deg,rgba(126,217,124,0),#aee08a 70%);}
+.lbl-deco .d-flower1{position:absolute;bottom:8px;left:18px;font-size:24px;}
+.lbl-deco .d-flower2{position:absolute;bottom:6px;right:26px;font-size:22px;}
+
+.lbl-stage-inner{position:relative;z-index:2;transform-origin:top center;}
+.lbl-title{text-align:center;font-weight:700;font-size:1em;color:var(--lbl-text);margin-bottom:4px;}
+.lbl-instr{text-align:center;font-size:.48em;font-weight:500;color:var(--lbl-text);opacity:.85;margin-bottom:18px;}
+
+/* Word Bank (stage) */
+.lbl-bank-label{font-size:.44em;font-weight:800;letter-spacing:.04em;color:var(--lbl-text);opacity:.7;
+  text-transform:uppercase;margin-bottom:8px;text-align:center;}
+.lbl-bank{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;
+  background:rgba(255,255,255,.55);border:2px solid rgba(200,190,240,.6);
+  border-radius:16px;padding:12px 14px;margin-bottom:20px;min-height:48px;}
+.lbl-chip{padding:.18em .7em;background:#fff;border:2.5px solid #c5b6f8;
+  border-radius:30px;font-size:.46em;font-weight:700;color:#3d2d9b;
+  cursor:pointer;transition:all .15s;user-select:none;font-family:inherit;}
+.lbl-chip:hover{background:#ede9ff;border-color:var(--purple);}
+.lbl-chip.sel{background:var(--purple);color:#fff;border-color:var(--purple-dark);transform:scale(1.07);}
+.lbl-chip.used{opacity:.28;pointer-events:none;}
+.lbl-chip[draggable="true"]{cursor:grab;}
+.lbl-chip.dragging{opacity:.35;cursor:grabbing;}
+
+/* Picture Grid (stage) */
+.lbl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:16px;}
+.lbl-pic-item{display:flex;flex-direction:column;align-items:center;gap:8px;transition:transform .12s;}
+.lbl-pic-item.dragover{transform:scale(1.04);}
+.lbl-pic-item.dragover .lbl-pic-frame{border-color:var(--purple);box-shadow:0 0 0 4px rgba(123,110,240,.28);}
+.lbl-pic-frame{width:110px;height:100px;border:3px solid #e2c98f;border-radius:16px;
+  overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 12px rgba(36,58,94,.08);}
+.lbl-stage.bs-dashed .lbl-pic-frame{border-style:dashed;}
+.lbl-stage.bs-solid .lbl-pic-frame{border-radius:8px;}
+.lbl-pic-frame img{width:100%;height:100%;object-fit:contain;padding:6px;}
+.lbl-pic-slot{width:120px;min-height:.9em;padding:.22em .6em;
+  border:2.5px dashed #c5b6f8;border-radius:24px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.44em;font-weight:700;color:#aab4c5;
+  cursor:pointer;transition:all .18s;background:#fff;text-align:center;font-family:inherit;}
+.lbl-pic-slot.ready{border-color:var(--purple);background:#f0edff;color:var(--purple);}
+.lbl-pic-slot.filled{border-style:solid;border-color:#c5b6f8;background:#ede9ff;color:#3d2d9b;}
+.lbl-pic-slot.correct{border-style:solid;border-color:#2fbf57;background:#d6f5e0;color:#1a6e34;}
+.lbl-pic-slot.wrong{border-style:solid;border-color:var(--red);background:#fde8ec;color:var(--red-dark);}
+
+/* Stage controls */
+.lbl-stage-controls{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:22px;position:relative;z-index:2;}
+.lbl-stage-btnrow{display:flex;justify-content:center;gap:10px;}
+.lbl-mini{cursor:pointer;border:none;font-family:var(--font);font-weight:700;font-size:.48em;padding:.55em 1.2em;border-radius:12px;}
+.lbl-mini--reset{background:#eef3fb;color:var(--ink-soft);}
+.lbl-mini--check{background:var(--green);color:#fff;}
+.lbl-hint{font-size:.44em;font-weight:700;min-height:1.3em;text-align:center;color:var(--red-dark);}
+.lbl-stage-nav{display:flex;align-items:center;gap:14px;margin-top:6px;}
+.lbl-stage-nav button{cursor:pointer;border:none;background:#eef3fb;color:var(--ink-soft);font-family:var(--font);font-weight:700;font-size:.4em;padding:.55em 1em;border-radius:10px;}
+.lbl-stage-nav button:disabled{opacity:.35;cursor:default;}
+.lbl-stage-nav span{font-weight:700;font-size:.4em;color:var(--lbl-text);opacity:.8;}
+
+/* Accessibility reminders */
+.lbl-reminders{background:#f6f2fe;border:1px solid #e4dcfa;border-radius:16px;padding:14px 16px;margin-top:16px;}
+.lbl-reminders .r-title{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--purple);margin-bottom:12px;}
+.lbl-rem-list{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;}
+.lbl-rem{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;flex:1;min-width:80px;color:var(--ink-soft);font-size:11.5px;font-weight:600;}
+.lbl-rem .r-ic{font-size:20px;}
+
+/* ===== RIGHT SETTINGS ===== */
+.lbl-set-title{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;margin-bottom:16px;}
+.lbl-collapse-btn{cursor:pointer;border:1.5px solid var(--field-border);background:#fff;width:30px;height:30px;flex:none;
+  border-radius:9px;font-size:14px;color:var(--ink-soft);margin-left:auto;}
+.lbl-collapse-btn:hover{background:#f1f4fa;}
+.lbl-right-panel-guide{display:none;}
+body.lbl-right-collapsed .lbl-right-panel-full{display:none;}
+body.lbl-right-collapsed .lbl-right-panel-guide{display:block;}
+.lbl-set-label{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 9px;}
+.lbl-set-group{margin-bottom:18px;}
+.lbl-swatches{display:flex;gap:8px;flex-wrap:wrap;}
+.lbl-sw{width:38px;height:38px;border-radius:11px;cursor:pointer;border:2px solid #fff;box-shadow:0 0 0 1.5px var(--field-border);position:relative;}
+.lbl-sw.sel{box-shadow:0 0 0 2.5px var(--purple);}
+.lbl-sw.sel::after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--purple);font-weight:800;font-size:14px;}
+.lbl-input,.lbl-select{width:100%;padding:11px 13px;border-radius:12px;border:1.5px solid var(--field-border);background:#fff;font-family:var(--font);font-size:14px;color:var(--ink);outline:none;}
+.lbl-input:focus,.lbl-select:focus{border-color:var(--purple);}
+.lbl-size-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.lbl-size-num{width:54px;text-align:center;padding:5px;border:1.5px solid var(--field-border);border-radius:8px;font-family:var(--font);font-weight:700;}
+.lbl-size-row{display:flex;align-items:center;gap:10px;}
+.lbl-size-row input[type=range]{flex:1;accent-color:var(--purple);}
+.lbl-size-row .a-sm{font-size:13px;font-weight:700;} .lbl-size-row .a-lg{font-size:20px;font-weight:700;}
+.lbl-color-row{display:flex;align-items:center;gap:8px;}
+.lbl-color-row input[type=color]{width:46px;height:34px;border:none;border-radius:9px;background:none;cursor:pointer;}
+.lbl-seg{display:flex;gap:8px;}
+.lbl-seg button{flex:1;cursor:pointer;border:1.5px solid var(--field-border);background:#fff;border-radius:11px;padding:10px 4px;font-family:var(--font);font-weight:600;font-size:12px;color:var(--ink-soft);display:flex;flex-direction:column;align-items:center;gap:4px;}
+.lbl-seg button.sel{border-color:var(--purple);background:#f3f1fe;color:var(--purple);}
+.lbl-seg .seg-box{width:30px;height:20px;border:2.5px solid var(--ink-soft);}
+.lbl-seg button.sel .seg-box{border-color:var(--purple);}
+.seg-rounded{border-radius:8px;} .seg-dashed{border-style:dashed;border-radius:8px;} .seg-solid{border-radius:2px;}
+.lbl-spacing{display:flex;align-items:center;gap:12px;}
+.lbl-spacing button{width:34px;height:34px;border-radius:10px;border:1.5px solid var(--field-border);background:#fff;cursor:pointer;font-size:18px;font-weight:700;color:var(--ink);}
+.lbl-spacing span{font-weight:700;font-size:14px;flex:1;text-align:center;}
+.lbl-check{display:flex;align-items:center;gap:9px;padding:7px 0;cursor:pointer;font-size:14px;font-weight:600;}
+.lbl-check input{width:18px;height:18px;accent-color:var(--purple);}
+.lbl-set-actions{display:flex;gap:10px;margin-top:8px;}
+.lbl-set-actions button{flex:1;cursor:pointer;border:none;font-family:var(--font);font-weight:700;font-size:14px;padding:12px;border-radius:12px;}
+.lbl-reset-btn{background:#eef2f8;color:var(--ink-soft);}
+.lbl-apply-btn{background:var(--purple);color:#fff;box-shadow:0 4px 0 var(--purple-dark);}
+
+/* preview-only mode */
+body.lbl-preview-only .lbl-left-col,
+body.lbl-preview-only .lbl-right-col,
+body.lbl-preview-only .lbl-top,
+body.lbl-preview-only .lbl-preview-col>.lbl-step,
+body.lbl-preview-only .lbl-reminders{display:none;}
+body.lbl-preview-only .lbl-body{grid-template-columns:1fr;min-height:100vh;padding:0;overflow:hidden;}
+body.lbl-preview-only .lbl-preview-col{width:100%;max-width:100%;overflow:hidden;}
+body.lbl-preview-only .lbl-stage{
+  width:100%;min-height:100vh;border-radius:0;border:none;
+  padding:50px 40px 90px;display:flex;flex-direction:column;justify-content:center;
+}
+body.lbl-preview-only .lbl-grid,
+body.lbl-preview-only .lbl-bank,
+body.lbl-preview-only .lbl-title,
+body.lbl-preview-only .lbl-instr{max-width:900px;width:100%;margin-left:auto;margin-right:auto;}
+
+/* ===== FLOATING EXIT BUTTON ===== */
+.lbl-exit-float{
+  display:none;position:fixed;top:14px;right:14px;z-index:100;
+  align-items:center;gap:6px;cursor:pointer;border:none;
+  background:rgba(36,58,94,.85);color:#fff;font-family:var(--font);font-weight:700;font-size:13px;
+  padding:10px 18px;border-radius:30px;box-shadow:0 6px 18px rgba(0,0,0,.25);
+}
+.lbl-exit-float:hover{background:rgba(36,58,94,1);}
+body.lbl-preview-only .lbl-exit-float{display:flex;}
+
+/* ===== SCORE MODAL ===== */
+.lbl-modal-overlay{position:fixed;inset:0;background:rgba(36,58,94,.55);z-index:80;
+  display:none;align-items:center;justify-content:center;padding:20px;}
+.lbl-modal-overlay.show{display:flex;}
+.lbl-modal-card{background:#fff;border-radius:26px;padding:30px 26px;max-width:420px;width:100%;
+  text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.3);animation:lblPop .22s ease;overflow-y:auto;max-height:88vh;}
+@keyframes lblPop{from{transform:scale(.85);opacity:0;}to{transform:scale(1);opacity:1;}}
+.lbl-modal-emoji{width:100px;height:100px;object-fit:contain;margin:0 auto 10px;display:block;animation:lblFloat 2s ease-in-out infinite;}
+@keyframes lblFloat{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-10px) scale(1.06);}}
+.lbl-modal-score{font-size:24px;font-weight:800;color:var(--ink);margin:4px 0 6px;}
+.lbl-modal-msg{font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:14px;line-height:1.5;}
+
+/* Item-by-item results (read-only) */
+.lbl-review-list{text-align:left;border-top:1.5px dashed var(--field-border);padding-top:12px;margin-bottom:16px;}
+.lbl-review-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--purple);margin-bottom:10px;}
+.lbl-review-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);}
+.lbl-review-thumb{width:30px;height:30px;border-radius:7px;object-fit:cover;flex:none;background:var(--field);}
+.lbl-review-text{flex:1;min-width:0;font-size:12.5px;}
+.lbl-review-text b{display:block;font-size:12px;}
+.lbl-review-text span{color:var(--ink-soft);font-size:11px;}
+.lbl-review-status{flex:none;width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;}
+.lbl-review-status.correct{background:#e8fbee;color:var(--green-dark);}
+.lbl-review-status.wrong{background:#fdeef1;color:var(--red-dark);}
+.lbl-pending-note{font-size:11px;color:var(--ink-soft);font-style:italic;margin-bottom:14px;}
+
+.lbl-modal-actions{display:flex;gap:10px;}
+.lbl-modal-actions button{flex:1;cursor:pointer;border:none;font-family:var(--font);font-weight:700;font-size:14px;padding:13px;border-radius:14px;}
+.lbl-modal-try{background:var(--purple);color:#fff;box-shadow:0 4px 0 var(--purple-dark);}
+.lbl-modal-close{background:#eef2f8;color:var(--ink-soft);}
+
+/* ===== PUBLISH MODAL ===== */
+.lbl-publish-card{max-width:560px;text-align:left;}
+.lbl-publish-card h3{text-align:center;font-size:18px;font-weight:800;color:var(--ink);margin-bottom:16px;}
+.lbl-publish-field{margin-bottom:18px;}
+.lbl-publish-field label{display:block;font-size:12.5px;font-weight:700;color:var(--ink-soft);margin-bottom:6px;}
+.lbl-publish-field input[type="date"]{width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--field-border);background:#fff;font-family:var(--font);font-size:14px;color:var(--ink);outline:none;}
+.lbl-publish-field input[type="date"]:focus{border-color:var(--purple);}
+.lbl-publish-field .lbl-publish-hint{font-size:11.5px;color:var(--ink-soft);font-weight:500;margin-top:5px;}
+.lbl-publish-confirm{background:var(--green);color:#fff;box-shadow:0 4px 0 var(--green-dark);}
+.lbl-domain-radios{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+.lbl-domain-opt{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--ink);cursor:pointer;padding:5px 10px;border:1.5px solid var(--field-border);border-radius:8px;background:#fff;transition:border-color .15s,background .15s;}
+.lbl-domain-opt:has(input:checked){border-color:#0891b2;background:#ecfeff;color:#0891b2;}
+.lbl-domain-opt input[type="radio"]{accent-color:#0891b2;cursor:pointer;}
+
+@media(max-width:1100px){.lbl-body{grid-template-columns:1fr;}}
+/* ── SPOTLIGHT TOUR ── */
+.lbl-btn--help{background:#ffc34d;color:#5c4400;box-shadow:0 4px 0 #d9a416;}
+#lblTourSpot{display:none;position:fixed;z-index:8999;pointer-events:none;border-radius:14px;box-shadow:0 0 0 9999px rgba(15,23,55,.72);transition:left .22s ease,top .22s ease,width .22s ease,height .22s ease;}
+#lblTourRing{display:none;position:fixed;z-index:9000;pointer-events:none;border-radius:16px;border:3px solid #ffc34d;transition:left .22s ease,top .22s ease,width .22s ease,height .22s ease;animation:lblTourPulse 1.5s ease-in-out infinite;}
+@keyframes lblTourPulse{0%,100%{opacity:1;}50%{opacity:.25;}}
+#lblTourTip{display:none;position:fixed;z-index:9001;background:#fff;border-radius:18px;box-shadow:0 16px 50px rgba(15,23,55,.28);padding:20px 22px 16px;width:290px;transition:left .22s ease,top .22s ease;}
+.lbl-tour-action{cursor:pointer;border:none;font-family:var(--font);font-weight:700;font-size:13px;padding:9px 16px;border-radius:10px;}
+#lblTourStep{font-size:13px;font-weight:800;color:var(--ink);margin-bottom:6px;line-height:1.3;}
+#lblTourDesc{font-size:12.5px;color:var(--ink-soft);line-height:1.6;margin-bottom:16px;}
+.lbl-tour-row{display:flex;align-items:center;gap:8px;}
+#lblTourSkip{background:none;color:#94a3b8;font-size:12px;margin-right:auto;padding:4px 0;}
+#lblTourBack{background:#f1f5f9;color:var(--ink-soft);}
+#lblTourNext{background:var(--purple);color:#fff;}
+</style>
+</head>
+<body>
+
+<!-- Floating Exit (preview mode only) -->
+<button class="lbl-exit-float" id="lblExitFloatBtn" type="button">✖ Exit</button>
+
+<!-- ===== TOP BAR ===== -->
+<div class="lbl-top">
+  <div class="lbl-logo">🏷️</div>
+  <div>
+    <h1>Picture Labeling Template Generator</h1>
+    <div class="lbl-tsub">Create picture labeling activities for learners (ASD / Intellectual Disability)</div>
+  </div>
+  <div class="lbl-top-actions">
+    <button class="lbl-btn lbl-btn--help" id="lblHelpBtn" type="button">❓ Help</button>
+    <button class="lbl-btn lbl-btn--print" id="lblPrintBtn" type="button">🖨️ Generate Printable</button>
+    <button class="lbl-btn lbl-btn--ghost" id="lblPreviewBtn" type="button">👁 Preview</button>
+    <button class="lbl-btn lbl-btn--ghost" id="lblDraftBtn" type="button">💾 Save Draft</button>
+    <button class="lbl-btn lbl-btn--pub" id="lblPubBtn" type="button">🌐 Publish</button>
+  </div>
+</div>
+
+<!-- ===== BODY ===== -->
+<div class="lbl-body">
+
+  <!-- ── LEFT COLUMN ── -->
+  <div class="lbl-left-col">
+
+    <div class="lbl-card">
+      <div class="lbl-step">Activity Slides <span style="color:var(--purple);font-weight:700;text-transform:none;letter-spacing:0;">(suggested: ~5 per set)</span></div>
+      <div class="lbl-slidebar">
+        <button id="lblPrevSlide" type="button">◂</button>
+        <div class="lbl-slide-label" id="lblSlideLabel">Slide 1 of 1</div>
+        <button id="lblNextSlide" type="button">▸</button>
+      </div>
+      <div class="lbl-slide-actions">
+        <button id="lblAddSlide" type="button">+ Add Slide</button>
+        <button id="lblDeleteSlide" type="button" class="danger">🗑 Delete</button>
+      </div>
+    </div>
+
+    <div class="lbl-card">
+      <div class="lbl-step">1. Activity Type</div>
+      <div class="lbl-type">
+        <div class="lbl-type-ic">🏷️</div>
+        <b>Picture Labeling</b>
+      </div>
+      <p class="lbl-type-desc">Learners drag (or tap) the correct word from the word bank onto its picture. Matching the picture to its name.</p>
+    </div>
+
+    <div class="lbl-card">
+      <div class="lbl-step">2. Picture Items <span style="color:var(--purple);font-weight:700;text-transform:none;letter-spacing:0;">(image + correct label)</span></div>
+      <div id="lblItemsList"></div>
+      <button class="lbl-add" id="lblAddItemBtn" type="button">+ Add Picture</button>
+    </div>
+
+    <div class="lbl-card">
+      <div class="lbl-step">3. Extra Word Bank Choices <span style="color:var(--purple);font-weight:700;text-transform:none;letter-spacing:0;">(optional distractors)</span></div>
+      <p style="font-size:12px;color:var(--ink-soft);font-weight:500;margin-bottom:10px;line-height:1.5;">Labels ng pictures ay auto-included sa word bank. Magdagdag ng extra words para mas challenging.</p>
+      <div class="lbl-distractor-row">
+        <input type="text" id="lblDistractorInput" placeholder="Extra word (e.g. Igloo)" onkeydown="if(event.key==='Enter')lbl_addDistractor()">
+        <button onclick="lbl_addDistractor()">+</button>
+      </div>
+      <div class="lbl-distractor-tags" id="lblDistractorTags"></div>
+    </div>
+
+
+  </div>
+
+  <!-- ── CENTER PREVIEW ── -->
+  <div class="lbl-preview-col">
+    <div class="lbl-step">5. Activity Preview</div>
+
+    <div class="lbl-stage" id="lblStage">
+      <div class="lbl-deco">
+        <span class="d-sun">☀️</span><span class="d-cloud1">☁️</span><span class="d-cloud2">☁️</span>
+        <div class="d-grass"></div><span class="d-flower1">🌼</span><span class="d-flower2">🌸</span>
+      </div>
+      <div class="lbl-stage-inner" id="lblStageInner">
+        <div class="lbl-title" id="lblTitle">Picture Labeling</div>
+        <div class="lbl-instr" id="lblInstr">Write the correct name of each picture.</div>
+        <div class="lbl-bank-label">📋 Word Bank</div>
+        <div class="lbl-bank" id="lblBank"></div>
+        <div class="lbl-grid" id="lblGrid"></div>
+        <div class="lbl-stage-controls">
+          <div class="lbl-hint" id="lblHint"></div>
+          <div class="lbl-stage-btnrow">
+            <button class="lbl-mini lbl-mini--reset" id="lblReset" type="button">↺ Try Again</button>
+            <button class="lbl-mini lbl-mini--check" id="lblCheck" type="button">✓ Check Answers</button>
+          </div>
+          <div class="lbl-stage-nav" id="lblStageNav">
+            <button id="lblStagePrev" type="button">◂ Previous</button>
+            <span id="lblStageSlideLabel">Slide 1 of 1</span>
+            <button id="lblStageNext" type="button">Next ▸</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="lbl-reminders">
+      <div class="r-title">♿ Accessibility Reminders</div>
+      <div class="lbl-rem-list">
+        <div class="lbl-rem"><span class="r-ic">🖼️</span>Use clear real images</div>
+        <div class="lbl-rem"><span class="r-ic">🎨</span>High contrast colors</div>
+        <div class="lbl-rem"><span class="r-ic">🔠</span>Large fonts</div>
+        <div class="lbl-rem"><span class="r-ic">💬</span>Simple instructions</div>
+        <div class="lbl-rem"><span class="r-ic">✅</span>One concept per page</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RIGHT SETTINGS ── -->
+  <div class="lbl-right-col" id="lblRightCol">
+    <div class="lbl-card lbl-right-panel-full" id="lblRightPanelFull">
+      <div class="lbl-set-title">🎨 Design &amp; Settings
+        <button class="lbl-collapse-btn" id="lblCollapseBtn" type="button" title="Hide panel">⮜</button>
+      </div>
+
+      <div class="lbl-set-group">
+        <div class="lbl-set-label">Background Color</div>
+        <div class="lbl-swatches" id="lblSwatches"></div>
+      </div>
+
+      <div class="lbl-set-group">
+        <div class="lbl-set-label">Fonts</div>
+        <select class="lbl-select" id="lblFont">
+          <option value="'Comic Sans MS','Comic Sans',cursive">Comic Sans MS</option>
+          <option value="'Fredoka',sans-serif">Fredoka</option>
+          <option value="'Nunito',sans-serif">Nunito</option>
+          <option value="'Poppins',sans-serif">Poppins</option>
+          <option value="Verdana,sans-serif">Verdana</option>
+          <option value="Arial,sans-serif">Arial</option>
+        </select>
+      </div>
+
+      <div class="lbl-set-group">
+        <div class="lbl-size-head">
+          <div class="lbl-set-label" style="margin:0">Font Size</div>
+          <input class="lbl-size-num" id="lblSizeNum" type="number" min="20" max="64"/>
+        </div>
+        <div class="lbl-size-row">
+          <span class="a-sm">A</span>
+          <input type="range" id="lblSize" min="20" max="64" step="1"/>
+          <span class="a-lg">A</span>
+        </div>
+      </div>
+
+      <div class="lbl-set-group">
+        <div class="lbl-set-label">Text Color</div>
+        <div class="lbl-color-row">
+          <input type="color" id="lblTextColor"/>
+          <span style="font-size:13px;color:var(--ink-soft);font-weight:600">Title &amp; labels</span>
+        </div>
+      </div>
+
+      <div class="lbl-set-group">
+        <div class="lbl-set-label">Border Style</div>
+        <div class="lbl-seg" id="lblBorder">
+          <button data-b="rounded" class="sel" type="button"><span class="seg-box seg-rounded"></span>Rounded</button>
+          <button data-b="dashed" type="button"><span class="seg-box seg-dashed"></span>Dashed</button>
+          <button data-b="solid" type="button"><span class="seg-box seg-solid"></span>Solid</button>
+        </div>
+      </div>
+
+      <div class="lbl-set-group">
+        <div class="lbl-set-label">Spacing</div>
+        <div class="lbl-spacing">
+          <button id="lblSpaceMinus" type="button">−</button>
+          <span id="lblSpaceVal">Medium</span>
+          <button id="lblSpacePlus" type="button">+</button>
+        </div>
+      </div>
+
+      <div class="lbl-set-group">
+        <div class="lbl-set-label">Title</div>
+        <input class="lbl-input" id="lblTitleInput" type="text" placeholder="e.g. Cognitive Development"/>
+      </div>
+
+      <div class="lbl-set-group">
+        <div class="lbl-set-label">Instruction Text</div>
+        <input class="lbl-input" id="lblInstrInput" type="text" placeholder="e.g. Write the correct name of each picture."/>
+      </div>
+
+      <div class="lbl-set-group">
+        <div class="lbl-set-label">Other Options</div>
+        <label class="lbl-check"><input type="checkbox" id="lblShowTitle" checked/> Show title</label>
+        <label class="lbl-check"><input type="checkbox" id="lblShowInstr" checked/> Show instructions</label>
+        <label class="lbl-check"><input type="checkbox" id="lblShowDeco" checked/> Show decorations</label>
+      </div>
+
+      <div class="lbl-set-actions">
+        <button class="lbl-reset-btn" id="lblResetAll" type="button">↻ Reset</button>
+        <button class="lbl-apply-btn" id="lblApply" type="button">✓ Apply Changes</button>
+      </div>
+    </div>
+
+    <!-- Shown when settings panel is collapsed -->
+    <div class="lbl-tip lbl-right-panel-guide" id="lblRightPanelGuide">
+      <b>💡 Template Guide
+        <button class="lbl-guide-settings-btn" id="lblShowSettingsBtn" type="button" title="Show Design & Settings">🎨 Settings</button>
+      </b>
+      <p>
+        • Upload images or paste an image link.<br>
+        • Enter the correct label for each image.<br>
+        • Add optional distractor words.<br>
+        • Change colors, fonts, and more.<br>
+        • Preview before publishing.
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== SCORE MODAL ===== -->
+<div class="lbl-modal-overlay" id="lblModalOverlay">
+  <div class="lbl-modal-card">
+    <img class="lbl-modal-emoji" id="lblModalEmoji" src="" alt="Result"/>
+    <div class="lbl-modal-score" id="lblModalScore">0 / 0 correct</div>
+    <div class="lbl-modal-msg" id="lblModalMsg">Great job!</div>
+
+    <!-- Item-by-item results (read-only) -->
+    <div class="lbl-review-list" id="lblReviewList" style="display:none;">
+      <div class="lbl-review-title">📋 Item-by-Item Results</div>
+      <div id="lblReviewRows"></div>
+    </div>
+    <div class="lbl-pending-note" id="lblPendingNote" style="display:none;">
+      Suggested score lang ito — pending pa rin ang final review ng teacher.
+    </div>
+
+    <div id="lblRetakeInfo" style="display:none;font-size:12px;color:#64748b;margin-bottom:4px;"></div>
+    <div class="lbl-modal-actions">
+      <button class="lbl-modal-close" id="lblModalCloseBtn" type="button">✖ Close</button>
+      <button class="lbl-modal-try" id="lblModalTryBtn" type="button">🔁 Try Again</button>
+      <button class="lbl-modal-try lbl-publish-confirm" id="lblStudentSubmitBtn" type="button" style="display:none;">✅ Submit Final Answer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PUBLISH MODAL ===== -->
+<div class="lbl-modal-overlay" id="lblPublishOverlay">
+  <div class="lbl-modal-card lbl-publish-card">
+    <h3>🌐 Publish Activity</h3>
+    <div class="lbl-publish-field">
+      <label>🎯 Learning Domain</label>
+      <div class="lbl-domain-radios">
+        <label class="lbl-domain-opt"><input type="radio" name="lblDomain" value="cognitive" checked/> Cognitive</label>
+        <label class="lbl-domain-opt"><input type="radio" name="lblDomain" value="language"/> Language Development</label>
+        <label class="lbl-domain-opt"><input type="radio" name="lblDomain" value="communication"/> Communication</label>
+        <label class="lbl-domain-opt"><input type="radio" name="lblDomain" value="motor"/> Fine Motor</label>
+        <label class="lbl-domain-opt"><input type="radio" name="lblDomain" value="social"/> Social & Emotional</label>
+        <label class="lbl-domain-opt"><input type="radio" name="lblDomain" value="self"/> Self-Help / Daily Living</label>
+        <label class="lbl-domain-opt"><input type="radio" name="lblDomain" value="aesthetic"/> Aesthetic & Creative</label>
+      </div>
+    </div>
+    <div class="lbl-publish-field">
+      <label for="lblDeadlineInput">📅 Deadline</label>
+      <input type="date" id="lblDeadlineInput"/>
+      <div class="lbl-publish-hint">Choose the last day the activity can still be submitted.</div>
+    </div>
+    <div class="lbl-modal-actions">
+      <button class="lbl-modal-close" id="lblPublishCancelBtn" type="button">✖ Cancel</button>
+      <button class="lbl-modal-try lbl-publish-confirm" id="lblPublishConfirmBtn" type="button">✅ Confirm Publish</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =============================================================
+   PICTURE LABELING TEMPLATE GENERATOR
+   Same architecture as written-response.html / letter-identification.html:
+     1. STATE            – design settings + activity slides
+     2. SLIDE NAVIGATION – switching / adding / deleting slides
+     3. ITEMS + DISTRACTORS EDITOR
+     4. ACTIVITY         – word bank + picture grid interaction
+     5. SCORE MODAL      – popup after "Check Answers" (auto-suggested,
+                            read-only item-by-item results)
+     6. APPEARANCE       – design & settings panel
+     7. TOP BAR ACTIONS  – preview / save draft / publish
+     8. INIT + STUDENT MODE
+   ============================================================= */
+
+const $  = id => document.getElementById(id);
+
+var _stuMode = false, _stuPubId = '', _stuRetake = 0,
+    _stuLastScore = null, _stuLastTotal = null, _stuProg = [], _stuSlideScores = [], _stuSlideRetakes = {}, _stuSubmitDone = false;
+
+/* ── IndexedDB (same pattern as other templates) ── */
+var _idb=(function(){
+  var DB='sped_alm_db',VER=1,ST='blobs';
+  function open(cb){var r=indexedDB.open(DB,VER);r.onupgradeneeded=function(e){e.target.result.createObjectStore(ST);};r.onsuccess=function(e){cb(null,e.target.result);};r.onerror=function(e){cb(e.target.error,null);};}
+  return{
+    save:function(key,val,cb){open(function(err,db){if(err){cb&&cb(err);return;}var tx=db.transaction(ST,'readwrite');tx.objectStore(ST).put(val,key);tx.oncomplete=function(){cb&&cb(null);};tx.onerror=function(e){cb&&cb(e.target.error);};});},
+    load:function(key,cb){open(function(err,db){if(err){cb(err,null);return;}var tx=db.transaction(ST,'readonly');var r=tx.objectStore(ST).get(key);r.onsuccess=function(){cb(null,r.result||null);};r.onerror=function(e){cb(e.target.error,null);};}); }
+  };
+})();
+
+/* ─────────────────────────────────────────────
+   1. STATE
+───────────────────────────────────────────── */
+const DEFAULT_DESIGN = {
+  bg:"#fdf6d8", font:"'Comic Sans MS','Comic Sans',cursive", fontSize:36,
+  textColor:"#243a5e", border:"rounded", spacing:"Medium",
+  showTitle:true, showInstr:true, showDeco:true
+};
+const BG_SWATCHES = ["#fdf6d8","#eaf2ff","#e8faf0","#f0eefc","#fdebf2","#ffffff"];
+const SPACINGS = ["Small","Medium","Large"];
+const SPACE_GAP = { Small:10, Medium:16, Large:24 };
+
+function makeItem(){
+  return { id:'lbl_'+Date.now()+'_'+Math.random().toString(36).slice(2), imageData:null, imgType:'upload', label:'' };
+}
+function makeDefaultActivity(){
+  return {
+    title:"Picture Labeling",
+    instruction:"Write the correct name of each picture.",
+    items:[ makeItem(), makeItem(), makeItem() ],
+    distractors:[]
+  };
+}
+function makeBlankActivity(slideNumber){
+  return {
+    title:"New Activity "+slideNumber,
+    instruction:"Write the correct name of each picture.",
+    items:[ makeItem(), makeItem() ],
+    distractors:[]
+  };
+}
+
+const state = {
+  ...structuredClone(DEFAULT_DESIGN),
+  thumb:null,
+  activities:[ makeDefaultActivity() ],
+  currentIndex:0
+};
+function currentActivity(){ return state.activities[state.currentIndex]; }
+
+let selectedWord = null;
+let answers  = {};    // { itemId: word }
+let suggestedMarks = {}; // { itemId: bool }
+let checked  = false;
+let fsWords  = [];
+let stageScale = 1;
+
+const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23f0eefc'/%3E%3Ctext x='50' y='54' text-anchor='middle' fill='%239b8fe0' font-size='11' font-family='sans-serif'%3ENo Image%3C/text%3E%3C/svg%3E`;
+const REWARDS = {
+  perfect :'images/perfect.png',
+  good    :'images/goodjob.png',
+  tryagain:'images/tryagain.png',
+};
+
+/* ─────────────────────────────────────────────
+   2. SLIDE NAVIGATION
+───────────────────────────────────────────── */
+function renderSlideNav(){
+  const total = state.activities.length;
+  $('lblSlideLabel').textContent = `Slide ${state.currentIndex+1} of ${total}`;
+  $('lblPrevSlide').disabled = state.currentIndex === 0;
+  $('lblNextSlide').disabled = state.currentIndex === total-1;
+  $('lblDeleteSlide').disabled = total <= 1;
+
+  $('lblStageSlideLabel').textContent = `Slide ${state.currentIndex+1} of ${total}`;
+  $('lblStagePrev').disabled = state.currentIndex === 0;
+  $('lblStageNext').disabled = state.currentIndex === total-1;
+  $('lblStageNav').style.display = total > 1 ? 'flex' : 'none';
+}
+
+function refreshSlideUI(){
+  answers={}; suggestedMarks={}; checked=false; selectedWord=null;
+  renderItemsList();
+  renderDistractorTags();
+  $('lblTitleInput').value = currentActivity().title;
+  $('lblInstrInput').value = currentActivity().instruction;
+  $('lblTitle').textContent = currentActivity().title;
+  $('lblInstr').textContent = currentActivity().instruction;
+  renderActivity();
+  renderSlideNav();
+}
+
+function goToSlide(index){
+  state.currentIndex = Math.max(0, Math.min(state.activities.length-1, index));
+  refreshSlideUI();
+}
+
+$('lblPrevSlide').addEventListener('click', ()=> goToSlide(state.currentIndex-1));
+$('lblNextSlide').addEventListener('click', ()=> goToSlide(state.currentIndex+1));
+$('lblStagePrev').addEventListener('click', ()=> goToSlide(state.currentIndex-1));
+$('lblStageNext').addEventListener('click', ()=> goToSlide(state.currentIndex+1));
+
+$('lblAddSlide').addEventListener('click', ()=>{
+  state.activities.push(makeBlankActivity(state.activities.length+1));
+  goToSlide(state.activities.length-1);
+});
+$('lblDeleteSlide').addEventListener('click', ()=>{
+  if(state.activities.length<=1){ alert('Keep at least one slide.'); return; }
+  state.activities.splice(state.currentIndex,1);
+  goToSlide(Math.min(state.currentIndex, state.activities.length-1));
+});
+
+/* ─────────────────────────────────────────────
+   3. ITEMS + DISTRACTORS EDITOR
+───────────────────────────────────────────── */
+function addItem(){
+  currentActivity().items.push(makeItem());
+  renderItemsList();
+  renderActivity();
+}
+function removeItem(id){
+  const items = currentActivity().items;
+  if(items.length<=1){ alert('Keep at least 1 picture item.'); return; }
+  currentActivity().items = items.filter(i=>i.id!==id);
+  renderItemsList();
+  renderActivity();
+}
+function handleImg(evt, id){
+  const file = evt.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const item = currentActivity().items.find(i=>i.id===id);
+    if(item){ item.imageData = e.target.result; item.imgType='upload'; renderItemsList(); renderActivity(); }
+  };
+  reader.readAsDataURL(file);
+}
+function lbl_setImgType(id, type){
+  const item = currentActivity().items.find(i=>i.id===id);
+  if(!item) return;
+  item.imgType = type;
+  renderItemsList(); renderActivity();
+}
+function lbl_setImageLink(id, url){
+  const item = currentActivity().items.find(i=>i.id===id);
+  if(!item) return;
+  item.imageData = url.trim() || null;
+  item.imgType = 'link';
+  renderActivity();
+}
+function updateLabel(id, val){
+  const item = currentActivity().items.find(i=>i.id===id);
+  if(item){ item.label = val; renderActivity(); }
+}
+
+function renderItemsList(){
+  const c = $('lblItemsList'); c.innerHTML='';
+  currentActivity().items.forEach((item,idx)=>{
+    const d = document.createElement('div');
+    d.className='lbl-item-card';
+    const isLink = item.imgType==='link';
+    d.innerHTML=`
+      <div class="lbl-item-num">Item ${idx+1}</div>
+      <button class="lbl-item-del" onclick="removeItem('${item.id}')">✕</button>
+      <div class="lbl-img-upload" style="${isLink?'display:none':''}">
+        ${(!isLink && item.imageData)?`<img src="${item.imageData}" alt="item">`:`<span style="font-size:26px">🖼️</span><span>Click to upload</span>`}
+        <input type="file" accept="image/*" onchange="handleImg(event,'${item.id}')">
+      </div>
+      <div class="lbl-media-tabs">
+        <button type="button" class="${!isLink?'sel':''}" onclick="lbl_setImgType('${item.id}','upload')">Upload</button>
+        <button type="button" class="${isLink?'sel':''}" onclick="lbl_setImgType('${item.id}','link')">Link</button>
+      </div>
+      <input class="lbl-link-input ${isLink?'show':''}" type="url" placeholder="Image URL"
+        value="${isLink?(item.imageData||''):''}" oninput="lbl_setImageLink('${item.id}',this.value)">
+      <input class="lbl-side-name" type="text" placeholder="Correct label (e.g. Owl)"
+        value="${item.label}" oninput="updateLabel('${item.id}',this.value)">
+    `;
+    c.appendChild(d);
+  });
+}
+
+function lbl_addDistractor(){
+  const inp = $('lblDistractorInput');
+  const val = inp.value.trim();
+  const distractors = currentActivity().distractors;
+  if(!val || distractors.includes(val)) return;
+  distractors.push(val); inp.value='';
+  renderDistractorTags(); renderActivity();
+}
+function removeDistractor(w){
+  currentActivity().distractors = currentActivity().distractors.filter(d=>d!==w);
+  renderDistractorTags(); renderActivity();
+}
+function renderDistractorTags(){
+  const wrap = $('lblDistractorTags'); wrap.innerHTML='';
+  currentActivity().distractors.forEach(d=>{
+    const tag = document.createElement('div');
+    tag.className='lbl-dtag';
+    tag.innerHTML=`<span>${d}</span><button onclick="removeDistractor('${d}')">✕</button>`;
+    wrap.appendChild(tag);
+  });
+}
+
+/* ─────────────────────────────────────────────
+   4. ACTIVITY (word bank + grid)
+───────────────────────────────────────────── */
+function buildWordBank(){
+  const activity = currentActivity();
+  const labels = activity.items.map(i=>i.label).filter(l=>l.trim());
+  const all = [...new Set([...labels,...activity.distractors])];
+  for(let i=all.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[all[i],all[j]]=[all[j],all[i]];}
+  return all;
+}
+
+function renderActivity(){
+  const activity = currentActivity();
+  $('lblTitle').style.display = state.showTitle ? '' : 'none';
+  $('lblInstr').style.display = state.showInstr ? '' : 'none';
+
+  /* word bank */
+  const bank=$('lblBank'); bank.innerHTML='';
+  const words = buildWordBank();
+  if(!checked) fsWords = words;
+  const displayWords = checked ? fsWords : words;
+  displayWords.forEach(w=>{
+    const used     = Object.values(answers).includes(w);
+    const selected = selectedWord===w;
+    const chip = document.createElement('div');
+    chip.className='lbl-chip'+(used?' used':'')+(selected?' sel':'');
+    chip.textContent=w;
+    chip.draggable = !checked && !used;
+    chip.onclick=()=>{ if(!checked) selectWord(w); };
+    chip.ondragstart=(e)=>{
+      if(checked || used){ e.preventDefault(); return; }
+      e.dataTransfer.setData('text/plain', w);
+      e.dataTransfer.effectAllowed = 'move';
+      chip.classList.add('dragging');
+    };
+    chip.ondragend=()=> chip.classList.remove('dragging');
+    bank.appendChild(chip);
+  });
+
+  /* picture grid */
+  const grid=$('lblGrid'); grid.innerHTML='';
+  if(activity.items.length===0){
+    grid.innerHTML=`<div style="color:var(--ink-soft);font-size:.42em;font-weight:600;grid-column:1/-1;text-align:center;padding:20px;">Magdagdag ng picture items sa panel.</div>`;
+    return;
+  }
+  activity.items.forEach(item=>{
+    const placed = answers[item.id];
+    let slotClass='lbl-pic-slot';
+    if(placed) slotClass+=selectedWord?' filled ready':' filled';
+    else if(selectedWord) slotClass+=' ready';
+
+    const div=document.createElement('div');
+    div.className='lbl-pic-item';
+    div.innerHTML=`
+      <div class="lbl-pic-frame">
+        <img src="${item.imageData||PLACEHOLDER}" alt="${item.label}" onerror="this.onerror=null;this.src='${PLACEHOLDER}'">
+      </div>
+      <div class="${slotClass}" data-id="${item.id}">${placed||'— — —'}</div>
+    `;
+    div.querySelector('.lbl-pic-slot').onclick=()=>{ if(!checked) placeWord(item.id); };
+
+    div.ondragover=(e)=>{
+      if(checked) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect='move';
+      div.classList.add('dragover');
+    };
+    div.ondragleave=()=> div.classList.remove('dragover');
+    div.ondrop=(e)=>{
+      e.preventDefault();
+      div.classList.remove('dragover');
+      if(checked) return;
+      const word = e.dataTransfer.getData('text/plain');
+      if(word){ answers[item.id]=word; selectedWord=null; $('lblHint').textContent=''; renderActivity(); }
+    };
+
+    grid.appendChild(div);
+  });
+
+  if (document.body.classList.contains('lbl-preview-only')) setTimeout(fitStageToScreen, 30);
+}
+
+function selectWord(word){
+  selectedWord = selectedWord===word ? null : word;
+  renderActivity();
+}
+function placeWord(itemId){
+  if(selectedWord){ answers[itemId]=selectedWord; selectedWord=null; }
+  else if(answers[itemId]){ delete answers[itemId]; }
+  $('lblHint').textContent='';
+  renderActivity();
+}
+
+/* ─────────────────────────────────────────────
+   5. CHECK + SCORE MODAL (auto-suggested,
+      read-only item-by-item results)
+───────────────────────────────────────────── */
+function renderReviewRows(stuMode){
+  const wrap = $('lblReviewRows'); wrap.innerHTML='';
+  const activity = currentActivity();
+  activity.items.forEach((item, idx)=>{
+    const ok = suggestedMarks[item.id];
+    const placed = answers[item.id] || '(walang sagot)';
+    const row = document.createElement('div'); row.className='lbl-review-row';
+
+    const thumb = document.createElement('img'); thumb.className='lbl-review-thumb';
+    thumb.src = item.imageData || PLACEHOLDER;
+    thumb.onerror = function(){ this.onerror=null; this.src=PLACEHOLDER; };
+    row.appendChild(thumb);
+
+    const text = document.createElement('div'); text.className='lbl-review-text';
+    const b = document.createElement('b'); b.textContent = `#${idx+1}: "${placed}"`;
+    const span = document.createElement('span');
+    if (stuMode) {
+      span.textContent = ok ? '✅ Tama!' : '💡 Clue: Tingnan nang mabuti ang bahagi ng larawan at subukang mag-isip ng tamang salita.';
+    } else {
+      span.textContent = 'Correct label: ' + (item.label || '—');
+    }
+    text.appendChild(b); text.appendChild(span);
+    row.appendChild(text);
+
+    const status = document.createElement('div');
+    status.className = 'lbl-review-status ' + (ok ? 'correct' : 'wrong');
+    status.textContent = ok ? '✓' : '✗';
+    row.appendChild(status);
+
+    wrap.appendChild(row);
+  });
+}
+
+function checkAnswers(){
+  const activity = currentActivity();
+  if(activity.items.length===0) return;
+
+  const allFilled = activity.items.every(item => !!answers[item.id]);
+  if(!allFilled){
+    $('lblHint').textContent = 'Sagutan muna lahat ng blanko bago mag-check.';
+    return;
+  }
+
+  checked=true; let correct=0;
+  renderActivity();
+
+  const slots = $('lblGrid').querySelectorAll('.lbl-pic-slot');
+  suggestedMarks = {};
+  activity.items.forEach((item,idx)=>{
+    const placed=(answers[item.id]||'').trim().toLowerCase();
+    const expected=item.label.trim().toLowerCase();
+    const ok = placed!==''&&placed===expected;
+    suggestedMarks[item.id] = ok;
+    if(ok) correct++;
+    const slot=slots[idx];
+    slot.classList.remove('filled','ready');
+    slot.classList.add(ok?'correct':'wrong');
+    if(!answers[item.id]) slot.textContent='— — —';
+  });
+
+  const total=activity.items.length;
+  const pct=Math.round((correct/total)*100);
+  let imgSrc,msg;
+  if(pct===100){ imgSrc=REWARDS.perfect; msg='🎉 Perfect Score! Excellent!'; fireConfetti(); }
+  else if(pct>=70){ imgSrc=REWARDS.good; msg='👍 Good Job! Keep it up!'; }
+  else { imgSrc=REWARDS.tryagain; msg='💪 Try Again! You can do it!'; }
+
+  $('lblModalScore').textContent=`${correct} / ${total} correct`;
+  $('lblModalMsg').textContent=msg;
+  const img=$('lblModalEmoji'); img.style.display='block'; img.src=imgSrc;
+  img.onerror=function(){this.onerror=null;this.src='images/placeholder.png';};
+
+  /* Teacher-in-the-loop: show a read-only per-item ✓/✗ list (no override
+     buttons — the system only SUGGESTS). Hidden in student mode, where the
+     submission is instead stored as pending review. */
+  $('lblReviewList').style.display='block';
+  $('lblPendingNote').style.display=_stuMode ? 'block' : 'none';
+  renderReviewRows(_stuMode);
+
+  $('lblModalOverlay').classList.add('show');
+
+  if(_stuMode){
+    _stuLastScore = correct; _stuLastTotal = total;
+    _stuSlideScores[state.currentIndex] = { correct: correct, total: total, ansItems: currentActivity().items.map(function(item){return{label:item.label||'Item',studentAnswer:answers[item.id]||'—',correctAnswer:item.label||'—',correct:!!suggestedMarks[item.id]};}) };
+    var _ts = state.activities.length, _isLast = state.currentIndex >= _ts - 1;
+    var _allDone = _stuSlideScores.filter(Boolean).length === _ts;
+    if (_ts > 1 && !_isLast) {
+      $('lblModalCloseBtn').style.display=''; $('lblModalCloseBtn').textContent='Next Slide →'; $('lblModalCloseBtn').dataset.nextSlide='1';
+    } else {
+      $('lblModalCloseBtn').style.display='none'; $('lblModalCloseBtn').dataset.nextSlide='';
+    }
+    $('lblModalTryBtn').textContent='🔁 Retake';
+    $('lblStudentSubmitBtn').style.display=_allDone ? '' : 'none';
+    var ri = $('lblRetakeInfo');
+    var _csr = _stuSlideRetakes[state.currentIndex] || 0;
+    ri.style.display = _stuRetake>0 ? '' : 'none';
+    if(_stuRetake>0) ri.textContent = (_ts>1?'Slide '+(state.currentIndex+1)+': ':'')+(_csr>0?_csr+' retake(s). ':'')+'Total retakes: '+_stuRetake;
+  }
+}
+
+function retryActivity(){
+  answers={}; suggestedMarks={}; checked=false; selectedWord=null;
+  fsWords=buildWordBank();
+  $('lblHint').textContent='';
+  $('lblModalOverlay').classList.remove('show');
+  renderActivity();
+}
+
+$('lblModalCloseBtn').onclick=function(){
+  var goNext=_stuMode && $('lblModalCloseBtn').dataset.nextSlide==='1';
+  $('lblModalOverlay').classList.remove('show');
+  if(goNext){ var ni=state.currentIndex+1; if(ni<state.activities.length) goToSlide(ni); }
+};
+$('lblModalTryBtn').onclick=()=>{ if(_stuMode){ _stuRetake++; _stuSlideRetakes[state.currentIndex]=(_stuSlideRetakes[state.currentIndex]||0)+1; _stuSlideScores[state.currentIndex]=undefined; } retryActivity(); };
+$('lblCheck').onclick=checkAnswers;
+$('lblReset').onclick=retryActivity;
+
+/* ─────────────────────────────────────────────
+   6. APPEARANCE — Design & Settings
+───────────────────────────────────────────── */
+function renderSwatches(){
+  const wrap=$('lblSwatches'); wrap.innerHTML='';
+  BG_SWATCHES.forEach(c=>{
+    const sw=document.createElement('div');
+    sw.className='lbl-sw'+(state.bg===c?' sel':'');
+    sw.style.background=c;
+    sw.onclick=()=>{ state.bg=c; renderSwatches(); applyAppearance(); };
+    wrap.appendChild(sw);
+  });
+}
+
+function syncDesignControls(){
+  $('lblFont').value    = state.font;
+  $('lblSize').value    = state.fontSize;
+  $('lblSizeNum').value = state.fontSize;
+  $('lblTextColor').value = state.textColor;
+  $('lblSpaceVal').textContent = state.spacing;
+  $('lblTitleInput').value = currentActivity().title;
+  $('lblInstrInput').value = currentActivity().instruction;
+  $('lblShowTitle').checked = state.showTitle;
+  $('lblShowInstr').checked = state.showInstr;
+  $('lblShowDeco').checked  = state.showDeco;
+  document.querySelectorAll('#lblBorder button').forEach(b=> b.classList.toggle('sel', b.dataset.b === state.border));
+}
+
+function applyAppearance(){
+  const stage=$('lblStage');
+  stage.style.background   = state.bg;
+  stage.style.setProperty('--lbl-text', state.textColor);
+  stage.style.fontFamily   = state.font;
+  stage.style.fontSize     = state.fontSize+'px';
+  stage.classList.toggle('no-deco', !state.showDeco);
+  stage.classList.toggle('bs-dashed', state.border === 'dashed');
+  stage.classList.toggle('bs-solid', state.border === 'solid');
+  $('lblGrid').style.gap = SPACE_GAP[state.spacing]+'px';
+  $('lblTitle').style.display = state.showTitle?'':'none';
+  $('lblInstr').style.display = state.showInstr?'':'none';
+}
+
+function setFontSize(value){
+  value = Math.max(20, Math.min(64, +value || 36));
+  state.fontSize = value;
+  $('lblSize').value = value; $('lblSizeNum').value = value;
+  applyAppearance();
+}
+
+$('lblFont').addEventListener('change', e=>{ state.font = e.target.value; applyAppearance(); });
+$('lblSize').addEventListener('input', e=> setFontSize(e.target.value));
+$('lblSizeNum').addEventListener('input', e=> setFontSize(e.target.value));
+$('lblTextColor').addEventListener('input', e=>{ state.textColor = e.target.value; applyAppearance(); });
+
+$('lblInstrInput').addEventListener('input', e=>{
+  currentActivity().instruction = e.target.value;
+  $('lblInstr').textContent = e.target.value;
+});
+$('lblTitleInput').addEventListener('input', e=>{
+  currentActivity().title = e.target.value;
+  $('lblTitle').textContent = e.target.value;
+});
+
+$('lblShowTitle').addEventListener('change', e=>{ state.showTitle = e.target.checked; applyAppearance(); });
+$('lblShowInstr').addEventListener('change', e=>{ state.showInstr = e.target.checked; applyAppearance(); });
+$('lblShowDeco').addEventListener('change', e=>{ state.showDeco = e.target.checked; applyAppearance(); });
+
+$('lblApply').onclick=()=>{
+  applyAppearance();
+  flash($('lblApply'), '✓ Applied');
+};
+
+document.querySelectorAll('#lblBorder button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    state.border = btn.dataset.b;
+    document.querySelectorAll('#lblBorder button').forEach(b=> b.classList.remove('sel'));
+    btn.classList.add('sel');
+    applyAppearance();
+  });
+});
+
+function lbl_setSpacing(delta){
+  let index = SPACINGS.indexOf(state.spacing) + delta;
+  index = Math.max(0, Math.min(SPACINGS.length-1, index));
+  state.spacing = SPACINGS[index];
+  $('lblSpaceVal').textContent = state.spacing;
+  applyAppearance();
+}
+$('lblSpaceMinus').addEventListener('click', ()=> lbl_setSpacing(-1));
+$('lblSpacePlus').addEventListener('click', ()=> lbl_setSpacing(1));
+
+$('lblResetAll').onclick=()=>{
+  Object.assign(state, structuredClone(DEFAULT_DESIGN));
+  renderSwatches(); syncDesignControls(); applyAppearance();
+  currentActivity().title='Picture Labeling';
+  currentActivity().instruction='Write the correct name of each picture.';
+  $('lblTitle').textContent='Picture Labeling';
+  $('lblInstr').textContent='Write the correct name of each picture.';
+};
+
+/* Collapse / Expand right panel */
+$('lblCollapseBtn').onclick=()=>{ document.body.classList.add('lbl-right-collapsed'); };
+$('lblShowSettingsBtn').onclick=()=>{ document.body.classList.remove('lbl-right-collapsed'); };
+
+/* ─────────────────────────────────────────────
+   7. TOP BAR ACTIONS
+───────────────────────────────────────────── */
+const stageInner = $('lblStageInner');
+
+function fitStageToScreen(){
+  if(!document.body.classList.contains('lbl-preview-only')) return;
+  stageInner.style.transform = 'none';
+  stageInner.style.marginBottom = '';
+  stageScale = 1;
+  const sp = window.getComputedStyle(stageInner.parentElement);
+  const padV = (parseFloat(sp.paddingTop)||0) + (parseFloat(sp.paddingBottom)||0);
+  const available = window.innerHeight - padV;
+  const naturalH = stageInner.scrollHeight;
+  if(naturalH > available){
+    stageScale = available / naturalH;
+    stageInner.style.transform = `scale(${stageScale})`;
+    stageInner.style.marginBottom = `-${naturalH * (1 - stageScale)}px`;
+  }
+}
+
+function requestFullscreen(el){
+  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+  if(req) req.call(el).catch(()=>{});
+}
+function exitFullscreen(){
+  const exit = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+  if(document.fullscreenElement || document.webkitFullscreenElement){
+    if(exit) exit.call(document).catch(()=>{});
+  }
+}
+
+function enterPreview(){
+  if(currentActivity().items.length===0){ alert('Magdagdag muna ng picture items bago mag-preview.'); return; }
+  answers={}; suggestedMarks={}; checked=false; selectedWord=null;
+  fsWords=buildWordBank();
+  renderActivity();
+  document.body.classList.add('lbl-preview-only');
+  requestFullscreen(document.documentElement);
+  setTimeout(fitStageToScreen, 120);
+}
+function exitPreview(){
+  document.body.classList.remove('lbl-preview-only');
+  exitFullscreen();
+  stageScale = 1;
+  stageInner.style.transform = '';
+  stageInner.style.marginBottom = '';
+  answers={}; suggestedMarks={}; checked=false; selectedWord=null;
+  renderActivity();
+}
+$('lblPreviewBtn').onclick = enterPreview;
+$('lblExitFloatBtn').onclick = exitPreview;
+
+['fullscreenchange','webkitfullscreenchange'].forEach(evt=>{
+  document.addEventListener(evt, ()=>{
+    const still = document.fullscreenElement || document.webkitFullscreenElement;
+    if(!still) document.body.classList.remove('lbl-preview-only');
+  });
+});
+window.addEventListener('resize', ()=>{ if(document.body.classList.contains('lbl-preview-only')) fitStageToScreen(); });
+
+/* ── Save Draft to localStorage (same pattern as written-response.html) ── */
+function saveDraft(){
+  var draftId = new URLSearchParams(location.search).get('draft_id') || ('draft_' + Date.now());
+  var firstTitle = (state.activities[0] && state.activities[0].title) || '';
+  var draft = {
+    id: draftId, title: firstTitle || 'Untitled Draft', type: 'PictureLabeling',
+    templateFile: 'TEMPLATES/LABELING/picture-labeling.html',
+    learner: sessionStorage.getItem('selected_learner') || 'ALL',
+    condition: sessionStorage.getItem('selected_condition') || '',
+    teacherName: sessionStorage.getItem('teacher_name') || '—',
+    savedAt: new Date().toISOString(),
+    data: JSON.parse(JSON.stringify(state))
+  };
+  var drafts = [];
+  try { drafts = JSON.parse(localStorage.getItem('teacher_drafts') || '[]'); } catch(e) {}
+  var idx = drafts.findIndex(function(d){ return d.id === draftId; });
+  if (idx >= 0) drafts[idx] = draft; else drafts.push(draft);
+  try {
+    localStorage.setItem('teacher_drafts', JSON.stringify(drafts));
+    history.replaceState(null, '', '?draft_id=' + encodeURIComponent(draftId));
+    flash($('lblDraftBtn'), '✓ Draft Saved!');
+    setTimeout(function(){ window.location.href = '../Teacher_activies.html'; }, 700);
+  } catch(e) { alert('Storage full – could not save draft.'); }
+}
+function loadDraftIfAny(){
+  var draftId = new URLSearchParams(location.search).get('draft_id');
+  if (!draftId) return;
+  var drafts = [];
+  try { drafts = JSON.parse(localStorage.getItem('teacher_drafts') || '[]'); } catch(e) {}
+  var draft = drafts.find(function(d){ return d.id === draftId; });
+  if (!draft || !draft.data) return;
+  Object.assign(state, draft.data);
+  refreshSlideUI();
+  syncDesignControls();
+  applyAppearance();
+}
+$('lblDraftBtn').addEventListener('click', saveDraft);
+
+function flash(button, text){
+  const original = button.textContent;
+  button.textContent = text;
+  setTimeout(()=> button.textContent = original, 1100);
+}
+
+$('lblPrintBtn').onclick=()=>alert('Generate Printable — coming soon.');
+
+function openPublishModal(){
+  $('lblPublishOverlay').classList.add('show');
+}
+function closePublishModal(){ $('lblPublishOverlay').classList.remove('show'); }
+$('lblPubBtn').addEventListener('click', openPublishModal);
+$('lblPublishCancelBtn').addEventListener('click', closePublishModal);
+
+function compressThumb(dataURL, callback){
+  if(!dataURL){ callback(''); return; }
+  var img = new Image();
+  img.onload = function(){
+    var MAX=160;
+    var ratio = Math.min(MAX/img.width, MAX/img.height, 1);
+    var cv = document.createElement('canvas');
+    cv.width = Math.round(img.width*ratio);
+    cv.height = Math.round(img.height*ratio);
+    cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+    callback(cv.toDataURL('image/jpeg',0.55));
+  };
+  img.onerror = function(){ callback(''); };
+  img.src = dataURL;
+}
+
+function confirmPublish(){
+  var deadline = $('lblDeadlineInput').value;
+  if(!deadline){ alert('Please set a deadline date before publishing.'); return; }
+  var domain = document.querySelector('input[name="lblDomain"]:checked').value;
+  var firstTitle = (state.activities[0] && state.activities[0].title) || 'Untitled Activity';
+  compressThumb(state.thumb, function(smallThumb){
+    var pub = {
+      id:'pub-'+Date.now(), title:firstTitle, type:'PictureLabeling',
+      deadline:deadline, thumbnail:smallThumb,
+      teacherName: sessionStorage.getItem('teacher_name') || '—',
+      teacherId: sessionStorage.getItem('teacher_id') || '',
+      learner: sessionStorage.getItem('selected_learner') || 'ALL',
+      condition: sessionStorage.getItem('selected_condition') || '',
+      publishedAt: new Date().toISOString()
+    };
+    var existing = [];
+    try { existing = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+    existing.push(pub);
+    try { localStorage.setItem('published_activities', JSON.stringify(existing)); } catch(e){ alert('Storage full – try clearing old drafts first.'); return; }
+    _idb.save('pub_data_'+pub.id, JSON.parse(JSON.stringify(state)), function(err){
+      if(err) console.warn('IDB save failed:', err);
+    });
+    var notifs = [];
+    try { notifs = JSON.parse(localStorage.getItem('student_notifications') || '[]'); } catch(e){}
+    notifs.unshift({ id:'notif-'+Date.now(), type:'new_activity',
+      title:'New activity available',
+      message:'Your teacher published "'+firstTitle+'" for '+grading+' Grading.',
+      activityId:pub.id, isRead:false, createdAt:new Date().toISOString() });
+    try { localStorage.setItem('student_notifications', JSON.stringify(notifs)); } catch(e){}
+    var _pubRef = pub;
+    var _assignedIds = [];
+    try { _assignedIds = JSON.parse(sessionStorage.getItem('selected_learner_ids') || '[]'); } catch(e) {}
+    if (!_assignedIds.length) { var _fb = parseInt(sessionStorage.getItem('selected_learner_id') || '0'); if (_fb > 0) _assignedIds = [_fb]; }
+    fetch('../TEACHER_BACKEND/teacher_create_activity.php', {
+      method: 'POST',
+      body: new URLSearchParams({
+        teacher_id: _pubRef.teacherId,
+        activity_title: _pubRef.title,
+        activity_type: 'PictureLabeling',
+        subject: domain,
+        grade_level: '',
+        status: 'published',
+        assigned_student_ids: JSON.stringify(_assignedIds)
+      })
+    }).then(function(r){ return r.json(); }).then(function(d){
+      if (d.success && d.activity_id) {
+        var acts = []; try { acts = JSON.parse(localStorage.getItem('published_activities')||'[]'); } catch(e){}
+        var i = acts.findIndex(function(a){ return a.id === _pubRef.id; });
+        if (i >= 0) { acts[i].db_activity_id = d.activity_id; try { localStorage.setItem('published_activities', JSON.stringify(acts)); } catch(e){} }
+      }
+    }).catch(function(){});
+    closePublishModal();
+    setTimeout(function(){ window.location.href = '../Teacher_activies.html'; }, 400);
+  });
+}
+$('lblPublishConfirmBtn').addEventListener('click', confirmPublish);
+
+$('lblAddItemBtn').onclick=addItem;
+
+/* ─────────────────────────────────────────────
+   8. CONFETTI
+───────────────────────────────────────────── */
+function fireConfetti(){
+  if(typeof confetti==='function'){
+    confetti({particleCount:120,spread:80,origin:{y:.55},colors:['#7b6ef0','#2fbf57','#ffc34d','#e23b54','#2f6fed']});
+    setTimeout(()=>confetti({particleCount:60,spread:120,origin:{y:.4}}),400);
+  }
+}
+
+/* ─────────────────────────────────────────────
+   9. INIT
+───────────────────────────────────────────── */
+renderSwatches();
+syncDesignControls();
+applyAppearance();
+renderItemsList();
+renderDistractorTags();
+renderActivity();
+renderSlideNav();
+loadDraftIfAny();
+
+/* ── STUDENT MODE (same pattern as other templates) ── */
+(function(){
+  var p = new URLSearchParams(location.search);
+  if (p.get('student_mode') !== '1') return;
+  _stuMode = true;
+  _stuPubId = p.get('pub_id') || '';
+
+  try { _stuProg = JSON.parse(localStorage.getItem('student_progress') || '[]'); } catch(e){}
+  var prev = _stuProg.find(function(r){ return r.pubId === _stuPubId; });
+  if (prev) _stuRetake = prev.retakes || 0;
+
+  function showNotAvailable(){
+    document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Poppins,sans-serif;gap:16px;padding:32px;text-align:center;">'
+      + '<div style="font-size:72px;">📭</div>'
+      + '<h2 style="color:#1e3a8a;margin:0;">Activity Not Available</h2>'
+      + '<p style="color:#64748b;max-width:340px;margin:0;">The activity content could not be loaded. Ask your teacher to republish it.</p>'
+      + '<button onclick="window.history.back()" style="margin-top:8px;background:#1e3a8a;color:#fff;border:none;padding:12px 28px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;">← Exit</button>'
+      + '</div>';
+  }
+
+  function applyStudentMode(saved){
+    if (!saved) { showNotAvailable(); return; }
+    Object.assign(state, saved);
+    state.currentIndex = 0;
+
+    var pubs = [];
+    try { pubs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+    var pub = pubs.find(function(r){ return r.id === _stuPubId; }) || {};
+    var splashThumb = pub.thumbnail
+      ? '<img src="' + pub.thumbnail + '" style="width:120px;height:120px;object-fit:cover;border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.35);" />'
+      : '<div style="font-size:80px;line-height:1;">🏷️</div>';
+    var dueText = pub.deadline
+      ? '<p style="color:#fde68a;font-size:15px;margin:0;">📅 Due: ' + new Date(pub.deadline+'T00:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) + '</p>'
+      : '';
+    var retakeText = _stuRetake > 0
+      ? '<p style="color:#fca5a5;font-size:13px;margin:0;">You have retaken this ' + _stuRetake + ' time(s).</p>'
+      : '';
+
+    var splash = document.createElement('div');
+    splash.id = 'stuSplash';
+    splash.style.cssText = 'position:fixed;inset:0;background:linear-gradient(145deg,#1e3a8a 0%,#1e40af 60%,#1d4ed8 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:99999;padding:32px;text-align:center;';
+    splash.innerHTML = splashThumb
+      + '<h1 style="color:#fff;font-family:Fredoka,Poppins,sans-serif;font-size:32px;font-weight:700;margin:0;max-width:520px;line-height:1.2;">' + (pub.title || state.activities[0]&&state.activities[0].title || 'Activity') + '</h1>'
+      + '<p style="color:#93c5fd;font-size:15px;margin:0;">Picture Labeling</p>'
+      + dueText + retakeText
+      + '<button id="stuSplashBtn" style="margin-top:12px;background:#22c55e;color:#fff;border:none;padding:18px 56px;border-radius:18px;font-family:Fredoka,Poppins,sans-serif;font-size:24px;font-weight:700;cursor:pointer;box-shadow:0 6px 0 #15803d;transition:transform .1s;">▶ Start Activity</button>'
+      + '<button onclick="window.history.back()" style="background:transparent;color:#93c5fd;border:none;font-size:14px;cursor:pointer;margin-top:4px;">← Exit</button>';
+    document.body.appendChild(splash);
+
+    function _stuGoBack(){
+      _stuMode = false;
+      if (document.fullscreenElement) document.exitFullscreen();
+      var ret = sessionStorage.getItem('stu_return_url');
+      sessionStorage.removeItem('stu_return_url');
+      if (ret && ret.indexOf('Student_') !== -1) { window.location.href = ret; return; }
+      var base = window.location.href.split('/TEACHER_FILES/')[0];
+      window.location.href = base + '/STUDENT_FILES/Student_mymaterials.html';
+    }
+
+    document.getElementById('stuSplashBtn').addEventListener('click', function(e){
+      e.stopPropagation();
+      var fs = document.documentElement;
+      if (fs.requestFullscreen) fs.requestFullscreen().catch(function(){});
+      else if (fs.webkitRequestFullscreen) fs.webkitRequestFullscreen();
+      splash.remove();
+
+      renderSwatches(); syncDesignControls(); applyAppearance();
+      renderItemsList(); renderDistractorTags();
+      answers={}; suggestedMarks={}; checked=false; selectedWord=null;
+      fsWords=buildWordBank();
+      renderActivity(); renderSlideNav();
+      document.body.classList.add('lbl-preview-only');
+      setTimeout(fitStageToScreen, 50);
+
+      document.addEventListener('fullscreenchange', function(){
+        if (!document.fullscreenElement && _stuMode) _stuGoBack();
+      });
+      document.addEventListener('webkitfullscreenchange', function(){
+        if (!document.webkitFullscreenElement && _stuMode) _stuGoBack();
+      });
+
+      var origExit = document.querySelector('.lbl-exit-float');
+      if (origExit) {
+        var newExit = origExit.cloneNode(false);
+        newExit.textContent = '← Exit';
+        origExit.parentNode.replaceChild(newExit, origExit);
+        newExit.addEventListener('click', function(ev){ ev.preventDefault(); ev.stopPropagation(); _stuGoBack(); });
+      }
+
+      $('lblStudentSubmitBtn').addEventListener('click', function(){
+        if (_stuSubmitDone) { _stuGoBack(); return; }
+        var _slideCount = state.activities.length;
+        var _missing = []; for (var _si=0;_si<_slideCount;_si++){if(!_stuSlideScores[_si])_missing.push(_si+1);}
+        if (_missing.length>0){alert(_slideCount>1?'Please check all slides first. Missing: Slide '+_missing.join(', Slide '):'Please check your answers first before submitting.');return;}
+        var _totCorrect=_stuSlideScores.reduce(function(s,x){return s+x.correct;},0);
+        var _totItems=_stuSlideScores.reduce(function(s,x){return s+x.total;},0);
+        var pct = Math.round((_totCorrect / _totItems) * 100);
+        var record = { pubId:_stuPubId, title:pub.title||'Activity', type:'PictureLabeling',
+          grading:pub.grading||'', deadline:pub.deadline||'',
+          score:_totCorrect, total:_totItems, percent:pct, retakes:_stuRetake,
+          pendingTeacherReview:true, submittedAt:new Date().toISOString() };
+        var idx = _stuProg.findIndex(function(r){ return r.pubId === _stuPubId; });
+        if (idx >= 0) _stuProg[idx] = record; else _stuProg.push(record);
+        try { localStorage.setItem('student_progress', JSON.stringify(_stuProg)); } catch(e){}
+        var notifs = [];
+        try { notifs = JSON.parse(localStorage.getItem('student_notifications') || '[]'); } catch(e){}
+        notifs.unshift({ id:'notif-'+Date.now(), type:'achievement',
+          title:'Activity Submitted! 🌟',
+          message:'You scored '+pct+'% (suggested) on "'+(pub.title||'Activity')+'"'+(_stuRetake>0?' after '+_stuRetake+' retake(s)':'')+'. Your teacher will confirm your final grade.',
+          isRead:false, createdAt:new Date().toISOString() });
+        try { localStorage.setItem('student_notifications', JSON.stringify(notifs)); } catch(e){}
+        var _stuRecordId = sessionStorage.getItem('student_record_id');
+        var _ansJson = JSON.stringify((function(){var all=[];_stuSlideScores.forEach(function(s,si){if(_slideCount>1){var sr=_stuSlideRetakes[si]||0;all.push({isSlideHeader:true,label:'Slide '+(si+1)+(sr>0?' ('+sr+' retake'+(sr>1?'s':'')+')':''),slideRetakes:sr,studentAnswer:'',correctAnswer:'',correct:null});}s.ansItems.forEach(function(item){all.push(Object.assign({},item));});});return all;})());
+        // Show final summary before going home
+        var _fi=pct>=100?'images/perfect.png':pct>=80?'images/goodjob.png':'images/tryagain.png';
+        var _fm=pct>=80?'Excellent work! 🌟':pct>=50?'Good effort! Keep practicing! ⭐':'Keep trying! Practice makes perfect! 💪';
+        $('lblModalEmoji').src=_fi; $('lblModalScore').textContent=_totCorrect+' / '+_totItems+' correct ('+pct+'%)'; $('lblModalMsg').textContent=_fm;
+        $('lblModalCloseBtn').style.display='none'; $('lblModalTryBtn').style.display='none';
+        $('lblStudentSubmitBtn').textContent='🏠 Go to Dashboard';
+        var _fbR=$('lblReviewRows'); _fbR.innerHTML='';
+        $('lblReviewList').style.display=_slideCount>1?'block':'none';
+        if(_slideCount>1){_stuSlideScores.forEach(function(s,si){var sp=Math.round((s.correct/s.total)*100);var sc=sp>=80?'#1f9d44':sp>=50?'#ca8a04':'#e23b54';var sr=_stuSlideRetakes[si]||0;var rd=document.createElement('div');rd.style.cssText='display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:13px;align-items:center;';rd.innerHTML='<span style="font-weight:600;">Slide '+(si+1)+(sr>0?' <span style="color:#e23b54;font-size:10px;">('+sr+'× retake)</span>':'')+'</span><span style="font-weight:700;color:'+sc+';">'+s.correct+'/'+s.total+' ('+sp+'%)</span>';_fbR.appendChild(rd);});}
+        $('lblModalOverlay').classList.add('show');
+        _stuSubmitDone=true;
+        if (pub.db_activity_id && pub.teacherId && _stuRecordId) {
+          fetch('../TEACHER_BACKEND/teacher_complete_activity.php', {
+            method: 'POST', keepalive: true,
+            body: new URLSearchParams({ teacher_id: pub.teacherId, student_id: _stuRecordId, activity_id: pub.db_activity_id, score: pct, total_items: _totItems, pub_id: _stuPubId||'', answers_json: _ansJson, retake_count: _stuRetake||0 })
+          });
+        }
+      });
+    });
+  }
+
+  _idb.load('pub_data_' + _stuPubId, function(err, saved){
+    if (saved) { applyStudentMode(saved); return; }
+    var ls = null;
+    try { ls = JSON.parse(localStorage.getItem('pub_data_' + _stuPubId) || 'null'); } catch(e){}
+    applyStudentMode(ls);
+  });
+})();
+
+/* ── SPOTLIGHT TOUR ── */
+(function(){
+  var STEPS=[
+    {get:function(){return document.querySelector('.lbl-left-col');},title:'📋 Step 1 of 10 — Activity Slides',desc:'Each slide is a separate Picture Labeling task. Click the arrows to switch slides and "+ Add Slide" to create more.',side:'right'},
+    {get:function(){return document.querySelector('.lbl-type');},title:'🏷️ Step 2 of 10 — Activity Type',desc:'This is a Picture Labeling activity. Learners look at a picture and type or select the correct label or word that names it.',side:'right'},
+    {get:function(){return $('lblItemsList');},title:'🖼️ Step 3 of 10 — Items List',desc:'Each item is a picture that needs a label. Upload a photo or use an emoji, then set the correct answer text.',side:'right'},
+    {get:function(){return document.querySelector('.lbl-item-card');},title:'📝 Step 4 of 10 — Picture Item Card',desc:'Each card has a picture to upload, the correct label, and optional hints. Set the answer exactly how the learner should type it.',side:'right'},
+    {get:function(){return $('lblAddItemBtn');},title:'➕ Step 5 of 10 — Add Picture',desc:'Click to add more pictures to the current slide. 3–5 items per slide works well for SPED learners.',side:'right'},
+    {get:function(){document.body.classList.remove('lbl-right-collapsed');return $('lblInstrInput');},title:'💬 Step 6 of 10 — Instruction Text',desc:'Type the direction here — e.g. "Isulat ang tamang pangalan ng bawat larawan." Shown at the top of the learner\'s screen.',side:'left'},
+    {get:function(){document.body.classList.remove('lbl-right-collapsed');return $('lblRightPanelFull');},title:'🎨 Step 7 of 10 — Design & Settings',desc:'Customize the look: background color, font, text size, and border style. Click "✓ Apply Changes" to preview it live.',side:'left'},
+    {get:function(){return $('lblPreviewBtn');},title:'🖥️ Step 8 of 10 — Fullscreen Preview',desc:'Opens the exact view your learner sees. Try typing in the labels yourself to test the activity.',side:'bottom'},
+    {get:function(){return $('lblDraftBtn');},title:'💾 Step 9 of 10 — Save Draft',desc:'Saves your progress. Drafts appear in your activity list so you can return and keep editing anytime.',side:'bottom'},
+    {get:function(){return $('lblPubBtn');},title:'🌐 Step 10 of 10 — Publish Activity',desc:'When ready, click Publish to assign this to a learner. Set the grading period and deadline — they can then open it from their portal.',side:'bottom'}
+  ];
+  var _cur=0,_sp=null,_ring=null,_tip=null;
+  function _placeSpot(el){var r=el.getBoundingClientRect(),p=8;var s={left:(r.left-p)+'px',top:(r.top-p)+'px',width:(r.width+p*2)+'px',height:(r.height+p*2)+'px'};['left','top','width','height'].forEach(function(k){_sp.style[k]=s[k];_ring.style[k]=s[k];});}
+  function _placeTip(el,side){var r=el.getBoundingClientRect(),gap=18,p=8;var tw=_tip.offsetWidth||290,th=_tip.offsetHeight||170;var vw=window.innerWidth,vh=window.innerHeight;var left,top;if(side==='right'){left=r.right+p+gap;top=r.top+(r.height-th)/2;}else if(side==='left'){left=r.left-p-gap-tw;top=r.top+(r.height-th)/2;}else{left=r.left+(r.width-tw)/2;top=r.bottom+p+gap;}left=Math.max(10,Math.min(vw-tw-10,left));top=Math.max(10,Math.min(vh-th-10,top));_tip.style.left=left+'px';_tip.style.top=top+'px';}
+  function _showStep(i){if(i<0||i>=STEPS.length){_endTour();return;}_cur=i;var s=STEPS[i],el;try{el=s.get();}catch(e){el=null;}if(!el){_showStep(i+1);return;}try{el.scrollIntoView({behavior:'smooth',block:'nearest',inline:'nearest'});}catch(e){}setTimeout(function(){_placeSpot(el);_sp.style.display=_ring.style.display=_tip.style.display='block';$('lblTourStep').textContent=s.title;$('lblTourDesc').textContent=s.desc;$('lblTourBack').style.visibility=i===0?'hidden':'visible';$('lblTourNext').textContent=i===STEPS.length-1?'✓ Tapos na':'Next →';setTimeout(function(){_placeTip(el,s.side);},20);},90);}
+  function _endTour(){if(_sp)_sp.style.display=_ring.style.display=_tip.style.display='none';}
+  function _startTour(){_sp=$('lblTourSpot');_ring=$('lblTourRing');_tip=$('lblTourTip');_showStep(0);}
+  $('lblHelpBtn').addEventListener('click',_startTour);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&_sp&&_sp.style.display!=='none')_endTour();});
+  window.addEventListener('load',function(){$('lblTourNext').addEventListener('click',function(){if(_cur>=STEPS.length-1)_endTour();else _showStep(_cur+1);});$('lblTourBack').addEventListener('click',function(){_showStep(_cur-1);});$('lblTourSkip').addEventListener('click',_endTour);});
+})();
+</script>
+<!-- TOUR ELEMENTS -->
+<div id="lblTourSpot"></div>
+<div id="lblTourRing"></div>
+<div id="lblTourTip">
+  <div id="lblTourStep"></div>
+  <div id="lblTourDesc"></div>
+  <div class="lbl-tour-row">
+    <button id="lblTourSkip" class="lbl-tour-action" type="button">✕ Skip</button>
+    <button id="lblTourBack" class="lbl-tour-action" type="button">← Back</button>
+    <button id="lblTourNext" class="lbl-tour-action" type="button">Next →</button>
+  </div>
+</div>
+</body>
+</html>

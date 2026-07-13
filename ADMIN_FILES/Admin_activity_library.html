@@ -8,7 +8,7 @@
   <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
   <title>SPED ALM - Activity Library</title>
   <link href="ADMIN_CSS/animations.css" rel="stylesheet" />
-  <link href="ADMIN_CSS/Admin_activity_library.css" rel="stylesheet" />
+  <link href="ADMIN_CSS/Admin_activity_library.css?v=2" rel="stylesheet" />
   <link
     href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;family=Nunito:wght@400;600;700;800;900&amp;family=Inter:wght@400;500;600&amp;display=swap"
     rel="stylesheet" />
@@ -100,7 +100,7 @@
         <button class="al-tpl-view-btn" type="button" onclick="document.getElementById('al-tpl-modal').style.display='flex'">
           <i class="fa-solid fa-layer-group"></i>
           <span>View Templates</span>
-          <span class="al-tpl-view-badge">3</span>
+          <span class="al-tpl-view-badge" id="al-tpl-badge">0</span>
         </button>
         <a class="admin-notif-btn" href="Admin_notif.html" title="Notifications" aria-label="Notifications">
           <i class="fa-regular fa-bell"></i>
@@ -117,7 +117,7 @@
         </div>
         <div class="al-stat-body">
           <span class="al-stat-label">Total Templates</span>
-          <span class="al-stat-num">3</span>
+          <span class="al-stat-num" id="stat-templates">0</span>
           <span class="al-stat-sub">Template types available</span>
         </div>
       </div>
@@ -151,6 +151,16 @@
           <span class="al-stat-sub">Using the system</span>
         </div>
       </div>
+      <div class="al-stat-card">
+        <div class="al-stat-icon-wrap al-si-teal">
+          <i class="fa-solid fa-paperclip"></i>
+        </div>
+        <div class="al-stat-body">
+          <span class="al-stat-label">Uploaded Files</span>
+          <span class="al-stat-num" id="stat-uploads">0</span>
+          <span class="al-stat-sub">Sent to learners</span>
+        </div>
+      </div>
     </div>
 
     <!-- ── TEACHER ACTIVITIES ── -->
@@ -167,9 +177,41 @@
             <i class="fa-solid fa-magnifying-glass"></i>
             <input id="al-search-input" placeholder="Search by title, type, or teacher..." type="text" oninput="applyFilter()" />
           </div>
-          <button class="al-filter-btn" type="button">
-            <i class="fa-solid fa-sliders"></i> Filters
-          </button>
+          <div style="position:relative;">
+            <button class="al-filter-btn" id="al-filter-toggle-btn" type="button" onclick="toggleFilterPanel()">
+              <i class="fa-solid fa-sliders"></i> Filters
+              <span id="al-filter-active-dot" style="display:none;width:7px;height:7px;background:#ef4444;border-radius:50%;margin-left:2px;"></span>
+            </button>
+            <!-- FILTER PANEL -->
+            <div id="al-filter-panel" style="display:none;position:absolute;right:0;top:calc(100% + 8px);z-index:500;background:#fff;border:1.5px solid #e5e7eb;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.12);width:300px;padding:18px 20px;font-family:'Poppins',sans-serif;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                <span style="font-size:13px;font-weight:700;color:#1e3a8a;">Filter Activities</span>
+                <button onclick="resetFilters()" type="button" style="font-size:11px;font-weight:600;color:#6366f1;background:none;border:none;cursor:pointer;padding:0;">Reset all</button>
+              </div>
+
+              <!-- Status -->
+              <div style="margin-bottom:14px;">
+                <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Status</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                  <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:#374151;cursor:pointer;"><input type="radio" name="al-f-status" value="" onchange="applyFilter()" checked style="accent-color:#6366f1;"> All</label>
+                  <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:#374151;cursor:pointer;"><input type="radio" name="al-f-status" value="Draft" onchange="applyFilter()" style="accent-color:#6366f1;"> Draft</label>
+                  <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:#374151;cursor:pointer;"><input type="radio" name="al-f-status" value="Published" onchange="applyFilter()" style="accent-color:#6366f1;"> Published</label>
+                </div>
+              </div>
+
+              <!-- Template Type -->
+              <div>
+                <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Template Type</div>
+                <div id="al-f-types" style="display:flex;flex-direction:column;gap:6px;">
+                  <!-- populated by JS -->
+                </div>
+              </div>
+
+              <div style="margin-top:16px;padding-top:14px;border-top:1px solid #f1f5f9;display:flex;justify-content:flex-end;">
+                <button onclick="toggleFilterPanel()" type="button" style="padding:7px 18px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;font-family:'Poppins',sans-serif;font-size:12px;font-weight:600;cursor:pointer;">Done</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -183,6 +225,9 @@
         </button>
         <button class="al-tab" id="al-tab-published" onclick="switchTab('published')" type="button">
           Published <span class="al-tc al-tc-green" id="al-count-published">0</span>
+        </button>
+        <button class="al-tab" id="al-tab-uploads" onclick="switchTab('uploads')" type="button">
+          Uploads <span class="al-tc al-tc-teal" id="al-count-uploads">0</span>
         </button>
       </div>
 
@@ -220,67 +265,14 @@
           <span class="al-tpl-modal-icon"><i class="fa-solid fa-layer-group"></i></span>
           <div>
             <h3 class="al-tpl-modal-title">Available Templates</h3>
-            <p class="al-tpl-modal-sub">3 template types teachers can use to build activities.</p>
+            <p class="al-tpl-modal-sub" id="al-tpl-modal-sub"></p>
           </div>
         </div>
         <button class="admin-modal-close" onclick="document.getElementById('al-tpl-modal').style.display='none'" type="button" title="Close" aria-label="Close">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
-      <div class="al-tpl-modal-body">
-
-        <!-- Picture Matching -->
-        <div class="al-tpl-row al-tplr-blue">
-          <div class="al-tplr-icon"><i class="fa-solid fa-puzzle-piece"></i></div>
-          <div class="al-tplr-content">
-            <div class="al-tplr-top">
-              <span class="al-tplr-name">Picture Matching</span>
-              <span class="al-tplr-type-badge al-tb-blue">Matching</span>
-            </div>
-            <p class="al-tplr-desc">Match images to words or categories. Builds vocabulary recognition and visual association skills for SPED learners.</p>
-            <div class="al-tplr-stats">
-              <span class="al-tplr-stat"><i class="fa-solid fa-pen-to-square"></i> <strong id="tu-matching">0</strong> teachers used</span>
-              <span class="al-tplr-dot">·</span>
-              <span class="al-tplr-stat al-tplr-stat-amber"><i class="fa-solid fa-file-pen"></i> <strong id="td-matching">0</strong> drafts</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Sorting -->
-        <div class="al-tpl-row al-tplr-purple">
-          <div class="al-tplr-icon"><i class="fa-solid fa-table-columns"></i></div>
-          <div class="al-tplr-content">
-            <div class="al-tplr-top">
-              <span class="al-tplr-name">Sorting / Categorization</span>
-              <span class="al-tplr-type-badge al-tb-green">Sorting</span>
-            </div>
-            <p class="al-tplr-desc">Sort items into groups or bins. Develops classification skills and improves critical thinking for learners with special needs.</p>
-            <div class="al-tplr-stats">
-              <span class="al-tplr-stat"><i class="fa-solid fa-pen-to-square"></i> <strong id="tu-sorting">0</strong> teachers used</span>
-              <span class="al-tplr-dot">·</span>
-              <span class="al-tplr-stat al-tplr-stat-amber"><i class="fa-solid fa-file-pen"></i> <strong id="td-sorting">0</strong> drafts</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Sequencing -->
-        <div class="al-tpl-row al-tplr-teal">
-          <div class="al-tplr-icon"><i class="fa-solid fa-arrow-down-1-9"></i></div>
-          <div class="al-tplr-content">
-            <div class="al-tplr-top">
-              <span class="al-tplr-name">Sequencing</span>
-              <span class="al-tplr-type-badge al-tb-teal">Sequencing</span>
-            </div>
-            <p class="al-tplr-desc">Arrange steps or images in correct order. Develops logical thinking, routines, and sequential memory for SPED learners.</p>
-            <div class="al-tplr-stats">
-              <span class="al-tplr-stat"><i class="fa-solid fa-pen-to-square"></i> <strong id="tu-sequencing">0</strong> teachers used</span>
-              <span class="al-tplr-dot">·</span>
-              <span class="al-tplr-stat al-tplr-stat-amber"><i class="fa-solid fa-file-pen"></i> <strong id="td-sequencing">0</strong> drafts</span>
-            </div>
-          </div>
-        </div>
-
-      </div>
+      <div class="al-tpl-modal-body" id="al-tpl-modal-body"></div>
       <div class="al-tpl-modal-footer">
         <button class="admin-close-btn" onclick="document.getElementById('al-tpl-modal').style.display='none'" type="button">
           Close
@@ -313,10 +305,57 @@
   </div>
 
   <script>
+    /* ══ TEMPLATE REGISTRY ══════════════════════════════════════════════════════
+       To add a new template: add one object here. Everything else auto-updates.
+       Fields: key (must match activity_type in DB), name, icon (FA class),
+               rowColor (blue|purple|teal), badgeColor (blue|green|teal), desc
+    ═══════════════════════════════════════════════════════════════════════════ */
+    var TEMPLATE_DEFS = [
+      { key: 'Matching',        name: 'Picture Matching',              icon: 'fa-puzzle-piece',     rowColor: 'blue',   badgeColor: 'blue',  desc: 'Match images to words or categories. Builds vocabulary recognition and visual association skills for SPED learners.' },
+      { key: 'Sorting',         name: 'Sorting / Categorization',      icon: 'fa-table-columns',    rowColor: 'purple', badgeColor: 'green', desc: 'Sort items into groups or bins. Develops classification skills and improves critical thinking for learners with special needs.' },
+      { key: 'Sequencing',      name: 'Sequencing',                    icon: 'fa-arrow-down-1-9',   rowColor: 'teal',   badgeColor: 'teal',  desc: 'Arrange steps or images in correct order. Develops logical thinking, routines, and sequential memory for SPED learners.' },
+      { key: 'CheckOrX',        name: 'Check or X',                    icon: 'fa-check-double',     rowColor: 'blue',   badgeColor: 'blue',  desc: 'Mark each item as correct (✓) or wrong (✗). Builds identification and decision-making skills for SPED learners.' },
+      { key: 'LetterID',        name: 'Letter / Sound Identification', icon: 'fa-magnifying-glass', rowColor: 'purple', badgeColor: 'green', desc: 'Identify beginning letters or sounds of words. Develops phonological awareness and early literacy skills.' },
+      { key: 'PictureLabeling', name: 'Picture Labeling',              icon: 'fa-tag',              rowColor: 'teal',   badgeColor: 'teal',  desc: 'Label parts of a picture by dragging words to the correct spots. Builds vocabulary and communication skills.' },
+      { key: 'WrittenResponse', name: 'Written Response',              icon: 'fa-pencil',           rowColor: 'blue',   badgeColor: 'blue',  desc: 'Answer questions with short written responses. Develops expressive communication and writing skills for SPED learners.' }
+    ];
+
+    function initTemplates() {
+      var count = TEMPLATE_DEFS.length;
+      var badge = document.getElementById('al-tpl-badge');
+      var stat  = document.getElementById('stat-templates');
+      var sub   = document.getElementById('al-tpl-modal-sub');
+      if (badge) badge.textContent = count;
+      if (stat)  stat.textContent  = count;
+      if (sub)   sub.textContent   = count + ' template type' + (count !== 1 ? 's' : '') + ' teachers can use to build activities.';
+
+      var body = document.getElementById('al-tpl-modal-body');
+      if (!body) return;
+      body.innerHTML = TEMPLATE_DEFS.map(function(t) {
+        var k = t.key.toLowerCase();
+        return '<div class="al-tpl-row al-tplr-' + t.rowColor + '">'
+          + '<div class="al-tplr-icon"><i class="fa-solid ' + t.icon + '"></i></div>'
+          + '<div class="al-tplr-content">'
+          +   '<div class="al-tplr-top">'
+          +     '<span class="al-tplr-name">' + esc(t.name) + '</span>'
+          +     '<span class="al-tplr-type-badge al-tb-' + t.badgeColor + '">' + esc(t.key) + '</span>'
+          +   '</div>'
+          +   '<p class="al-tplr-desc">' + esc(t.desc) + '</p>'
+          +   '<div class="al-tplr-stats">'
+          +     '<span class="al-tplr-stat"><i class="fa-solid fa-pen-to-square"></i> <strong id="tu-' + k + '">0</strong> teachers used</span>'
+          +     '<span class="al-tplr-dot">·</span>'
+          +     '<span class="al-tplr-stat al-tplr-stat-amber"><i class="fa-solid fa-file-pen"></i> <strong id="td-' + k + '">0</strong> drafts</span>'
+          +   '</div>'
+          + '</div></div>';
+      }).join('');
+    }
+
     var activitiesList = [];
-    var currentTab = 'all';
-    var PAGE_SIZE = 10;
+    var uploadsList    = [];
+    var currentTab  = 'all';
+    var PAGE_SIZE   = 10;
     var currentPage = 1;
+    var activeFilters = { status: '', types: [] };
 
     /* ── Helpers ── */
     function esc(s) {
@@ -359,10 +398,42 @@
               _isLocal:    false
             };
           });
-          afterLoad();
+          loadUploads();
         })
         .catch(function() {
           activitiesList = [];
+          loadUploads();
+        });
+    }
+
+    function loadUploads() {
+      fetch('ADMIN_BACKEND/admin_list_uploads.php?_t=' + Date.now())
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+          uploadsList = (res.uploads || []).map(function(u) {
+            var sizeKB  = u.file_size ? Math.round(u.file_size / 1024) : 0;
+            var sizeStr = sizeKB > 1024 ? (sizeKB / 1024).toFixed(1) + ' MB' : sizeKB + ' KB';
+            return {
+              id:           'upl_' + u.id,
+              upload_id:    u.id,
+              title:        u.title || 'Untitled Upload',
+              desc:         (u.student_name ? 'For: ' + u.student_name : '') + (u.description ? ' — ' + u.description : ''),
+              type:         'Upload',
+              teacherName:  u.teacher_name || '—',
+              teacherRole:  'SPED Teacher',
+              status:       'Published',
+              savedAt:      u.uploaded_at || '',
+              file_name:    u.file_name,
+              file_type:    u.file_type || '',
+              sizeStr:      sizeStr,
+              studentName:  u.student_name || '—',
+              _isUpload:    true
+            };
+          });
+          afterLoad();
+        })
+        .catch(function() {
+          uploadsList = [];
           afterLoad();
         });
     }
@@ -371,6 +442,7 @@
       updateStats();
       updateTabCounts();
       updateTemplateCards();
+      buildTypeCheckboxes();
       currentPage = 1;
       applyFilter();
     }
@@ -383,13 +455,14 @@
       document.getElementById('stat-drafts').textContent    = drafts;
       document.getElementById('stat-published').textContent = published;
       document.getElementById('stat-teachers').textContent  = teachers;
+      document.getElementById('stat-uploads').textContent   = uploadsList.length;
     }
 
     /* ── Update template cards ── */
     function updateTemplateCards() {
-      ['Matching', 'Sorting', 'Sequencing'].forEach(function(type) {
-        var key    = type.toLowerCase();
-        var all    = activitiesList.filter(function(a){ return a.type === type; });
+      TEMPLATE_DEFS.forEach(function(t) {
+        var key    = t.key.toLowerCase();
+        var all    = activitiesList.filter(function(a){ return a.type === t.key; });
         var drafts = all.filter(function(a){ return a.status === 'Draft'; }).length;
         var tNames = new Set(all.map(function(a){ return a.teacherName; }).filter(function(n){ return n && n !== '—'; }));
         var tuEl = document.getElementById('tu-' + key);
@@ -397,6 +470,63 @@
         if (tuEl) tuEl.textContent = tNames.size || '0';
         if (tdEl) tdEl.textContent = drafts + (drafts === 1 ? ' Draft' : ' Drafts');
       });
+    }
+
+    /* ── Filter panel ── */
+    function toggleFilterPanel() {
+      var panel = document.getElementById('al-filter-panel');
+      var isOpen = panel.style.display !== 'none';
+      panel.style.display = isOpen ? 'none' : 'block';
+    }
+
+    // Close panel when clicking outside
+    document.addEventListener('click', function(e) {
+      var panel = document.getElementById('al-filter-panel');
+      var btn   = document.getElementById('al-filter-toggle-btn');
+      if (panel && btn && !panel.contains(e.target) && !btn.contains(e.target)) {
+        panel.style.display = 'none';
+      }
+    });
+
+    function buildTypeCheckboxes() {
+      var types = TEMPLATE_DEFS.map(function(t) { return t.key; }).concat(['Upload']);
+      var container = document.getElementById('al-f-types');
+      if (!container || container.children.length > 0) return; // don't reset if already built
+      container.innerHTML = types.map(function(t) {
+        return '<label style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:500;color:#374151;cursor:pointer;">'
+          + '<input type="checkbox" class="al-f-type-cb" value="' + t + '" onchange="applyFilter()" style="accent-color:#6366f1;width:14px;height:14px;cursor:pointer;"> ' + t
+          + '</label>';
+      }).join('');
+    }
+
+    function getActiveTypeFilters() {
+      var checked = document.querySelectorAll('.al-f-type-cb:checked');
+      return Array.prototype.map.call(checked, function(cb) { return cb.value; });
+    }
+
+    function getActiveStatusFilter() {
+      var radio = document.querySelector('input[name="al-f-status"]:checked');
+      return radio ? radio.value : '';
+    }
+
+    function updateFilterDot() {
+      var types  = getActiveTypeFilters();
+      var status = getActiveStatusFilter();
+      var dot    = document.getElementById('al-filter-active-dot');
+      var btn    = document.getElementById('al-filter-toggle-btn');
+      var active = types.length > 0 || status !== '';
+      if (dot) dot.style.display = active ? 'inline-block' : 'none';
+      if (btn) btn.style.borderColor = active ? '#6366f1' : '';
+      if (btn) btn.style.color       = active ? '#6366f1' : '';
+    }
+
+    function resetFilters() {
+      document.querySelectorAll('.al-f-type-cb').forEach(function(cb) { cb.checked = false; });
+      var allRadio = document.querySelector('input[name="al-f-status"][value=""]');
+      if (allRadio) allRadio.checked = true;
+      updateFilterDot();
+      currentPage = 1;
+      applyFilter();
     }
 
     /* ── Tab switching ── */
@@ -411,35 +541,67 @@
     function updateTabCounts() {
       var d = activitiesList.filter(function(a){ return a.status === 'Draft'; }).length;
       var p = activitiesList.filter(function(a){ return a.status === 'Published'; }).length;
-      document.getElementById('al-count-all').textContent       = activitiesList.length;
+      document.getElementById('al-count-all').textContent       = activitiesList.length + uploadsList.length;
       document.getElementById('al-count-draft').textContent     = d;
       document.getElementById('al-count-published').textContent = p;
+      document.getElementById('al-count-uploads').textContent   = uploadsList.length;
     }
 
     /* ── Filter + paginate ── */
     function applyFilter() {
-      var q = (document.getElementById('al-search-input').value || '').toLowerCase();
+      var q       = (document.getElementById('al-search-input').value || '').toLowerCase();
+      var types   = getActiveTypeFilters();
+      var status  = getActiveStatusFilter();
+      updateFilterDot();
 
-      var filtered = activitiesList.filter(function(a) {
-        var matchTab = currentTab === 'all' ||
-          (currentTab === 'draft'     && a.status === 'Draft') ||
-          (currentTab === 'published' && a.status === 'Published');
-        var matchQ = !q ||
-          a.title.toLowerCase().includes(q) ||
-          a.type.toLowerCase().includes(q)  ||
-          a.teacherName.toLowerCase().includes(q);
-        return matchTab && matchQ;
-      });
+      function matchesSearch(a) {
+        return !q ||
+          (a.title       || '').toLowerCase().includes(q) ||
+          (a.type        || '').toLowerCase().includes(q) ||
+          (a.teacherName || '').toLowerCase().includes(q) ||
+          (a.studentName || '').toLowerCase().includes(q);
+      }
 
+      function matchesType(a) {
+        return types.length === 0 || types.indexOf(a.type) >= 0;
+      }
+
+      function matchesStatus(a) {
+        if (currentTab !== 'all') return true; // tab already implies status; don't double-filter
+        if (!status) return true;
+        return (a.status || '').toLowerCase() === status.toLowerCase();
+      }
+
+      var filtered;
+      if (currentTab === 'uploads') {
+        filtered = uploadsList.filter(function(u) {
+          return matchesSearch(u) && matchesType(u) && matchesStatus(u);
+        });
+      } else {
+        filtered = activitiesList.filter(function(a) {
+          var matchTab = currentTab === 'all' ||
+            (currentTab === 'draft'     && a.status === 'Draft') ||
+            (currentTab === 'published' && a.status === 'Published');
+          return matchTab && matchesSearch(a) && matchesType(a) && matchesStatus(a);
+        });
+        if (currentTab === 'all') {
+          var filteredUploads = uploadsList.filter(function(u) {
+            return matchesSearch(u) && matchesType(u) && matchesStatus(u);
+          });
+          filtered = filtered.concat(filteredUploads);
+        }
+      }
+
+      currentPage = 1;
       renderTable(filtered);
     }
 
     /* ── Render table ── */
-    var TYPE_BADGE = {
-      'Matching':   'al-tb-blue',
-      'Sorting':    'al-tb-green',
-      'Sequencing': 'al-tb-teal'
-    };
+    var TYPE_BADGE = (function() {
+      var map = {};
+      TEMPLATE_DEFS.forEach(function(t){ map[t.key] = 'al-tb-' + t.badgeColor; });
+      return map;
+    }());
 
     function renderTable(activities) {
       var tbody  = document.getElementById('al-tbody');
@@ -447,8 +609,9 @@
       var total  = activities.length;
 
       if (total === 0) {
-        var msg = currentTab === 'draft' ? 'No drafts saved yet by teachers.'
-          : currentTab === 'published'   ? 'No published activities yet.'
+        var msg = currentTab === 'draft'     ? 'No drafts saved yet by teachers.'
+          : currentTab === 'published'       ? 'No published activities yet.'
+          : currentTab === 'uploads'         ? 'No uploaded files yet.'
           : 'No activities found. Teachers need to save or publish activities first.';
         tbody.innerHTML =
           '<tr><td colspan="6" class="al-empty-td">'
@@ -469,9 +632,53 @@
 
       tbody.innerHTML = page.map(function(a) {
         var dt      = formatDate(a.savedAt);
-        var typeCls = TYPE_BADGE[a.type] || 'al-tb-gray';
+        var typeCls = TYPE_BADGE[a.type] || 'al-tb-teal';
         var isDraft = a.status === 'Draft';
         var ini     = initials(a.teacherName);
+
+        if (a._isUpload) {
+          var mime = a.file_type || '';
+          var fileIcon = mime.indexOf('pdf') >= 0 ? 'fa-file-pdf'
+            : mime.indexOf('image') >= 0          ? 'fa-file-image'
+            : mime.indexOf('word') >= 0 || mime.indexOf('document') >= 0 ? 'fa-file-word'
+            : mime.indexOf('video') >= 0           ? 'fa-file-video'
+            : mime.indexOf('audio') >= 0           ? 'fa-file-audio'
+            : 'fa-file';
+          var fileUrl = '../TEACHER_FILES/uploads/materials/' + esc(a.file_name);
+          return '<tr>'
+            + '<td>'
+            +   '<div class="al-td-title">'
+            +     '<span class="al-row-file-icon al-rfi-teal"><i class="fa-solid ' + fileIcon + '"></i></span>'
+            +     '<span class="al-title-wrap">'
+            +       '<span class="al-title-main">' + esc(a.title) + '</span>'
+            +       '<span class="al-title-sub">📎 ' + esc(a.sizeStr) + ' · For: ' + esc(a.studentName) + '</span>'
+            +     '</span>'
+            +   '</div>'
+            + '</td>'
+            + '<td><span class="al-type-badge al-tb-teal">Upload</span></td>'
+            + '<td>'
+            +   '<div class="al-td-teacher">'
+            +     '<span class="al-teacher-av">' + esc(ini) + '</span>'
+            +     '<span class="al-teacher-wrap">'
+            +       '<span class="al-teacher-name">' + esc(a.teacherName) + '</span>'
+            +       '<span class="al-teacher-role">SPED Teacher</span>'
+            +     '</span>'
+            +   '</div>'
+            + '</td>'
+            + '<td><span class="al-status al-status-pub"><span class="al-dot al-dot-green"></span>Published</span></td>'
+            + '<td>'
+            +   '<div class="al-td-date">'
+            +     '<span class="al-date-main">' + dt.date + '</span>'
+            +     (dt.time ? '<span class="al-date-time">' + dt.time + '</span>' : '')
+            +   '</div>'
+            + '</td>'
+            + '<td>'
+            +   '<div class="al-td-actions">'
+            +     '<a class="al-view-btn" href="' + fileUrl + '" target="_blank" rel="noopener" style="text-decoration:none;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open</a>'
+            +   '</div>'
+            + '</td>'
+            + '</tr>';
+        }
 
         return '<tr>'
           + '<td>'
@@ -611,6 +818,7 @@
         });
       });
 
+      initTemplates();
       loadActivities();
     });
   </script>

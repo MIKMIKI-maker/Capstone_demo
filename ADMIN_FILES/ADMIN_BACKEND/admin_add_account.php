@@ -9,7 +9,8 @@ if (!$conn) {
 }
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $fullName = isset($_POST['enter_full_name']) ? trim($_POST['enter_full_name']) : '';
+    $firstName = isset($_POST['enter_first_name']) ? trim($_POST['enter_first_name']) : '';
+    $lastName  = isset($_POST['enter_last_name'])  ? trim($_POST['enter_last_name'])  : '';
     $email = isset($_POST['enter_email_address']) ? trim($_POST['enter_email_address']) : '';
     $role = isset($_POST['enter_role']) ? trim($_POST['enter_role']) : 'teacher';
     $condition = '';
@@ -28,21 +29,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $assigned_teacher_id = ($role === 'student' && !empty($_POST['assigned_teacher_id'])) ? intval($_POST['assigned_teacher_id']) : 0;
     $parent_name_val = ($role === 'student' && isset($_POST['enter_parent_name'])) ? trim($_POST['enter_parent_name']) : '';
 
-    if ($fullName === '' || $email === '') {
-        echo json_encode(['success' => false, 'message' => 'Full name and email are required']);
+    if ($firstName === '' || $email === '') {
+        echo json_encode(['success' => false, 'message' => 'First name and email are required']);
         $conn->close();
         exit;
     }
 
-    if (!preg_match('/^[A-Za-z0-9._%+-]+@spedalm\.edu\.ph$/', $email)) {
-        echo json_encode(['success' => false, 'message' => 'Email domain not allowed. Use @spedalm.edu.ph']);
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        echo json_encode(['success' => false, 'message' => 'Please enter a valid email address']);
         $conn->close();
         exit;
     }
 
-    $nameParts = preg_split('/\s+/', $fullName, 2, PREG_SPLIT_NO_EMPTY);
-    $firstName = isset($nameParts[0]) ? $nameParts[0] : '';
-    $lastName = isset($nameParts[1]) ? $nameParts[1] : '';
+    $fullName = trim($firstName . ' ' . $lastName);
 
     $schoolName = 'Mamatid Elementary School';
     $status = 'inactive';

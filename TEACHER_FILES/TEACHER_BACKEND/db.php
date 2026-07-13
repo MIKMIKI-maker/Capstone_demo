@@ -4,12 +4,12 @@ ini_set('display_errors', 0);
 mysqli_report(MYSQLI_REPORT_OFF);
 
 function getTeacherDatabaseConnection() {
-    $servername = "localhost";
+    $servername = "127.0.0.1";
     $db_username = "root";
     $db_password = "";
     $database = "spedalm_db";
 
-    $conn = new mysqli($servername, $db_username, $db_password);
+    $conn = new mysqli($servername, $db_username, $db_password, '', 3307);
     if ($conn->connect_error) {
         return null;
     }
@@ -188,6 +188,35 @@ function getTeacherDatabaseConnection() {
         UNIQUE KEY unique_assignment (activity_id, student_id),
         INDEX idx_student (student_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    // Activity submissions — stores student item-by-item answers + teacher assessment
+    $conn->query("CREATE TABLE IF NOT EXISTS activity_submissions (
+        id               INT AUTO_INCREMENT PRIMARY KEY,
+        teacher_id       INT NOT NULL,
+        student_id       INT NOT NULL,
+        activity_id      INT NOT NULL,
+        pub_id           VARCHAR(100) DEFAULT NULL,
+        score            INT DEFAULT 0,
+        total_items      INT DEFAULT 0,
+        retake_count     INT DEFAULT 0,
+        answers_json     LONGTEXT DEFAULT NULL,
+        assistance_level VARCHAR(100) DEFAULT NULL,
+        teacher_note     TEXT DEFAULT NULL,
+        finalized_score  INT DEFAULT NULL,
+        is_finalized     TINYINT(1) DEFAULT 0,
+        submitted_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        finalized_at     TIMESTAMP NULL DEFAULT NULL,
+        FOREIGN KEY (teacher_id)  REFERENCES teacher_accounts(id)   ON DELETE CASCADE,
+        FOREIGN KEY (student_id)  REFERENCES students(id)           ON DELETE CASCADE,
+        FOREIGN KEY (activity_id) REFERENCES teacher_activities(id) ON DELETE CASCADE,
+        UNIQUE KEY unique_submission (student_id, activity_id),
+        INDEX idx_teacher_activity (teacher_id, activity_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    // Migration: add retake_count if missing
+    $rc_col = $conn->query("SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='activity_submissions' AND COLUMN_NAME='retake_count'");
+    if ($rc_col && $rc_col->fetch_assoc()['cnt'] == 0) {
+        $conn->query("ALTER TABLE activity_submissions ADD COLUMN retake_count INT DEFAULT 0 AFTER total_items");
+    }
 
     // Personal task/checklist notes for teacher dashboard
     $conn->query("CREATE TABLE IF NOT EXISTS teacher_tasks (

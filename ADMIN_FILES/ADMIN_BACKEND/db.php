@@ -4,7 +4,7 @@ ini_set('display_errors', '0');
 mysqli_report(MYSQLI_REPORT_OFF);
 
 function getDatabaseConnection() {
-    $conn = new mysqli("localhost", "root", "", "");
+    $conn = new mysqli("127.0.0.1", "root", "", "", 3307);
     if ($conn->connect_error) { return null; }
 
     $conn->query("CREATE DATABASE IF NOT EXISTS `spedalm_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");

@@ -185,11 +185,12 @@
                         <th>Type · Grading</th>
                         <th>Score</th>
                         <th>Retakes</th>
+                        <th>Assistance Level</th>
                         <th>Status</th>
                     </tr>
                 </thead>
                 <tbody id="historyBody">
-                    <tr><td class="student-history-empty" colspan="6">No activity history yet.</td></tr>
+                    <tr><td class="student-history-empty" colspan="7">No activity history yet.</td></tr>
                 </tbody>
             </table>
         </div>
@@ -253,10 +254,16 @@
             perfList.innerHTML = activities.map(function(r) {
                 var sc = r.score || 0;
                 var col = scoreColor(sc);
+                var scoreLabel = sc + '%';
+                if (r.is_finalized && r.finalized_score !== null) {
+                    scoreLabel = r.finalized_score + '%';
+                    col = scoreColor(r.finalized_score);
+                    sc = r.finalized_score;
+                }
                 return '<div style="padding:10px 0;border-bottom:1px solid #f1f5f9;">'
                     + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
-                    + '<span style="font-weight:700;font-size:14px;color:#1e293b;">' + r.activity_title + '</span>'
-                    + '<span style="font-weight:800;font-size:15px;color:' + col + ';">' + sc + '%</span>'
+                    + '<span style="font-weight:700;font-size:14px;color:#1e293b;">' + r.activity_title + (r.is_finalized ? ' <span style="font-size:10px;background:#dbeafe;color:#1d4ed8;padding:1px 6px;border-radius:8px;font-weight:600;">Finalized</span>' : '') + '</span>'
+                    + '<span style="font-weight:800;font-size:15px;color:' + col + ';">' + scoreLabel + '</span>'
                     + '</div>'
                     + '<div style="background:#e2e8f0;border-radius:6px;height:8px;overflow:hidden;">'
                     + '<div style="width:' + sc + '%;height:100%;background:' + col + ';border-radius:6px;transition:width .5s;"></div>'
@@ -275,17 +282,36 @@
             tbody.innerHTML = activities.map(function(r) {
                 var sc = r.score || 0;
                 var col = scoreColor(sc);
+                var scoreDisplay = sc + '%';
+                if (r.is_finalized && r.finalized_score !== null) {
+                    scoreDisplay = r.finalized_score + '% <span style="font-size:10px;font-weight:600;background:#dbeafe;color:#1d4ed8;padding:1px 6px;border-radius:8px;margin-left:3px;">Teacher Final</span>';
+                }
                 var badge = sc >= 80
                     ? '<span style="background:#dcfce7;color:#16a34a;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;">Passed</span>'
                     : sc >= 50
                     ? '<span style="background:#fef9c3;color:#ca8a04;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;">Fair</span>'
                     : '<span style="background:#fee2e2;color:#ef4444;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;">Needs Practice</span>';
+                var retakes = parseInt(r.retake_count) || 0;
+                var retakeCell = retakes > 0 ? retakes + 'x' : '—';
+                // Build per-slide retake breakdown if multi-slide answers exist
+                try {
+                  var ans = r.answers_json ? JSON.parse(r.answers_json) : [];
+                  var headers = ans.filter(function(a){ return a.isSlideHeader && a.slideRetakes > 0; });
+                  if (headers.length > 0) {
+                    var parts = headers.map(function(h){ return h.label + ': ' + h.slideRetakes + '×'; });
+                    retakeCell = (retakes > 0 ? retakes + 'x' : '0x') + ' <span title="' + escStr(parts.join(', ')) + '" style="cursor:help;color:#7c3aed;font-size:10px;">(' + parts.length + ' slide' + (parts.length > 1 ? 's' : '') + ')</span>';
+                  }
+                } catch(e){}
+                var assistCell = r.assistance_level
+                    ? '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:#eff6ff;color:#1d4ed8;">' + escStr(r.assistance_level) + '</span>'
+                    : '—';
                 return '<tr>'
                     + '<td>' + fmtDate(r.assessment_date) + '</td>'
                     + '<td style="font-weight:600;">' + r.activity_title + '</td>'
                     + '<td>' + (r.subject || '—') + '</td>'
-                    + '<td style="font-weight:800;color:' + col + ';">' + sc + '%</td>'
-                    + '<td>—</td>'
+                    + '<td style="font-weight:800;color:' + col + ';">' + scoreDisplay + '</td>'
+                    + '<td style="text-align:center;">' + retakeCell + '</td>'
+                    + '<td>' + assistCell + '</td>'
                     + '<td>' + badge + '</td>'
                     + '</tr>';
             }).join('');
@@ -308,7 +334,9 @@
                     var dateStr  = (typeof n === 'object' && n.created_at)
                         ? new Date(n.created_at).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})
                         : '';
-                    notesHtml += '<div style="background:#f0f9ff;border-left:3px solid #3b82f6;border-radius:0 10px 10px 0;padding:12px 14px;">'
+                    var actTitle = (typeof n === 'object' && n.activity_title) ? n.activity_title : '';
+                notesHtml += '<div style="background:#f0f9ff;border-left:3px solid #3b82f6;border-radius:0 10px 10px 0;padding:12px 14px;">'
+                        + (actTitle ? '<p style="font-size:11px;font-weight:700;color:#3b82f6;margin:0 0 5px;text-transform:uppercase;letter-spacing:.04em;">📋 ' + escStr(actTitle) + '</p>' : '')
                         + '<p style="font-size:13px;color:#1e293b;line-height:1.6;margin:0;">' + escStr(noteText) + '</p>'
                         + (dateStr ? '<p style="font-size:11px;color:#94a3b8;margin:6px 0 0;">' + dateStr + '</p>' : '')
                         + '</div>';
@@ -381,6 +409,7 @@
     document.addEventListener('visibilitychange', function(){ if (!document.hidden) loadProgress(); });
     loadProgress();
     </script>
+<script>(function(){var _id=sessionStorage.getItem('student_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>
 </body>
 
 </html>

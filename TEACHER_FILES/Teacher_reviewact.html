@@ -1,28 +1,95 @@
-﻿<!DOCTYPE html>
-
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="utf-8" />
-    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
-    <title>Review Activities – SPED ALM</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap"
-        rel="stylesheet" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
-    <link href="TEACHER_CSS/Teacher_reviewact.css" rel="stylesheet" />
-</head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
+  <title>Submission Review – SPED ALM</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
+  <link href="TEACHER_CSS/Teacher_reviewact.css" rel="stylesheet" />
+  <style>
+    /* ── Tab bar ── */
+    .rv-tabs { display:flex; gap:4px; border-bottom:2px solid #e2e8f0; margin-bottom:22px; }
+    .rv-tab { padding:11px 22px; font-size:13px; font-weight:600; color:#64748b; border:none; background:none; cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-2px; border-radius:8px 8px 0 0; transition:.18s; }
+    .rv-tab.active { color:#1d4ed8; border-bottom-color:#1d4ed8; background:#eff6ff; }
+    .rv-tab-panel { display:none; }
+    .rv-tab-panel.active { display:block; }
 
+    /* ── Activity header strip ── */
+    .rv-act-strip { background:#fff; border-radius:14px; padding:18px 22px; border:1px solid #e2e8f0; margin-bottom:22px; display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+    .rv-act-title { font-size:17px; font-weight:700; color:#1e293b; flex:1; min-width:180px; }
+    .rv-type-badge { font-size:12px; font-weight:700; padding:5px 13px; border-radius:20px; background:#dbeafe; color:#1d4ed8; white-space:nowrap; }
+
+    /* ── Student cards grid ── */
+    .rv-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:14px; }
+    .rv-card { background:#fff; border-radius:14px; border:1px solid #e2e8f0; padding:18px 18px 14px; display:flex; flex-direction:column; gap:10px; box-shadow:0 2px 8px rgba(0,0,0,.04); }
+    .rv-card-top { display:flex; align-items:center; gap:12px; }
+    .rv-avatar { width:42px; height:42px; border-radius:50%; background:#dbeafe; color:#1d4ed8; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; flex-shrink:0; }
+    .rv-card-name { font-size:14px; font-weight:700; color:#1e293b; }
+    .rv-card-sub  { font-size:11px; color:#94a3b8; margin-top:1px; }
+    .rv-score-badge { display:inline-block; font-size:12px; font-weight:700; padding:3px 10px; border-radius:20px; }
+    .rv-score-green { background:#d1fae5; color:#065f46; }
+    .rv-score-yellow { background:#fef9c3; color:#713f12; }
+    .rv-score-red   { background:#fee2e2; color:#991b1b; }
+    .rv-tag         { display:inline-block; font-size:11px; font-weight:600; padding:2px 9px; border-radius:20px; background:#f1f5f9; color:#475569; }
+    .rv-tag-finalized { background:#d1fae5; color:#065f46; }
+    .rv-card-actions { display:flex; justify-content:flex-end; }
+    .rv-btn-review { font-size:12px; font-weight:700; padding:7px 16px; border-radius:8px; background:#1d4ed8; color:#fff; border:none; cursor:pointer; transition:.15s; }
+    .rv-btn-review:hover { background:#1e40af; }
+    .rv-empty { text-align:center; padding:48px 20px; color:#94a3b8; font-size:14px; }
+    .rv-empty i { font-size:36px; margin-bottom:10px; display:block; }
+
+    /* ── Review modal ── */
+    .rv-modal-bg { position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; padding:16px; }
+    .rv-modal-bg.open { display:flex; }
+    .rv-modal { background:#fff; border-radius:18px; width:100%; max-width:680px; max-height:90vh; overflow-y:auto; padding:28px 28px 24px; position:relative; }
+    .rv-modal-close { position:absolute; top:14px; right:16px; background:none; border:none; font-size:20px; color:#64748b; cursor:pointer; line-height:1; }
+    .rv-modal-close:hover { color:#1e293b; }
+    .rv-modal-title { font-size:16px; font-weight:700; color:#1e293b; margin-bottom:4px; }
+    .rv-modal-score { font-size:13px; color:#64748b; margin-bottom:18px; }
+
+    /* ── Item table ── */
+    .rv-tbl { width:100%; border-collapse:collapse; font-size:13px; margin-bottom:22px; }
+    .rv-tbl th { text-align:left; padding:8px 10px; background:#f8fafc; color:#64748b; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid #e2e8f0; }
+    .rv-tbl td { padding:9px 10px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+    .rv-tbl tr:last-child td { border-bottom:none; }
+    .rv-tbl .rv-ok  { color:#16a34a; font-weight:700; }
+    .rv-tbl .rv-bad { color:#dc2626; font-weight:700; }
+
+    /* ── Assistance level grid ── */
+    .rv-sect-label { font-size:12px; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px; }
+    .rv-assist-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:20px; }
+    .rv-assist-card { display:flex; align-items:center; gap:9px; padding:10px 12px; border-radius:10px; border:2px solid #e2e8f0; cursor:pointer; font-size:13px; font-weight:500; color:#475569; transition:.15s; }
+    .rv-assist-card:hover { border-color:#93c5fd; }
+    .rv-assist-card input[type=radio] { accent-color:#1d4ed8; width:15px; height:15px; flex-shrink:0; }
+    .rv-assist-card.selected { border-color:#1d4ed8; background:#eff6ff; color:#1d4ed8; font-weight:600; }
+
+    /* ── Notes + score ── */
+    .rv-notes { width:100%; border:1.5px solid #e2e8f0; border-radius:10px; padding:10px 12px; font-size:13px; font-family:'Poppins',sans-serif; resize:vertical; min-height:72px; color:#1e293b; margin-bottom:16px; outline:none; }
+    .rv-notes:focus { border-color:#93c5fd; }
+    .rv-final-row { display:flex; align-items:center; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+    .rv-final-label { font-size:13px; font-weight:600; color:#1e293b; }
+    .rv-final-input { width:90px; border:1.5px solid #e2e8f0; border-radius:9px; padding:8px 12px; font-size:14px; font-weight:700; text-align:center; font-family:'Poppins',sans-serif; outline:none; color:#1e293b; }
+    .rv-final-input:focus { border-color:#93c5fd; }
+    .rv-final-hint { font-size:12px; color:#94a3b8; }
+    .rv-save-btn { width:100%; padding:13px; border:none; border-radius:11px; background:#1d4ed8; color:#fff; font-size:14px; font-weight:700; cursor:pointer; transition:.15s; font-family:'Poppins',sans-serif; }
+    .rv-save-btn:hover { background:#1e40af; }
+    .rv-save-btn:disabled { background:#93c5fd; cursor:not-allowed; }
+  </style>
+</head>
 <body>
+
+<!-- Loading screen -->
 <div id="spedLoading" style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 60%,#2563eb 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .5s ease;pointer-events:all;">
   <img src="../ASSETS/logo.png" alt="SPED ALM" onerror="this.style.display='none'" style="width:88px;height:88px;border-radius:22px;background:#fff;padding:6px;box-shadow:0 10px 36px rgba(0,0,0,.35);animation:spedLdPulse 2s ease-in-out infinite;">
-  <p style="color:#fff;font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;margin:0;letter-spacing:1px;text-shadow:0 2px 8px rgba(0,0,0,.2);">SPED ALM</p>
+  <p style="color:#fff;font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;margin:0;letter-spacing:1px;">SPED ALM</p>
   <div style="display:flex;gap:10px;align-items:center;">
     <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite 0s;"></span>
     <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .18s;"></span>
     <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .36s;"></span>
   </div>
-  <p style="color:rgba(255,255,255,.65);font-family:'Poppins',sans-serif;font-size:13px;font-weight:400;margin:0;">Loading, please wait...</p>
+  <p style="color:rgba(255,255,255,.65);font-family:'Poppins',sans-serif;font-size:13px;margin:0;">Loading, please wait...</p>
 </div>
 <style>
 @keyframes spedLdBounce{0%,80%,100%{transform:translateY(0);opacity:.5}40%{transform:translateY(-16px);opacity:1}}
@@ -30,202 +97,412 @@
 </style>
 <script>
 (function(){
-  function hideLoader(){
-    var e=document.getElementById('spedLoading');
-    if(!e) return;
-    e.style.opacity='0';
-    e.style.pointerEvents='none';
-    setTimeout(function(){ if(e.parentNode) e.parentNode.removeChild(e); }, 520);
-  }
-  if(document.readyState==='complete'){ setTimeout(hideLoader,200); }
-  else { window.addEventListener('load', function(){ setTimeout(hideLoader,200); }); }
+  function hideLoader(){var e=document.getElementById('spedLoading');if(!e)return;e.style.opacity='0';e.style.pointerEvents='none';setTimeout(function(){if(e.parentNode)e.parentNode.removeChild(e);},520);}
+  if(document.readyState==='complete'){setTimeout(hideLoader,200);}else{window.addEventListener('load',function(){setTimeout(hideLoader,200);});}
 })();
 </script>
-    <div class="teacher-app-wrapper">
-        <aside class="teacher-sidebar">
-            <div class="teacher-sidebar-logo">
-                <img alt="SPED ALM Logo" class="teacher-sidebar-logo-img" src="../ASSETS/logo.png" />
-                <div class="teacher-sidebar-logo-text">
-                    <span class="teacher-sidebar-title">SPED ALM</span>
-                    <span class="teacher-sidebar-sub">Teacher Portal</span>
-                </div>
-            </div>
-            <nav class="teacher-sidebar-nav">
-                <a class="teacher-nav-item" href="Teacher_dashboard.html">
-                    <i class="fa-solid fa-table-cells-large"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a class="teacher-nav-item active" href="Teacher_IEP.html">
-                    <i class="fa-solid fa-file-circle-plus"></i>
-                    <span>IEP Materials</span>
-                    <i class="fa-solid fa-chevron-right teacher-nav-arrow"></i>
-                </a>
-                <a class="teacher-nav-item" href="Teacher_learners.html">
-                    <i class="fa-solid fa-users"></i>
-                    <span>My Learners</span>
-                </a>
-                <a class="teacher-nav-item" href="Teacher_report.html">
-                    <i class="fa-solid fa-chart-column"></i>
-                    <span>Reports</span>
-                </a>
-                <a class="teacher-nav-item" href="Teacher_settings.html">
-                    <i class="fa-solid fa-gear"></i>
-                    <span>Settings</span>
-                </a>
-            </nav>
-            <div class="teacher-sidebar-footer">
-                <div class="teacher-profile">
-                    <div class="teacher-avatar" id="teacher-avatar-letter">T</div>
-                    <div class="teacher-info">
-                        <span class="teacher-name" id="teacher-name-sidebar">Teacher</span>
-                        <span class="teacher-role">SPED Teacher</span>
-                    </div>
-                </div>
-                <a class="teacher-signout-btn" href="#" id="teacher-signout-btn" onclick="var _id=sessionStorage.getItem('admin_id');fetch('../ADMIN_FILES/ADMIN_BACKEND/logout.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'admin_id='+encodeURIComponent(_id||'')}).finally(function(){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html';});return false;">
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                    <span>Sign Out</span>
-                </a>
-            </div>
-        </aside>
-        <main class="teacher-main-content">
-            <header class="teacher-topbar">
-                <div class="teacher-back-link">
-                    <a class="btn-back" href="Teacher_activies.html">
-                        <i class="fa-solid fa-arrow-left"></i>
-                        Back to Review Activities
-                    </a>
-                </div>
-                <div class="teacher-topbar-right">
-                    <a class="teacher-notif-btn" href="Teacher_notif.html">
-                        <i class="fa-regular fa-bell"></i>
-                        <span class="teacher-notif-badge"></span>
-                    </a>
-                </div>
-            </header>
-            <div class="teacher-page-header">
-                <h1 class="teacher-page-title" id="activity-title">Loading...</h1>
-                <p class="teacher-page-sub" id="activity-meta">View and manage learning activity details</p>
-            </div>
-            <!-- ACTIVITY DETAIL CARD -->
-            <div id="activity-detail-wrap" style="display:none;">
-                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px;">
-                    <div style="background:#f0f7ff;border-radius:10px;padding:14px 18px;">
-                        <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.05em;">Category</div>
-                        <div style="font-weight:600;color:#1e293b;margin-top:4px;" id="detail-subject">—</div>
-                    </div>
-                    <div style="background:#f0fdf4;border-radius:10px;padding:14px 18px;">
-                        <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.05em;">Grade Level</div>
-                        <div style="font-weight:600;color:#1e293b;margin-top:4px;" id="detail-grade">—</div>
-                    </div>
-                    <div style="background:#fff7ed;border-radius:10px;padding:14px 18px;">
-                        <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.05em;">Difficulty</div>
-                        <div style="font-weight:600;color:#1e293b;margin-top:4px;" id="detail-difficulty">—</div>
-                    </div>
-                    <div style="background:#fdf4ff;border-radius:10px;padding:14px 18px;">
-                        <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.05em;">Status</div>
-                        <div style="font-weight:600;color:#1e293b;margin-top:4px;" id="detail-status">—</div>
-                    </div>
-                </div>
-                <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:16px;">
-                    <div style="font-size:13px;font-weight:700;color:#334155;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em;">Description</div>
-                    <div id="detail-description" style="font-size:14px;color:#475569;line-height:1.6;">—</div>
-                </div>
-                <div id="detail-materials-wrap" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:16px;display:none;">
-                    <div style="font-size:13px;font-weight:700;color:#334155;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em;">Learning Materials</div>
-                    <div id="detail-materials" style="font-size:14px;color:#475569;line-height:1.6;white-space:pre-wrap;">—</div>
-                </div>
-                <div id="detail-instructions-wrap" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:16px;display:none;">
-                    <div style="font-size:13px;font-weight:700;color:#334155;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em;">Instructions</div>
-                    <div id="detail-instructions" style="font-size:14px;color:#475569;line-height:1.6;white-space:pre-wrap;">—</div>
-                </div>
-            </div>
-            <div id="activity-error" style="display:none;text-align:center;padding:40px;color:#94a3b8;">
-                <i class="fa-solid fa-circle-exclamation" style="font-size:36px;margin-bottom:12px;"></i>
-                <div>Activity not found or failed to load.</div>
-                <a href="Teacher_activies.html" style="color:#3b82f6;font-size:13px;margin-top:8px;display:inline-block;">Back to list</a>
-            </div>
-        </main>
+
+<div class="teacher-app-wrapper">
+  <!-- Sidebar -->
+  <aside class="teacher-sidebar">
+    <div class="teacher-sidebar-logo">
+      <img alt="SPED ALM Logo" class="teacher-sidebar-logo-img" src="../ASSETS/logo.png" />
+      <div class="teacher-sidebar-logo-text">
+        <span class="teacher-sidebar-title">SPED ALM</span>
+        <span class="teacher-sidebar-sub">Teacher Portal</span>
+      </div>
     </div>
-    <script>
-        var TEACHER_ID = parseInt(sessionStorage.getItem('teacher_id') || '1');
+    <nav class="teacher-sidebar-nav">
+      <a class="teacher-nav-item" href="Teacher_dashboard.html"><i class="fa-solid fa-table-cells-large"></i><span>Dashboard</span></a>
+      <a class="teacher-nav-item" href="Teacher_IEP.html"><i class="fa-solid fa-file-circle-plus"></i><span>IEP Materials</span><i class="fa-solid fa-chevron-right teacher-nav-arrow"></i></a>
+      <a class="teacher-nav-item" href="Teacher_learners.html"><i class="fa-solid fa-users"></i><span>My Learners</span></a>
+      <a class="teacher-nav-item active" href="Teacher_activies.html"><i class="fa-solid fa-clipboard-list"></i><span>Activities</span><i class="fa-solid fa-chevron-right teacher-nav-arrow"></i></a>
+      <a class="teacher-nav-item" href="Teacher_report.html"><i class="fa-solid fa-chart-column"></i><span>Reports</span></a>
+      <a class="teacher-nav-item" href="Teacher_settings.html"><i class="fa-solid fa-gear"></i><span>Settings</span></a>
+    </nav>
+    <div class="teacher-sidebar-footer">
+      <div class="teacher-profile">
+        <div class="teacher-avatar" id="teacher-avatar-letter">T</div>
+        <div class="teacher-info">
+          <span class="teacher-name" id="teacher-name-sidebar">Teacher</span>
+          <span class="teacher-role">SPED Teacher</span>
+        </div>
+      </div>
+      <a class="teacher-signout-btn" href="#" onclick="var _id=sessionStorage.getItem('admin_id');fetch('../ADMIN_FILES/ADMIN_BACKEND/logout.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'admin_id='+encodeURIComponent(_id||'')}).finally(function(){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html';});return false;">
+        <i class="fa-solid fa-right-from-bracket"></i><span>Sign Out</span>
+      </a>
+    </div>
+  </aside>
 
-        function _applyTeacherPhoto(pic) {
-            var el = document.getElementById('teacher-avatar-letter');
-            if (!el || !pic) return;
-            el.textContent = ''; el.style.cssText = 'background:transparent;padding:0';
-            el.innerHTML = '<img src="' + pic + '" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;" />';
-        }
-        function loadSidebar() {
-            var name = sessionStorage.getItem('teacher_name');
-            if (name) {
-                document.getElementById('teacher-avatar-letter').textContent = name.trim().charAt(0).toUpperCase();
-                document.getElementById('teacher-name-sidebar').textContent = name;
-                _applyTeacherPhoto(sessionStorage.getItem('teacher_profile_pic'));
-            } else {
-                var fd = new FormData(); fd.append('teacher_id', TEACHER_ID);
-                fetch('TEACHER_BACKEND/teacher_get_profile.php', { method: 'POST', body: fd })
-                    .then(function(r) { return r.json(); })
-                    .then(function(d) {
-                        if (d.success && d.teacher) {
-                            document.getElementById('teacher-avatar-letter').textContent = d.teacher.avatarLetter;
-                            document.getElementById('teacher-name-sidebar').textContent = d.teacher.name;
-                            sessionStorage.setItem('teacher_name', d.teacher.name);
-                            if (d.teacher.profilePhoto) {
-                                sessionStorage.setItem('teacher_profile_pic', d.teacher.profilePhoto);
-                                _applyTeacherPhoto(d.teacher.profilePhoto);
-                            }
-                        }
-                    }).catch(function(){});
-            }
-        }
+  <!-- Main -->
+  <main class="teacher-main-content">
+    <header class="teacher-topbar">
+      <div class="teacher-back-link">
+        <a class="btn-back" href="Teacher_activies.html"><i class="fa-solid fa-arrow-left"></i> Back to Activities</a>
+      </div>
+      <div class="teacher-topbar-right">
+        <a class="teacher-notif-btn" href="Teacher_notif.html" title="Notifications"><i class="fa-regular fa-bell"></i><span class="teacher-notif-badge"></span></a>
+      </div>
+    </header>
 
-        function loadActivity() {
-            var params = new URLSearchParams(window.location.search);
-            var id = parseInt(params.get('id') || '0');
-            if (!id) {
-                document.getElementById('activity-title').textContent = 'No Activity Selected';
-                document.getElementById('activity-error').style.display = '';
-                return;
-            }
-            fetch('TEACHER_BACKEND/teacher_list_activities.php?id=' + id)
-                .then(function(r) { return r.json(); })
-                .then(function(a) {
-                    if (!a) { showError(); return; }
-                    document.getElementById('activity-title').textContent = a.title || 'Untitled Activity';
-                    document.getElementById('activity-meta').textContent =
-                        (a.subject || 'General') + ' · ' + (a.grade_level || 'N/A') + ' · Created ' + fmtDate(a.created_at);
-                    document.getElementById('detail-subject').textContent = a.subject || '—';
-                    document.getElementById('detail-grade').textContent = a.grade_level || '—';
-                    document.getElementById('detail-difficulty').textContent = a.difficulty || '—';
-                    document.getElementById('detail-status').textContent = a.status || '—';
-                    document.getElementById('detail-description').textContent = a.description || 'No description provided.';
-                    if (a.learning_materials) {
-                        document.getElementById('detail-materials').textContent = a.learning_materials;
-                        document.getElementById('detail-materials-wrap').style.display = '';
-                    }
-                    if (a.instructions) {
-                        document.getElementById('detail-instructions').textContent = a.instructions;
-                        document.getElementById('detail-instructions-wrap').style.display = '';
-                    }
-                    document.getElementById('activity-detail-wrap').style.display = '';
-                }).catch(function() { showError(); });
-        }
+    <div class="teacher-page-header">
+      <h1 class="teacher-page-title">Submission Review</h1>
+      <p class="teacher-page-sub">Review student answers, assess assistance level, and finalize scores.</p>
+    </div>
 
-        function showError() {
-            document.getElementById('activity-title').textContent = 'Activity Not Found';
-            document.getElementById('activity-error').style.display = '';
-        }
+    <!-- Activity strip -->
+    <div class="rv-act-strip" id="rvActStrip" style="display:none;">
+      <div class="rv-act-title" id="rvActTitle">—</div>
+      <span class="rv-type-badge" id="rvActType">—</span>
+    </div>
 
-        function fmtDate(ts) {
-            if (!ts) return '—';
-            return new Date(ts.replace(' ','T')).toLocaleDateString('en-US', {year:'numeric',month:'short',day:'numeric'});
-        }
+    <!-- Error -->
+    <div id="rvError" style="display:none;text-align:center;padding:48px;color:#94a3b8;">
+      <i class="fa-solid fa-circle-exclamation" style="font-size:36px;margin-bottom:12px;display:block;"></i>
+      Activity not found or failed to load. <a href="Teacher_activies.html" style="color:#3b82f6;margin-left:8px;">Back to list</a>
+    </div>
 
-        document.addEventListener('DOMContentLoaded', function() {
-            loadSidebar();
-            loadActivity();
-        });
-    </script>
+    <!-- Tabs -->
+    <div id="rvContent" style="display:none;">
+      <div class="rv-tabs">
+        <button type="button" class="rv-tab active" id="tabSubmitted" onclick="switchTab('submitted')">Submitted (<span id="cntSubmitted">0</span>)</button>
+        <button type="button" class="rv-tab" id="tabPending" onclick="switchTab('pending')">Not Yet Submitted (<span id="cntPending">0</span>)</button>
+      </div>
+
+      <div class="rv-tab-panel active" id="panelSubmitted">
+        <div class="rv-cards" id="cardsSubmitted"></div>
+      </div>
+      <div class="rv-tab-panel" id="panelPending">
+        <div class="rv-cards" id="cardsPending"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Review Modal -->
+<div class="rv-modal-bg" id="rvModal">
+  <div class="rv-modal">
+    <button class="rv-modal-close" onclick="closeModal()" title="Close">✕</button>
+    <div class="rv-modal-title" id="modalStudentName">—</div>
+    <div class="rv-modal-score" id="modalScoreInfo">—</div>
+    <div id="modalRetakeChip" style="margin:-4px 0 14px;"></div>
+
+    <!-- Per-item table -->
+    <div style="overflow-x:auto;margin-bottom:20px;">
+      <table class="rv-tbl">
+        <thead><tr><th>#</th><th>Item</th><th>Student Answer</th><th>Correct Answer</th><th>Result</th></tr></thead>
+        <tbody id="modalItemRows"></tbody>
+      </table>
+    </div>
+
+    <!-- Assistance level -->
+    <div class="rv-sect-label">Assistance Level</div>
+    <div class="rv-assist-grid" id="assistGrid">
+      <label class="rv-assist-card" id="ac-fpp"><input type="radio" name="assist" value="Full Physical Prompt"> Full Physical Prompt</label>
+      <label class="rv-assist-card" id="ac-vc"><input type="radio" name="assist" value="Verbal Cueing"> Verbal Cueing</label>
+      <label class="rv-assist-card" id="ac-ma"><input type="radio" name="assist" value="Minimal Assistance"> Minimal Assistance</label>
+      <label class="rv-assist-card" id="ac-ind"><input type="radio" name="assist" value="Independent"> Independent</label>
+    </div>
+
+    <!-- Teacher note -->
+    <div class="rv-sect-label">Teacher's Note</div>
+    <textarea class="rv-notes" id="modalNote" placeholder="Optional observation or feedback for this student..."></textarea>
+
+    <!-- Final score -->
+    <div class="rv-final-row">
+      <span class="rv-final-label">Final Score (%):</span>
+      <input class="rv-final-input" id="modalFinalScore" type="number" min="0" max="100" placeholder="—" />
+      <span class="rv-final-hint">Leave blank to use auto-computed score</span>
+    </div>
+
+    <button type="button" class="rv-save-btn" id="modalSaveBtn" onclick="saveAssessment()">💾 Save Assessment</button>
+  </div>
+</div>
+
+<script>
+var TEACHER_ID = parseInt(sessionStorage.getItem('teacher_id') || '0');
+var _activityId = 0;
+var _students = [];
+var _currentSub = null; // currently open submission
+
+/* ── Sidebar ── */
+(function(){
+  var name = sessionStorage.getItem('teacher_name');
+  if (name) {
+    document.getElementById('teacher-avatar-letter').textContent = name.trim().charAt(0).toUpperCase();
+    document.getElementById('teacher-name-sidebar').textContent = name;
+    var pic = sessionStorage.getItem('teacher_profile_pic');
+    if (pic) applyPhoto(pic);
+  } else {
+    var fd = new FormData(); fd.append('teacher_id', TEACHER_ID);
+    fetch('TEACHER_BACKEND/teacher_get_profile.php', { method:'POST', body:fd })
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if (d.success && d.teacher) {
+          document.getElementById('teacher-avatar-letter').textContent = d.teacher.avatarLetter;
+          document.getElementById('teacher-name-sidebar').textContent = d.teacher.name;
+          sessionStorage.setItem('teacher_name', d.teacher.name);
+          if (d.teacher.profilePhoto) { sessionStorage.setItem('teacher_profile_pic', d.teacher.profilePhoto); applyPhoto(d.teacher.profilePhoto); }
+        }
+      }).catch(function(){});
+  }
+  function applyPhoto(pic) {
+    var el = document.getElementById('teacher-avatar-letter');
+    if (!el || !pic) return;
+    el.textContent = ''; el.style.cssText = 'background:transparent;padding:0';
+    el.innerHTML = '<img src="'+pic+'" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;">';
+  }
+})();
+
+/* ── Helpers ── */
+function esc(s){ var d=document.createElement('div');d.textContent=s||'';return d.innerHTML; }
+function fmtDate(s){
+  if (!s) return '—';
+  var d = new Date(s);
+  if (isNaN(d)) return s;
+  return d.toLocaleDateString('en-PH', {month:'short',day:'numeric',year:'numeric'});
+}
+function fmtTime(s){
+  if (!s) return '';
+  var d = new Date(s);
+  if (isNaN(d)) return '';
+  return ' at ' + d.toLocaleTimeString('en-PH', {hour:'2-digit',minute:'2-digit'});
+}
+
+/* ── Tab switch ── */
+function switchTab(which) {
+  var tabs = ['submitted','pending'];
+  tabs.forEach(function(t){
+    var tab = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1));
+    var panel = document.getElementById('panel' + t.charAt(0).toUpperCase() + t.slice(1));
+    if (t === which) { tab.classList.add('active'); panel.classList.add('active'); }
+    else { tab.classList.remove('active'); panel.classList.remove('active'); }
+  });
+}
+
+/* ── Load submissions ── */
+function loadData() {
+  var p = new URLSearchParams(window.location.search);
+  _activityId = parseInt(p.get('id') || '0');
+  if (!_activityId || !TEACHER_ID) { document.getElementById('rvError').style.display = ''; return; }
+
+  fetch('TEACHER_BACKEND/teacher_list_submissions.php?teacher_id=' + TEACHER_ID + '&activity_id=' + _activityId)
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (!d.success) { document.getElementById('rvError').style.display = ''; return; }
+      document.getElementById('rvActTitle').textContent = d.activity.title || 'Untitled';
+      document.getElementById('rvActType').textContent = d.activity.type || '—';
+      document.getElementById('rvActStrip').style.display = '';
+      document.getElementById('rvContent').style.display = '';
+      _students = d.students || [];
+      renderStudents();
+    })
+    .catch(function(){
+      document.getElementById('rvError').style.display = '';
+    });
+}
+
+function renderStudents() {
+  var submitted = _students.filter(function(s){ return s.submitted; });
+  var pending   = _students.filter(function(s){ return !s.submitted; });
+
+  document.getElementById('cntSubmitted').textContent = submitted.length;
+  document.getElementById('cntPending').textContent   = pending.length;
+
+  renderCards(submitted, 'cardsSubmitted', true);
+  renderCards(pending,   'cardsPending',   false);
+}
+
+function renderCards(list, containerId, hasSubmission) {
+  var wrap = document.getElementById(containerId);
+  if (!list.length) {
+    wrap.innerHTML = '<div class="rv-empty"><i class="fa-solid fa-' + (hasSubmission ? 'inbox' : 'hourglass-half') + '"></i>' + (hasSubmission ? 'No submissions yet.' : 'All students have submitted!') + '</div>';
+    return;
+  }
+  wrap.innerHTML = '';
+  list.forEach(function(s) {
+    var initials = (s.student_name || '?').trim().charAt(0).toUpperCase();
+    var scoreHtml = '';
+    if (hasSubmission && s.score !== null) {
+      var displayScore = (s.is_finalized && s.finalized_score !== null) ? s.finalized_score : s.score;
+      var cls = displayScore >= 80 ? 'rv-score-green' : displayScore >= 50 ? 'rv-score-yellow' : 'rv-score-red';
+      scoreHtml = '<span class="rv-score-badge ' + cls + '">' + displayScore + '%</span>';
+    }
+    var assistHtml = s.assistance_level ? '<span class="rv-tag">' + esc(s.assistance_level) + '</span>' : '';
+    var finalHtml  = s.is_finalized ? '<span class="rv-tag rv-tag-finalized">✓ Finalized</span>' : '';
+    var retakeHtml = (hasSubmission && s.retake_count > 0) ? '<span class="rv-tag" title="Number of retakes">🔁 ' + s.retake_count + 'x retake</span>' : '';
+    var dateHtml   = s.submitted_at ? '<div class="rv-card-sub">Submitted ' + fmtDate(s.submitted_at) + fmtTime(s.submitted_at) + '</div>' : '';
+
+    var reviewBtn = hasSubmission
+      ? '<button class="rv-btn-review" onclick="openModal(' + JSON.stringify(s).replace(/"/g,'&quot;') + ')">Review</button>'
+      : '';
+
+    wrap.insertAdjacentHTML('beforeend',
+      '<div class="rv-card">' +
+        '<div class="rv-card-top">' +
+          '<div class="rv-avatar">' + initials + '</div>' +
+          '<div>' +
+            '<div class="rv-card-name">' + esc(s.student_name) + '</div>' +
+            dateHtml +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">' + scoreHtml + retakeHtml + assistHtml + finalHtml + '</div>' +
+        (hasSubmission ? '<div class="rv-card-actions">' + reviewBtn + '</div>' : '') +
+      '</div>'
+    );
+  });
+}
+
+/* ── Modal ── */
+var _assistMap = { 'Full Physical Prompt':'ac-fpp','Verbal Cueing':'ac-vc','Minimal Assistance':'ac-ma','Independent':'ac-ind' };
+
+function openModal(s) {
+  _currentSub = s;
+  document.getElementById('modalStudentName').textContent = s.student_name || '—';
+
+  var total = s.total_items || 0;
+  var score = s.score !== null ? s.score : '—';
+  var retakes = s.retake_count || 0;
+  var finalInfo = (s.is_finalized && s.finalized_score !== null) ? '  ·  Teacher final: ' + s.finalized_score + '%' : '';
+  document.getElementById('modalScoreInfo').textContent = 'Auto score: ' + score + '%' + (total ? '  (' + total + ' item' + (total === 1 ? '' : 's') + ')' : '') + finalInfo;
+
+  // Retake chip — always shown
+  var chipEl = document.getElementById('modalRetakeChip');
+  if (retakes === 0) {
+    chipEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;background:#f0fdf4;color:#15803d;">✅ First Attempt</span>';
+  } else {
+    chipEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;background:#fff7ed;color:#c2410c;">🔁 ' + retakes + ' Retake' + (retakes === 1 ? '' : 's') + ' before this submission</span>';
+  }
+
+  // Parse answers_json
+  var items = [];
+  try { items = JSON.parse(s.answers_json || '[]'); } catch(e){ items = []; }
+
+  var tbody = document.getElementById('modalItemRows');
+  tbody.innerHTML = '';
+  if (!items.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px;">No item-by-item data available.</td></tr>';
+  } else {
+    var itemNum = 0;
+    items.forEach(function(it) {
+      if (it.isSlideHeader) {
+        var retakeBadge = it.slideRetakes > 0
+          ? ' &nbsp;<span style="color:#e23b54;font-weight:700;">' + it.slideRetakes + ' retake' + (it.slideRetakes > 1 ? 's' : '') + '</span>'
+          : '';
+        tbody.insertAdjacentHTML('beforeend',
+          '<tr style="background:#f1f5f9;">' +
+            '<td colspan="5" style="font-weight:700;color:#7c3aed;font-size:12px;padding:6px 10px;text-transform:uppercase;letter-spacing:.04em;">📋 ' + esc(it.label) + retakeBadge + '</td>' +
+          '</tr>'
+        );
+        return;
+      }
+      itemNum++;
+      var ok = it.correct;
+      tbody.insertAdjacentHTML('beforeend',
+        '<tr>' +
+          '<td style="color:#94a3b8;">' + itemNum + '</td>' +
+          '<td>' + esc(it.label || '—') + '</td>' +
+          '<td>' + esc(it.studentAnswer || '—') + '</td>' +
+          '<td>' + esc(it.correctAnswer || '—') + '</td>' +
+          '<td class="' + (ok ? 'rv-ok' : 'rv-bad') + '">' + (ok ? '✓' : '✗') + '</td>' +
+        '</tr>'
+      );
+    });
+  }
+
+  // Assistance level
+  Object.keys(_assistMap).forEach(function(k) {
+    var el = document.getElementById(_assistMap[k]);
+    el.classList.remove('selected');
+    el.querySelector('input').checked = false;
+  });
+  if (s.assistance_level && _assistMap[s.assistance_level]) {
+    var el = document.getElementById(_assistMap[s.assistance_level]);
+    el.classList.add('selected');
+    el.querySelector('input').checked = true;
+  }
+
+  // Listen for radio changes
+  document.querySelectorAll('#assistGrid input[type=radio]').forEach(function(r) {
+    r.addEventListener('change', function() {
+      document.querySelectorAll('.rv-assist-card').forEach(function(c){ c.classList.remove('selected'); });
+      if (r.checked) r.closest('.rv-assist-card').classList.add('selected');
+    });
+  });
+
+  document.getElementById('modalNote').value = s.teacher_note || '';
+  document.getElementById('modalFinalScore').value = s.finalized_score !== null ? s.finalized_score : '';
+  document.getElementById('modalSaveBtn').disabled = false;
+  document.getElementById('modalSaveBtn').textContent = '💾 Save Assessment';
+  document.getElementById('rvModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('rvModal').classList.remove('open');
+  _currentSub = null;
+}
+
+// Close on backdrop click
+document.getElementById('rvModal').addEventListener('click', function(e){
+  if (e.target === this) closeModal();
+});
+
+function saveAssessment() {
+  if (!_currentSub) return;
+  var sub_id = _currentSub.submission_id;
+  if (!sub_id) { alert('No submission ID found.'); return; }
+
+  var assist = '';
+  var checked = document.querySelector('#assistGrid input[type=radio]:checked');
+  if (checked) assist = checked.value;
+
+  var note  = document.getElementById('modalNote').value.trim();
+  var final = document.getElementById('modalFinalScore').value.trim();
+
+  var btn = document.getElementById('modalSaveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  fetch('TEACHER_BACKEND/teacher_finalize_submission.php', {
+    method: 'POST',
+    body: new URLSearchParams({
+      submission_id: sub_id,
+      teacher_id: TEACHER_ID,
+      assistance_level: assist,
+      teacher_note: note,
+      finalized_score: final
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    if (d.success) {
+      btn.textContent = '✓ Saved!';
+      // Update local state
+      var idx = _students.findIndex(function(s){ return s.submission_id === sub_id; });
+      if (idx >= 0) {
+        _students[idx].assistance_level = assist || null;
+        _students[idx].teacher_note     = note || null;
+        _students[idx].finalized_score  = final !== '' ? parseInt(final) : null;
+        _students[idx].is_finalized     = true;
+        if (final !== '') _students[idx].score = parseInt(final);
+      }
+      renderStudents();
+      setTimeout(function(){ closeModal(); }, 700);
+    } else {
+      btn.disabled = false;
+      btn.textContent = '💾 Save Assessment';
+      alert(d.message || 'Failed to save. Please try again.');
+    }
+  })
+  .catch(function(){
+    btn.disabled = false;
+    btn.textContent = '💾 Save Assessment';
+    alert('Network error. Please try again.');
+  });
+}
+
+loadData();
+</script>
+<script>(function(){var _id=sessionStorage.getItem('admin_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>
 </body>
-
 </html>

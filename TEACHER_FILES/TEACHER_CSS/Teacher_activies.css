@@ -166,8 +166,9 @@ tbody tr:hover { background: #FAFBFF; }
 }
 
 .tab-btn:not(.active) .tab-count        { background: #F1F5F9; color: var(--muted); }
-.tab-btn:not(.active) .tab-count-draft  { background: #FEF3C7; color: #B45309; }
+.tab-btn:not(.active) .tab-count-draft     { background: #FEF3C7; color: #B45309; }
 .tab-btn:not(.active) .tab-count-published { background: #DCFCE7; color: #15803D; }
+.tab-btn:not(.active) .tab-count-uploads   { background: #E0F2FE; color: #0369A1; }
 
 /* ── STATUS BADGES ── */
 .teacher-tag-draft {

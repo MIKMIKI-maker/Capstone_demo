@@ -1,0 +1,1555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SPED ALM — Check or X Template Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<style>
+  :root{
+    --blue:#2f6fed; --blue-dark:#1b4fb8;
+    --purple:#7b6ef0; --purple-dark:#5546c4;
+    --green:#2fbf57; --green-dark:#1f9d44;
+    --red:#e23b54; --red-dark:#b9263c;
+    --gold:#ffc34d; --ink:#243a5e; --ink-soft:#5d7299;
+    --field:#f7f9fd; --field-border:#e6ebf4; --line:#eef2f8;
+    --font:"Fredoka","Nunito",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html, body{ height:100%; overflow:hidden; }
+  body{ font-family:var(--font); color:var(--ink); background:#eef2f9; display:flex; flex-direction:column; }
+
+  /* ===== TOP BAR ===== */
+  .chk-top{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; flex:none;
+    background:#fff; padding:14px 22px; border-bottom:1px solid var(--line); }
+  .chk-logo{ width:46px; height:46px; border-radius:14px; flex:none;
+    background:linear-gradient(135deg,#2fbf57,#7b6ef0); display:flex; align-items:center; justify-content:center; font-size:24px; }
+  .chk-top h1{ font-weight:700; font-size:21px; line-height:1.1; }
+  .chk-top .chk-tsub{ color:var(--ink-soft); font-size:12px; font-weight:500; }
+  .chk-top-actions{ margin-left:auto; display:flex; gap:10px; flex-wrap:wrap; }
+  .chk-btn{ cursor:pointer; border:none; font-family:var(--font); font-weight:700; font-size:14px;
+    padding:11px 18px; border-radius:13px; display:inline-flex; align-items:center; gap:7px;
+    transition:transform .08s ease, filter .1s ease; }
+  .chk-btn:active{ transform:translateY(2px); }
+  .chk-btn--ghost{ background:#fff; color:var(--ink); border:1.5px solid var(--field-border); }
+  .chk-btn--ghost:hover{ background:#f7f9fd; }
+  .chk-btn--print{ background:var(--gold); color:#5c4400; box-shadow:0 4px 0 #d9a416; }
+  .chk-btn--pub{ background:var(--green); color:#fff; box-shadow:0 4px 0 var(--green-dark); }
+
+  /* ===== BODY GRID ===== */
+  .chk-body{ display:grid; grid-template-columns:280px 1fr 270px; gap:16px; padding:16px; align-items:stretch;
+    flex:1; min-height:0; overflow:hidden; }
+  .chk-left-col, .chk-preview-col, .chk-right-col{ overflow-y:auto; min-height:0; padding-right:2px;
+    scrollbar-width:thin; scrollbar-color:#c7d3e8 transparent; }
+  .chk-left-col::-webkit-scrollbar, .chk-preview-col::-webkit-scrollbar, .chk-right-col::-webkit-scrollbar{ width:6px; }
+  .chk-left-col::-webkit-scrollbar-thumb, .chk-preview-col::-webkit-scrollbar-thumb, .chk-right-col::-webkit-scrollbar-thumb{ background:#c7d3e8; border-radius:10px; }
+  .chk-card{ background:#fff; border:1px solid var(--line); border-radius:18px; padding:16px; }
+  .chk-card + .chk-card{ margin-top:16px; }
+  .chk-step{ font-size:12px; font-weight:800; letter-spacing:.04em; color:var(--ink-soft); text-transform:uppercase; margin-bottom:12px; }
+  .chk-step .chk-edit-link{ color:var(--purple); cursor:pointer; font-weight:700; text-transform:none; letter-spacing:0; }
+
+  /* Slide navigator */
+  .chk-slidebar{ display:flex; align-items:center; gap:8px; }
+  .chk-slidebar button{ width:30px; height:30px; flex:none; border-radius:9px; border:1.5px solid var(--field-border); background:#fff; cursor:pointer; font-size:14px; color:var(--ink); }
+  .chk-slidebar button:hover:not(:disabled){ background:#f1f4fa; }
+  .chk-slidebar button:disabled{ opacity:.35; cursor:default; }
+  .chk-slide-label{ flex:1; text-align:center; font-weight:700; font-size:13px; color:var(--ink); }
+  .chk-slide-actions{ display:flex; gap:8px; margin-top:10px; }
+  .chk-slide-actions button{ flex:1; cursor:pointer; border:1.5px dashed var(--purple); background:#f3f1fe; color:var(--purple);
+    font-family:var(--font); font-weight:700; font-size:12.5px; padding:8px; border-radius:11px; }
+  .chk-slide-actions button.danger{ border-color:#f0a8b4; background:#fdeef1; color:#c43a55; }
+
+  /* Activity type card */
+  .chk-type{ display:flex; align-items:center; gap:12px; border:2px solid var(--purple); background:#f3f1fe; border-radius:14px; padding:13px; }
+  .chk-type-ic{ width:40px; height:40px; border-radius:11px; background:#fff; display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 3px 0 #ddd8f7; }
+  .chk-type b{ font-weight:700; font-size:15px; }
+  .chk-type-desc{ color:var(--ink-soft); font-size:12.5px; font-weight:500; line-height:1.5; margin-top:12px; }
+
+  /* Items list */
+  .chk-item-row{ padding:10px 0; border-bottom:1px solid var(--line); position:relative; }
+  .chk-item-row:last-of-type{ border-bottom:none; }
+  .chk-item-top{ display:flex; align-items:flex-start; gap:10px; }
+  .chk-item-media{ flex:none; width:82px; }
+  .chk-thumb{ width:82px; height:60px; border-radius:10px; border:1.5px solid var(--field-border);
+    background:var(--field); display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden; font-size:22px; }
+  .chk-thumb img{ width:100%; height:100%; object-fit:cover; }
+  .chk-media-tabs{ display:flex; gap:4px; margin-top:6px; }
+  .chk-media-tabs button{ flex:1; cursor:pointer; border:1.5px solid var(--field-border); background:#fff; color:var(--ink-soft);
+    font-family:var(--font); font-weight:700; font-size:9.5px; padding:4px 2px; border-radius:7px; }
+  .chk-media-tabs button.sel{ border-color:var(--purple); background:#f3f1fe; color:var(--purple); }
+  .chk-link-input{ width:82px; margin-top:6px; padding:5px 6px; border-radius:7px; border:1.5px solid var(--field-border);
+    background:var(--field); font-family:var(--font); font-size:10px; display:none; }
+  .chk-link-input.show{ display:block; }
+
+  .chk-item-fields{ flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
+  .chk-item-fields label{ font-size:10.5px; font-weight:800; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.03em; }
+  .chk-correct-seg{ display:flex; gap:6px; }
+  .chk-correct-seg button{ flex:1; cursor:pointer; border:1.5px solid var(--field-border); background:#fff; color:var(--ink-soft);
+    font-family:var(--font); font-weight:800; font-size:13px; padding:7px 4px; border-radius:9px; }
+  .chk-correct-seg button.sel-check{ border-color:var(--green); background:#e8fbee; color:var(--green-dark); }
+  .chk-correct-seg button.sel-x{ border-color:var(--red); background:#fdeef1; color:var(--red-dark); }
+
+  .chk-item-menu{ position:absolute; top:10px; right:0; cursor:pointer; border:none; background:none; color:var(--ink-soft); font-size:18px; width:28px; height:28px; border-radius:8px; }
+  .chk-item-menu:hover{ background:#f1f4fa; }
+  .chk-pop{ position:absolute; right:0; top:36px; z-index:5; background:#fff; border:1px solid var(--field-border); border-radius:12px; box-shadow:0 8px 24px rgba(36,58,94,.18); padding:6px; display:none; }
+  .chk-pop.show{ display:block; }
+  .chk-pop button{ display:block; width:100%; text-align:left; border:none; background:none; cursor:pointer; font-family:var(--font); font-size:13px; padding:8px 14px; border-radius:8px; color:var(--ink); white-space:nowrap; }
+  .chk-pop button:hover{ background:#f1f4fa; }
+  .chk-pop button.del{ color:#d6336c; }
+  .chk-add{ cursor:pointer; width:100%; margin-top:10px; border:1.5px dashed var(--purple); background:#f3f1fe; color:var(--purple); font-family:var(--font); font-weight:700; font-size:13px; padding:9px; border-radius:12px; }
+
+  /* Thumbnail upload (activity card thumbnail) */
+  .chk-thumbbox{ position:relative; border:2px dashed #cbb8f3; background:#faf7ff; border-radius:14px; padding:10px; text-align:center; }
+  .chk-thumbbox img{ width:100%; border-radius:10px; display:block; }
+  .chk-thumb-empty{ height:96px; display:flex; align-items:center; justify-content:center; color:var(--ink-soft); font-size:12px; font-weight:600; }
+  .chk-thumb-check{ position:absolute; top:-8px; right:-8px; width:24px; height:24px; border-radius:50%; background:var(--purple); color:#fff; display:none; align-items:center; justify-content:center; font-size:13px; }
+  .chk-thumb-check.show{ display:flex; }
+  .chk-change{ cursor:pointer; width:100%; margin-top:10px; border:1.5px solid var(--field-border); background:#fff; color:var(--ink); font-family:var(--font); font-weight:700; font-size:13px; padding:9px; border-radius:11px; }
+
+  .chk-tip{ background:#fef6e6; border:1px solid #f6e2b3; border-radius:14px; padding:13px; }
+  .chk-tip b{ font-size:13px; display:flex; align-items:center; gap:6px; }
+  .chk-tip p{ color:#7a5e1d; font-size:12px; font-weight:500; line-height:1.5; margin-top:6px; }
+  .chk-guide-settings-btn{ margin-left:auto; cursor:pointer; border:1.5px solid #cbb8f3; background:#f3f1fe; color:var(--purple);
+    font-family:var(--font); font-weight:800; font-size:13px; padding:7px 12px; border-radius:10px; white-space:nowrap; }
+  .chk-guide-settings-btn:hover{ background:#e6e1fb; }
+
+  /* ===== CENTER PREVIEW ===== */
+  .chk-preview-col .chk-step{ margin-bottom:12px; }
+  .chk-stage{ position:relative; overflow:hidden; border-radius:20px; border:1px solid var(--line);
+    background:#fdf6d8; padding:30px;
+    --chk-text:#243a5e; font-family:'Comic Sans MS','Comic Sans',cursive; font-size:38px; }
+  .chk-deco{ position:absolute; inset:0; pointer-events:none; }
+  .chk-stage.no-deco .chk-deco{ display:none; }
+  .chk-deco .d-sun{ position:absolute; top:14px; right:22px; font-size:42px; }
+  .chk-deco .d-cloud1{ position:absolute; top:18px; left:24px; font-size:30px; opacity:.9; }
+  .chk-deco .d-cloud2{ position:absolute; top:46%; right:10px; font-size:26px; opacity:.8; }
+  .chk-deco .d-grass{ position:absolute; left:0; right:0; bottom:0; height:64px;
+    background:linear-gradient(180deg, rgba(126,217,124,0), #aee08a 70%); }
+  .chk-deco .d-flower1{ position:absolute; bottom:8px; left:18px; font-size:24px; }
+  .chk-deco .d-flower2{ position:absolute; bottom:6px; right:26px; font-size:22px; }
+
+  .chk-stage-inner{ position:relative; z-index:2; transform-origin:top center; }
+  .chk-title{ text-align:center; font-weight:700; font-size:1.1em; color:var(--chk-text); }
+  .chk-instr{ text-align:center; font-size:.42em; font-weight:600; color:var(--chk-text); opacity:.9; margin:6px 0 22px; max-width:820px; margin-left:auto; margin-right:auto; }
+
+  .chk-grid{ position:relative; z-index:2; display:grid; grid-template-columns:repeat(3, 1fr); gap:20px; }
+  .chk-scard{ background:#fff; border:3px solid #e2c98f; border-radius:18px; padding:12px;
+    display:flex; flex-direction:column; align-items:center; gap:10px; box-shadow:0 4px 12px rgba(36,58,94,.08); }
+  .chk-scard-img{ width:100%; height:2.6em; object-fit:contain; display:block; }
+  .chk-scard-emoji{ font-size:2.2em; line-height:1; }
+  .chk-scard-opts{ display:flex; gap:10px; }
+  .chk-mopt{ width:1.15em; height:1.15em; border-radius:.32em; border:3px solid #e2c98f; background:#fff;
+    font-family:var(--font); font-weight:800; font-size:.5em; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; transition:transform .08s ease, border-color .12s ease, background .12s ease; }
+  .chk-mopt:hover{ transform:translateY(-2px); }
+  .chk-mopt.mopt-check{ color:var(--green-dark); }
+  .chk-mopt.mopt-x{ color:var(--red-dark); }
+  .chk-mopt.sel.mopt-check{ background:var(--green); color:#fff; border-color:var(--green-dark); }
+  .chk-mopt.sel.mopt-x{ background:var(--red); color:#fff; border-color:var(--red-dark); }
+
+  .chk-stage.bs-dashed .chk-scard{ border-style:dashed; }
+  .chk-stage.bs-solid .chk-scard{ border-radius:8px; }
+  .chk-stage.bs-dashed .chk-mopt{ border-style:dashed; }
+  .chk-stage.bs-solid .chk-mopt{ border-radius:4px; }
+
+  .chk-stage-controls{ display:flex; flex-direction:column; align-items:center; gap:10px; margin-top:22px; position:relative; z-index:2; }
+  .chk-stage-btnrow{ display:flex; justify-content:center; gap:10px; }
+  .chk-mini{ cursor:pointer; border:none; font-family:var(--font); font-weight:700; font-size:.46em; padding:.55em 1.2em; border-radius:12px; }
+  .chk-mini--reset{ background:#eef3fb; color:var(--ink-soft); }
+  .chk-mini--check{ background:var(--green); color:#fff; }
+  .chk-hint{ font-size:.42em; font-weight:700; min-height:1.3em; text-align:center; color:var(--red-dark); }
+  .chk-stage-nav{ display:flex; align-items:center; gap:14px; margin-top:6px; }
+  .chk-stage-nav button{ cursor:pointer; border:none; background:#eef3fb; color:var(--ink-soft); font-family:var(--font); font-weight:700; font-size:.4em; padding:.55em 1em; border-radius:10px; }
+  .chk-stage-nav button:disabled{ opacity:.35; cursor:default; }
+  .chk-stage-nav span{ font-weight:700; font-size:.4em; color:var(--chk-text); opacity:.8; }
+
+  .chk-reminders{ background:#f6f2fe; border:1px solid #e4dcfa; border-radius:16px; padding:14px 16px; margin-top:16px; }
+  .chk-reminders .r-title{ font-size:11px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:var(--purple); margin-bottom:12px; }
+  .chk-rem-list{ display:flex; gap:10px; flex-wrap:wrap; justify-content:space-between; }
+  .chk-rem{ display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; flex:1; min-width:80px; color:var(--ink-soft); font-size:11.5px; font-weight:600; }
+  .chk-rem .r-ic{ font-size:20px; }
+
+  /* ===== RIGHT SETTINGS ===== */
+  .chk-right-col{ position:relative; }
+  .chk-set-title{ display:flex; align-items:center; gap:8px; font-weight:700; font-size:15px; margin-bottom:16px; }
+  .chk-collapse-btn{ cursor:pointer; border:1.5px solid var(--field-border); background:#fff; width:30px; height:30px; flex:none;
+    border-radius:9px; font-size:14px; color:var(--ink-soft); margin-left:auto; }
+  .chk-collapse-btn:hover{ background:#f1f4fa; }
+  .chk-right-panel-guide{ display:none; }
+  body.chk-right-collapsed .chk-right-panel-full{ display:none; }
+  body.chk-right-collapsed .chk-right-panel-guide{ display:block; }
+  .chk-set-label{ font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-soft); margin:0 0 9px; }
+  .chk-set-group{ margin-bottom:18px; }
+  .chk-swatches{ display:flex; gap:8px; flex-wrap:wrap; }
+  .chk-sw{ width:38px; height:38px; border-radius:11px; cursor:pointer; border:2px solid #fff; box-shadow:0 0 0 1.5px var(--field-border); position:relative; }
+  .chk-sw.sel{ box-shadow:0 0 0 2.5px var(--purple); }
+  .chk-sw.sel::after{ content:"✓"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--purple); font-weight:800; font-size:14px; }
+  .chk-input, .chk-select{ width:100%; padding:11px 13px; border-radius:12px; border:1.5px solid var(--field-border); background:#fff; font-family:var(--font); font-size:14px; color:var(--ink); outline:none; }
+  .chk-input:focus, .chk-select:focus{ border-color:var(--purple); }
+  .chk-size-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .chk-size-num{ width:54px; text-align:center; padding:5px; border:1.5px solid var(--field-border); border-radius:8px; font-family:var(--font); font-weight:700; }
+  .chk-size-row{ display:flex; align-items:center; gap:10px; }
+  .chk-size-row input[type=range]{ flex:1; accent-color:var(--purple); }
+  .chk-size-row .a-sm{ font-size:13px; font-weight:700; } .chk-size-row .a-lg{ font-size:20px; font-weight:700; }
+  .chk-color-row{ display:flex; align-items:center; gap:8px; }
+  .chk-color-row input[type=color]{ width:46px; height:34px; border:none; border-radius:9px; background:none; cursor:pointer; }
+  .chk-seg{ display:flex; gap:8px; }
+  .chk-seg button{ flex:1; cursor:pointer; border:1.5px solid var(--field-border); background:#fff; border-radius:11px; padding:10px 4px; font-family:var(--font); font-weight:600; font-size:12px; color:var(--ink-soft); display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .chk-seg button.sel{ border-color:var(--purple); background:#f3f1fe; color:var(--purple); }
+  .chk-seg .seg-box{ width:30px; height:20px; border:2.5px solid var(--ink-soft); }
+  .chk-seg button.sel .seg-box{ border-color:var(--purple); }
+  .seg-rounded{ border-radius:8px; } .seg-dashed{ border-style:dashed; border-radius:8px; } .seg-solid{ border-radius:2px; }
+  .chk-spacing{ display:flex; align-items:center; gap:12px; }
+  .chk-spacing button{ width:34px; height:34px; border-radius:10px; border:1.5px solid var(--field-border); background:#fff; cursor:pointer; font-size:18px; font-weight:700; color:var(--ink); }
+  .chk-spacing span{ font-weight:700; font-size:14px; flex:1; text-align:center; }
+  .chk-check{ display:flex; align-items:center; gap:9px; padding:7px 0; cursor:pointer; font-size:14px; font-weight:600; }
+  .chk-check input{ width:18px; height:18px; accent-color:var(--purple); }
+  .chk-set-actions{ display:flex; gap:10px; margin-top:8px; }
+  .chk-set-actions button{ flex:1; cursor:pointer; border:none; font-family:var(--font); font-weight:700; font-size:14px; padding:12px; border-radius:12px; }
+  .chk-reset{ background:#eef2f8; color:var(--ink-soft); }
+  .chk-apply{ background:var(--purple); color:#fff; box-shadow:0 4px 0 var(--purple-dark); }
+
+  /* preview-only mode */
+  body.chk-preview-only .chk-left-col,
+  body.chk-preview-only .chk-right-col,
+  body.chk-preview-only .chk-top,
+  body.chk-preview-only .chk-preview-col > .chk-step,
+  body.chk-preview-only .chk-reminders{ display:none; }
+  body.chk-preview-only .chk-body{ grid-template-columns:1fr; min-height:100vh; padding:0; overflow:hidden; }
+  body.chk-preview-only .chk-preview-col{ width:100%; max-width:100%; overflow:hidden; }
+  body.chk-preview-only .chk-stage{
+    width:100%; min-height:100vh; border-radius:0; border:none;
+    padding:50px 40px 70px; display:flex; flex-direction:column; justify-content:center;
+  }
+  body.chk-preview-only .chk-grid,
+  body.chk-preview-only .chk-title,
+  body.chk-preview-only .chk-instr{ max-width:960px; width:100%; margin-left:auto; margin-right:auto; }
+
+  /* ===== FLOATING EXIT BUTTON ===== */
+  .chk-exit-float{
+    display:none; position:fixed; top:14px; right:14px; z-index:100;
+    align-items:center; gap:6px; cursor:pointer; border:none;
+    background:rgba(36,58,94,.85); color:#fff; font-family:var(--font); font-weight:700; font-size:13px;
+    padding:10px 18px; border-radius:30px; box-shadow:0 6px 18px rgba(0,0,0,.25);
+  }
+  .chk-exit-float:hover{ background:rgba(36,58,94,1); }
+  body.chk-preview-only .chk-exit-float{ display:flex; }
+
+  /* ===== SCORE MODAL ===== */
+  .chk-modal-overlay{ position:fixed; inset:0; background:rgba(36,58,94,.55); z-index:80;
+    display:none; align-items:center; justify-content:center; padding:20px; }
+  .chk-modal-overlay.show{ display:flex; }
+  .chk-modal-card{ background:#fff; border-radius:26px; padding:30px 26px; max-width:420px; width:100%;
+    max-height:88vh; overflow-y:auto; text-align:center; box-shadow:0 24px 60px rgba(0,0,0,.3); animation:chkPop .22s ease; }
+  @keyframes chkPop{ from{ transform:scale(.85); opacity:0; } to{ transform:scale(1); opacity:1; } }
+  .chk-modal-emoji{ width:100px; height:100px; object-fit:contain; margin:0 auto 10px; display:block; animation:chkRewardFloat 2s ease-in-out infinite; }
+  @keyframes chkRewardFloat{ 0%,100%{ transform:translateY(0) scale(1); } 50%{ transform:translateY(-10px) scale(1.06); } }
+  .chk-modal-score{ font-size:24px; font-weight:800; color:var(--ink); margin:4px 0 6px; }
+  .chk-modal-msg{ font-size:13px; font-weight:600; color:var(--ink-soft); margin-bottom:14px; line-height:1.5; }
+
+  .chk-review-list{ text-align:left; border-top:1.5px dashed var(--field-border); padding-top:12px; margin-bottom:16px; }
+  .chk-review-title{ font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:var(--purple); margin-bottom:10px; }
+  .chk-review-row{ display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--line); }
+  .chk-review-thumb{ width:30px; height:30px; border-radius:7px; object-fit:cover; flex:none; background:var(--field); }
+  .chk-review-text{ flex:1; min-width:0; font-size:12.5px; }
+  .chk-review-text b{ display:block; font-size:12px; }
+  .chk-review-text span{ color:var(--ink-soft); font-size:11px; }
+  .chk-review-status{ flex:none; width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; }
+  .chk-review-status.correct{ background:#e8fbee; color:var(--green-dark); }
+  .chk-review-status.wrong{ background:#fdeef1; color:var(--red-dark); }
+  .chk-pending-note{ font-size:11px; color:var(--ink-soft); font-style:italic; margin-bottom:14px; }
+
+  .chk-modal-actions{ display:flex; gap:10px; }
+  .chk-modal-actions button{ flex:1; cursor:pointer; border:none; font-family:var(--font); font-weight:700; font-size:14px; padding:13px; border-radius:14px; }
+  .chk-modal-try{ background:var(--purple); color:#fff; box-shadow:0 4px 0 var(--purple-dark); }
+  .chk-modal-close{ background:#eef2f8; color:var(--ink-soft); }
+
+  /* ===== PUBLISH MODAL ===== */
+  .chk-publish-card{ max-width:560px; text-align:left; }
+  .chk-publish-card h3{ text-align:center; font-size:18px; font-weight:800; color:var(--ink); margin-bottom:16px; }
+  .chk-publish-field{ margin-bottom:18px; }
+  .chk-publish-field label{ display:block; font-size:12.5px; font-weight:700; color:var(--ink-soft);
+    margin-bottom:6px; }
+  .chk-publish-field input[type="date"]{ width:100%; padding:10px 12px; border-radius:10px;
+    border:1.5px solid var(--field-border); background:#fff; font-family:var(--font); font-size:14px;
+    color:var(--ink); outline:none; }
+  .chk-publish-field input[type="date"]:focus{ border-color:var(--purple); }
+  .chk-publish-field .chk-publish-hint{ font-size:11.5px; color:var(--ink-soft); font-weight:500; margin-top:5px; }
+  .chk-publish-confirm{ background:var(--green); color:#fff; box-shadow:0 4px 0 var(--green-dark); }
+  .chk-domain-radios{ display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+  .chk-domain-opt{ display:flex; align-items:center; gap:5px; font-size:12px; font-weight:600;
+    color:var(--ink); cursor:pointer; padding:5px 10px; border:1.5px solid var(--field-border);
+    border-radius:8px; background:#fff; transition:border-color .15s,background .15s; }
+  .chk-domain-opt:has(input:checked){ border-color:#0891b2; background:#ecfeff; color:#0891b2; }
+  .chk-domain-opt input[type="radio"]{ accent-color:#0891b2; cursor:pointer; }
+
+  @media (max-width:1100px){
+    .chk-body{ grid-template-columns:1fr; }
+  }
+  @media (max-width:700px){
+    .chk-grid{ grid-template-columns:repeat(2, 1fr); }
+  }
+
+  /* ===== SPOTLIGHT TOUR ===== */
+  .chk-btn--help{ background:#ffc34d; color:#5c4400; box-shadow:0 4px 0 #d9a416; }
+  #chkTourOverlay{ display:none; position:fixed; inset:0; z-index:8998; }
+  #chkTourSpot{
+    display:none; position:fixed; z-index:8999; pointer-events:none; border-radius:14px;
+    box-shadow:0 0 0 9999px rgba(15,23,55,.72);
+    transition:left .22s ease,top .22s ease,width .22s ease,height .22s ease;
+  }
+  #chkTourRing{
+    display:none; position:fixed; z-index:9000; pointer-events:none; border-radius:16px;
+    border:3px solid #ffc34d;
+    transition:left .22s ease,top .22s ease,width .22s ease,height .22s ease;
+    animation:chkTourPulse 1.5s ease-in-out infinite;
+  }
+  @keyframes chkTourPulse{
+    0%,100%{ opacity:1; }
+    50%{ opacity:0.25; }
+  }
+  #chkTourTip{
+    display:none; position:fixed; z-index:9000; background:#fff; border-radius:18px;
+    box-shadow:0 16px 50px rgba(15,23,55,.28); padding:20px 22px 16px; width:290px;
+    transition:left .22s ease,top .22s ease;
+  }
+  .chk-tour-action{ cursor:pointer; border:none; font-family:var(--font); font-weight:700; font-size:13px; padding:9px 16px; border-radius:10px; }
+  #chkTourStep{ font-size:13px; font-weight:800; color:var(--ink); margin-bottom:6px; line-height:1.3; }
+  #chkTourDesc{ font-size:12.5px; color:var(--ink-soft); line-height:1.6; margin-bottom:16px; }
+  .chk-tour-row{ display:flex; align-items:center; gap:8px; }
+  #chkTourSkip{ background:none; color:#94a3b8; font-size:12px; margin-right:auto; padding:4px 0; }
+  #chkTourBack{ background:#f1f5f9; color:var(--ink-soft); }
+  #chkTourNext{ background:var(--purple); color:#fff; }
+</style>
+</head>
+<body>
+
+  <button class="chk-exit-float" id="chkExitFloatBtn" type="button">✖ Exit</button>
+
+  <div class="chk-top">
+    <div class="chk-logo">✅</div>
+    <div>
+      <h1>Check or X Generator</h1>
+      <div class="chk-tsub">Binary picture-judgment activities for learners (ASD / Intellectual Disability)</div>
+    </div>
+    <div class="chk-top-actions">
+      <button class="chk-btn chk-btn--help" id="chkHelpBtn" type="button">❓ Help</button>
+      <button class="chk-btn chk-btn--print" id="chkPrintBtn" type="button">🖨️ Generate Printable</button>
+      <button class="chk-btn chk-btn--ghost" id="chkPreviewBtn" type="button">👁 Preview</button>
+      <button class="chk-btn chk-btn--ghost" id="chkDraftBtn" type="button">💾 Save Draft</button>
+      <button class="chk-btn chk-btn--pub" id="chkPubBtn" type="button">🌐 Publish</button>
+    </div>
+  </div>
+
+  <div class="chk-body">
+
+    <!-- LEFT COLUMN -->
+    <div class="chk-left-col">
+
+      <div class="chk-card">
+        <div class="chk-step">Activity Slides <span class="chk-edit-link">(suggested: ~5 per set)</span></div>
+        <div class="chk-slidebar">
+          <button id="chkPrevSlide" type="button">◂</button>
+          <div class="chk-slide-label" id="chkSlideLabel">Slide 1 of 1</div>
+          <button id="chkNextSlide" type="button">▸</button>
+        </div>
+        <div class="chk-slide-actions">
+          <button id="chkAddSlide" type="button">+ Add Slide</button>
+          <button id="chkDeleteSlide" type="button" class="danger">🗑 Delete</button>
+        </div>
+      </div>
+
+      <div class="chk-card">
+        <div class="chk-step">1. Activity Type</div>
+        <div class="chk-type">
+          <div class="chk-type-ic">✅</div>
+          <b>Check or X</b>
+        </div>
+        <p class="chk-type-desc">Learners mark ✓ or ✗ on each picture based on one stated criterion (e.g. "shows eating soup").</p>
+      </div>
+
+      <div class="chk-card">
+        <div class="chk-step">2. Items <span class="chk-edit-link">(picture + correct mark)</span></div>
+        <div id="chkItems"></div>
+        <button class="chk-add" id="chkAddItem" type="button">+ Add Item</button>
+      </div>
+
+    </div>
+
+    <!-- CENTER PREVIEW -->
+    <div class="chk-preview-col">
+      <div class="chk-step">4. Activity Preview</div>
+      <div class="chk-stage" id="chkStage">
+        <div class="chk-deco">
+          <span class="d-sun">☀️</span><span class="d-cloud1">☁️</span><span class="d-cloud2">☁️</span>
+          <div class="d-grass"></div><span class="d-flower1">🌼</span><span class="d-flower2">🌸</span>
+        </div>
+        <div class="chk-stage-inner" id="chkStageInner">
+          <div class="chk-title" id="chkTitle"></div>
+          <div class="chk-instr" id="chkInstr"></div>
+          <div class="chk-grid" id="chkGrid"></div>
+          <div class="chk-stage-controls">
+            <div class="chk-hint" id="chkHint"></div>
+            <div class="chk-stage-btnrow">
+              <button class="chk-mini chk-mini--reset" id="chkReset" type="button">↺ Try Again</button>
+              <button class="chk-mini chk-mini--check" id="chkCheck" type="button">✓ Check answers</button>
+            </div>
+            <div class="chk-stage-nav" id="chkStageNav">
+              <button id="chkStagePrev" type="button">◂ Previous</button>
+              <span id="chkStageSlideLabel">Slide 1 of 1</span>
+              <button id="chkStageNext" type="button">Next ▸</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chk-reminders">
+        <div class="r-title">♿ Accessibility Reminders</div>
+        <div class="chk-rem-list">
+          <div class="chk-rem"><span class="r-ic">🖼️</span>Use clear real images</div>
+          <div class="chk-rem"><span class="r-ic">🎨</span>High contrast colors</div>
+          <div class="chk-rem"><span class="r-ic">🔠</span>Large fonts</div>
+          <div class="chk-rem"><span class="r-ic">💬</span>Simple, one-rule instructions</div>
+          <div class="chk-rem"><span class="r-ic">✅</span>One concept per page</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT SETTINGS -->
+    <div class="chk-right-col" id="chkRightCol">
+      <div class="chk-card chk-right-panel-full" id="chkRightPanelFull">
+        <div class="chk-set-title">🎨 Design &amp; Settings
+          <button class="chk-collapse-btn" id="chkCollapseBtn" type="button" title="Hide panel">⮜</button>
+        </div>
+
+        <div class="chk-set-group">
+          <div class="chk-set-label">Background Color</div>
+          <div class="chk-swatches" id="chkSwatches"></div>
+        </div>
+
+        <div class="chk-set-group">
+          <div class="chk-set-label">Fonts</div>
+          <select class="chk-select" id="chkFont">
+            <option value="'Comic Sans MS','Comic Sans',cursive">Comic Sans MS</option>
+            <option value="'Fredoka',sans-serif">Fredoka</option>
+            <option value="'Nunito',sans-serif">Nunito</option>
+            <option value="'Poppins',sans-serif">Poppins</option>
+            <option value="Verdana,sans-serif">Verdana</option>
+            <option value="Arial,sans-serif">Arial</option>
+          </select>
+        </div>
+
+        <div class="chk-set-group">
+          <div class="chk-size-head">
+            <div class="chk-set-label" style="margin:0">Font Size</div>
+            <input class="chk-size-num" id="chkSizeNum" type="number" min="20" max="64" />
+          </div>
+          <div class="chk-size-row">
+            <span class="a-sm">A</span>
+            <input type="range" id="chkSize" min="20" max="64" step="1" />
+            <span class="a-lg">A</span>
+          </div>
+        </div>
+
+        <div class="chk-set-group">
+          <div class="chk-set-label">Text Color</div>
+          <div class="chk-color-row">
+            <input type="color" id="chkTextColor" />
+            <span style="font-size:13px;color:var(--ink-soft);font-weight:600">Title &amp; labels</span>
+          </div>
+        </div>
+
+        <div class="chk-set-group">
+          <div class="chk-set-label">Border Style</div>
+          <div class="chk-seg" id="chkBorder">
+            <button data-b="rounded" class="sel" type="button"><span class="seg-box seg-rounded"></span>Rounded</button>
+            <button data-b="dashed" type="button"><span class="seg-box seg-dashed"></span>Dashed</button>
+            <button data-b="solid" type="button"><span class="seg-box seg-solid"></span>Solid</button>
+          </div>
+        </div>
+
+        <div class="chk-set-group">
+          <div class="chk-set-label">Spacing</div>
+          <div class="chk-spacing">
+            <button id="chkSpaceMinus" type="button">−</button>
+            <span id="chkSpaceVal">Medium</span>
+            <button id="chkSpacePlus" type="button">+</button>
+          </div>
+        </div>
+
+        <div class="chk-set-group">
+          <div class="chk-set-label">Title</div>
+          <input class="chk-input" id="chkTitleInput" type="text" />
+        </div>
+
+        <div class="chk-set-group">
+          <div class="chk-set-label">Instruction / Criterion Text</div>
+          <input class="chk-input" id="chkInstrInput" type="text" />
+        </div>
+
+        <div class="chk-set-group">
+          <div class="chk-set-label">Other Options</div>
+          <label class="chk-check"><input type="checkbox" id="chkShowTitle" checked /> Show title</label>
+          <label class="chk-check"><input type="checkbox" id="chkShowInstr" checked /> Show instructions</label>
+          <label class="chk-check"><input type="checkbox" id="chkShowDeco" checked /> Show decorations</label>
+        </div>
+
+        <div class="chk-set-actions">
+          <button class="chk-reset" id="chkResetAll" type="button">↻ Reset</button>
+          <button class="chk-apply" id="chkApply" type="button">✓ Apply Changes</button>
+        </div>
+      </div>
+
+      <div class="chk-tip chk-right-panel-guide" id="chkRightPanelGuide">
+        <b>💡 Template Guide
+          <button class="chk-guide-settings-btn" id="chkShowSettingsBtn" type="button" title="Show Design & Settings">🎨 Settings</button>
+        </b>
+        <p>
+          • Write ONE clear criterion in Instruction Text.<br>
+          • Upload images or paste an image link.<br>
+          • Mark each item's correct answer (✓ or ✗).<br>
+          • Change colors, fonts, and spacing.<br>
+          • Preview before publishing.
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SCORE MODAL -->
+  <div class="chk-modal-overlay" id="chkModalOverlay">
+    <div class="chk-modal-card">
+      <img class="chk-modal-emoji" id="chkModalEmoji" src="" alt="Result" />
+      <div class="chk-modal-score" id="chkModalScore">0 / 0 correct</div>
+      <div class="chk-modal-msg" id="chkModalMsg">Great job!</div>
+
+      <div class="chk-review-list" id="chkReviewList" style="display:none;">
+        <div class="chk-review-title">📋 Item-by-Item Results</div>
+        <div id="chkReviewRows"></div>
+      </div>
+      <div class="chk-pending-note" id="chkPendingNote" style="display:none;">
+        Suggested score lang ito — pending pa rin ang final review ng teacher.
+      </div>
+
+      <div id="chkRetakeInfo" style="display:none;font-size:12px;color:#64748b;margin-bottom:4px;"></div>
+      <div class="chk-modal-actions">
+        <button class="chk-modal-close" id="chkModalCloseBtn" type="button">✖ Close</button>
+        <button class="chk-modal-try" id="chkModalTryBtn" type="button">🔁 Try Again</button>
+        <button class="chk-modal-try chk-publish-confirm" id="chkStudentSubmitBtn" type="button" style="display:none;">✅ Submit Final Answer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PUBLISH MODAL -->
+  <div class="chk-modal-overlay" id="chkPublishOverlay">
+    <div class="chk-modal-card chk-publish-card">
+      <h3>🌐 Publish Activity</h3>
+      <div class="chk-publish-field">
+        <label>🎯 Learning Domain</label>
+        <div class="chk-domain-radios">
+          <label class="chk-domain-opt"><input type="radio" name="chkDomain" value="cognitive" checked /> Cognitive</label>
+          <label class="chk-domain-opt"><input type="radio" name="chkDomain" value="language" /> Language Development</label>
+          <label class="chk-domain-opt"><input type="radio" name="chkDomain" value="communication" /> Communication</label>
+          <label class="chk-domain-opt"><input type="radio" name="chkDomain" value="motor" /> Fine Motor</label>
+          <label class="chk-domain-opt"><input type="radio" name="chkDomain" value="social" /> Social & Emotional</label>
+          <label class="chk-domain-opt"><input type="radio" name="chkDomain" value="self" /> Self-Help / Daily Living</label>
+          <label class="chk-domain-opt"><input type="radio" name="chkDomain" value="aesthetic" /> Aesthetic & Creative</label>
+        </div>
+      </div>
+      <div class="chk-publish-field">
+        <label for="chkDeadlineInput">📅 Deadline</label>
+        <input type="date" id="chkDeadlineInput" />
+        <div class="chk-publish-hint">Choose the last day the activity can still be submitted.</div>
+      </div>
+      <div class="chk-modal-actions">
+        <button class="chk-modal-close" id="chkPublishCancelBtn" type="button">✖ Cancel</button>
+        <button class="chk-modal-try chk-publish-confirm" id="chkPublishConfirmBtn" type="button">✅ Confirm Publish</button>
+      </div>
+    </div>
+  </div>
+
+
+<script>
+/* =====================================================================
+   CHECK OR X TEMPLATE GENERATOR — main script
+   Same architecture as letter-identification.html / written-response.html:
+     1. STATE            2. SLIDE NAVIGATION      3. ITEMS EDITOR
+     4. ACTIVITY PREVIEW 5. SCORE MODAL (auto-suggest, read-only results)
+     6. APPEARANCE (all controls live)   7. TOP BAR ACTIONS   8. INIT
+   ===================================================================== */
+
+  const $ = id => document.getElementById(id);
+
+  var _stuMode = false, _stuPubId = '', _stuRetake = 0,
+      _stuLastScore = null, _stuLastTotal = null, _stuProg = [], _stuSlideScores = [], _stuSlideRetakes = {}, _stuSubmitDone = false;
+
+  /* ── IndexedDB helper ─────────── */
+  var _idb = (function(){
+    var DB='sped_alm_db', VER=1, ST='blobs';
+    function open(cb){
+      var r=indexedDB.open(DB,VER);
+      r.onupgradeneeded=function(e){e.target.result.createObjectStore(ST);};
+      r.onsuccess=function(e){cb(null,e.target.result);};
+      r.onerror=function(e){cb(e.target.error,null);};
+    }
+    return {
+      save:function(key,val,cb){open(function(err,db){if(err){cb&&cb(err);return;}var tx=db.transaction(ST,'readwrite');tx.objectStore(ST).put(val,key);tx.oncomplete=function(){cb&&cb(null);};tx.onerror=function(e){cb&&cb(e.target.error);};});},
+      load:function(key,cb){open(function(err,db){if(err){cb(err,null);return;}var tx=db.transaction(ST,'readonly');var r=tx.objectStore(ST).get(key);r.onsuccess=function(){cb(null,r.result||null);};r.onerror=function(e){cb(e.target.error,null);};});},
+      del:function(key,cb){open(function(err,db){if(err){cb&&cb(err);return;}var tx=db.transaction(ST,'readwrite');tx.objectStore(ST).delete(key);tx.oncomplete=function(){cb&&cb(null);};});}
+    };
+  })();
+
+  /* ------------------------------------------------------------- *
+   * 1. STATE
+   * ------------------------------------------------------------- */
+
+  const DEFAULT_DESIGN = {
+    bg:"#fdf6d8", font:"'Comic Sans MS','Comic Sans',cursive", fontSize:38,
+    textColor:"#243a5e", border:"rounded", spacing:"Medium",
+    showTitle:true, showInstr:true, showDeco:true
+  };
+  const BG_SWATCHES = ["#fdf6d8","#eaf2ff","#e8faf0","#f0eefc","#fdebf2","#ffffff"];
+  const SPACINGS = ["Small","Medium","Large"];
+  const SPACE_GAP = { Small:12, Medium:20, Large:30 };
+
+  function makeItem(correct){
+    return { img:null, imgType:"upload", emoji:"🍽️", correct: correct !== undefined ? correct : true };
+  }
+  function makeDefaultActivity(){
+    return {
+      title:"Check or X",
+      instruction:"Put a check (✓) on the picture that shows eating/swallowing soup, and put an X if it is not.",
+      items:[ makeItem(true), makeItem(false), makeItem(true), makeItem(false), makeItem(true), makeItem(false) ]
+    };
+  }
+  function makeBlankActivity(slideNumber){
+    return {
+      title:"New Activity "+slideNumber,
+      instruction:"Put a check (✓) if it matches, put an X if it does not.",
+      items:[ makeItem(true), makeItem(false) ]
+    };
+  }
+
+  const state = {
+    ...structuredClone(DEFAULT_DESIGN),
+    thumb:null,
+    activities:[ makeDefaultActivity() ],
+    currentIndex:0
+  };
+
+  function currentActivity(){ return state.activities[state.currentIndex]; }
+
+  let studentMarks = {};   // itemIndex -> true(check)/false(x)/undefined
+  let suggestedMarks = {}; // itemIndex -> bool (isCorrect)
+  let stageScale = 1;
+
+  const stage = $("chkStage"), stageInner = $("chkStageInner"), grid = $("chkGrid");
+
+  /* ------------------------------------------------------------- *
+   * 2. SLIDE NAVIGATION
+   * ------------------------------------------------------------- */
+
+  function renderSlideNav(){
+    const total = state.activities.length;
+    $("chkSlideLabel").textContent = `Slide ${state.currentIndex+1} of ${total}`;
+    $("chkPrevSlide").disabled = state.currentIndex === 0;
+    $("chkNextSlide").disabled = state.currentIndex === total-1;
+    $("chkDeleteSlide").disabled = total <= 1;
+
+    $("chkStageSlideLabel").textContent = `Slide ${state.currentIndex+1} of ${total}`;
+    $("chkStagePrev").disabled = state.currentIndex === 0;
+    $("chkStageNext").disabled = state.currentIndex === total-1;
+    $("chkStageNav").style.display = total > 1 ? "flex" : "none";
+  }
+
+  function refreshSlideUI(){
+    renderItems();
+    $("chkTitleInput").value = currentActivity().title;
+    $("chkInstrInput").value = currentActivity().instruction;
+    renderActivity();
+    renderSlideNav();
+  }
+
+  function goToSlide(index){
+    state.currentIndex = Math.max(0, Math.min(state.activities.length-1, index));
+    refreshSlideUI();
+  }
+
+  $("chkPrevSlide").addEventListener("click", ()=> goToSlide(state.currentIndex-1));
+  $("chkNextSlide").addEventListener("click", ()=> goToSlide(state.currentIndex+1));
+  $("chkStagePrev").addEventListener("click", ()=> goToSlide(state.currentIndex-1));
+  $("chkStageNext").addEventListener("click", ()=> goToSlide(state.currentIndex+1));
+
+  $("chkAddSlide").addEventListener("click", ()=>{
+    state.activities.push(makeBlankActivity(state.activities.length+1));
+    goToSlide(state.activities.length-1);
+  });
+
+  $("chkDeleteSlide").addEventListener("click", ()=>{
+    if (state.activities.length <= 1){ alert("Keep at least one slide."); return; }
+    state.activities.splice(state.currentIndex, 1);
+    goToSlide(Math.min(state.currentIndex, state.activities.length-1));
+  });
+
+  /* ------------------------------------------------------------- *
+   * 3. ITEMS EDITOR (left column "Items" list)
+   * ------------------------------------------------------------- */
+
+  function itemRow(itemIndex){
+    const items = currentActivity().items;
+    const it = items[itemIndex];
+    const row = document.createElement("div"); row.className = "chk-item-row";
+
+    const top = document.createElement("div"); top.className = "chk-item-top";
+
+    /* ---- media column: upload OR link ---- */
+    const media = document.createElement("div"); media.className = "chk-item-media";
+    const lbl = document.createElement("label"); lbl.className = "chk-thumb";
+    if (it.img){ const im = document.createElement("img"); im.src = it.img;
+      im.onerror = function(){ this.onerror=null; this.src = "images/placeholder.png"; };
+      lbl.appendChild(im); }
+    else { lbl.textContent = it.emoji || "+"; }
+    const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*"; inp.hidden = true;
+    inp.addEventListener("change", e=>{
+      const f = e.target.files[0]; if (!f) return;
+      const r = new FileReader();
+      r.onload = ev=>{ it.img = ev.target.result; it.imgType = "upload"; renderItems(); renderActivity(); };
+      r.readAsDataURL(f);
+    });
+    lbl.appendChild(inp); media.appendChild(lbl);
+
+    const tabs = document.createElement("div"); tabs.className = "chk-media-tabs";
+    const tabUpload = document.createElement("button"); tabUpload.type="button"; tabUpload.textContent="Upload";
+    const tabLink = document.createElement("button"); tabLink.type="button"; tabLink.textContent="Link";
+    (it.imgType === "link" ? tabLink : tabUpload).classList.add("sel");
+    const linkInput = document.createElement("input");
+    linkInput.type = "url"; linkInput.className = "chk-link-input"; linkInput.placeholder = "Image URL";
+    if (it.imgType === "link"){ linkInput.classList.add("show"); linkInput.value = it.img || ""; }
+    tabUpload.addEventListener("click", ()=>{
+      tabUpload.classList.add("sel"); tabLink.classList.remove("sel"); linkInput.classList.remove("show");
+      inp.click();
+    });
+    tabLink.addEventListener("click", ()=>{
+      tabLink.classList.add("sel"); tabUpload.classList.remove("sel"); linkInput.classList.add("show");
+      linkInput.focus();
+    });
+    linkInput.addEventListener("input", e=>{
+      const url = e.target.value.trim();
+      it.img = url || null; it.imgType = "link";
+      renderItems(); renderActivity();
+    });
+    tabs.appendChild(tabUpload); tabs.appendChild(tabLink);
+    media.appendChild(tabs); media.appendChild(linkInput);
+    top.appendChild(media);
+
+    /* ---- correct answer toggle ---- */
+    const fields = document.createElement("div"); fields.className = "chk-item-fields";
+    const l1 = document.createElement("label"); l1.textContent = "Correct Answer";
+    const seg = document.createElement("div"); seg.className = "chk-correct-seg";
+    const btnCheck = document.createElement("button"); btnCheck.type="button"; btnCheck.textContent="✓ Check";
+    const btnX = document.createElement("button"); btnX.type="button"; btnX.textContent="✗ X";
+    function syncSeg(){
+      btnCheck.classList.toggle("sel-check", it.correct === true);
+      btnX.classList.toggle("sel-x", it.correct === false);
+    }
+    syncSeg();
+    btnCheck.addEventListener("click", ()=>{ it.correct = true; syncSeg(); renderActivity(); });
+    btnX.addEventListener("click", ()=>{ it.correct = false; syncSeg(); renderActivity(); });
+    seg.appendChild(btnCheck); seg.appendChild(btnX);
+    fields.appendChild(l1); fields.appendChild(seg);
+    top.appendChild(fields);
+
+    row.appendChild(top);
+
+    /* ---- item menu (delete) ---- */
+    const menu = document.createElement("button"); menu.className = "chk-item-menu"; menu.type = "button"; menu.textContent = "⋮";
+    const pop = document.createElement("div"); pop.className = "chk-pop";
+    const del = document.createElement("button"); del.className = "del"; del.type = "button"; del.textContent = "🗑 Remove item";
+    del.addEventListener("click", ()=>{
+      if (items.length <= 1){ alert("Keep at least 1 item."); return; }
+      items.splice(itemIndex, 1); renderItems(); renderActivity();
+    });
+    pop.appendChild(del);
+    menu.addEventListener("click", e=>{
+      e.stopPropagation();
+      document.querySelectorAll(".chk-pop").forEach(p=>{ if (p !== pop) p.classList.remove("show"); });
+      pop.classList.toggle("show");
+    });
+    row.appendChild(menu); row.appendChild(pop);
+
+    return row;
+  }
+
+  function renderItems(){
+    const wrap = $("chkItems"); wrap.innerHTML = "";
+    currentActivity().items.forEach((_, i)=> wrap.appendChild(itemRow(i)));
+  }
+  document.addEventListener("click", ()=> document.querySelectorAll(".chk-pop").forEach(p=> p.classList.remove("show")));
+
+  $("chkAddItem").addEventListener("click", ()=>{
+    currentActivity().items.push(makeItem(true));
+    renderItems(); renderActivity();
+  });
+
+  /* ------------------------------------------------------------- *
+   * 4. ACTIVITY PREVIEW (mark ✓ or ✗ on each picture)
+   * ------------------------------------------------------------- */
+
+  function scard(itemIndex){
+    const it = currentActivity().items[itemIndex];
+    const el = document.createElement("div"); el.className = "chk-scard"; el.dataset.i = itemIndex;
+
+    if (it.img){
+      const im = document.createElement("img"); im.className = "chk-scard-img"; im.src = it.img;
+      im.onerror = function(){ this.onerror=null; this.src = "images/placeholder.png"; };
+      el.appendChild(im);
+    } else {
+      const sp = document.createElement("div"); sp.className = "chk-scard-emoji"; sp.textContent = it.emoji || "?";
+      el.appendChild(sp);
+    }
+
+    const opts = document.createElement("div"); opts.className = "chk-scard-opts";
+    const checkBtn = document.createElement("button"); checkBtn.className = "chk-mopt mopt-check"; checkBtn.type = "button"; checkBtn.textContent = "✓";
+    const xBtn = document.createElement("button"); xBtn.className = "chk-mopt mopt-x"; xBtn.type = "button"; xBtn.textContent = "✗";
+    checkBtn.addEventListener("click", ()=> selectMark(itemIndex, true));
+    xBtn.addEventListener("click", ()=> selectMark(itemIndex, false));
+    opts.appendChild(checkBtn); opts.appendChild(xBtn);
+    el.appendChild(opts);
+    return el;
+  }
+
+  function renderActivity(){
+    const activity = currentActivity();
+    $("chkTitle").textContent = activity.title;
+    $("chkInstr").textContent = activity.instruction;
+    $("chkTitle").style.display = state.showTitle ? "block" : "none";
+    $("chkInstr").style.display = state.showInstr ? "block" : "none";
+
+    studentMarks = {};
+    suggestedMarks = {};
+    grid.innerHTML = "";
+    activity.items.forEach((_, i)=> grid.appendChild(scard(i)));
+    $("chkHint").textContent = "";
+    if (document.body.classList.contains("chk-preview-only")) setTimeout(fitStageToScreen, 30);
+  }
+
+  function selectMark(itemIndex, mark){
+    studentMarks[itemIndex] = mark;
+    const card = grid.querySelector('[data-i="'+itemIndex+'"]');
+    card.querySelectorAll(".chk-mopt").forEach(b=> b.classList.remove("sel"));
+    card.querySelector(mark ? ".mopt-check" : ".mopt-x").classList.add("sel");
+    $("chkHint").textContent = "";
+  }
+
+  function resetAnswers(){
+    studentMarks = {};
+    suggestedMarks = {};
+    document.querySelectorAll(".chk-mopt").forEach(b=> b.classList.remove("sel"));
+    $("chkHint").textContent = "";
+  }
+  $("chkReset").addEventListener("click", resetAnswers);
+
+  $("chkCheck").addEventListener("click", ()=>{
+    const totalItems = currentActivity().items.length;
+    if (Object.keys(studentMarks).length < totalItems){
+      $("chkHint").textContent = "Markahan muna ang lahat ng picture bago mag-check.";
+      return;
+    }
+    let correctCount = 0;
+    suggestedMarks = {};
+    Object.keys(studentMarks).forEach(idx=>{
+      const it = currentActivity().items[idx];
+      const chosen = studentMarks[idx];
+      const isCorrect = chosen === it.correct;
+      suggestedMarks[idx] = isCorrect;
+      if (isCorrect) correctCount++;
+      const card = grid.querySelector('[data-i="'+idx+'"]');
+      card.querySelectorAll(".chk-mopt").forEach(b=>{
+        const isCheckBtn = b.classList.contains("mopt-check");
+        if ((isCheckBtn && it.correct === true) || (!isCheckBtn && it.correct === false)) b.style.borderColor = "#1f9d44";
+        else if (b.classList.contains("sel")) b.style.borderColor = "#e23b54";
+      });
+    });
+    openScoreModal(correctCount, totalItems);
+  });
+  window.addEventListener("resize", ()=>{
+    if (document.body.classList.contains("chk-preview-only")) fitStageToScreen();
+  });
+
+  /* ------------------------------------------------------------- *
+   * 5. SCORE MODAL (auto-suggest + read-only item-by-item results)
+   * ------------------------------------------------------------- */
+
+  function renderReviewRows(stuMode){
+    const wrap = $("chkReviewRows"); wrap.innerHTML = "";
+    const items = currentActivity().items;
+    Object.keys(suggestedMarks).forEach(idx=>{
+      const it = items[idx];
+      const ok = suggestedMarks[idx];
+      const chosenLabel = studentMarks[idx] ? "✓" : "✗";
+      const correctLabel = it.correct ? "✓" : "✗";
+      const row = document.createElement("div"); row.className = "chk-review-row";
+
+      const thumb = document.createElement("img"); thumb.className = "chk-review-thumb";
+      thumb.src = it.img || "images/placeholder.png";
+      thumb.onerror = function(){ this.onerror=null; this.src="images/placeholder.png"; };
+      row.appendChild(thumb);
+
+      const text = document.createElement("div"); text.className = "chk-review-text";
+      const b = document.createElement("b"); b.textContent = `#${+idx+1}: minark na "${chosenLabel}"`;
+      const span = document.createElement("span");
+      if (stuMode) {
+        span.textContent = ok ? "✅ Tama!" : "💡 Clue: Tingnan muli ang larawan. Tama ba talaga ito o hindi?";
+      } else {
+        span.textContent = "Correct answer: " + correctLabel;
+      }
+      text.appendChild(b); text.appendChild(span);
+      row.appendChild(text);
+
+      const status = document.createElement("div");
+      status.className = "chk-review-status " + (ok ? "correct" : "wrong");
+      status.textContent = ok ? "✓" : "✗";
+      row.appendChild(status);
+
+      wrap.appendChild(row);
+    });
+  }
+
+  function openScoreModal(correctCount, totalItems){
+    const percent = correctCount / totalItems;
+    let image, message;
+    if (percent === 1){
+      image = "images/perfect.png";
+      message = "Perfect! Tamang-tama ang lahat! 🎊";
+      if (typeof confetti === "function"){
+        confetti({ particleCount:200, spread:120, startVelocity:40, origin:{ y:0.6 } });
+        setTimeout(()=>{
+          confetti({ particleCount:100, spread:80, origin:{ x:0.2, y:0.6 } });
+          confetti({ particleCount:100, spread:80, origin:{ x:0.8, y:0.6 } });
+        }, 300);
+      }
+    }
+    else if (percent >= 0.5){ image = "images/goodjob.png"; message = "Good job! Konting practice pa lang! ⭐"; }
+    else { image = "images/tryagain.png"; message = "Let's try again! Practice makes perfect! 💪"; }
+
+    $("chkModalEmoji").src = image;
+    $("chkModalEmoji").onerror = function(){ this.onerror=null; this.src="images/placeholder.png"; };
+    $("chkModalScore").textContent = `${correctCount} / ${totalItems} correct`;
+    $("chkModalMsg").textContent = message;
+
+    $("chkReviewList").style.display = "block";
+    $("chkPendingNote").style.display = _stuMode ? "block" : "none";
+    renderReviewRows(_stuMode);
+
+    $("chkModalOverlay").classList.add("show");
+
+    if (_stuMode) {
+      _stuLastScore = correctCount; _stuLastTotal = totalItems;
+      _stuSlideScores[state.currentIndex] = { correct: correctCount, total: totalItems, ansItems: Object.keys(suggestedMarks).map(function(i){var it=currentActivity().items[+i];return{label:it?(it.emoji||('Item '+(+i+1))):('Item '+(+i+1)),studentAnswer:studentMarks[+i]?'✓ Check':'✗ Not',correctAnswer:(it&&it.correct)?'✓ Check':'✗ Not',correct:!!suggestedMarks[+i]};}) };
+      var _ts = state.activities.length, _isLast = state.currentIndex >= _ts - 1;
+      var _allDone = _stuSlideScores.filter(Boolean).length === _ts;
+      if (_ts > 1 && !_isLast) {
+        $("chkModalCloseBtn").style.display = ""; $("chkModalCloseBtn").textContent = "Next Slide →"; $("chkModalCloseBtn").dataset.nextSlide = "1";
+      } else {
+        $("chkModalCloseBtn").style.display = "none"; $("chkModalCloseBtn").dataset.nextSlide = "";
+      }
+      $("chkModalTryBtn").textContent = "🔁 Retake";
+      $("chkStudentSubmitBtn").style.display = _allDone ? "" : "none";
+      var ri = $("chkRetakeInfo");
+      var _csr = _stuSlideRetakes[state.currentIndex] || 0;
+      ri.style.display = _stuRetake > 0 ? "" : "none";
+      if (_stuRetake > 0) ri.textContent = (_ts > 1 ? 'Slide '+(state.currentIndex+1)+': ' : '') + (_csr > 0 ? _csr + ' retake(s). ' : '') + 'Total retakes: ' + _stuRetake;
+    }
+  }
+  function closeScoreModal(){ $("chkModalOverlay").classList.remove("show"); }
+
+  $("chkModalCloseBtn").addEventListener("click", function(){
+    var goNext = _stuMode && $("chkModalCloseBtn").dataset.nextSlide === '1';
+    closeScoreModal();
+    if (goNext) { var ni = state.currentIndex + 1; if (ni < state.activities.length) goToSlide(ni); }
+  });
+  $("chkModalTryBtn").addEventListener("click", ()=>{
+    if (_stuMode) { _stuRetake++; _stuSlideRetakes[state.currentIndex] = (_stuSlideRetakes[state.currentIndex]||0)+1; _stuSlideScores[state.currentIndex] = undefined; }
+    closeScoreModal(); resetAnswers();
+  });
+
+  /* ------------------------------------------------------------- *
+   * 6. APPEARANCE (Design & Settings — every control applies live)
+   * ------------------------------------------------------------- */
+
+  function applyAppearance(){
+    stage.style.background = state.bg;
+    stage.style.fontFamily = state.font;
+    stage.style.fontSize = state.fontSize + "px";
+    stage.style.setProperty("--chk-text", state.textColor);
+    stage.classList.toggle("bs-dashed", state.border === "dashed");
+    stage.classList.toggle("bs-solid", state.border === "solid");
+    stage.classList.toggle("no-deco", !state.showDeco);
+    grid.style.gap = SPACE_GAP[state.spacing] + "px";
+    $("chkTitle").style.display = state.showTitle ? "block" : "none";
+    $("chkInstr").style.display = state.showInstr ? "block" : "none";
+  }
+
+  function renderSwatches(){
+    const wrap = $("chkSwatches"); wrap.innerHTML = "";
+    BG_SWATCHES.forEach(color=>{
+      const swatch = document.createElement("div");
+      swatch.className = "chk-sw" + (color === state.bg ? " sel" : "");
+      swatch.style.background = color;
+      swatch.addEventListener("click", ()=>{ state.bg = color; applyAppearance(); renderSwatches(); });
+      wrap.appendChild(swatch);
+    });
+  }
+
+  function setFontSize(value){
+    value = Math.max(20, Math.min(64, +value || 38));
+    state.fontSize = value;
+    $("chkSize").value = value; $("chkSizeNum").value = value;
+    applyAppearance();
+  }
+  $("chkFont").addEventListener("change", e=>{ state.font = e.target.value; applyAppearance(); });
+  $("chkSize").addEventListener("input", e=> setFontSize(e.target.value));
+  $("chkSizeNum").addEventListener("input", e=> setFontSize(e.target.value));
+
+  $("chkTextColor").addEventListener("input", e=>{ state.textColor = e.target.value; applyAppearance(); });
+
+  document.querySelectorAll("#chkBorder button").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      state.border = btn.dataset.b;
+      document.querySelectorAll("#chkBorder button").forEach(b=> b.classList.remove("sel"));
+      btn.classList.add("sel");
+      applyAppearance();
+    });
+  });
+
+  function setSpacing(delta){
+    let index = SPACINGS.indexOf(state.spacing) + delta;
+    index = Math.max(0, Math.min(SPACINGS.length-1, index));
+    state.spacing = SPACINGS[index];
+    $("chkSpaceVal").textContent = state.spacing;
+    applyAppearance();
+  }
+  $("chkSpaceMinus").addEventListener("click", ()=> setSpacing(-1));
+  $("chkSpacePlus").addEventListener("click", ()=> setSpacing(1));
+
+  $("chkInstrInput").addEventListener("input", e=>{
+    currentActivity().instruction = e.target.value;
+    $("chkInstr").textContent = e.target.value;
+  });
+  $("chkTitleInput").addEventListener("input", e=>{
+    currentActivity().title = e.target.value;
+    $("chkTitle").textContent = e.target.value;
+  });
+
+  $("chkShowTitle").addEventListener("change", e=>{ state.showTitle = e.target.checked; applyAppearance(); });
+  $("chkShowInstr").addEventListener("change", e=>{ state.showInstr = e.target.checked; applyAppearance(); });
+  $("chkShowDeco").addEventListener("change", e=>{ state.showDeco = e.target.checked; applyAppearance(); });
+
+  $("chkApply").addEventListener("click", ()=>{ applyAppearance(); flash($("chkApply"), "✓ Applied"); });
+
+  $("chkResetAll").addEventListener("click", ()=>{
+    Object.assign(state, structuredClone(DEFAULT_DESIGN));
+    syncDesignControls(); applyAppearance(); renderActivity();
+  });
+
+  function syncDesignControls(){
+    $("chkFont").value = state.font;
+    $("chkSize").value = state.fontSize; $("chkSizeNum").value = state.fontSize;
+    $("chkTextColor").value = state.textColor;
+    $("chkSpaceVal").textContent = state.spacing;
+    $("chkShowTitle").checked = state.showTitle; $("chkShowInstr").checked = state.showInstr;
+    $("chkShowDeco").checked = state.showDeco;
+    document.querySelectorAll("#chkBorder button").forEach(b=> b.classList.toggle("sel", b.dataset.b === state.border));
+    renderSwatches();
+  }
+
+  /* ------------------------------------------------------------- *
+   * 7. TOP BAR ACTIONS
+   * ------------------------------------------------------------- */
+
+  function flash(button, text){
+    const original = button.textContent;
+    button.textContent = text;
+    setTimeout(()=> button.textContent = original, 1100);
+  }
+
+  function requestFullscreen(el){
+    const request = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+    if (request) request.call(el).catch(()=>{});
+  }
+  function exitFullscreen(){
+    const exit = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+    if (document.fullscreenElement || document.webkitFullscreenElement){
+      if (exit) exit.call(document).catch(()=>{});
+    }
+  }
+
+  function enterPreview(){
+    document.body.classList.add("chk-preview-only");
+    requestFullscreen(document.documentElement);
+    setTimeout(fitStageToScreen, 120);
+  }
+  function exitPreview(){
+    document.body.classList.remove("chk-preview-only");
+    exitFullscreen();
+    stageScale = 1;
+    stageInner.style.transform = "";
+    stageInner.style.marginBottom = "";
+  }
+  $("chkPreviewBtn").addEventListener("click", enterPreview);
+  $("chkExitFloatBtn").addEventListener("click", exitPreview);
+
+  function saveDraft() {
+    var draftId = new URLSearchParams(location.search).get('draft_id') || ('draft_' + Date.now());
+    var firstTitle = (state.activities[0] && state.activities[0].title) || '';
+    var draft = {
+      id:           draftId,
+      title:        firstTitle || 'Untitled Draft',
+      type:         'CheckOrX',
+      templateFile: 'TEMPLATES/CHECKX/check-or-x.html',
+      learner:      sessionStorage.getItem('selected_learner')   || 'ALL',
+      condition:    sessionStorage.getItem('selected_condition') || '',
+      teacherName:  sessionStorage.getItem('teacher_name')       || '—',
+      savedAt:      new Date().toISOString(),
+      data:         JSON.parse(JSON.stringify(state))
+    };
+    var drafts = [];
+    try { drafts = JSON.parse(localStorage.getItem('teacher_drafts') || '[]'); } catch(e) {}
+    var idx = drafts.findIndex(function(d){ return d.id === draftId; });
+    if (idx >= 0) drafts[idx] = draft; else drafts.push(draft);
+    try {
+      localStorage.setItem('teacher_drafts', JSON.stringify(drafts));
+      history.replaceState(null, '', '?draft_id=' + encodeURIComponent(draftId));
+      flash($('chkDraftBtn'), '✓ Draft Saved!');
+      setTimeout(function(){ window.location.href = '../Teacher_activies.html'; }, 700);
+    } catch(e) { alert('Storage full – could not save draft.'); }
+  }
+
+  function loadDraftIfAny() {
+    var draftId = new URLSearchParams(location.search).get('draft_id');
+    if (!draftId) return;
+    var drafts = [];
+    try { drafts = JSON.parse(localStorage.getItem('teacher_drafts') || '[]'); } catch(e) {}
+    var draft = drafts.find(function(d){ return d.id === draftId; });
+    if (!draft || !draft.data) return;
+    Object.assign(state, draft.data);
+    refreshSlideUI();
+    syncDesignControls();
+    applyAppearance();
+  }
+
+  $("chkDraftBtn").addEventListener("click", saveDraft);
+
+  function fitStageToScreen(){
+    if (!document.body.classList.contains("chk-preview-only")) return;
+    stageInner.style.transform = "none";
+    stageInner.style.marginBottom = "";
+    stageScale = 1;
+    const sp = window.getComputedStyle(stage);
+    const padV = (parseFloat(sp.paddingTop)||0) + (parseFloat(sp.paddingBottom)||0);
+    const available = window.innerHeight - padV;
+    const naturalH = stageInner.scrollHeight;
+    if (naturalH > available) {
+      stageScale = available / naturalH;
+      stageInner.style.transform = `scale(${stageScale})`;
+      stageInner.style.marginBottom = `-${naturalH * (1 - stageScale)}px`;
+    }
+  }
+
+  ["fullscreenchange", "webkitfullscreenchange"].forEach(evt=>{
+    document.addEventListener(evt, ()=>{
+      const stillFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+      if (!stillFullscreen) document.body.classList.remove("chk-preview-only");
+    });
+  });
+
+  $("chkCollapseBtn").addEventListener("click", ()=> document.body.classList.add("chk-right-collapsed"));
+  $("chkShowSettingsBtn").addEventListener("click", ()=> document.body.classList.remove("chk-right-collapsed"));
+
+  function openPublishModal(){
+    $("chkPublishOverlay").classList.add("show");
+  }
+  function closePublishModal(){ $("chkPublishOverlay").classList.remove("show"); }
+
+  $("chkPubBtn").addEventListener("click", openPublishModal);
+  $("chkPublishCancelBtn").addEventListener("click", closePublishModal);
+
+  function compressThumb(dataURL, callback) {
+    if (!dataURL) { callback(''); return; }
+    var img = new Image();
+    img.onload = function() {
+      var MAX = 160;
+      var ratio = Math.min(MAX / img.width, MAX / img.height, 1);
+      var cv = document.createElement('canvas');
+      cv.width = Math.round(img.width * ratio);
+      cv.height = Math.round(img.height * ratio);
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      callback(cv.toDataURL('image/jpeg', 0.55));
+    };
+    img.onerror = function() { callback(''); };
+    img.src = dataURL;
+  }
+
+  function confirmPublish() {
+    var deadline = $("chkDeadlineInput").value;
+    if (!deadline) { alert("Please set a deadline date before publishing."); return; }
+    var domain = document.querySelector('input[name="chkDomain"]:checked').value;
+    var firstTitle = (state.activities[0] && state.activities[0].title) || 'Untitled Activity';
+    compressThumb(state.thumb, function(smallThumb) {
+    var pub = {
+      id:          'pub-' + Date.now(),
+      title:       firstTitle,
+      type:        'CheckOrX',
+      deadline:    deadline,
+      thumbnail:   smallThumb,
+      teacherName: sessionStorage.getItem('teacher_name') || '—',
+      teacherId:   sessionStorage.getItem('teacher_id')   || '',
+      learner:     sessionStorage.getItem('selected_learner')   || 'ALL',
+      condition:   sessionStorage.getItem('selected_condition') || '',
+      publishedAt: new Date().toISOString()
+    };
+    var existing = [];
+    try { existing = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+    existing.push(pub);
+    try { localStorage.setItem('published_activities', JSON.stringify(existing)); } catch(e){ alert('Storage full – try clearing old drafts first.'); return; }
+    _idb.save('pub_data_' + pub.id, JSON.parse(JSON.stringify(state)), function(err){
+      if (err) console.warn('IDB save failed:', err);
+    });
+    var notifs = [];
+    try { notifs = JSON.parse(localStorage.getItem('student_notifications') || '[]'); } catch(e){}
+    notifs.unshift({ id:'notif-'+Date.now(), type:'new_activity',
+      title:'New activity available',
+      message:'Your teacher published "' + firstTitle + '" for ' + grading + ' Grading.',
+      activityId:pub.id, isRead:false, createdAt:new Date().toISOString() });
+    try { localStorage.setItem('student_notifications', JSON.stringify(notifs)); } catch(e){}
+    var _pubRef = pub;
+    var _assignedIds = [];
+    try { _assignedIds = JSON.parse(sessionStorage.getItem('selected_learner_ids') || '[]'); } catch(e) {}
+    if (!_assignedIds.length) { var _fb = parseInt(sessionStorage.getItem('selected_learner_id') || '0'); if (_fb > 0) _assignedIds = [_fb]; }
+    fetch('../TEACHER_BACKEND/teacher_create_activity.php', {
+      method: 'POST',
+      body: new URLSearchParams({
+        teacher_id: _pubRef.teacherId,
+        activity_title: _pubRef.title,
+        activity_type: 'CheckOrX',
+        subject: domain,
+        grade_level: '',
+        status: 'published',
+        assigned_student_ids: JSON.stringify(_assignedIds)
+      })
+    }).then(function(r){ return r.json(); }).then(function(d){
+      if (d.success && d.activity_id) {
+        var acts = []; try { acts = JSON.parse(localStorage.getItem('published_activities')||'[]'); } catch(e){}
+        var i = acts.findIndex(function(a){ return a.id === _pubRef.id; });
+        if (i >= 0) { acts[i].db_activity_id = d.activity_id; try { localStorage.setItem('published_activities', JSON.stringify(acts)); } catch(e){} }
+      }
+    }).catch(function(){});
+    closePublishModal();
+    setTimeout(function(){ window.location.href = '../Teacher_activies.html'; }, 400);
+    }); // end compressThumb
+  }
+  $("chkPublishConfirmBtn").addEventListener("click", confirmPublish);
+
+  /* ------------------------------------------------------------- *
+   * 8. INIT
+   * ------------------------------------------------------------- */
+
+  renderItems();
+  renderSwatches();
+  syncDesignControls();
+  applyAppearance();
+  renderActivity();
+  renderSlideNav();
+  loadDraftIfAny();
+
+  /* ── STUDENT MODE ─────────────────────────────────────────── */
+  (function () {
+    var p = new URLSearchParams(location.search);
+    if (p.get('student_mode') !== '1') return;
+    _stuMode = true;
+    _stuPubId = p.get('pub_id') || '';
+
+    try { _stuProg = JSON.parse(localStorage.getItem('student_progress') || '[]'); } catch(e){}
+    var prev = _stuProg.find(function(r){ return r.pubId === _stuPubId; });
+    if (prev) _stuRetake = prev.retakes || 0;
+
+    function showNotAvailable() {
+      document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Poppins,sans-serif;gap:16px;padding:32px;text-align:center;">'
+        + '<div style="font-size:72px;">📭</div>'
+        + '<h2 style="color:#1e3a8a;margin:0;">Activity Not Available</h2>'
+        + '<p style="color:#64748b;max-width:340px;margin:0;">The activity content could not be loaded. Ask your teacher to republish it.</p>'
+        + '<button onclick="window.history.back()" style="margin-top:8px;background:#1e3a8a;color:#fff;border:none;padding:12px 28px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;">← Exit</button>'
+        + '</div>';
+    }
+
+    function applyStudentMode(saved) {
+      if (!saved) { showNotAvailable(); return; }
+
+      Object.assign(state, saved);
+      state.currentIndex = 0;
+
+      var pubs = [];
+      try { pubs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+      var pub = pubs.find(function(r){ return r.id === _stuPubId; }) || {};
+      var splashThumb = pub.thumbnail
+        ? '<img src="' + pub.thumbnail + '" style="width:120px;height:120px;object-fit:cover;border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.35);" />'
+        : '<div style="font-size:80px;line-height:1;">✅</div>';
+      var dueText = pub.deadline
+        ? '<p style="color:#fde68a;font-size:15px;margin:0;">📅 Due: ' + new Date(pub.deadline+'T00:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) + '</p>'
+        : '';
+      var retakeText = _stuRetake > 0
+        ? '<p style="color:#fca5a5;font-size:13px;margin:0;">You have retaken this ' + _stuRetake + ' time(s).</p>'
+        : '';
+
+      var splash = document.createElement('div');
+      splash.id = 'stuSplash';
+      splash.style.cssText = 'position:fixed;inset:0;background:linear-gradient(145deg,#1e3a8a 0%,#1e40af 60%,#1d4ed8 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:99999;padding:32px;text-align:center;';
+      splash.innerHTML = splashThumb
+        + '<h1 style="color:#fff;font-family:Fredoka,Poppins,sans-serif;font-size:32px;font-weight:700;margin:0;max-width:520px;line-height:1.2;">' + (pub.title || state.activities[0]&&state.activities[0].title || 'Activity') + '</h1>'
+        + '<p style="color:#93c5fd;font-size:15px;margin:0;">Check or X</p>'
+        + dueText + retakeText
+        + '<button id="stuSplashBtn" style="margin-top:12px;background:#22c55e;color:#fff;border:none;padding:18px 56px;border-radius:18px;font-family:Fredoka,Poppins,sans-serif;font-size:24px;font-weight:700;cursor:pointer;box-shadow:0 6px 0 #15803d;transition:transform .1s;">▶ Start Activity</button>'
+        + '<button onclick="window.history.back()" style="background:transparent;color:#93c5fd;border:none;font-size:14px;cursor:pointer;margin-top:4px;">← Exit</button>';
+      document.body.appendChild(splash);
+
+      function _stuGoBack() {
+        _stuMode = false;
+        if (document.fullscreenElement) document.exitFullscreen();
+        var ret = sessionStorage.getItem('stu_return_url');
+        sessionStorage.removeItem('stu_return_url');
+        if (ret && ret.indexOf('Student_') !== -1) { window.location.href = ret; return; }
+        var base = window.location.href.split('/TEACHER_FILES/')[0];
+        window.location.href = base + '/STUDENT_FILES/Student_mymaterials.html';
+      }
+
+      document.getElementById('stuSplashBtn').addEventListener('click', function(e) {
+        e.stopPropagation();
+        var fs = document.documentElement;
+        if (fs.requestFullscreen) fs.requestFullscreen().catch(function(){});
+        else if (fs.webkitRequestFullscreen) fs.webkitRequestFullscreen();
+        splash.remove();
+
+        renderItems(); renderSwatches(); syncDesignControls(); applyAppearance(); renderActivity(); renderSlideNav();
+        document.body.classList.add('chk-preview-only');
+        setTimeout(fitStageToScreen, 50);
+
+        document.addEventListener('fullscreenchange', function() {
+          if (!document.fullscreenElement && _stuMode) _stuGoBack();
+        });
+        document.addEventListener('webkitfullscreenchange', function() {
+          if (!document.webkitFullscreenElement && _stuMode) _stuGoBack();
+        });
+
+        var origExit = document.querySelector('.chk-exit-float');
+        if (origExit) {
+          var newExit = origExit.cloneNode(false);
+          newExit.textContent = '← Exit';
+          origExit.parentNode.replaceChild(newExit, origExit);
+          newExit.addEventListener('click', function(ev) { ev.preventDefault(); ev.stopPropagation(); _stuGoBack(); });
+        }
+
+        $('chkStudentSubmitBtn').addEventListener('click', function() {
+          if (_stuSubmitDone) { _stuGoBack(); return; }
+          var _slideCount = state.activities.length;
+          var _missing = []; for (var _si=0;_si<_slideCount;_si++){if(!_stuSlideScores[_si])_missing.push(_si+1);}
+          if (_missing.length>0){alert(_slideCount>1?'Please check all slides first. Missing: Slide '+_missing.join(', Slide '):'Please check your answers first before submitting.');return;}
+          var _totCorrect=_stuSlideScores.reduce(function(s,x){return s+x.correct;},0);
+          var _totItems=_stuSlideScores.reduce(function(s,x){return s+x.total;},0);
+          var pct = Math.round((_totCorrect / _totItems) * 100);
+          var record = { pubId:_stuPubId, title:pub.title||'Activity', type:'CheckOrX',
+            grading:pub.grading||'', deadline:pub.deadline||'',
+            score:_totCorrect, total:_totItems, percent:pct, retakes:_stuRetake,
+            pendingTeacherReview:true, submittedAt:new Date().toISOString() };
+          var idx = _stuProg.findIndex(function(r){ return r.pubId === _stuPubId; });
+          if (idx >= 0) _stuProg[idx] = record; else _stuProg.push(record);
+          try { localStorage.setItem('student_progress', JSON.stringify(_stuProg)); } catch(e){}
+          var notifs = [];
+          try { notifs = JSON.parse(localStorage.getItem('student_notifications') || '[]'); } catch(e){}
+          notifs.unshift({ id:'notif-'+Date.now(), type:'achievement',
+            title:'Activity Submitted! 🌟',
+            message:'You scored '+pct+'% (suggested) on "'+(pub.title||'Activity')+'"'+(_stuRetake>0?' after '+_stuRetake+' retake(s)':'')+'. Your teacher will confirm your final grade.',
+            isRead:false, createdAt:new Date().toISOString() });
+          try { localStorage.setItem('student_notifications', JSON.stringify(notifs)); } catch(e){}
+          var _stuRecordId = sessionStorage.getItem('student_record_id');
+          var _ansJson = JSON.stringify((function(){var all=[];_stuSlideScores.forEach(function(s,si){if(_slideCount>1){var sr=_stuSlideRetakes[si]||0;all.push({isSlideHeader:true,label:'Slide '+(si+1)+(sr>0?' ('+sr+' retake'+(sr>1?'s':'')+')':''),slideRetakes:sr,studentAnswer:'',correctAnswer:'',correct:null});}s.ansItems.forEach(function(item){all.push(Object.assign({},item));});});return all;})());
+          // Show final summary before going home
+          var _fi=pct>=100?'images/perfect.png':pct>=80?'images/goodjob.png':'images/tryagain.png';
+          var _fm=pct>=80?'Excellent work! 🌟':pct>=50?'Good effort! Keep practicing! ⭐':'Keep trying! Practice makes perfect! 💪';
+          $('chkModalEmoji').src=_fi; $('chkModalScore').textContent=_totCorrect+' / '+_totItems+' correct ('+pct+'%)'; $('chkModalMsg').textContent=_fm;
+          $('chkModalCloseBtn').style.display='none'; $('chkModalTryBtn').style.display='none';
+          $('chkStudentSubmitBtn').textContent='🏠 Go to Dashboard';
+          var _fbR=$('chkReviewRows'); _fbR.innerHTML='';
+          $('chkReviewList').style.display=_slideCount>1?'block':'none';
+          if(_slideCount>1){_stuSlideScores.forEach(function(s,si){var sp=Math.round((s.correct/s.total)*100);var sc=sp>=80?'#1f9d44':sp>=50?'#ca8a04':'#e23b54';var sr=_stuSlideRetakes[si]||0;var rd=document.createElement('div');rd.style.cssText='display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:13px;align-items:center;';rd.innerHTML='<span style="font-weight:600;">Slide '+(si+1)+(sr>0?' <span style="color:#e23b54;font-size:10px;">('+sr+'× retake)</span>':'')+'</span><span style="font-weight:700;color:'+sc+';">'+s.correct+'/'+s.total+' ('+sp+'%)</span>';_fbR.appendChild(rd);});}
+          _stuSubmitDone=true;
+          if (pub.db_activity_id && pub.teacherId && _stuRecordId) {
+            fetch('../TEACHER_BACKEND/teacher_complete_activity.php', {
+              method: 'POST', keepalive: true,
+              body: new URLSearchParams({ teacher_id: pub.teacherId, student_id: _stuRecordId, activity_id: pub.db_activity_id, score: pct, total_items: _totItems, pub_id: _stuPubId||'', answers_json: _ansJson, retake_count: _stuRetake||0 })
+            });
+          }
+        });
+      });
+    }
+
+    _idb.load('pub_data_' + _stuPubId, function(err, saved) {
+      if (saved) { applyStudentMode(saved); return; }
+      var ls = null;
+      try { ls = JSON.parse(localStorage.getItem('pub_data_' + _stuPubId) || 'null'); } catch(e){}
+      applyStudentMode(ls);
+    });
+  })();
+
+  /* ── SPOTLIGHT TOUR ─────────────────────────────────────────── */
+  (function(){
+    var STEPS = [
+      {
+        get: function(){ return document.querySelector('.chk-left-col .chk-card'); },
+        title: '📋 Step 1 — Activity Slides',
+        desc: 'Your activity can have multiple slides — each slide is one question set. Use the arrows to navigate and "+ Add Slide" to add more.',
+        side: 'right'
+      },
+      {
+        get: function(){ return document.querySelector('.chk-type'); },
+        title: '✅ Step 2 — Activity Type: Check or X',
+        desc: 'This is a binary judgment activity. Learners see each picture and tap ✓ (Tama) or ✗ (Mali) based on one rule you write in the instruction.',
+        side: 'right'
+      },
+      {
+        get: function(){ return $('chkItems'); },
+        title: '🖼️ Step 3 — Items List',
+        desc: 'Each item has a picture and a correct-answer toggle. Upload a photo or use an emoji. The learner must pick the right mark for every item.',
+        side: 'right'
+      },
+      {
+        get: function(){ return $('chkAddItem'); },
+        title: '➕ Step 4 — Add Item',
+        desc: 'Click here to add more pictures to the current slide. For SPED learners, 3–6 items per slide is ideal — keep it focused and manageable.',
+        side: 'right'
+      },
+      {
+        get: function(){ return document.querySelector('.chk-correct-seg'); },
+        title: '🎯 Step 5 — Correct Answer Toggle',
+        desc: 'For each picture set whether the correct answer is ✓ (Tama) or ✗ (Mali). This is what the system checks when the learner submits their answers.',
+        side: 'right'
+      },
+      {
+        get: function(){ document.body.classList.remove('chk-right-collapsed'); return $('chkInstrInput'); },
+        title: '💬 Step 6 — Instruction Text',
+        desc: 'Type the one-sentence rule here — e.g. "Lagyan ng ✓ ang larawang nagpapakita ng tamang gawi." Keep it short and clear for your learner.',
+        side: 'left'
+      },
+      {
+        get: function(){ document.body.classList.remove('chk-right-collapsed'); return $('chkRightPanelFull'); },
+        title: '🎨 Step 7 — Design & Settings',
+        desc: 'Personalize your activity: change background color, font style, text size, and border style. Click "✓ Apply Changes" to see it live in the preview.',
+        side: 'left'
+      },
+      {
+        get: function(){ return $('chkPreviewBtn'); },
+        title: '🖥️ Step 8 — Fullscreen Preview',
+        desc: 'Click Preview to enter fullscreen mode — the exact same view your learner sees on their screen. Press Escape or the Exit button to return.',
+        side: 'bottom'
+      },
+      {
+        get: function(){ return $('chkDraftBtn'); },
+        title: '💾 Step 9 — Save Draft',
+        desc: 'Save your work anytime. Drafts are stored on this device so you can return and continue editing later from your activity list.',
+        side: 'bottom'
+      },
+      {
+        get: function(){ return $('chkPubBtn'); },
+        title: '🌐 Step 10 — Publish Activity',
+        desc: 'When ready, click Publish to assign this activity to a learner. Set the grading period and deadline — then they can open it from their portal.',
+        side: 'bottom'
+      }
+    ];
+
+    var _cur = 0;
+    var _sp  = null, _ring = null, _tip = null;
+
+    function _placeSpot(el) {
+      var r = el.getBoundingClientRect(), p = 8;
+      var s = { left:(r.left-p)+'px', top:(r.top-p)+'px', width:(r.width+p*2)+'px', height:(r.height+p*2)+'px' };
+      ['left','top','width','height'].forEach(function(k){ _sp.style[k]=s[k]; _ring.style[k]=s[k]; });
+    }
+
+    function _placeTip(el, side) {
+      var r = el.getBoundingClientRect(), gap = 18, p = 8;
+      var tw = _tip.offsetWidth || 290, th = _tip.offsetHeight || 170;
+      var vw = window.innerWidth, vh = window.innerHeight;
+      var left, top;
+      if (side === 'right') { left = r.right + p + gap; top = r.top + (r.height - th)/2; }
+      else if (side === 'left') { left = r.left - p - gap - tw; top = r.top + (r.height - th)/2; }
+      else { left = r.left + (r.width - tw)/2; top = r.bottom + p + gap; } // bottom
+      left = Math.max(10, Math.min(vw - tw - 10, left));
+      top  = Math.max(10, Math.min(vh - th - 10, top));
+      _tip.style.left = left + 'px'; _tip.style.top = top + 'px';
+    }
+
+    function _showStep(i) {
+      if (i < 0 || i >= STEPS.length) { _endTour(); return; }
+      _cur = i;
+      var s = STEPS[i], el;
+      try { el = s.get(); } catch(e) { el = null; }
+      if (!el) { _showStep(i + 1); return; }
+
+      try { el.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'nearest' }); } catch(e){}
+
+      setTimeout(function(){
+        _placeSpot(el);
+        _sp.style.display   = 'block';
+        _ring.style.display = 'block';
+        _tip.style.display  = 'block';
+        $('chkTourStep').textContent = s.title;
+        $('chkTourDesc').textContent = s.desc;
+        $('chkTourBack').style.visibility = i === 0 ? 'hidden' : 'visible';
+        $('chkTourNext').textContent = i === STEPS.length - 1 ? '✓ Tapos na' : 'Next →';
+        setTimeout(function(){ _placeTip(el, s.side); }, 20);
+      }, 90);
+    }
+
+    function _endTour() {
+      _sp.style.display = _ring.style.display = _tip.style.display = 'none';
+    }
+
+    function _startTour() {
+      _sp   = $('chkTourSpot');
+      _ring = $('chkTourRing');
+      _tip  = $('chkTourTip');
+      _showStep(0);
+    }
+
+    $('chkHelpBtn').addEventListener('click', _startTour);
+
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape' && _sp && _sp.style.display !== 'none') _endTour();
+    });
+
+    /* buttons wired after the tip div exists in the DOM */
+    window.addEventListener('load', function(){
+      $('chkTourNext').addEventListener('click', function(){
+        if (_cur >= STEPS.length - 1) _endTour(); else _showStep(_cur + 1);
+      });
+      $('chkTourBack').addEventListener('click', function(){ _showStep(_cur - 1); });
+      $('chkTourSkip').addEventListener('click', _endTour);
+    });
+  })();
+</script>
+
+<!-- TOUR ELEMENTS -->
+<div id="chkTourSpot"></div>
+<div id="chkTourRing"></div>
+<div id="chkTourTip">
+  <div id="chkTourStep"></div>
+  <div id="chkTourDesc"></div>
+  <div class="chk-tour-row">
+    <button id="chkTourSkip" class="chk-tour-action" type="button">✕ Skip</button>
+    <button id="chkTourBack" class="chk-tour-action" type="button">← Back</button>
+    <button id="chkTourNext" class="chk-tour-action" type="button">Next →</button>
+  </div>
+</div>
+</body>
+</html>

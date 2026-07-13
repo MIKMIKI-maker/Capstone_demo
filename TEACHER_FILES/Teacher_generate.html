@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿
+<!DOCTYPE html>
 
 <html lang="en">
 
@@ -10,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap"
         rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
-    <link href="TEACHER_CSS/Teacher_generate.css" rel="stylesheet" />
+    <link href="TEACHER_CSS/Teacher_generate.css?v=2" rel="stylesheet" />
 </head>
 
 <body>
@@ -97,64 +98,13 @@
                 </div>
             </header>
             <hr class="teacher-divider" />
-            <!-- FILTER BAR -->
-            <div class="gen-teacher-filter-bar">
-                <div class="teacher-gf-item">
-                    <span class="teacher-gf-label">Select Learner Profile</span>
-                    <div class="teacher-select-wrap">
-                        <select id="teacher-learnerProfile" name="teacher_learnerprofile" onchange="setCondition()">
-                            <option value="">ALL</option>
-                        </select>
-                        <i class="fa-solid fa-chevron-down teacher-sel-arrow"></i>
-                    </div>
-                </div>
-                <div class="teacher-gf-item">
-                    <span class="teacher-gf-label">Select Condition <span
-                            class="teacher-autofill-tag">Auto-filled</span></span>
-                    <div class="teacher-condition-pill" id="teacher-conditionPill">ALL</div>
-                </div>
-            </div>
             <!-- SECTION HEADER -->
             <div class="teacher-section-header">
                 <h2 class="teacher-section-title">Define Materials and Content</h2>
                 <p class="teacher-section-sub">Select an Activity Type Template</p>
             </div>
-            <!-- TEMPLATE GRID -->
-            <div class="teacher-template-grid" id="teacher-templateGrid">
-                <div class="teacher-tpl-card" onclick="selectTemplate(1)">
-                    <div class="teacher-tpl-icon tpl-blue"><i class="fa-solid fa-table-cells"></i></div>
-                    <div class="teacher-tpl-body">
-                        <h3>Picture Matching</h3>
-                        <p>Match picture to word or object</p>
-                        <div class="teacher-tpl-meta">
-                            <div class="teacher-tpl-meta-row"><span class="teacher-meta-label">Goal:</span><span
-                                    class="teacher-meta-val">Cognitive / Matching</span></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="teacher-tpl-card" onclick="selectTemplate(2)">
-                    <div class="teacher-tpl-icon tpl-yellow"><i class="fa-solid fa-layer-group"></i></div>
-                    <div class="teacher-tpl-body">
-                        <h3>Sorting / Categorization</h3>
-                        <p>Group items such as animals vs fruits, big vs small</p>
-                        <div class="teacher-tpl-meta">
-                            <div class="teacher-tpl-meta-row"><span class="teacher-meta-label">Goal:</span><span
-                                    class="teacher-meta-val">Cognitive / Classification</span></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="teacher-tpl-card" onclick="selectTemplate(3)">
-                    <div class="teacher-tpl-icon tpl-green"><i class="fa-solid fa-list-ol"></i></div>
-                    <div class="teacher-tpl-body">
-                        <h3>Sequencing / Arrange in Order</h3>
-                        <p>Put steps in correct order</p>
-                        <div class="teacher-tpl-meta">
-                            <div class="teacher-tpl-meta-row"><span class="teacher-meta-label">Goal:</span><span
-                                    class="teacher-meta-val">Daily Living / Self-Help</span></div>
-                        </div>
-                    </div>
-                </div>
-            </div><!-- /teacher-template-grid -->
+            <!-- TEMPLATE GRID — rendered from TEMPLATE_DEFS in script below -->
+            <div class="teacher-template-grid" id="teacher-templateGrid"></div>
             <!-- ACTION ROW -->
             <div class="teacher-action-row">
                 <a class="btn-back-iep" href="Teacher_IEP.html">
@@ -164,6 +114,29 @@
             </div>
         </main>
     </div>
+    <!-- ===== LEARNER MULTI-SELECT MODAL ===== -->
+    <div id="learnerSelectModal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(15,23,42,.5);align-items:center;justify-content:center;">
+      <div style="background:#fff;border-radius:18px;padding:24px 26px 20px;width:440px;max-width:95vw;max-height:85vh;display:flex;flex-direction:column;gap:14px;box-shadow:0 24px 64px rgba(0,0,0,.25);font-family:'Poppins',sans-serif;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:16px;font-weight:700;color:#1e3a8a;">Select Learner(s)</span>
+          <button onclick="closeLearnerModal()" type="button" style="background:none;border:none;font-size:20px;cursor:pointer;color:#64748b;line-height:1;padding:4px;"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:0 14px;">
+          <i class="fa-solid fa-magnifying-glass" style="color:#94a3b8;font-size:13px;"></i>
+          <input type="text" id="learnerSearchInput" placeholder="Search learners..." oninput="filterLearnerList()"
+            style="border:none;background:transparent;padding:10px 0;font-family:'Poppins',sans-serif;font-size:13px;outline:none;width:100%;color:#1e293b;" />
+        </div>
+        <div id="learnerCheckList" style="overflow-y:auto;max-height:320px;display:flex;flex-direction:column;gap:4px;"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid #f1f5f9;">
+          <button onclick="clearAllLearners()" type="button" style="font-size:12px;color:#6366f1;background:none;border:none;cursor:pointer;font-family:'Poppins',sans-serif;font-weight:600;padding:4px 0;">Clear all</button>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span id="learnerSelectedCount" style="font-size:12px;color:#64748b;">0 selected</span>
+            <button onclick="closeLearnerModal()" type="button" style="padding:9px 22px;background:#1d4ed8;color:#fff;border:none;border-radius:10px;font-family:'Poppins',sans-serif;font-size:13px;font-weight:600;cursor:pointer;">Done</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script>
         var TEACHER_ID = parseInt(sessionStorage.getItem('teacher_id') || '1');
 
@@ -197,66 +170,192 @@
                     }).catch(function(){});
             }
 
-            // Load learners from backend, then pre-select from sessionStorage
+            // Load learners then restore selection from IEP page if present
+            loadLearners();
+            renderTemplateGrid();
+        });
+
+        /* ── Multi-select learner state ── */
+        var allLearners = [];
+        var selectedLearnerIds = [];
+
+        function escHtml(s) {
+            return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function loadLearners() {
             fetch('TEACHER_BACKEND/teacher_list_learners.php?teacher_id=' + encodeURIComponent(TEACHER_ID))
                 .then(function(r){ return r.json(); })
                 .then(function(students) {
-                    var sel = document.getElementById('teacher-learnerProfile');
-                    students.forEach(function(s) {
-                        var cond = s.disability || 'General';
-                        var opt = document.createElement('option');
-                        opt.value = s.name + '|' + cond;
-                        opt.dataset.studentId = s.id;
-                        opt.textContent = s.name;
-                        sel.appendChild(opt);
+                    allLearners = (students || []).map(function(s) {
+                        return { id: String(s.id), name: s.name, disability: s.disability || 'General' };
                     });
-                    // Restore selection from IEP page
-                    var saved = sessionStorage.getItem('selected_learner') || '';
-                    if (saved) {
-                        sel.value = saved;
-                        if (sel.value !== saved) {
-                            // Try matching by name only
-                            var savedName = saved.split('|')[0];
-                            for (var i = 0; i < sel.options.length; i++) {
-                                if (sel.options[i].value.split('|')[0] === savedName) {
-                                    sel.selectedIndex = i;
-                                    break;
-                                }
-                            }
-                        }
+                    // Restore IDs passed from IEP page
+                    var savedIds = [];
+                    try { savedIds = JSON.parse(sessionStorage.getItem('selected_learner_ids') || '[]'); } catch(e) {}
+                    if (!savedIds.length) {
+                        // Fallback: single learner from old key
+                        var savedId = sessionStorage.getItem('selected_learner_id') || '';
+                        if (savedId) savedIds = [savedId];
                     }
+                    selectedLearnerIds = savedIds.filter(function(id) {
+                        return allLearners.some(function(l) { return l.id === String(id); });
+                    }).map(String);
+                    renderLearnerCheckList(allLearners);
+                    updateLearnerDisplay();
+                    updateLearnerSelectedCount();
                     setCondition();
                 })
                 .catch(function(){});
-        });
+        }
+
+        function renderLearnerCheckList(list) {
+            var container = document.getElementById('learnerCheckList');
+            if (!container) return;
+            if (!list.length) {
+                container.innerHTML = '<p style="text-align:center;color:#94a3b8;font-size:13px;padding:20px 0;font-family:Poppins,sans-serif;">No learners found.</p>';
+                return;
+            }
+            container.innerHTML = list.map(function(s) {
+                var checked = selectedLearnerIds.indexOf(s.id) >= 0 ? 'checked' : '';
+                return '<label class="gen-learner-cb-row">'
+                    + '<input type="checkbox" value="' + escHtml(s.id) + '" ' + checked + ' onchange="toggleLearner(\'' + s.id + '\')" style="accent-color:#2563eb;width:16px;height:16px;cursor:pointer;flex-shrink:0;">'
+                    + '<div>'
+                    +   '<div class="gen-learner-cb-name">' + escHtml(s.name) + '</div>'
+                    +   '<div class="gen-learner-cb-sub">' + escHtml(s.disability) + '</div>'
+                    + '</div>'
+                    + '</label>';
+            }).join('');
+        }
+
+        function toggleLearner(id) {
+            var idx = selectedLearnerIds.indexOf(id);
+            if (idx >= 0) selectedLearnerIds.splice(idx, 1);
+            else selectedLearnerIds.push(id);
+            updateLearnerDisplay();
+            updateLearnerSelectedCount();
+            setCondition();
+        }
+
+        function updateLearnerDisplay() {
+            var box = document.getElementById('learnerDisplay');
+            if (!box) return;
+            if (!selectedLearnerIds.length) {
+                box.innerHTML = '<span class="gen-learner-placeholder">Select learner(s)...</span>';
+                return;
+            }
+            box.innerHTML = selectedLearnerIds.map(function(id) {
+                var s = null;
+                for (var i = 0; i < allLearners.length; i++) { if (allLearners[i].id === id) { s = allLearners[i]; break; } }
+                if (!s) return '';
+                return '<span class="gen-learner-pill">' + escHtml(s.name)
+                    + '<button type="button" onclick="event.stopPropagation();removeLearner(\'' + id + '\')" class="gen-learner-pill-x">&times;</button>'
+                    + '</span>';
+            }).join('');
+        }
+
+        function removeLearner(id) {
+            var idx = selectedLearnerIds.indexOf(id);
+            if (idx >= 0) selectedLearnerIds.splice(idx, 1);
+            var cb = document.querySelector('#learnerCheckList input[value="' + id + '"]');
+            if (cb) cb.checked = false;
+            updateLearnerDisplay();
+            updateLearnerSelectedCount();
+            setCondition();
+        }
+
+        function updateLearnerSelectedCount() {
+            var el = document.getElementById('learnerSelectedCount');
+            if (el) el.textContent = selectedLearnerIds.length + ' selected';
+        }
+
+        function filterLearnerList() {
+            var q = (document.getElementById('learnerSearchInput').value || '').toLowerCase();
+            var filtered = q ? allLearners.filter(function(s) { return s.name.toLowerCase().indexOf(q) >= 0; }) : allLearners;
+            renderLearnerCheckList(filtered);
+        }
+
+        function clearAllLearners() {
+            selectedLearnerIds = [];
+            document.querySelectorAll('#learnerCheckList input[type=checkbox]').forEach(function(cb) { cb.checked = false; });
+            updateLearnerDisplay();
+            updateLearnerSelectedCount();
+            setCondition();
+        }
+
+        function openLearnerModal() {
+            var modal = document.getElementById('learnerSelectModal');
+            modal.style.display = 'flex';
+            document.getElementById('learnerSearchInput').value = '';
+            renderLearnerCheckList(allLearners);
+            updateLearnerSelectedCount();
+        }
+
+        function closeLearnerModal() {
+            document.getElementById('learnerSelectModal').style.display = 'none';
+        }
 
         function setCondition() {
-            var sel = document.getElementById('teacher-learnerProfile');
-            var val = sel.value;
-            var cond = val ? val.split('|')[1] : 'ALL';
-            document.getElementById('teacher-conditionPill').textContent = cond || 'ALL';
-            var opt = sel.options[sel.selectedIndex];
-            sessionStorage.setItem('selected_learner', val || '');
-            sessionStorage.setItem('selected_condition', val ? val.split('|')[1] : '');
-            sessionStorage.setItem('selected_learner_id', opt ? (opt.dataset.studentId || '') : '');
+            if (!selectedLearnerIds.length) {
+                sessionStorage.setItem('selected_learner_id', '');
+                sessionStorage.setItem('selected_learner', '');
+                sessionStorage.setItem('selected_condition', '');
+                return;
+            }
+            var first = null;
+            for (var i = 0; i < allLearners.length; i++) { if (allLearners[i].id === selectedLearnerIds[0]) { first = allLearners[i]; break; } }
+            if (first) {
+                sessionStorage.setItem('selected_learner_id', first.id);
+                sessionStorage.setItem('selected_learner', first.name + '|' + (first.disability || ''));
+                sessionStorage.setItem('selected_condition', first.disability !== 'General' ? first.disability : '');
+                sessionStorage.setItem('selected_learner_ids', JSON.stringify(selectedLearnerIds));
+            }
         }
 
-        var templateDestinations = {
-            1: 'TEMPLATES/Matching_Type_Template.html',
-            2: 'TEMPLATES/Sorting_Type_Template.html',
-            3: 'TEMPLATES/Sequencing_Type_Template.html'
-        };
+        /* ══ TEMPLATE REGISTRY ═══════════════════════════════════════════════════
+           To add a new template: add one object here. The grid auto-renders.
+           Fields: key, name, desc, goal, icon (FA class), color (tpl-blue|tpl-yellow|tpl-green), file
+        ════════════════════════════════════════════════════════════════════════ */
+        var TEMPLATE_DEFS = [
+            { key: 'Matching',        name: 'Picture Matching',              desc: 'Match picture to word or object',              goal: 'Cognitive / Matching',        icon: 'fa-table-cells',    color: 'tpl-blue',   file: 'TEMPLATES/Matching_Type_Template.html' },
+            { key: 'Sorting',         name: 'Sorting / Categorization',      desc: 'Group items such as animals vs fruits, big vs small', goal: 'Cognitive / Classification', icon: 'fa-layer-group',    color: 'tpl-yellow', file: 'TEMPLATES/Sorting_Type_Template.html' },
+            { key: 'Sequencing',      name: 'Sequencing / Arrange in Order', desc: 'Put steps in correct order',                   goal: 'Daily Living / Self-Help',    icon: 'fa-list-ol',        color: 'tpl-green',  file: 'TEMPLATES/Sequencing_Type_Template.html' },
+            { key: 'CheckOrX',        name: 'Check or X',                    desc: 'Mark each item as correct (✓) or wrong (✗)',   goal: 'Cognitive / Identification',  icon: 'fa-check-double',   color: 'tpl-blue',   file: 'TEMPLATES/Check_ Or_Not_Template.html' },
+            { key: 'LetterID',        name: 'Letter / Sound Identification', desc: 'Identify beginning letters or sounds of words', goal: 'Cognitive / Literacy',        icon: 'fa-magnifying-glass',color: 'tpl-yellow', file: 'TEMPLATES/Identification_Template.html' },
+            { key: 'PictureLabeling', name: 'Picture Labeling',              desc: 'Label parts of a picture by dragging words to the correct spots', goal: 'Communication / Vocabulary', icon: 'fa-tag', color: 'tpl-green', file: 'TEMPLATES/Picture_ Labeling_Template.html' },
+            { key: 'WrittenResponse', name: 'Written Response',              desc: 'Answer questions with short written responses', goal: 'Communication / Expression',  icon: 'fa-pencil',         color: 'tpl-blue',   file: 'TEMPLATES/Written_Response_Template.html' }
+        ];
+
+        function renderTemplateGrid() {
+            var grid = document.getElementById('teacher-templateGrid');
+            if (!grid) return;
+            grid.innerHTML = TEMPLATE_DEFS.map(function(t, i) {
+                return '<div class="teacher-tpl-card" onclick="selectTemplate(' + i + ')">'
+                    + '<div class="teacher-tpl-icon ' + t.color + '"><i class="fa-solid ' + t.icon + '"></i></div>'
+                    + '<div class="teacher-tpl-body">'
+                    +   '<h3>' + t.name + '</h3>'
+                    +   '<p>' + t.desc + '</p>'
+                    +   '<div class="teacher-tpl-meta">'
+                    +     '<div class="teacher-tpl-meta-row"><span class="teacher-meta-label">Goal:</span><span class="teacher-meta-val">' + t.goal + '</span></div>'
+                    +   '</div>'
+                    + '</div>'
+                    + '</div>';
+            }).join('');
+        }
 
         function selectTemplate(idx) {
-            var sel = document.getElementById('teacher-learnerProfile');
-            var val = sel.value;
-            var opt = sel.options[sel.selectedIndex];
-            sessionStorage.setItem('selected_learner', val || '');
-            sessionStorage.setItem('selected_condition', val ? val.split('|')[1] : '');
-            sessionStorage.setItem('selected_learner_id', opt ? (opt.dataset.studentId || '') : '');
-            window.location.href = templateDestinations[idx];
+            var t = TEMPLATE_DEFS[idx];
+            if (!t) return;
+            setCondition(); // ensure sessionStorage is current
+            window.location.href = t.file;
         }
+
+        document.addEventListener('click', function(e) {
+            var lModal = document.getElementById('learnerSelectModal');
+            if (e.target === lModal) closeLearnerModal();
+        });
     </script>
+<script>(function(){var _id=sessionStorage.getItem('admin_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>
 </body>
 
 </html>

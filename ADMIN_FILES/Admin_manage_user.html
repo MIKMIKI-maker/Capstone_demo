@@ -512,17 +512,20 @@
           <button class="admin-modal-close" onclick="hideModal('admin-modal-add')" type="button">✕</button>
         </div>
         <div class="admin-modal-body">
-          <div class="admin-field-group">
-            <label>Full Name</label>
-            <div class="admin-input-wrap"><span>👤</span><input id="admin-add-full-name" name="enter_full_name" placeholder="Enter full name..."
-                type="text" oninput="generateEmailFromName()" /></div>
+          <div class="admin-field-pair">
+            <div class="admin-field-group admin-field-pair__item">
+              <label>First Name</label>
+              <div class="admin-input-wrap"><span>👤</span><input id="admin-add-first-name" name="enter_first_name" placeholder="Enter first name..." type="text" required /></div>
+            </div>
+            <div class="admin-field-group admin-field-pair__item">
+              <label>Last Name</label>
+              <div class="admin-input-wrap"><span>👤</span><input id="admin-add-last-name" name="enter_last_name" placeholder="Enter last name..." type="text" required /></div>
+            </div>
           </div>
           <div class="admin-field-group">
             <label>Email Address</label>
             <div class="admin-input-wrap"><span>🔔</span><input id="admin-add-email" name="enter_email_address"
-                placeholder="Enter email address..." type="email" pattern="^[a-zA-Z0-9._%+-]+@spedalm\.edu\.ph$"
-                title="Email must end with @spedalm.edu.ph" /></div>
-            <div class="admin-field-note">Only @spedalm.edu.ph addresses are accepted. <span id="admin-add-email-hint" style="display: none; color: #0066cc; font-weight: 500;"></span></div>
+                placeholder="Enter email address..." type="email" required /></div>
           </div>
           <div class="admin-field-group">
             <label>Role</label>
@@ -727,38 +730,6 @@
 
     function hideModal(id) { document.getElementById(id).style.display = 'none'; }
 
-    function generateEmailFromName() {
-      var fullNameInput = document.getElementById('admin-add-full-name');
-      var emailInput = document.getElementById('admin-add-email');
-      var emailHint = document.getElementById('admin-add-email-hint');
-      var fullName = fullNameInput.value.trim();
-
-      if (!fullName) {
-        emailInput.value = '';
-        emailHint.style.display = 'none';
-        return;
-      }
-
-      // Remove extra spaces and split name into parts
-      var nameParts = fullName.split(/\s+/).filter(function(part) { return part.length > 0; });
-      
-      if (nameParts.length === 0) {
-        emailInput.value = '';
-        emailHint.style.display = 'none';
-        return;
-      }
-
-      // Create email: firstname.lastname@spedalm.edu.ph
-      // If only one name, use it as firstname
-      var email = nameParts.join('.').toLowerCase() + '@spedalm.edu.ph';
-      
-      // Auto-fill email field
-      emailInput.value = email;
-      
-      // Show suggestion hint
-      emailHint.textContent = 'Suggested: ' + email;
-      emailHint.style.display = 'inline';
-    }
 
     function generateEmailFromNameEdit() {
       var fullNameInput = document.getElementById('admin-edit-full-name');

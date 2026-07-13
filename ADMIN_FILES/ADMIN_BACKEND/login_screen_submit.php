@@ -154,7 +154,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 
-    $stmt = $conn->prepare("SELECT id, admin_password, first_name, last_name, role, COALESCE(profile_photo,'') AS profile_photo FROM admin_accounts WHERE admin_email = ?");
+    $stmt = $conn->prepare("SELECT id, admin_password, first_name, last_name, role, COALESCE(profile_photo,'') AS profile_photo, COALESCE(is_deleted,0) AS is_deleted FROM admin_accounts WHERE admin_email = ?");
     if (!$stmt) {
         echo json_encode(['status' => 'error', 'message' => 'Database query failed']);
         $conn->close();
@@ -167,6 +167,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     if ($result && $result->num_rows > 0) {
         $row = $result->fetch_assoc();
+
+        // Block login for soft-deleted accounts
+        if (!empty($row['is_deleted'])) {
+            echo json_encode(['status' => 'error', 'code' => 'account_deleted', 'message' => 'Your account has been deactivated. Please contact your administrator.']);
+            $stmt->close();
+            $conn->close();
+            exit;
+        }
+
         $stored_pw = $row['admin_password'];
 
         // Support both bcrypt hashes and plain-text (migration: auto-upgrade on success)

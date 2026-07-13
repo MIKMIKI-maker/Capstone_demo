@@ -123,14 +123,16 @@ if ($stmt) {
 // ── Activity history — only assigned activities ───────────────────────────────
 $stmt = safeQuery($conn,
     "SELECT ta.id, ta.activity_title, ta.subject, lp.score, lp.assessment_date,
-         CASE WHEN lp.assessment_date IS NOT NULL THEN 'completed' ELSE 'not-started' END AS status
+         CASE WHEN lp.assessment_date IS NOT NULL THEN 'completed' ELSE 'not-started' END AS status,
+         sub.assistance_level, sub.finalized_score, sub.is_finalized
      FROM activity_assignments aa
      INNER JOIN teacher_activities ta ON ta.id = aa.activity_id
      LEFT  JOIN learner_progress lp   ON ta.id = lp.activity_id AND lp.student_id = ?
+     LEFT  JOIN activity_submissions sub ON sub.activity_id = ta.id AND sub.student_id = ? AND sub.teacher_id = ?
      WHERE aa.student_id = ? AND ta.teacher_id = ?
      ORDER BY COALESCE(lp.assessment_date, ta.created_at) DESC
      LIMIT 15",
-    "iii", $student_id, $student_id, $teacher_id
+    "iiiii", $student_id, $student_id, $teacher_id, $student_id, $teacher_id
 );
 if ($stmt) {
     $r = $stmt->get_result();
@@ -141,13 +143,16 @@ if ($stmt) {
         elseif ($score !== null && $score >= 60) $col = '#f59e0b';
         elseif ($score !== null && $score >  0)  $col = '#ef4444';
         $progress['activities'][] = [
-            'id'          => $row['id'],
-            'name'        => $row['activity_title'],
-            'subject'     => $row['subject'] ?? '',
-            'date'        => $row['assessment_date'] ?: null,
-            'score'       => $score !== null ? (int)$score : null,
-            'score_color' => $col,
-            'status'      => $row['status']
+            'id'              => $row['id'],
+            'name'            => $row['activity_title'],
+            'subject'         => $row['subject'] ?? '',
+            'date'            => $row['assessment_date'] ?: null,
+            'score'           => $score !== null ? (int)$score : null,
+            'score_color'     => $col,
+            'status'          => $row['status'],
+            'assistance_level'=> $row['assistance_level'] ?? null,
+            'finalized_score' => $row['finalized_score'] !== null ? (int)$row['finalized_score'] : null,
+            'is_finalized'    => (bool)($row['is_finalized'] ?? false)
         ];
     }
     $stmt->close();

@@ -204,7 +204,7 @@ body {
 .student-grading-count { color: var(--blue); font-weight: 700; font-size: 14px; }
 
 .student-material-list {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 18px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 18px;
 }
 .student-mat-empty {
   grid-column: 1 / -1;
@@ -219,9 +219,11 @@ body {
 .student-material-card {
   position: relative;
   display: flex; flex-direction: column; align-items: center;
-  padding: 16px; border-radius: var(--r-lg); background: #fff;
+  aspect-ratio: 1 / 1;
+  padding: 14px; border-radius: var(--r-lg); background: #fff;
   box-shadow: 0 8px 20px rgba(36, 58, 94, .08);
   transition: transform .16s ease, box-shadow .16s ease;
+  overflow: hidden;
 }
 .student-material-card:hover {
   transform: translateY(-5px);
@@ -247,17 +249,18 @@ body {
   font-size: 22px; color: var(--ink-soft);
 }
 .student-mat-card-thumb {
-  width: 100%; height: 110px; border-radius: var(--r-md);
+  width: 100%; flex: 1; min-height: 0; border-radius: var(--r-md);
   display: flex; align-items: center; justify-content: center;
-  font-size: 50px; background: #eef3fb; margin-bottom: 12px;
+  font-size: 40px; background: #eef3fb; margin-bottom: 8px;
 }
 .student-mat-card-title {
-  font-family: var(--font-head); font-weight: 700; font-size: 17px;
+  font-family: var(--font-head); font-weight: 700; font-size: 15px;
   color: var(--ink); text-align: center; line-height: 1.15;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;
 }
-.student-mat-card-tag { margin-top: 3px; font-size: 13px; font-weight: 500; color: var(--ink-soft); }
+.student-mat-card-tag { margin-top: 2px; font-size: 12px; font-weight: 500; color: var(--ink-soft); }
 .student-mat-progress {
-  width: 100%; display: flex; align-items: center; gap: 10px; margin: 12px 0;
+  width: 100%; display: flex; align-items: center; gap: 8px; margin: 8px 0 6px;
 }
 .student-mat-progress-bar {
   flex: 1; height: 8px; border-radius: 6px; overflow: hidden; background: #e8edf6;
@@ -265,14 +268,14 @@ body {
 .student-mat-progress-fill { height: 100%; border-radius: 6px; background: var(--blue); }
 .student-mat-progress-pct { font-family: var(--font-head); font-weight: 700; font-size: 13px; color: var(--ink-soft); }
 .student-mat-card-btn {
-  width: 100%; cursor: pointer; border: none;
-  padding: 11px 0; border-radius: 14px;
+  width: 100%; cursor: pointer; border: none; flex: none;
+  padding: 9px 0; border-radius: 12px;
   background: var(--grass); color: #fff;
-  font-family: var(--font-head); font-weight: 700; font-size: 15px;
-  box-shadow: 0 5px 0 var(--grass-dark);
+  font-family: var(--font-head); font-weight: 700; font-size: 14px;
+  box-shadow: 0 4px 0 var(--grass-dark);
   transition: transform .08s ease, box-shadow .08s ease;
 }
-.student-mat-card-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--grass-dark); }
+.student-mat-card-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--grass-dark); }
 
 /* ---- per-card color themes ---- */
 .student-mat--orange .student-mat-card-thumb { background: #fdf0e0; }

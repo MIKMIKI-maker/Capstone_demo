@@ -44,12 +44,14 @@ $stmt2->execute();
 $total_row = $stmt2->get_result()->fetch_assoc();
 $stmt2->close();
 
-// Activity performance list
+// Activity performance list (with finalized score + retake count)
 $stmt3 = $conn->prepare("
     SELECT a.activity_title, a.subject, lp.score, lp.assessment_date,
-           CASE WHEN lp.score >= 80 THEN 'Completed' ELSE 'In Progress' END AS status_label
+           CASE WHEN lp.score >= 80 THEN 'Completed' ELSE 'In Progress' END AS status_label,
+           sub.retake_count, sub.finalized_score, sub.is_finalized, sub.assistance_level, sub.answers_json
     FROM learner_progress lp
     JOIN teacher_activities a ON a.id = lp.activity_id
+    LEFT JOIN activity_submissions sub ON sub.student_id = lp.student_id AND sub.activity_id = lp.activity_id AND sub.teacher_id = lp.teacher_id
     WHERE lp.teacher_id = ? AND lp.student_id = ?
     ORDER BY lp.assessment_date DESC
 ");
@@ -60,14 +62,35 @@ $activities = [];
 while ($r = $perf_result->fetch_assoc()) $activities[] = $r;
 $stmt3->close();
 
-// Teacher notes
-$stmt4 = $conn->prepare("SELECT note, created_at FROM student_notes WHERE teacher_id = ? AND student_id = ? ORDER BY created_at DESC LIMIT 20");
+// General teacher notes (student_notes table)
+$stmt4 = $conn->prepare("SELECT note, created_at, NULL AS activity_title FROM student_notes WHERE teacher_id = ? AND student_id = ? ORDER BY created_at DESC LIMIT 20");
 $stmt4->bind_param("ii", $teacher_id, $student_record_id);
 $stmt4->execute();
 $notes_result = $stmt4->get_result();
 $notes = [];
 while ($n = $notes_result->fetch_assoc()) $notes[] = $n;
 $stmt4->close();
+
+// Activity-specific notes from finalized submissions
+$stmt5 = $conn->prepare("
+    SELECT sub.teacher_note AS note, sub.finalized_at AS created_at, ta.activity_title
+    FROM activity_submissions sub
+    JOIN teacher_activities ta ON ta.id = sub.activity_id
+    WHERE sub.student_id = ? AND sub.teacher_id = ? AND sub.is_finalized = 1 AND sub.teacher_note IS NOT NULL AND sub.teacher_note != ''
+    ORDER BY sub.finalized_at DESC
+    LIMIT 20
+");
+$stmt5->bind_param("ii", $student_record_id, $teacher_id);
+$stmt5->execute();
+$act_notes_result = $stmt5->get_result();
+while ($n = $act_notes_result->fetch_assoc()) $notes[] = $n;
+$stmt5->close();
+
+// Sort all notes by created_at descending
+usort($notes, function($a, $b) {
+    return strcmp($b['created_at'] ?? '', $a['created_at'] ?? '');
+});
+
 $conn->close();
 
 $avg_score        = $stats['avg_score'] ? round(floatval($stats['avg_score'])) : 0;

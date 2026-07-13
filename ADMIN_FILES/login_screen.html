@@ -130,6 +130,7 @@
           </div>
         </div>
 
+        <div id="login-error-msg" style="display:none;background:#fff5f5;border:1.5px solid #fca5a5;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-family:'Poppins',sans-serif;font-size:13px;color:#991b1b;line-height:1.6;"></div>
         <button class="admin-btn-signin" type="submit">Sign In</button>
 
         <p class="admin-contact-note">
@@ -206,6 +207,15 @@
       /* Clear previous session data to ensure fresh login */
       sessionStorage.clear();
 
+      /* Show deactivated message if redirected from portal */
+      if (new URLSearchParams(window.location.search).get('deactivated') === '1') {
+        var errEl = document.getElementById('login-error-msg');
+        if (errEl) {
+          errEl.innerHTML = '<strong>Account deactivated.</strong> Your account has been deactivated by the administrator.<br>Please contact your school administrator to restore your access.';
+          errEl.style.display = 'block';
+        }
+      }
+
       /* Auto-fill saved credentials */
       var savedEmail = localStorage.getItem('sped_remember_email');
       var savedPass  = localStorage.getItem('sped_remember_pass');
@@ -240,6 +250,10 @@
           var email = document.getElementById("admin-email").value;
           var password = document.getElementById("admin-password").value;
           
+          /* Hide any previous error */
+          var _errEl = document.getElementById('login-error-msg');
+          if (_errEl) { _errEl.style.display = 'none'; _errEl.innerHTML = ''; }
+
           /* Send login request to backend */
           fetch("ADMIN_BACKEND/login_screen_submit.php", {
             method: "POST",
@@ -307,17 +321,26 @@
                   }
                 }
               } else {
-                alert("Login failed: " + (jsonData.message || "Unknown error"));
+                var errEl = document.getElementById('login-error-msg');
+                if (errEl) {
+                  if (jsonData.code === 'account_deleted') {
+                    errEl.innerHTML = '<strong>Account deactivated.</strong> Your account has been deactivated by the administrator.<br>Please contact your school administrator to restore your access.';
+                  } else {
+                    errEl.textContent = jsonData.message || 'Login failed. Please check your credentials.';
+                  }
+                  errEl.style.display = 'block';
+                }
               }
             } catch (e) {
-              alert("Login failed. Invalid server response.\nResponse: " + data.substring(0, 100));
+              var errEl = document.getElementById('login-error-msg');
+              if (errEl) { errEl.textContent = 'Login failed. Please try again.'; errEl.style.display = 'block'; }
               console.error("Parse error:", e);
-              console.error("Full response:", data);
             }
           })
           .catch(function(error) {
+            var errEl = document.getElementById('login-error-msg');
+            if (errEl) { errEl.textContent = 'An error occurred. Please try again.'; errEl.style.display = 'block'; }
             console.error("Error:", error);
-            alert("An error occurred during login. Please try again.");
           });
         });
       }

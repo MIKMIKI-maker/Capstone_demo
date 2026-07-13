@@ -15,11 +15,15 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$teacher_id = isset($_POST['teacher_id']) ? intval($_POST['teacher_id']) : 0;
-$student_id = isset($_POST['student_id']) ? intval($_POST['student_id']) : 0;
-$activity_id = isset($_POST['activity_id']) ? intval($_POST['activity_id']) : 0;
-$score = isset($_POST['score']) ? intval($_POST['score']) : 0;
-$notes = isset($_POST['notes']) ? trim($_POST['notes']) : '';
+$teacher_id  = isset($_POST['teacher_id'])   ? intval($_POST['teacher_id'])   : 0;
+$student_id  = isset($_POST['student_id'])   ? intval($_POST['student_id'])   : 0;
+$activity_id = isset($_POST['activity_id'])  ? intval($_POST['activity_id'])  : 0;
+$score       = isset($_POST['score'])        ? intval($_POST['score'])        : 0;
+$notes       = isset($_POST['notes'])        ? trim($_POST['notes'])          : '';
+$total_items   = isset($_POST['total_items'])   ? intval($_POST['total_items'])   : 0;
+$pub_id        = isset($_POST['pub_id'])        ? trim($_POST['pub_id'])          : '';
+$answers_json  = isset($_POST['answers_json'])  ? trim($_POST['answers_json'])    : '';
+$retake_count  = isset($_POST['retake_count'])  ? intval($_POST['retake_count'])  : 0;
 
 if (!$teacher_id || !$student_id || !$activity_id) {
     echo json_encode(['success' => false, 'message' => 'Teacher ID, student ID, and activity ID are required']);
@@ -80,6 +84,18 @@ if ($stmt->execute()) {
         $logStmt->close();
     }
     
+    // Also upsert into activity_submissions so teacher can review item-by-item answers
+    $subStmt = $teacher_conn->prepare(
+        "INSERT INTO activity_submissions (teacher_id, student_id, activity_id, pub_id, score, total_items, retake_count, answers_json)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE score=VALUES(score), total_items=VALUES(total_items), retake_count=VALUES(retake_count), answers_json=VALUES(answers_json), submitted_at=NOW()"
+    );
+    if ($subStmt) {
+        $subStmt->bind_param("iiisiiis", $teacher_id, $student_id, $activity_id, $pub_id, $score, $total_items, $retake_count, $answers_json);
+        $subStmt->execute();
+        $subStmt->close();
+    }
+
     echo json_encode(['success' => true, 'message' => 'Activity completed successfully']);
 } else {
     echo json_encode(['success' => false, 'message' => 'Failed to record activity completion']);

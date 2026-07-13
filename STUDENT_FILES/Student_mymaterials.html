@@ -152,6 +152,13 @@
     var TYPE_COLOR = { 'Matching': 'purple', 'Sorting': 'blue', 'Sequencing': 'green' };
     var COLOR_CYCLE = ['orange', 'blue', 'purple', 'green', 'amber', 'pink'];
 
+    function normalizeGrading(gl) {
+      var s = String(gl || '').toLowerCase().trim();
+      if (s.indexOf('second') >= 0 || s === '2' || s === '2nd') return 'Second';
+      if (s.indexOf('third') >= 0  || s === '3' || s === '3rd') return 'Third';
+      return 'First';
+    }
+
     function esc(s) {
       return String(s)
         .replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -213,28 +220,15 @@
       ].join('');
     }
 
-    function renderGradingSection(grading, items) {
-      var num = { First: '1st', Second: '2nd', Third: '3rd' };
-      var countText = items.length === 0 ? '— items' : items.length + (items.length === 1 ? ' item' : ' items');
-      var listId = 'list-' + grading.toLowerCase();
-      var cards = items.length === 0
-        ? '<div class="student-mat-empty">📭 No materials yet for this grading period.</div>'
-        : items.map(function (a, i) { return renderCard(a, i); }).join('') +
+    function renderAllActivities(items) {
+      var inner = items.length === 0
+        ? '<div class="student-mat-empty">📭 No activities yet. Your teacher will assign some soon.</div>'
+        : items.map(function(a, i){ return renderCard(a, i); }).join('') +
           '<div class="student-cheer"><span class="student-cheer-panda">🐼</span>' +
           '<div class="student-cheer-bubble"><strong>Great job!</strong><span>Keep learning and have fun! 💗</span></div>' +
           '<p class="student-cheer-text">Small steps every day lead to big progress!</p>' +
           '<span class="student-cheer-rainbow">🌈</span></div>';
-      return [
-        '<div class="student-grading-section">',
-        '<div class="student-grading-header">',
-        '<span class="student-grading-icon">📖</span>',
-        '<span class="student-grading-title">' + num[grading] + ' Grading</span>',
-        '<div class="student-grading-divider"></div>',
-        '<span class="student-grading-count" id="count-' + grading.toLowerCase() + '">' + countText + '</span>',
-        '</div>',
-        '<div class="student-material-list" id="' + listId + '">' + cards + '</div>',
-        '</div>'
-      ].join('');
+      return '<div class="student-material-list">' + inner + '</div>';
     }
 
     function showNotEnrolledMaterials() {
@@ -249,7 +243,50 @@
         '</div>';
     }
 
-    function renderFromData(dbMaterials, dbCompleted, dbInProgress, dbNew) {
+    function renderFileCard(file) {
+      var isLink = file.link_url && file.link_url.length > 0;
+      var mime = file.file_type || '';
+      var icon = isLink ? '🔗' : '📄';
+      if (!isLink) {
+        if (mime.indexOf('pdf') >= 0) icon = '📕';
+        else if (mime.indexOf('image') >= 0) icon = '🖼️';
+        else if (mime.indexOf('word') >= 0 || mime.indexOf('document') >= 0) icon = '📝';
+        else if (mime.indexOf('video') >= 0) icon = '🎬';
+        else if (mime.indexOf('audio') >= 0) icon = '🎵';
+      }
+      var url = isLink ? file.link_url : '../TEACHER_FILES/uploads/materials/' + esc(file.file_name);
+      var subText = isLink
+        ? '<span style="background:#dcfce7;color:#15803d;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;">LINK</span>'
+        : (function(){
+            var sizeKB = file.file_size ? Math.round(file.file_size / 1024) : 0;
+            var sizeText = sizeKB > 1024 ? (sizeKB / 1024).toFixed(1) + ' MB' : sizeKB + ' KB';
+            return esc(file.file_original_name) + (sizeKB ? ' &middot; ' + sizeText : '');
+          })();
+      return '<div style="display:flex;align-items:center;gap:14px;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:14px;padding:14px 16px;margin-bottom:10px;">' +
+        '<div style="font-size:32px;flex-shrink:0;">' + icon + '</div>' +
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="font-weight:700;font-size:14px;color:#14532d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(file.title) + '</div>' +
+          (file.description ? '<div style="font-size:12px;color:#166534;margin-top:2px;">' + esc(file.description) + '</div>' : '') +
+          '<div style="font-size:11px;color:#4ade80;margin-top:4px;">' + subText + '</div>' +
+        '</div>' +
+        '<a href="' + url + '" target="_blank" rel="noopener" style="flex-shrink:0;padding:8px 16px;background:#16a34a;color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">' + (isLink ? 'Open 🔗' : 'Open 📂') + '</a>' +
+      '</div>';
+    }
+
+    function renderFilesSection(files) {
+      if (!files || files.length === 0) return '';
+      return '<div class="student-grading-section" style="margin-top:24px;">' +
+        '<div class="student-grading-header">' +
+          '<span class="student-grading-icon">📎</span>' +
+          '<span class="student-grading-title">Teacher Materials</span>' +
+          '<div class="student-grading-divider"></div>' +
+          '<span class="student-grading-count">' + files.length + (files.length === 1 ? ' file' : ' files') + '</span>' +
+        '</div>' +
+        '<div style="margin-top:12px;">' + files.map(renderFileCard).join('') + '</div>' +
+      '</div>';
+    }
+
+    function renderFromData(dbMaterials, dbCompleted, dbInProgress, dbNew, uploadedFiles) {
       var total = dbMaterials.length;
 
       document.getElementById('statTotal').textContent = total;
@@ -262,7 +299,6 @@
           db_activity_id:  m.id,
           title:           m.activity_title,
           type:            m.activity_type || 'Matching',
-          grading:         'First',
           subject:         m.subject || '',
           difficulty:      m.difficulty || 'Easy',
           progress_status: m.progress_status,
@@ -270,11 +306,8 @@
         };
       });
 
-      var sections = ['First', 'Second', 'Third'].map(function(g) {
-        var items = allForRender.filter(function(a) { return (a.grading || 'First') === g; });
-        return renderGradingSection(g, items);
-      }).join('');
-      document.getElementById('gradingSections').innerHTML = sections;
+      document.getElementById('gradingSections').innerHTML =
+        renderAllActivities(allForRender) + renderFilesSection(uploadedFiles || []);
     }
 
     function loadMaterials() {
@@ -336,15 +369,24 @@
               else { badge.style.display = 'none'; }
             }).catch(function() {});
 
-          // Load only assigned materials from DB
+          // Load assigned activities first, then uploaded files
           fetch('STUDENT_BACKEND/student_get_materials.php?student_record_id=' + srid + '&teacher_id=' + tid)
             .then(function(r) { return r.json(); })
             .then(function(d) {
               if (!d.enrolled || !d.success) {
                 showNotEnrolledMaterials();
-              } else {
-                renderFromData(d.materials, d.completed, d.in_progress, d.new);
+                return;
               }
+              // Render activities immediately, then also fetch uploaded files
+              renderFromData(d.materials, d.completed, d.in_progress, d.new, []);
+              fetch('STUDENT_BACKEND/student_get_uploaded_materials.php?student_id=' + encodeURIComponent(srid))
+                .then(function(r) { return r.json(); })
+                .then(function(fd) {
+                  if (fd.files && fd.files.length > 0) {
+                    renderFromData(d.materials, d.completed, d.in_progress, d.new, fd.files);
+                  }
+                })
+                .catch(function() {});
             })
             .catch(function() { showNotEnrolledMaterials(); });
         })
@@ -371,7 +413,11 @@
       'Matching':         '../TEACHER_FILES/TEMPLATES/Matching_Type_Template.html',
       'Sorting':          '../TEACHER_FILES/TEMPLATES/Sorting_Type_Template.html',
       'Sequencing':       '../TEACHER_FILES/TEMPLATES/Sequencing_Type_Template.html',
-      'Picture Matching': '../TEACHER_FILES/TEMPLATES/Picture_Matching_Template.html'
+      'Picture Matching': '../TEACHER_FILES/TEMPLATES/Picture_Matching_Template.html',
+      'CheckOrX':         '../TEACHER_FILES/TEMPLATES/Check_ Or_Not_Template.html',
+      'LetterID':         '../TEACHER_FILES/TEMPLATES/Identification_Template.html',
+      'PictureLabeling':  '../TEACHER_FILES/TEMPLATES/Picture_ Labeling_Template.html',
+      'WrittenResponse':  '../TEACHER_FILES/TEMPLATES/Written_Response_Template.html'
     };
     function startActivity(dbId, type) {
       var tpl = TPL_MAP[type];
@@ -393,6 +439,7 @@
 
     loadMaterials();
   </script>
+<script>(function(){var _id=sessionStorage.getItem('student_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>
 </body>
 
 </html>

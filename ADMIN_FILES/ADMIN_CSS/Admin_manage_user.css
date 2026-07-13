@@ -335,6 +335,8 @@ body { display: flex; }
 .admin-vi-val { color: #555; }
 
 /* Form fields */
+.admin-field-pair { display: flex; gap: 12px; }
+.admin-field-pair__item { flex: 1; margin-bottom: 0; }
 .admin-field-group { margin-bottom: 18px; }
 .admin-field-group label { display: block; font-size: 13px; font-weight: 700; color: #1a1a2e; margin-bottom: 8px; }
 .admin-input-wrap { display: flex; align-items: center; gap: 10px; background: #f5f0e8; border-radius: 10px; padding: 12px 14px; }

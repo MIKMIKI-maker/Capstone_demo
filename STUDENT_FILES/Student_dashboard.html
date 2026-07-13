@@ -421,7 +421,11 @@
         'Matching':         '../TEACHER_FILES/TEMPLATES/Matching_Type_Template.html',
         'Sorting':          '../TEACHER_FILES/TEMPLATES/Sorting_Type_Template.html',
         'Sequencing':       '../TEACHER_FILES/TEMPLATES/Sequencing_Type_Template.html',
-        'Picture Matching': '../TEACHER_FILES/TEMPLATES/Picture_Matching_Template.html'
+        'Picture Matching': '../TEACHER_FILES/TEMPLATES/Picture_Matching_Template.html',
+        'CheckOrX':         '../TEACHER_FILES/TEMPLATES/Check_ Or_Not_Template.html',
+        'LetterID':         '../TEACHER_FILES/TEMPLATES/Identification_Template.html',
+        'PictureLabeling':  '../TEACHER_FILES/TEMPLATES/Picture_ Labeling_Template.html',
+        'WrittenResponse':  '../TEACHER_FILES/TEMPLATES/Written_Response_Template.html'
       };
       function startActivity(dbId, type) {
         var tpl = _TPL[type];
@@ -448,6 +452,7 @@
 
     </script>
   </main>
+<script>(function(){var _id=sessionStorage.getItem('student_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>
 </body>
 
 </html>

@@ -118,6 +118,9 @@
                 <button class="tab-btn" id="tab-published" type="button" onclick="switchTab('published')">
                     Published <span class="tab-count tab-count-published" id="count-published">0</span>
                 </button>
+                <button class="tab-btn" id="tab-uploads" type="button" onclick="switchTab('uploads')">
+                    Uploads <span class="tab-count tab-count-uploads" id="count-uploads">0</span>
+                </button>
             </div>
 
             <!-- TABLE CARD -->
@@ -242,6 +245,7 @@
                     status:       'draft',
                     templateFile: d.templateFile  || '',
                     db_draft_id:  d.db_draft_id   || null,
+                    thumbnail:    (d.data && d.data.thumb) || null,
                     _isLocal:     true
                 };
             });
@@ -258,6 +262,7 @@
                     deadline:       p.deadline      || '',
                     templateFile:   '',
                     db_activity_id: p.db_activity_id || null,
+                    thumbnail:      p.thumbnail      || null,
                     _isLocal:       true
                 };
             });
@@ -297,7 +302,8 @@
                 // allActivities keeps ALL local drafts + ALL local published + filtered backend
                 // Tab filtering and All-tab dedup happen in applyTabAndFilter()
                 allActivities = localDrafts.concat(localPublished).concat(dedupedBackend);
-                applyTabAndFilter();
+                // Load uploaded materials and merge them in
+                loadUploads();
             }
 
             var _tid = sessionStorage.getItem('teacher_id') || '';
@@ -321,11 +327,12 @@
 
             var base;
             if (currentTab === 'draft') {
-                base = allActivities.filter(function(a) { return a.status === 'draft'; });
+                base = allActivities.filter(function(a) { return a.status === 'draft' && !a._isUpload; });
             } else if (currentTab === 'published') {
-                base = allActivities.filter(function(a) { return a.status === 'published'; });
+                base = allActivities.filter(function(a) { return a.status === 'published' && !a._isUpload; });
+            } else if (currentTab === 'uploads') {
+                base = allActivities.filter(function(a) { return a._isUpload; });
             } else {
-                // All tab: show every item combined (drafts + published, no dedup)
                 base = allActivities;
             }
 
@@ -344,11 +351,13 @@
 
         /* ── Update tab count badges ── */
         function updateTabCounts() {
-            var drafts    = allActivities.filter(function(a) { return a.status === 'draft'; }).length;
-            var published = allActivities.filter(function(a) { return a.status === 'published'; }).length;
+            var drafts    = allActivities.filter(function(a) { return a.status === 'draft' && !a._isUpload; }).length;
+            var published = allActivities.filter(function(a) { return a.status === 'published' && !a._isUpload; }).length;
+            var uploads   = allActivities.filter(function(a) { return a._isUpload; }).length;
             document.getElementById('count-all').textContent       = allActivities.length;
             document.getElementById('count-draft').textContent     = drafts;
             document.getElementById('count-published').textContent = published;
+            document.getElementById('count-uploads').textContent   = uploads;
         }
 
         /* ── Render table rows ── */
@@ -360,7 +369,9 @@
                     ? 'No drafts saved yet.'
                     : currentTab === 'published'
                         ? 'No published activities yet.'
-                        : 'No activities yet.';
+                        : currentTab === 'uploads'
+                            ? 'No uploaded files yet.'
+                            : 'No activities yet.';
                 tbody.innerHTML = '<tr><td colspan="6" class="empty-row">' + esc(msg) + '</td></tr>';
                 document.getElementById('activity-count').textContent = '0';
                 document.getElementById('activity-total').textContent = '0';
@@ -376,17 +387,23 @@
                 var dateStr = a.savedAt ? formatDate(a.savedAt) : '—';
 
                 var actions;
-                if (a.status === 'draft' && a._isLocal) {
+                if (a._isUpload) {
+                    actions = '<a class="btn-edit" href="uploads/materials/' + esc(a.file_name) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open</a>'
+                            + '<button class="btn-delete" onclick="deleteUpload(' + a.upload_id + ')" type="button"><i class="fa-solid fa-trash"></i> Delete</button>';
+                } else if (a.status === 'draft' && a._isLocal) {
                     actions = '<button class="btn-edit" onclick="editDraft(\'' + esc(a.id) + '\',\'' + esc(a.templateFile) + '\')" type="button">'
                             + '<i class="fa-solid fa-pen"></i> Edit</button>'
                             + '<button class="btn-delete" onclick="deleteDraft(\'' + esc(a.id) + '\')" type="button">'
                             + '<i class="fa-solid fa-trash"></i> Delete</button>';
                 } else if (a.status === 'published' && a._isLocal) {
-                    actions = '<button class="btn-delete" onclick="deletePublished(\'' + esc(a.id) + '\')" type="button">'
+                    var _subDbId = a.db_activity_id || 0;
+                    actions = (_subDbId ? '<button class="btn-edit" onclick="window.location.href=\'Teacher_reviewact.html?id='+_subDbId+'\'" type="button"><i class="fa-solid fa-eye"></i> View Submissions</button>' : '')
+                            + '<button class="btn-delete" onclick="deletePublished(\'' + esc(a.id) + '\')" type="button">'
                             + '<i class="fa-solid fa-trash"></i> Unpublish</button>';
                 } else if (a.status === 'published' && !a._isLocal) {
                     // Backend-only published: allow direct DB unpublish
-                    actions = '<button class="btn-delete" onclick="deleteBackendPublished(' + a.id + ')" type="button">'
+                    actions = '<button class="btn-edit" onclick="window.location.href=\'Teacher_reviewact.html?id='+a.id+'\'" type="button"><i class="fa-solid fa-eye"></i> View Submissions</button>'
+                            + '<button class="btn-delete" onclick="deleteBackendPublished(' + a.id + ')" type="button">'
                             + '<i class="fa-solid fa-trash"></i> Unpublish</button>';
                 } else {
                     // Backend-only draft: Edit (open matching template) + Delete
@@ -400,8 +417,13 @@
                     ? esc(a.learner) + ' <span style="color:#64748b;font-size:11px;">(' + esc(a.grading) + ' Grading)</span>'
                     : esc(a.learner);
 
+                var _typeIcons = {Matching:'🔗',Sorting:'🗂️',Sequencing:'🔢',LetterID:'🔤',PictureLabeling:'🏷️',WrittenResponse:'✏️',CheckOrX:'✅',Upload:'📎'};
+                var _fallbackIcon = _typeIcons[a.type] || '🖼️';
+                var _tb = a.thumbnail
+                    ? '<img src="'+esc(a.thumbnail)+'" style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex:none;" />'
+                    : '<div style="width:44px;height:44px;border-radius:8px;background:#eef2f8;display:flex;align-items:center;justify-content:center;font-size:22px;flex:none;">'+_fallbackIcon+'</div>';
                 return '<tr>'
-                    + '<td class="teacher-activity-title">' + esc(a.title) + '</td>'
+                    + '<td class="teacher-activity-title"><div style="display:flex;align-items:center;gap:10px;">'+_tb+'<span>'+esc(a.title)+'</span></div></td>'
                     + '<td>' + esc(a.type) + '</td>'
                     + '<td>' + learnerCell + '</td>'
                     + '<td class="date-cell">' + dateStr + '</td>'
@@ -458,15 +480,17 @@
             try { notifs = JSON.parse(localStorage.getItem('student_notifications') || '[]'); } catch(e){}
             notifs = notifs.filter(function(n){ return n.activityId !== id; });
             try { localStorage.setItem('student_notifications', JSON.stringify(notifs)); } catch(e){}
-            // Delete from DB so admin portal and backend fetch both reflect the unpublish
+            // Wait for DB delete to finish before reloading — prevents the activity from
+            // reappearing as a backend-only row while the delete is still in flight
             if (dbId) {
                 var _tid = sessionStorage.getItem('teacher_id') || '';
                 fetch('TEACHER_BACKEND/teacher_delete_activity.php', {
                     method: 'POST',
                     body: new URLSearchParams({ teacher_id: _tid, activity_id: dbId })
-                }).catch(function(){});
+                }).finally(function(){ loadActivities(); });
+            } else {
+                loadActivities();
             }
-            loadActivities();
         }
 
         /* ── Unpublish a backend-only published activity (no localStorage entry) ── */
@@ -495,6 +519,44 @@
             window.location.href = templateFile;
         }
 
+        function loadUploads() {
+            var _tid = sessionStorage.getItem('teacher_id') || '';
+            if (!_tid) { applyTabAndFilter(); return; }
+            fetch('TEACHER_BACKEND/teacher_list_uploads.php?teacher_id=' + encodeURIComponent(_tid))
+                .then(function(r) { return r.json(); })
+                .then(function(res) {
+                    var uploads = (res.uploads || []).map(function(u) {
+                        return {
+                            id:                  'upl_' + u.id,
+                            upload_id:           u.id,
+                            title:               u.title || 'Untitled Upload',
+                            type:                'Upload',
+                            learner:             u.student_name || '—',
+                            savedAt:             u.uploaded_at || '',
+                            status:              'published',
+                            _isLocal:            false,
+                            _isUpload:           true,
+                            file_name:           u.file_name,
+                            file_original_name:  u.file_original_name || u.file_name
+                        };
+                    });
+                    allActivities = allActivities.concat(uploads);
+                    applyTabAndFilter();
+                })
+                .catch(function() { applyTabAndFilter(); });
+        }
+
+        function deleteUpload(uploadId) {
+            if (!confirm('Delete this uploaded file? It will no longer be visible to the student.')) return;
+            var _tid = sessionStorage.getItem('teacher_id') || '';
+            var fd = new FormData();
+            fd.append('upload_id', uploadId);
+            fd.append('teacher_id', _tid);
+            fetch('TEACHER_BACKEND/teacher_delete_upload.php', { method: 'POST', body: fd })
+                .then(function() { loadActivities(); })
+                .catch(function() { loadActivities(); });
+        }
+
         function viewActivity(id) { window.location.href = 'Teacher_reviewact.html?id=' + id; }
         function editActivity(id) { window.location.href = 'Teacher_reviewact.html?id=' + id; }
 
@@ -518,6 +580,7 @@
             document.getElementById('teacher-searchInput').addEventListener('input', filterTable);
         });
     </script>
+<script>(function(){var _id=sessionStorage.getItem('admin_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>
 </body>
 
 </html>

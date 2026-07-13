@@ -81,7 +81,19 @@ if ($stmt2) {
 }
 
 // Step 3: Enrich students and activities with progress data from learner_progress
-$progStmt = $conn->prepare("SELECT student_id, activity_id, score FROM learner_progress WHERE teacher_id = ?");
+// Use finalized_score from activity_submissions when the teacher has graded it,
+// otherwise fall back to the raw learner_progress score.
+$progStmt = $conn->prepare("
+    SELECT lp.student_id, lp.activity_id,
+           COALESCE(sub.finalized_score, lp.score) AS score
+    FROM learner_progress lp
+    LEFT JOIN activity_submissions sub
+           ON sub.activity_id = lp.activity_id
+          AND sub.student_id  = lp.student_id
+          AND sub.teacher_id  = lp.teacher_id
+          AND sub.is_finalized = 1
+    WHERE lp.teacher_id = ?
+");
 if ($progStmt) {
     $progStmt->bind_param("i", $teacher_id);
     $progStmt->execute();
@@ -135,6 +147,50 @@ $passing   = count(array_filter($students, function($s) { return $s['status'] ==
 $at_risk   = count(array_filter($students, function($s) { return $s['status'] === 'At Risk'; }));
 $no_act    = count(array_filter($students, function($s) { return $s['status'] === 'No Activity'; }));
 
+// Skills breakdown by subject
+$skills_breakdown = [
+    'Cognitive'     => null,
+    'Communication' => null,
+    'Fine Motor'    => null,
+    'Social Skills' => null,
+    'Self Help'     => null,
+];
+$skillStmt = $conn->prepare("
+    SELECT COALESCE(ta.subject,'Other') AS subject,
+           ROUND(AVG(COALESCE(sub.finalized_score, lp.score)),1) AS avg_score
+    FROM learner_progress lp
+    LEFT JOIN teacher_activities ta ON ta.id = lp.activity_id
+    LEFT JOIN activity_submissions sub
+           ON sub.activity_id = lp.activity_id
+          AND sub.student_id  = lp.student_id
+          AND sub.teacher_id  = lp.teacher_id
+          AND sub.is_finalized = 1
+    WHERE lp.teacher_id = ?
+    GROUP BY ta.subject
+");
+if ($skillStmt) {
+    $skillStmt->bind_param("i", $teacher_id);
+    $skillStmt->execute();
+    $skillRows = $skillStmt->get_result();
+    $skillMap = [
+        'cognitive'     => 'Cognitive',
+        'communication' => 'Communication',
+        'motor'         => 'Fine Motor',
+        'social'        => 'Social Skills',
+        'self'          => 'Self Help',
+    ];
+    while ($sk = $skillRows->fetch_assoc()) {
+        $subj = strtolower($sk['subject']);
+        foreach ($skillMap as $key => $skillName) {
+            if (strpos($subj, $key) !== false) {
+                $skills_breakdown[$skillName] = (float)$sk['avg_score'];
+                break;
+            }
+        }
+    }
+    $skillStmt->close();
+}
+
 // Recent activity log (last 30 days)
 $stmt3 = $conn->prepare("
     SELECT lp.score, lp.assessment_date, lp.created_at,
@@ -168,9 +224,10 @@ echo json_encode([
         'no_activity'     => $no_act,
         'total_activities'=> count($activities),
     ],
-    'students'   => $students,
-    'activities' => $activities,
-    'recent_log' => $recent_log,
+    'students'         => $students,
+    'activities'       => $activities,
+    'recent_log'       => $recent_log,
+    'skills_breakdown' => $skills_breakdown,
 ]);
 
 } catch (\Throwable $e) {

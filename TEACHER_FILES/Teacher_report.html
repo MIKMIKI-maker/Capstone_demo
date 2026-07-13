@@ -226,15 +226,20 @@
                     document.getElementById('report-stat-avg').textContent = ov.class_avg ? ov.class_avg + '%' : '—';
                     document.getElementById('report-stat-activities').textContent = ov.total_activities || '—';
 
-                    // Skill bars: map avg_score as proxy for overall skill
-                    var avg = ov.class_avg || 0;
-                    var skBars = {cognitive: avg, communication: avg > 5 ? avg - 5 : 0, finemotor: avg > 10 ? avg - 10 : 0, lifeskills: avg > 8 ? avg - 8 : 0};
-                    Object.keys(skBars).forEach(function(k) {
-                        var v = Math.min(100, Math.max(0, skBars[k]));
+                    // Skill bars: use real per-subject data from backend
+                    var sk = d.skills_breakdown || {};
+                    var skMap = {
+                        cognitive:    sk['Cognitive'],
+                        communication: sk['Communication'],
+                        finemotor:    sk['Fine Motor'],
+                        lifeskills:   sk['Social Skills'] != null ? sk['Social Skills'] : sk['Self Help']
+                    };
+                    Object.keys(skMap).forEach(function(k) {
+                        var v = skMap[k];
                         var pctEl = document.getElementById('skill-pct-' + k);
                         var barEl = document.getElementById('skill-bar-' + k);
-                        if (pctEl) pctEl.textContent = v ? v + '%' : '—';
-                        if (barEl) barEl.style.width = v + '%';
+                        if (pctEl) pctEl.textContent = (v != null) ? v + '%' : '—';
+                        if (barEl) barEl.style.width = (v != null) ? Math.min(100, v) + '%' : '0%';
                     });
 
                     // Learner performance table
@@ -296,6 +301,7 @@
             loadReports();
         });
     </script>
+<script>(function(){var _id=sessionStorage.getItem('admin_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>
 </body>
 
 </html>

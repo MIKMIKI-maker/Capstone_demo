@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SPED ALM — Written Response Template Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<style>
+  :root{
+    --blue:#2f6fed; --blue-dark:#1b4fb8;
+    --purple:#7b6ef0; --purple-dark:#5546c4;
+    --green:#2fbf57; --green-dark:#1f9d44;
+    --red:#e23b54; --red-dark:#b9263c;
+    --gold:#ffc34d; --ink:#243a5e; --ink-soft:#5d7299;
+    --field:#f7f9fd; --field-border:#e6ebf4; --line:#eef2f8;
+    --font:"Fredoka","Nunito",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html, body{ height:100%; overflow:hidden; }
+  body{ font-family:var(--font); color:var(--ink); background:#eef2f9; display:flex; flex-direction:column; }
+
+  /* ===== TOP BAR ===== */
+  .wrt-top{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; flex:none;
+    background:#fff; padding:14px 22px; border-bottom:1px solid var(--line); }
+  .wrt-logo{ width:46px; height:46px; border-radius:14px; flex:none;
+    background:linear-gradient(135deg,#ff8a5b,#7b6ef0); display:flex; align-items:center; justify-content:center; font-size:24px; }
+  .wrt-top h1{ font-weight:700; font-size:21px; line-height:1.1; }
+  .wrt-top .wrt-tsub{ color:var(--ink-soft); font-size:12px; font-weight:500; }
+  .wrt-top-actions{ margin-left:auto; display:flex; gap:10px; flex-wrap:wrap; }
+  .wrt-btn{ cursor:pointer; border:none; font-family:var(--font); font-weight:700; font-size:14px;
+    padding:11px 18px; border-radius:13px; display:inline-flex; align-items:center; gap:7px;
+    transition:transform .08s ease, filter .1s ease; }
+  .wrt-btn:active{ transform:translateY(2px); }
+  .wrt-btn--ghost{ background:#fff; color:var(--ink); border:1.5px solid var(--field-border); }
+  .wrt-btn--ghost:hover{ background:#f7f9fd; }
+  .wrt-btn--print{ background:var(--gold); color:#5c4400; box-shadow:0 4px 0 #d9a416; }
+  .wrt-btn--pub{ background:var(--green); color:#fff; box-shadow:0 4px 0 var(--green-dark); }
+
+  /* ===== BODY GRID ===== */
+  .wrt-body{ display:grid; grid-template-columns:280px 1fr 270px; gap:16px; padding:16px; align-items:stretch;
+    flex:1; min-height:0; overflow:hidden; }
+  .wrt-left-col, .wrt-preview-col, .wrt-right-col{ overflow-y:auto; min-height:0; padding-right:2px;
+    scrollbar-width:thin; scrollbar-color:#c7d3e8 transparent; }
+  .wrt-left-col::-webkit-scrollbar, .wrt-preview-col::-webkit-scrollbar, .wrt-right-col::-webkit-scrollbar{ width:6px; }
+  .wrt-left-col::-webkit-scrollbar-track, .wrt-preview-col::-webkit-scrollbar-track, .wrt-right-col::-webkit-scrollbar-track{ background:transparent; }
+  .wrt-left-col::-webkit-scrollbar-thumb, .wrt-preview-col::-webkit-scrollbar-thumb, .wrt-right-col::-webkit-scrollbar-thumb{ background:#c7d3e8; border-radius:10px; }
+  .wrt-left-col::-webkit-scrollbar-thumb:hover, .wrt-preview-col::-webkit-scrollbar-thumb:hover, .wrt-right-col::-webkit-scrollbar-thumb:hover{ background:#aebedb; }
+  .wrt-card{ background:#fff; border:1px solid var(--line); border-radius:18px; padding:16px; }
+  .wrt-card + .wrt-card{ margin-top:16px; }
+  .wrt-step{ font-size:12px; font-weight:800; letter-spacing:.04em; color:var(--ink-soft); text-transform:uppercase; margin-bottom:12px; }
+  .wrt-step .wrt-edit-link{ color:var(--purple); cursor:pointer; font-weight:700; text-transform:none; letter-spacing:0; }
+
+  /* Slides navigator */
+  .wrt-slidebar{ display:flex; align-items:center; gap:8px; }
+  .wrt-slidebar button{ width:30px; height:30px; flex:none; border-radius:9px; border:1.5px solid var(--field-border); background:#fff; cursor:pointer; font-size:14px; color:var(--ink); }
+  .wrt-slidebar button:hover:not(:disabled){ background:#f1f4fa; }
+  .wrt-slidebar button:disabled{ opacity:.35; cursor:default; }
+  .wrt-slide-label{ flex:1; text-align:center; font-weight:700; font-size:13px; color:var(--ink); }
+  .wrt-slide-actions{ display:flex; gap:8px; margin-top:10px; }
+  .wrt-slide-actions button{ flex:1; cursor:pointer; border:1.5px dashed var(--purple); background:#f3f1fe; color:var(--purple);
+    font-family:var(--font); font-weight:700; font-size:12.5px; padding:8px; border-radius:11px; }
+  .wrt-slide-actions button.danger{ border-color:#f0a8b4; background:#fdeef1; color:#c43a55; }
+
+  /* Activity type + mode toggle */
+  .wrt-type{ display:flex; align-items:center; gap:12px; border:2px solid var(--purple); background:#f3f1fe; border-radius:14px; padding:13px; }
+  .wrt-type-ic{ width:40px; height:40px; border-radius:11px; background:#fff; display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 3px 0 #ddd8f7; }
+  .wrt-type b{ font-weight:700; font-size:15px; }
+  .wrt-type-desc{ color:var(--ink-soft); font-size:12.5px; font-weight:500; line-height:1.5; margin-top:12px; }
+  .wrt-mode-seg{ display:flex; gap:8px; margin-top:12px; }
+  .wrt-mode-seg button{ flex:1; cursor:pointer; border:1.5px solid var(--field-border); background:#fff; border-radius:11px; padding:10px 6px;
+    font-family:var(--font); font-weight:700; font-size:12px; color:var(--ink-soft); }
+  .wrt-mode-seg button.sel{ border-color:var(--purple); background:#f3f1fe; color:var(--purple); }
+
+  /* Example item editor */
+  .wrt-example-box{ border:1.5px dashed #cbb8f3; background:#faf7ff; border-radius:14px; padding:12px; }
+  .wrt-example-label{ font-size:11px; font-weight:800; color:var(--purple); text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px; }
+
+  /* Items list */
+  .wrt-item-row{ padding:10px 0; border-bottom:1px solid var(--line); position:relative; }
+  .wrt-item-row:last-of-type{ border-bottom:none; }
+  .wrt-item-top{ display:flex; align-items:flex-start; gap:10px; }
+  .wrt-item-media{ flex:none; width:82px; }
+  .wrt-thumb{ width:82px; height:60px; border-radius:10px; border:1.5px solid var(--field-border);
+    background:var(--field); display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden; font-size:22px; }
+  .wrt-thumb img{ width:100%; height:100%; object-fit:cover; }
+  .wrt-media-tabs{ display:flex; gap:4px; margin-top:6px; }
+  .wrt-media-tabs button{ flex:1; cursor:pointer; border:1.5px solid var(--field-border); background:#fff; color:var(--ink-soft);
+    font-family:var(--font); font-weight:700; font-size:9.5px; padding:4px 2px; border-radius:7px; }
+  .wrt-media-tabs button.sel{ border-color:var(--purple); background:#f3f1fe; color:var(--purple); }
+  .wrt-link-input{ width:82px; margin-top:6px; padding:5px 6px; border-radius:7px; border:1.5px solid var(--field-border);
+    background:var(--field); font-family:var(--font); font-size:10px; display:none; }
+  .wrt-link-input.show{ display:block; }
+
+  .wrt-item-fields{ flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
+  .wrt-item-fields label{ font-size:10.5px; font-weight:800; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.03em; }
+  .wrt-item-fields select, .wrt-item-fields input[type="text"]{
+    width:100%; padding:6px 7px; border-radius:8px; border:1.5px solid var(--field-border); background:#fff;
+    font-family:var(--font); font-size:13px; color:var(--ink); }
+  .wrt-correct-input{ border-color:var(--green) !important; background:#f0fbf2 !important; font-weight:700; }
+
+  .wrt-item-menu{ position:absolute; top:10px; right:0; cursor:pointer; border:none; background:none; color:var(--ink-soft); font-size:18px; width:28px; height:28px; border-radius:8px; }
+  .wrt-item-menu:hover{ background:#f1f4fa; }
+  .wrt-pop{ position:absolute; right:0; top:36px; z-index:5; background:#fff; border:1px solid var(--field-border); border-radius:12px; box-shadow:0 8px 24px rgba(36,58,94,.18); padding:6px; display:none; }
+  .wrt-pop.show{ display:block; }
+  .wrt-pop button{ display:block; width:100%; text-align:left; border:none; background:none; cursor:pointer; font-family:var(--font); font-size:13px; padding:8px 14px; border-radius:8px; color:var(--ink); white-space:nowrap; }
+  .wrt-pop button:hover{ background:#f1f4fa; }
+  .wrt-pop button.del{ color:#d6336c; }
+  .wrt-add{ cursor:pointer; width:100%; margin-top:10px; border:1.5px dashed var(--purple); background:#f3f1fe; color:var(--purple); font-family:var(--font); font-weight:700; font-size:13px; padding:9px; border-radius:12px; }
+
+  /* Thumbnail upload (activity card thumbnail) */
+  .wrt-thumbbox{ position:relative; border:2px dashed #cbb8f3; background:#faf7ff; border-radius:14px; padding:10px; text-align:center; }
+  .wrt-thumbbox img{ width:100%; border-radius:10px; display:block; }
+  .wrt-thumb-empty{ height:96px; display:flex; align-items:center; justify-content:center; color:var(--ink-soft); font-size:12px; font-weight:600; }
+  .wrt-thumb-check{ position:absolute; top:-8px; right:-8px; width:24px; height:24px; border-radius:50%; background:var(--purple); color:#fff; display:none; align-items:center; justify-content:center; font-size:13px; }
+  .wrt-thumb-check.show{ display:flex; }
+  .wrt-change{ cursor:pointer; width:100%; margin-top:10px; border:1.5px solid var(--field-border); background:#fff; color:var(--ink); font-family:var(--font); font-weight:700; font-size:13px; padding:9px; border-radius:11px; }
+
+  .wrt-tip{ background:#fef6e6; border:1px solid #f6e2b3; border-radius:14px; padding:13px; }
+  .wrt-tip b{ font-size:13px; display:flex; align-items:center; gap:6px; }
+  .wrt-tip p{ color:#7a5e1d; font-size:12px; font-weight:500; line-height:1.5; margin-top:6px; }
+  .wrt-guide-settings-btn{ margin-left:auto; cursor:pointer; border:1.5px solid #cbb8f3; background:#f3f1fe; color:var(--purple);
+    font-family:var(--font); font-weight:800; font-size:13px; padding:7px 12px; border-radius:10px; white-space:nowrap; }
+  .wrt-guide-settings-btn:hover{ background:#e6e1fb; }
+
+  /* ===== CENTER PREVIEW ===== */
+  .wrt-preview-col .wrt-step{ margin-bottom:12px; }
+  .wrt-stage{ position:relative; overflow:hidden; border-radius:20px; border:1px solid var(--line);
+    background:#fdf6d8; padding:30px;
+    --wrt-text:#243a5e; font-family:'Comic Sans MS','Comic Sans',cursive; font-size:34px; }
+  .wrt-deco{ position:absolute; inset:0; pointer-events:none; }
+  .wrt-stage.no-deco .wrt-deco{ display:none; }
+  .wrt-deco .d-sun{ position:absolute; top:14px; right:22px; font-size:42px; }
+  .wrt-deco .d-cloud1{ position:absolute; top:18px; left:24px; font-size:30px; opacity:.9; }
+  .wrt-deco .d-cloud2{ position:absolute; top:46%; right:10px; font-size:26px; opacity:.8; }
+  .wrt-deco .d-grass{ position:absolute; left:0; right:0; bottom:0; height:64px;
+    background:linear-gradient(180deg, rgba(126,217,124,0), #aee08a 70%); }
+  .wrt-deco .d-flower1{ position:absolute; bottom:8px; left:18px; font-size:24px; }
+  .wrt-deco .d-flower2{ position:absolute; bottom:6px; right:26px; font-size:22px; }
+
+  .wrt-stage-inner{ position:relative; z-index:2; transform-origin:top center; }
+  .wrt-title{ text-align:center; font-weight:700; font-size:1.25em; color:var(--wrt-text); }
+  .wrt-instr{ text-align:center; font-size:.5em; font-weight:500; color:var(--wrt-text); opacity:.85; margin:6px 0 18px; }
+
+  .wrt-example-card{ position:relative; z-index:2; max-width:780px; margin:0 auto 20px; background:#fff;
+    border:3px dashed #e2c98f; border-radius:16px; padding:12px 16px; display:flex; align-items:center; gap:16px; }
+  .wrt-example-tag{ position:absolute; top:-12px; left:14px; background:var(--gold); color:#5c4400; font-size:.32em;
+    font-weight:800; padding:4px 10px; border-radius:8px; }
+  .wrt-example-img{ width:2.2em; height:2.2em; object-fit:contain; flex:none; }
+  .wrt-example-emoji{ font-size:2em; flex:none; }
+  .wrt-example-answer{ font-size:.7em; font-weight:800; color:var(--green-dark); border-bottom:3px solid var(--green); padding:2px 14px; }
+
+  .wrt-grid{ position:relative; z-index:2; display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+  .wrt-scard{ position:relative; background:#fff; border:3px solid #e2c98f; border-radius:18px; padding:14px;
+    display:flex; align-items:center; gap:12px; box-shadow:0 4px 12px rgba(36,58,94,.08); }
+  .wrt-scard-badge{ display:none; position:absolute; top:-12px; right:-12px; width:1.1em; height:1.1em; border-radius:50%;
+    align-items:center; justify-content:center; font-size:.5em; font-weight:800; color:#fff;
+    box-shadow:0 3px 8px rgba(0,0,0,.25); }
+  .wrt-scard-badge.correct{ background:var(--green); }
+  .wrt-scard-badge.wrong{ background:var(--red); }
+  .wrt-scard-img{ width:2.4em; height:2.4em; object-fit:contain; flex:none; }
+  .wrt-scard-emoji{ font-size:2.1em; flex:none; }
+  .wrt-scard-num{ font-weight:700; font-size:.6em; color:var(--wrt-text); flex:none; }
+  .wrt-scard-input{ flex:1; min-width:0; border:none; border-bottom:3px solid var(--ink-soft); background:transparent;
+    font-family:var(--font); font-weight:700; font-size:.65em; color:var(--wrt-text); padding:4px 6px; outline:none; text-align:center; }
+  .wrt-scard-input:focus{ border-color:var(--blue); }
+  .wrt-scard-input.correct{ border-color:var(--green); color:var(--green-dark); }
+  .wrt-scard-input.wrong{ border-color:var(--red); color:var(--red-dark); }
+
+  .wrt-stage.bs-dashed .wrt-scard{ border-style:dashed; }
+  .wrt-stage.bs-solid .wrt-scard{ border-radius:8px; }
+
+  .wrt-stage-controls{ display:flex; flex-direction:column; align-items:center; gap:10px; margin-top:22px; position:relative; z-index:2; }
+  .wrt-stage-btnrow{ display:flex; justify-content:center; gap:10px; }
+  .wrt-mini{ cursor:pointer; border:none; font-family:var(--font); font-weight:700; font-size:.5em; padding:.55em 1.2em; border-radius:12px; }
+  .wrt-mini--reset{ background:#eef3fb; color:var(--ink-soft); }
+  .wrt-mini--check{ background:var(--green); color:#fff; }
+  .wrt-hint{ font-size:.46em; font-weight:700; min-height:1.3em; text-align:center; color:var(--red-dark); }
+  .wrt-stage-nav{ display:flex; align-items:center; gap:14px; margin-top:6px; }
+  .wrt-stage-nav button{ cursor:pointer; border:none; background:#eef3fb; color:var(--ink-soft); font-family:var(--font); font-weight:700; font-size:.42em; padding:.55em 1em; border-radius:10px; }
+  .wrt-stage-nav button:disabled{ opacity:.35; cursor:default; }
+  .wrt-stage-nav span{ font-weight:700; font-size:.42em; color:var(--wrt-text); opacity:.8; }
+
+  .wrt-reminders{ background:#f6f2fe; border:1px solid #e4dcfa; border-radius:16px; padding:14px 16px; margin-top:16px; }
+  .wrt-reminders .r-title{ font-size:11px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:var(--purple); margin-bottom:12px; }
+  .wrt-rem-list{ display:flex; gap:10px; flex-wrap:wrap; justify-content:space-between; }
+  .wrt-rem{ display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; flex:1; min-width:80px; color:var(--ink-soft); font-size:11.5px; font-weight:600; }
+  .wrt-rem .r-ic{ font-size:20px; }
+
+  /* ===== RIGHT SETTINGS ===== */
+  .wrt-right-col{ position:relative; }
+  .wrt-set-title{ display:flex; align-items:center; gap:8px; font-weight:700; font-size:15px; margin-bottom:16px; }
+  .wrt-collapse-btn{ cursor:pointer; border:1.5px solid var(--field-border); background:#fff; width:30px; height:30px; flex:none;
+    border-radius:9px; font-size:14px; color:var(--ink-soft); margin-left:auto; }
+  .wrt-collapse-btn:hover{ background:#f1f4fa; }
+  .wrt-right-panel-guide{ display:none; }
+  body.wrt-right-collapsed .wrt-right-panel-full{ display:none; }
+  body.wrt-right-collapsed .wrt-right-panel-guide{ display:block; }
+  .wrt-set-label{ font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-soft); margin:0 0 9px; }
+  .wrt-set-group{ margin-bottom:18px; }
+  .wrt-swatches{ display:flex; gap:8px; flex-wrap:wrap; }
+  .wrt-sw{ width:38px; height:38px; border-radius:11px; cursor:pointer; border:2px solid #fff; box-shadow:0 0 0 1.5px var(--field-border); position:relative; }
+  .wrt-sw.sel{ box-shadow:0 0 0 2.5px var(--purple); }
+  .wrt-sw.sel::after{ content:"✓"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--purple); font-weight:800; font-size:14px; }
+  .wrt-input, .wrt-select{ width:100%; padding:11px 13px; border-radius:12px; border:1.5px solid var(--field-border); background:#fff; font-family:var(--font); font-size:14px; color:var(--ink); outline:none; }
+  .wrt-input:focus, .wrt-select:focus{ border-color:var(--purple); }
+  .wrt-size-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .wrt-size-num{ width:54px; text-align:center; padding:5px; border:1.5px solid var(--field-border); border-radius:8px; font-family:var(--font); font-weight:700; }
+  .wrt-size-row{ display:flex; align-items:center; gap:10px; }
+  .wrt-size-row input[type=range]{ flex:1; accent-color:var(--purple); }
+  .wrt-size-row .a-sm{ font-size:13px; font-weight:700; } .wrt-size-row .a-lg{ font-size:20px; font-weight:700; }
+  .wrt-color-row{ display:flex; align-items:center; gap:8px; }
+  .wrt-color-row input[type=color]{ width:46px; height:34px; border:none; border-radius:9px; background:none; cursor:pointer; }
+  .wrt-seg{ display:flex; gap:8px; }
+  .wrt-seg button{ flex:1; cursor:pointer; border:1.5px solid var(--field-border); background:#fff; border-radius:11px; padding:10px 4px; font-family:var(--font); font-weight:600; font-size:12px; color:var(--ink-soft); display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .wrt-seg button.sel{ border-color:var(--purple); background:#f3f1fe; color:var(--purple); }
+  .wrt-seg .seg-box{ width:30px; height:20px; border:2.5px solid var(--ink-soft); }
+  .wrt-seg button.sel .seg-box{ border-color:var(--purple); }
+  .seg-rounded{ border-radius:8px; } .seg-dashed{ border-style:dashed; border-radius:8px; } .seg-solid{ border-radius:2px; }
+  .wrt-spacing{ display:flex; align-items:center; gap:12px; }
+  .wrt-spacing button{ width:34px; height:34px; border-radius:10px; border:1.5px solid var(--field-border); background:#fff; cursor:pointer; font-size:18px; font-weight:700; color:var(--ink); }
+  .wrt-spacing span{ font-weight:700; font-size:14px; flex:1; text-align:center; }
+  .wrt-check{ display:flex; align-items:center; gap:9px; padding:7px 0; cursor:pointer; font-size:14px; font-weight:600; }
+  .wrt-check input{ width:18px; height:18px; accent-color:var(--purple); }
+  .wrt-set-actions{ display:flex; gap:10px; margin-top:8px; }
+  .wrt-set-actions button{ flex:1; cursor:pointer; border:none; font-family:var(--font); font-weight:700; font-size:14px; padding:12px; border-radius:12px; }
+  .wrt-reset{ background:#eef2f8; color:var(--ink-soft); }
+  .wrt-apply{ background:var(--purple); color:#fff; box-shadow:0 4px 0 var(--purple-dark); }
+
+  /* preview-only mode */
+  body.wrt-preview-only .wrt-left-col,
+  body.wrt-preview-only .wrt-right-col,
+  body.wrt-preview-only .wrt-top,
+  body.wrt-preview-only .wrt-preview-col > .wrt-step,
+  body.wrt-preview-only .wrt-reminders{ display:none; }
+  body.wrt-preview-only .wrt-body{ grid-template-columns:1fr; min-height:100vh; padding:0; overflow:hidden; }
+  body.wrt-preview-only .wrt-preview-col{ width:100%; max-width:100%; overflow:hidden; }
+  body.wrt-preview-only .wrt-stage{ width:100%; min-height:100vh; border-radius:0; border:none;
+    padding:50px 40px 70px; display:flex; flex-direction:column; justify-content:center; }
+  body.wrt-preview-only .wrt-grid,
+  body.wrt-preview-only .wrt-example-card,
+  body.wrt-preview-only .wrt-title,
+  body.wrt-preview-only .wrt-instr{ max-width:900px; width:100%; margin-left:auto; margin-right:auto; }
+
+  /* ===== FLOATING EXIT BUTTON ===== */
+  .wrt-exit-float{ display:none; position:fixed; top:14px; right:14px; z-index:100;
+    align-items:center; gap:6px; cursor:pointer; border:none;
+    background:rgba(36,58,94,.85); color:#fff; font-family:var(--font); font-weight:700; font-size:13px;
+    padding:10px 18px; border-radius:30px; box-shadow:0 6px 18px rgba(0,0,0,.25); }
+  .wrt-exit-float:hover{ background:rgba(36,58,94,1); }
+  body.wrt-preview-only .wrt-exit-float{ display:flex; }
+
+  /* ===== SCORE MODAL ===== */
+  .wrt-modal-overlay{ position:fixed; inset:0; background:rgba(36,58,94,.55); z-index:80;
+    display:none; align-items:center; justify-content:center; padding:20px; }
+  .wrt-modal-overlay.show{ display:flex; }
+  .wrt-modal-card{ background:#fff; border-radius:26px; padding:30px 26px; max-width:420px; width:100%;
+    max-height:88vh; overflow-y:auto; text-align:center; box-shadow:0 24px 60px rgba(0,0,0,.3); animation:wrtPop .22s ease; }
+  @keyframes wrtPop{ from{ transform:scale(.85); opacity:0; } to{ transform:scale(1); opacity:1; } }
+  .wrt-modal-emoji{ width:100px; height:100px; object-fit:contain; margin-bottom:10px; animation:wrtRewardFloat 2s ease-in-out infinite; }
+  @keyframes wrtRewardFloat{ 0%,100%{ transform:translateY(0) scale(1); } 50%{ transform:translateY(-10px) scale(1.06); } }
+  .wrt-modal-score{ font-size:24px; font-weight:800; color:var(--ink); margin:4px 0 6px; }
+  .wrt-modal-msg{ font-size:13px; font-weight:600; color:var(--ink-soft); margin-bottom:14px; line-height:1.5; }
+
+  .wrt-review-list{ text-align:left; border-top:1.5px dashed var(--field-border); padding-top:12px; margin-bottom:16px; }
+  .wrt-review-title{ font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:var(--purple); margin-bottom:10px; }
+  .wrt-review-row{ display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--line); }
+  .wrt-review-thumb{ width:30px; height:30px; border-radius:7px; object-fit:cover; flex:none; background:var(--field); }
+  .wrt-review-text{ flex:1; min-width:0; font-size:12.5px; }
+  .wrt-review-text b{ display:block; font-size:12px; }
+  .wrt-review-text span{ color:var(--ink-soft); font-size:11px; }
+  .wrt-review-status{ flex:none; width:28px; height:28px; border-radius:8px; display:flex; align-items:center;
+    justify-content:center; font-size:14px; font-weight:800; }
+  .wrt-review-status.correct{ background:#e8fbee; color:var(--green-dark); }
+  .wrt-review-status.wrong{ background:#fdeef1; color:var(--red-dark); }
+  .wrt-pending-note{ font-size:11px; color:var(--ink-soft); font-style:italic; margin-bottom:14px; }
+
+  .wrt-modal-actions{ display:flex; gap:10px; }
+  .wrt-modal-actions button{ flex:1; cursor:pointer; border:none; font-family:var(--font); font-weight:700; font-size:14px; padding:13px; border-radius:14px; }
+  .wrt-modal-try{ background:var(--purple); color:#fff; box-shadow:0 4px 0 var(--purple-dark); }
+  .wrt-modal-close{ background:#eef2f8; color:var(--ink-soft); }
+
+  /* ===== PUBLISH MODAL ===== */
+  .wrt-publish-card{ max-width:560px; text-align:left; }
+  .wrt-publish-card h3{ text-align:center; font-size:18px; font-weight:800; color:var(--ink); margin-bottom:16px; }
+  .wrt-publish-field{ margin-bottom:18px; }
+  .wrt-publish-field label{ display:block; font-size:12.5px; font-weight:700; color:var(--ink-soft); margin-bottom:6px; }
+  .wrt-publish-field input[type="date"]{ width:100%; padding:10px 12px; border-radius:10px;
+    border:1.5px solid var(--field-border); background:#fff; font-family:var(--font); font-size:14px;
+    color:var(--ink); outline:none; }
+  .wrt-publish-field input[type="date"]:focus{ border-color:var(--purple); }
+  .wrt-publish-field .wrt-publish-hint{ font-size:11.5px; color:var(--ink-soft); font-weight:500; margin-top:5px; }
+  .wrt-publish-confirm{ background:var(--green); color:#fff; box-shadow:0 4px 0 var(--green-dark); }
+  .wrt-domain-radios{ display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+  .wrt-domain-opt{ display:flex; align-items:center; gap:5px; font-size:12px; font-weight:600;
+    color:var(--ink); cursor:pointer; padding:5px 10px; border:1.5px solid var(--field-border);
+    border-radius:8px; background:#fff; transition:border-color .15s,background .15s; }
+  .wrt-domain-opt:has(input:checked){ border-color:#0891b2; background:#ecfeff; color:#0891b2; }
+  .wrt-domain-opt input[type="radio"]{ accent-color:#0891b2; cursor:pointer; }
+
+  @media (max-width:1100px){ .wrt-body{ grid-template-columns:1fr; } }
+  /* ── SPOTLIGHT TOUR ── */
+  .wrt-btn--help{background:#ffc34d;color:#5c4400;box-shadow:0 4px 0 #d9a416;}
+  #wrtTourSpot{display:none;position:fixed;z-index:8999;pointer-events:none;border-radius:14px;box-shadow:0 0 0 9999px rgba(15,23,55,.72);transition:left .22s ease,top .22s ease,width .22s ease,height .22s ease;}
+  #wrtTourRing{display:none;position:fixed;z-index:9000;pointer-events:none;border-radius:16px;border:3px solid #ffc34d;transition:left .22s ease,top .22s ease,width .22s ease,height .22s ease;animation:wrtTourPulse 1.5s ease-in-out infinite;}
+  @keyframes wrtTourPulse{0%,100%{opacity:1;}50%{opacity:.25;}}
+  #wrtTourTip{display:none;position:fixed;z-index:9001;background:#fff;border-radius:18px;box-shadow:0 16px 50px rgba(15,23,55,.28);padding:20px 22px 16px;width:290px;transition:left .22s ease,top .22s ease;}
+  .wrt-tour-action{cursor:pointer;border:none;font-family:var(--font);font-weight:700;font-size:13px;padding:9px 16px;border-radius:10px;}
+  #wrtTourStep{font-size:13px;font-weight:800;color:var(--ink);margin-bottom:6px;line-height:1.3;}
+  #wrtTourDesc{font-size:12.5px;color:var(--ink-soft);line-height:1.6;margin-bottom:16px;}
+  .wrt-tour-row{display:flex;align-items:center;gap:8px;}
+  #wrtTourSkip{background:none;color:#94a3b8;font-size:12px;margin-right:auto;padding:4px 0;}
+  #wrtTourBack{background:#f1f5f9;color:var(--ink-soft);}
+  #wrtTourNext{background:var(--purple);color:#fff;}
+</style>
+</head>
+<body>
+
+  <button class="wrt-exit-float" id="wrtExitFloatBtn" type="button">✖ Exit</button>
+
+  <div class="wrt-top">
+    <div class="wrt-logo">✏️</div>
+    <div>
+      <h1>Written Response Template Generator</h1>
+      <div class="wrt-tsub">Picture-prompted, student-typed activities for learners (ASD / Intellectual Disability)</div>
+    </div>
+    <div class="wrt-top-actions">
+      <button class="wrt-btn wrt-btn--help" id="wrtHelpBtn" type="button">❓ Help</button>
+      <button class="wrt-btn wrt-btn--print" id="wrtPrintBtn" type="button">🖨️ Generate Printable</button>
+      <button class="wrt-btn wrt-btn--ghost" id="wrtPreviewBtn" type="button">👁 Preview</button>
+      <button class="wrt-btn wrt-btn--ghost" id="wrtDraftBtn" type="button">💾 Save Draft</button>
+      <button class="wrt-btn wrt-btn--pub" id="wrtPubBtn" type="button">🌐 Publish</button>
+    </div>
+  </div>
+
+  <div class="wrt-body">
+
+    <!-- LEFT COLUMN -->
+    <div class="wrt-left-col">
+
+      <div class="wrt-card">
+        <div class="wrt-step">Activity Slides <span class="wrt-edit-link">(suggested: ~5 per set)</span></div>
+        <div class="wrt-slidebar">
+          <button id="wrtPrevSlide" type="button">◂</button>
+          <div class="wrt-slide-label" id="wrtSlideLabel">Slide 1 of 1</div>
+          <button id="wrtNextSlide" type="button">▸</button>
+        </div>
+        <div class="wrt-slide-actions">
+          <button id="wrtAddSlide" type="button">+ Add Slide</button>
+          <button id="wrtDeleteSlide" type="button" class="danger">🗑 Delete</button>
+        </div>
+      </div>
+
+      <div class="wrt-card">
+        <div class="wrt-step">1. Activity Type</div>
+        <div class="wrt-type">
+          <div class="wrt-type-ic">✏️</div>
+          <b>Written Response</b>
+        </div>
+        <p class="wrt-type-desc">Learners write/type the correct answer for each picture shown. Works for beginning letters, counting, vocabulary, and more.</p>
+        <div class="wrt-mode-seg" id="wrtModeSeg">
+          <button data-m="letter" class="sel" type="button">🔤 Letter/Sound Mode</button>
+          <button data-m="word" type="button">✏️ Custom Word/Answer Mode</button>
+        </div>
+      </div>
+
+      <div class="wrt-card">
+        <div class="wrt-step">2. Example Item <span class="wrt-edit-link">(shown to student, not scored)</span></div>
+        <div class="wrt-example-box" id="wrtExampleEditor"></div>
+      </div>
+
+      <div class="wrt-card">
+        <div class="wrt-step">3. Items <span class="wrt-edit-link">(picture + correct answer)</span></div>
+        <div id="wrtItems"></div>
+        <button class="wrt-add" id="wrtAddItem" type="button">+ Add Item</button>
+      </div>
+
+    </div>
+
+    <!-- CENTER PREVIEW -->
+    <div class="wrt-preview-col">
+      <div class="wrt-step">5. Activity Preview</div>
+      <div class="wrt-stage" id="wrtStage">
+        <div class="wrt-deco">
+          <span class="d-sun">☀️</span><span class="d-cloud1">☁️</span><span class="d-cloud2">☁️</span>
+          <div class="d-grass"></div><span class="d-flower1">🌼</span><span class="d-flower2">🌸</span>
+        </div>
+        <div class="wrt-stage-inner" id="wrtStageInner">
+          <div class="wrt-title" id="wrtTitle"></div>
+          <div class="wrt-instr" id="wrtInstr"></div>
+          <div class="wrt-example-card" id="wrtExampleCard"></div>
+          <div class="wrt-grid" id="wrtGrid"></div>
+          <div class="wrt-stage-controls">
+            <div class="wrt-hint" id="wrtHint"></div>
+            <div class="wrt-stage-btnrow">
+              <button class="wrt-mini wrt-mini--reset" id="wrtReset" type="button">↺ Try Again</button>
+              <button class="wrt-mini wrt-mini--check" id="wrtCheck" type="button">✓ Check answers</button>
+            </div>
+            <div class="wrt-stage-nav" id="wrtStageNav">
+              <button id="wrtStagePrev" type="button">◂ Previous</button>
+              <span id="wrtStageSlideLabel">Slide 1 of 1</span>
+              <button id="wrtStageNext" type="button">Next ▸</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="wrt-reminders">
+        <div class="r-title">♿ Accessibility Reminders</div>
+        <div class="wrt-rem-list">
+          <div class="wrt-rem"><span class="r-ic">🖼️</span>Use clear real images</div>
+          <div class="wrt-rem"><span class="r-ic">🎨</span>High contrast colors</div>
+          <div class="wrt-rem"><span class="r-ic">🔠</span>Large fonts</div>
+          <div class="wrt-rem"><span class="r-ic">💬</span>Simple instructions</div>
+          <div class="wrt-rem"><span class="r-ic">✅</span>One concept per page</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT SETTINGS -->
+    <div class="wrt-right-col" id="wrtRightCol">
+      <div class="wrt-card wrt-right-panel-full" id="wrtRightPanelFull">
+        <div class="wrt-set-title">🎨 Design &amp; Settings
+          <button class="wrt-collapse-btn" id="wrtCollapseBtn" type="button" title="Hide panel">⮜</button>
+        </div>
+
+        <div class="wrt-set-group">
+          <div class="wrt-set-label">Background Color</div>
+          <div class="wrt-swatches" id="wrtSwatches"></div>
+        </div>
+
+        <div class="wrt-set-group">
+          <div class="wrt-set-label">Fonts</div>
+          <select class="wrt-select" id="wrtFont">
+            <option value="'Comic Sans MS','Comic Sans',cursive">Comic Sans MS</option>
+            <option value="'Fredoka',sans-serif">Fredoka</option>
+            <option value="'Nunito',sans-serif">Nunito</option>
+            <option value="'Poppins',sans-serif">Poppins</option>
+            <option value="Verdana,sans-serif">Verdana</option>
+            <option value="Arial,sans-serif">Arial</option>
+          </select>
+        </div>
+
+        <div class="wrt-set-group">
+          <div class="wrt-size-head">
+            <div class="wrt-set-label" style="margin:0">Font Size</div>
+            <input class="wrt-size-num" id="wrtSizeNum" type="number" min="20" max="64" />
+          </div>
+          <div class="wrt-size-row">
+            <span class="a-sm">A</span>
+            <input type="range" id="wrtSize" min="20" max="64" step="1" />
+            <span class="a-lg">A</span>
+          </div>
+        </div>
+
+        <div class="wrt-set-group">
+          <div class="wrt-set-label">Text Color</div>
+          <div class="wrt-color-row">
+            <input type="color" id="wrtTextColor" />
+            <span style="font-size:13px;color:var(--ink-soft);font-weight:600">Title &amp; labels</span>
+          </div>
+        </div>
+
+        <div class="wrt-set-group">
+          <div class="wrt-set-label">Border Style</div>
+          <div class="wrt-seg" id="wrtBorder">
+            <button data-b="rounded" class="sel" type="button"><span class="seg-box seg-rounded"></span>Rounded</button>
+            <button data-b="dashed" type="button"><span class="seg-box seg-dashed"></span>Dashed</button>
+            <button data-b="solid" type="button"><span class="seg-box seg-solid"></span>Solid</button>
+          </div>
+        </div>
+
+        <div class="wrt-set-group">
+          <div class="wrt-set-label">Spacing</div>
+          <div class="wrt-spacing">
+            <button id="wrtSpaceMinus" type="button">−</button>
+            <span id="wrtSpaceVal">Medium</span>
+            <button id="wrtSpacePlus" type="button">+</button>
+          </div>
+        </div>
+
+        <div class="wrt-set-group">
+          <div class="wrt-set-label">Instruction Text</div>
+          <input class="wrt-input" id="wrtInstrInput" type="text" />
+        </div>
+
+        <div class="wrt-set-group">
+          <div class="wrt-set-label">Title</div>
+          <input class="wrt-input" id="wrtTitleInput" type="text" />
+        </div>
+
+        <div class="wrt-set-group">
+          <div class="wrt-set-label">Other Options</div>
+          <label class="wrt-check"><input type="checkbox" id="wrtShowTitle" checked /> Show title</label>
+          <label class="wrt-check"><input type="checkbox" id="wrtShowInstr" checked /> Show instructions</label>
+          <label class="wrt-check"><input type="checkbox" id="wrtShowDeco" checked /> Show decorations</label>
+        </div>
+
+        <div class="wrt-set-actions">
+          <button class="wrt-reset" id="wrtResetAll" type="button">↻ Reset</button>
+          <button class="wrt-apply" id="wrtApply" type="button">✓ Apply Changes</button>
+        </div>
+      </div>
+
+      <div class="wrt-tip wrt-right-panel-guide" id="wrtRightPanelGuide">
+        <b>💡 Template Guide
+          <button class="wrt-guide-settings-btn" id="wrtShowSettingsBtn" type="button" title="Show Design & Settings">🎨 Settings</button>
+        </b>
+        <p>
+          • Pick Letter Mode or Custom Word Mode.<br>
+          • Upload images or paste an image link.<br>
+          • Add accepted spelling variations in Word Mode.<br>
+          • The Example item shows students the format.<br>
+          • Auto-suggested scores still need your final OK.
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SCORE MODAL -->
+  <div class="wrt-modal-overlay" id="wrtModalOverlay">
+    <div class="wrt-modal-card">
+      <img class="wrt-modal-emoji" id="wrtModalEmoji" src="" alt="Result" />
+      <div class="wrt-modal-score" id="wrtModalScore">0 / 0 suggested correct</div>
+      <div class="wrt-modal-msg" id="wrtModalMsg">Great job!</div>
+
+      <div class="wrt-review-list" id="wrtReviewList" style="display:none;">
+        <div class="wrt-review-title">📋 Item-by-Item Results</div>
+        <div id="wrtReviewRows"></div>
+      </div>
+      <div class="wrt-pending-note" id="wrtPendingNote" style="display:none;">
+        Suggested score lang ito — pending pa rin ang final review ng teacher.
+      </div>
+
+      <div id="wrtRetakeInfo" style="display:none;font-size:12px;color:#64748b;margin-bottom:4px;"></div>
+      <div class="wrt-modal-actions">
+        <button class="wrt-modal-close" id="wrtModalCloseBtn" type="button">✖ Close</button>
+        <button class="wrt-modal-try" id="wrtModalTryBtn" type="button">🔁 Try Again</button>
+        <button class="wrt-modal-try wrt-publish-confirm" id="wrtStudentSubmitBtn" type="button" style="display:none;">✅ Submit Final Answer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PUBLISH MODAL -->
+  <div class="wrt-modal-overlay" id="wrtPublishOverlay">
+    <div class="wrt-modal-card wrt-publish-card">
+      <h3>🌐 Publish Activity</h3>
+      <div class="wrt-publish-field">
+        <label>🎯 Learning Domain</label>
+        <div class="wrt-domain-radios">
+          <label class="wrt-domain-opt"><input type="radio" name="wrtDomain" value="cognitive" checked /> Cognitive</label>
+          <label class="wrt-domain-opt"><input type="radio" name="wrtDomain" value="language" /> Language Development</label>
+          <label class="wrt-domain-opt"><input type="radio" name="wrtDomain" value="communication" /> Communication</label>
+          <label class="wrt-domain-opt"><input type="radio" name="wrtDomain" value="motor" /> Fine Motor</label>
+          <label class="wrt-domain-opt"><input type="radio" name="wrtDomain" value="social" /> Social & Emotional</label>
+          <label class="wrt-domain-opt"><input type="radio" name="wrtDomain" value="self" /> Self-Help / Daily Living</label>
+          <label class="wrt-domain-opt"><input type="radio" name="wrtDomain" value="aesthetic" /> Aesthetic & Creative</label>
+        </div>
+      </div>
+      <div class="wrt-publish-field">
+        <label for="wrtDeadlineInput">📅 Deadline</label>
+        <input type="date" id="wrtDeadlineInput" />
+        <div class="wrt-publish-hint">Choose the last day the activity can still be submitted.</div>
+      </div>
+      <div class="wrt-modal-actions">
+        <button class="wrt-modal-close" id="wrtPublishCancelBtn" type="button">✖ Cancel</button>
+        <button class="wrt-modal-try wrt-publish-confirm" id="wrtPublishConfirmBtn" type="button">✅ Confirm Publish</button>
+      </div>
+    </div>
+  </div>
+
+
+<script>
+/* =====================================================================
+   WRITTEN RESPONSE TEMPLATE GENERATOR — main script
+   Generic base (Letter Mode preset + Custom Word Mode), same architecture
+   as Matching_Type_Template.html / letter-identification.html.
+   Sections:
+     1. STATE              2. SLIDE NAVIGATION      3. EXAMPLE + ITEMS EDITOR
+     4. ACTIVITY PREVIEW   5. SCORE MODAL (auto-suggest + teacher confirm)
+     6. APPEARANCE         7. TOP BAR ACTIONS       8. INIT
+   ===================================================================== */
+
+  const $ = id => document.getElementById(id);
+  const ALPHABET = "abcdefghijklmnopqrstuvwxyz".split("");
+
+  var _stuMode = false, _stuPubId = '', _stuRetake = 0,
+      _stuLastScore = null, _stuLastTotal = null, _stuProg = [], _stuSlideScores = [], _stuSlideRetakes = {}, _stuSubmitDone = false;
+
+  /* ── IndexedDB helper ─────────── */
+  var _idb = (function(){
+    var DB='sped_alm_db', VER=1, ST='blobs';
+    function open(cb){
+      var r=indexedDB.open(DB,VER);
+      r.onupgradeneeded=function(e){e.target.result.createObjectStore(ST);};
+      r.onsuccess=function(e){cb(null,e.target.result);};
+      r.onerror=function(e){cb(e.target.error,null);};
+    }
+    return {
+      save:function(key,val,cb){open(function(err,db){if(err){cb&&cb(err);return;}var tx=db.transaction(ST,'readwrite');tx.objectStore(ST).put(val,key);tx.oncomplete=function(){cb&&cb(null);};tx.onerror=function(e){cb&&cb(e.target.error);};});},
+      load:function(key,cb){open(function(err,db){if(err){cb(err,null);return;}var tx=db.transaction(ST,'readonly');var r=tx.objectStore(ST).get(key);r.onsuccess=function(){cb(null,r.result||null);};r.onerror=function(e){cb(e.target.error,null);};});},
+      del:function(key,cb){open(function(err,db){if(err){cb&&cb(err);return;}var tx=db.transaction(ST,'readwrite');tx.objectStore(ST).delete(key);tx.oncomplete=function(){cb&&cb(null);};});}
+    };
+  })();
+
+  /* ------------------------------------------------------------- *
+   * 1. STATE
+   * ------------------------------------------------------------- */
+
+  const DEFAULT_DESIGN = {
+    bg:"#fdf6d8", font:"'Comic Sans MS','Comic Sans',cursive", fontSize:34,
+    textColor:"#243a5e", border:"rounded", spacing:"Medium",
+    showTitle:true, showInstr:true, showDeco:true
+  };
+  const BG_SWATCHES = ["#fdf6d8","#eaf2ff","#e8faf0","#f0eefc","#fdebf2","#ffffff"];
+  const SPACINGS = ["Small","Medium","Large"];
+  const SPACE_GAP = { Small:14, Medium:22, Large:32 };
+
+  function makeExampleItem(){
+    return { img:null, imgType:"upload", emoji:"🍎", correct:"a", variations:"" };
+  }
+  function makeDefaultActivity(){
+    return {
+      title:"Write the Correct Beginning Letter",
+      instruction:"Write the correct beginning letter of each picture.",
+      answerMode:"letter", // 'letter' | 'word'
+      example: makeExampleItem(),
+      items:[
+        { img:null, imgType:"upload", emoji:"🐜", correct:"a", variations:"" },
+        { img:null, imgType:"upload", emoji:"🧊", correct:"i", variations:"" },
+        { img:null, imgType:"upload", emoji:"☂️", correct:"u", variations:"" },
+        { img:null, imgType:"upload", emoji:"🐘", correct:"e", variations:"" }
+      ]
+    };
+  }
+  function makeBlankActivity(slideNumber){
+    return {
+      title:"New Activity "+slideNumber,
+      instruction:"Write the correct answer for each picture.",
+      answerMode:"letter",
+      example: makeExampleItem(),
+      items:[
+        { img:null, imgType:"upload", emoji:"⭐", correct:"a", variations:"" },
+        { img:null, imgType:"upload", emoji:"⭐", correct:"a", variations:"" }
+      ]
+    };
+  }
+
+  const state = {
+    ...structuredClone(DEFAULT_DESIGN),
+    thumb:null,
+    activities:[ makeDefaultActivity() ],
+    currentIndex:0
+  };
+
+  function currentActivity(){ return state.activities[state.currentIndex]; }
+
+  // Play-mode state
+  let studentAnswers = {}; // itemIndex -> typed string
+  let suggestedMarks = {}; // itemIndex -> bool (auto-suggested correct?)
+  let confirmedMarks = {}; // itemIndex -> bool (teacher-confirmed, only set when reviewing)
+  let stageScale = 1;
+
+  const stage = $("wrtStage"), stageInner = $("wrtStageInner"), grid = $("wrtGrid");
+
+  /* ------------------------------------------------------------- *
+   * 2. SLIDE NAVIGATION
+   * ------------------------------------------------------------- */
+
+  function renderSlideNav(){
+    const total = state.activities.length;
+    $("wrtSlideLabel").textContent = `Slide ${state.currentIndex+1} of ${total}`;
+    $("wrtPrevSlide").disabled = state.currentIndex === 0;
+    $("wrtNextSlide").disabled = state.currentIndex === total-1;
+    $("wrtDeleteSlide").disabled = total <= 1;
+
+    $("wrtStageSlideLabel").textContent = `Slide ${state.currentIndex+1} of ${total}`;
+    $("wrtStagePrev").disabled = state.currentIndex === 0;
+    $("wrtStageNext").disabled = state.currentIndex === total-1;
+    $("wrtStageNav").style.display = total > 1 ? "flex" : "none";
+  }
+
+  function refreshSlideUI(){
+    syncModeSeg();
+    renderExampleEditor();
+    renderItems();
+    $("wrtTitleInput").value = currentActivity().title;
+    $("wrtInstrInput").value = currentActivity().instruction;
+    renderActivity();
+    renderSlideNav();
+  }
+
+  function goToSlide(index){
+    state.currentIndex = Math.max(0, Math.min(state.activities.length-1, index));
+    refreshSlideUI();
+  }
+
+  $("wrtPrevSlide").addEventListener("click", ()=> goToSlide(state.currentIndex-1));
+  $("wrtNextSlide").addEventListener("click", ()=> goToSlide(state.currentIndex+1));
+  $("wrtStagePrev").addEventListener("click", ()=> goToSlide(state.currentIndex-1));
+  $("wrtStageNext").addEventListener("click", ()=> goToSlide(state.currentIndex+1));
+
+  $("wrtAddSlide").addEventListener("click", ()=>{
+    state.activities.push(makeBlankActivity(state.activities.length+1));
+    goToSlide(state.activities.length-1);
+  });
+  $("wrtDeleteSlide").addEventListener("click", ()=>{
+    if (state.activities.length <= 1){ alert("Keep at least one slide."); return; }
+    state.activities.splice(state.currentIndex, 1);
+    goToSlide(Math.min(state.currentIndex, state.activities.length-1));
+  });
+
+  /* ------------------------------------------------------------- *
+   * 3. MODE TOGGLE + EXAMPLE + ITEMS EDITOR
+   * ------------------------------------------------------------- */
+
+  function syncModeSeg(){
+    document.querySelectorAll("#wrtModeSeg button").forEach(b=>
+      b.classList.toggle("sel", b.dataset.m === currentActivity().answerMode));
+  }
+  document.querySelectorAll("#wrtModeSeg button").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      currentActivity().answerMode = btn.dataset.m;
+      syncModeSeg(); renderExampleEditor(); renderItems(); renderActivity();
+    });
+  });
+
+  function letterSelect(selected, cls){
+    const sel = document.createElement("select");
+    if (cls) sel.className = cls;
+    ALPHABET.forEach(l=>{
+      const opt = document.createElement("option");
+      opt.value = l; opt.textContent = l;
+      if (l === selected) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    return sel;
+  }
+
+  // Builds the media (image upload/link) block shared by the example editor and item rows.
+  function mediaEditor(dataObj, onChange){
+    const media = document.createElement("div"); media.className = "wrt-item-media";
+    const lbl = document.createElement("label"); lbl.className = "wrt-thumb";
+    if (dataObj.img){ const im = document.createElement("img"); im.src = dataObj.img;
+      im.onerror = function(){ this.onerror=null; this.src = "images/placeholder.png"; };
+      lbl.appendChild(im); }
+    else { lbl.textContent = dataObj.emoji || "+"; }
+    const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*"; inp.hidden = true;
+    inp.addEventListener("change", e=>{
+      const f = e.target.files[0]; if (!f) return;
+      const r = new FileReader();
+      r.onload = ev=>{ dataObj.img = ev.target.result; dataObj.imgType = "upload"; onChange(); };
+      r.readAsDataURL(f);
+    });
+    lbl.appendChild(inp); media.appendChild(lbl);
+
+    const tabs = document.createElement("div"); tabs.className = "wrt-media-tabs";
+    const tabUpload = document.createElement("button"); tabUpload.type="button"; tabUpload.textContent="Upload";
+    const tabLink = document.createElement("button"); tabLink.type="button"; tabLink.textContent="Link";
+    (dataObj.imgType === "link" ? tabLink : tabUpload).classList.add("sel");
+    const linkInput = document.createElement("input");
+    linkInput.type = "url"; linkInput.className = "wrt-link-input"; linkInput.placeholder = "Image URL";
+    if (dataObj.imgType === "link"){ linkInput.classList.add("show"); linkInput.value = dataObj.img || ""; }
+    tabUpload.addEventListener("click", ()=>{
+      tabUpload.classList.add("sel"); tabLink.classList.remove("sel"); linkInput.classList.remove("show");
+      inp.click();
+    });
+    tabLink.addEventListener("click", ()=>{
+      tabLink.classList.add("sel"); tabUpload.classList.remove("sel"); linkInput.classList.add("show");
+      linkInput.focus();
+    });
+    linkInput.addEventListener("input", e=>{
+      const url = e.target.value.trim();
+      dataObj.img = url || null; dataObj.imgType = "link";
+      onChange();
+    });
+    tabs.appendChild(tabUpload); tabs.appendChild(tabLink);
+    media.appendChild(tabs); media.appendChild(linkInput);
+    return media;
+  }
+
+  // Builds the correct-answer field(s), switching UI based on the activity's answerMode.
+  function answerFields(dataObj, onChange, isExample){
+    const fields = document.createElement("div"); fields.className = "wrt-item-fields";
+    const mode = currentActivity().answerMode;
+
+    if (mode === "letter"){
+      const l1 = document.createElement("label"); l1.textContent = "Correct Letter";
+      const sel = letterSelect(dataObj.correct, "wrt-correct-input");
+      sel.addEventListener("change", e=>{ dataObj.correct = e.target.value; onChange(); });
+      fields.appendChild(l1); fields.appendChild(sel);
+    } else {
+      const l1 = document.createElement("label"); l1.textContent = "Correct Answer";
+      const txt = document.createElement("input"); txt.type = "text"; txt.className = "wrt-correct-input";
+      txt.value = dataObj.correct || ""; txt.placeholder = "e.g. cat";
+      txt.addEventListener("input", e=>{ dataObj.correct = e.target.value; onChange(); });
+      fields.appendChild(l1); fields.appendChild(txt);
+
+      const l2 = document.createElement("label"); l2.textContent = "Accepted Variations (comma-separated, optional)";
+      const varTxt = document.createElement("input"); varTxt.type = "text";
+      varTxt.value = dataObj.variations || ""; varTxt.placeholder = "e.g. Cat, CAT";
+      varTxt.addEventListener("input", e=>{ dataObj.variations = e.target.value; onChange(); });
+      fields.appendChild(l2); fields.appendChild(varTxt);
+    }
+
+    if (!isExample){
+      // no-op placeholder — kept symmetrical with example editor for future per-item options
+    }
+    return fields;
+  }
+
+  function renderExampleEditor(){
+    const wrap = $("wrtExampleEditor"); wrap.innerHTML = "";
+    const ex = currentActivity().example;
+    const label = document.createElement("div"); label.className = "wrt-example-label"; label.textContent = "Example (always shown first, not scored)";
+    wrap.appendChild(label);
+    const row = document.createElement("div"); row.className = "wrt-item-top";
+    row.appendChild(mediaEditor(ex, ()=>{ renderExampleEditor(); renderActivity(); }));
+    row.appendChild(answerFields(ex, ()=>{ renderActivity(); }, true));
+    wrap.appendChild(row);
+  }
+
+  function itemRow(itemIndex){
+    const items = currentActivity().items;
+    const it = items[itemIndex];
+    const row = document.createElement("div"); row.className = "wrt-item-row";
+
+    const top = document.createElement("div"); top.className = "wrt-item-top";
+    top.appendChild(mediaEditor(it, ()=>{ renderItems(); renderActivity(); }));
+    top.appendChild(answerFields(it, ()=>{ renderActivity(); }, false));
+    row.appendChild(top);
+
+    const menu = document.createElement("button"); menu.className = "wrt-item-menu"; menu.type = "button"; menu.textContent = "⋮";
+    const pop = document.createElement("div"); pop.className = "wrt-pop";
+    const del = document.createElement("button"); del.className = "del"; del.type = "button"; del.textContent = "🗑 Remove item";
+    del.addEventListener("click", ()=>{
+      if (items.length <= 1){ alert("Keep at least 1 item."); return; }
+      items.splice(itemIndex, 1); renderItems(); renderActivity();
+    });
+    pop.appendChild(del);
+    menu.addEventListener("click", e=>{
+      e.stopPropagation();
+      document.querySelectorAll(".wrt-pop").forEach(p=>{ if (p !== pop) p.classList.remove("show"); });
+      pop.classList.toggle("show");
+    });
+    row.appendChild(menu); row.appendChild(pop);
+    return row;
+  }
+
+  function renderItems(){
+    const wrap = $("wrtItems"); wrap.innerHTML = "";
+    currentActivity().items.forEach((_, i)=> wrap.appendChild(itemRow(i)));
+  }
+  document.addEventListener("click", ()=> document.querySelectorAll(".wrt-pop").forEach(p=> p.classList.remove("show")));
+
+  $("wrtAddItem").addEventListener("click", ()=>{
+    currentActivity().items.push({ img:null, imgType:"upload", emoji:"⭐", correct: currentActivity().answerMode==="letter" ? "a" : "", variations:"" });
+    renderItems(); renderActivity();
+  });
+
+  /* ------------------------------------------------------------- *
+   * 4. ACTIVITY PREVIEW (write the correct answer)
+   * ------------------------------------------------------------- */
+
+  function normalize(str){ return (str || "").trim().toLowerCase(); }
+
+  function isAnswerCorrect(it, typed){
+    const t = normalize(typed);
+    if (!t) return false;
+    if (t === normalize(it.correct)) return true;
+    if (it.variations){
+      return it.variations.split(",").map(normalize).filter(Boolean).includes(t);
+    }
+    return false;
+  }
+
+  function renderExampleCard(){
+    const ex = currentActivity().example;
+    const card = $("wrtExampleCard");
+    card.innerHTML = "";
+    const tag = document.createElement("div"); tag.className = "wrt-example-tag"; tag.textContent = "Example:";
+    card.appendChild(tag);
+    if (ex.img){
+      const im = document.createElement("img"); im.className = "wrt-example-img"; im.src = ex.img;
+      im.onerror = function(){ this.onerror=null; this.src="images/placeholder.png"; };
+      card.appendChild(im);
+    } else {
+      const sp = document.createElement("div"); sp.className = "wrt-example-emoji"; sp.textContent = ex.emoji || "?";
+      card.appendChild(sp);
+    }
+    const ans = document.createElement("div"); ans.className = "wrt-example-answer"; ans.textContent = ex.correct || "";
+    card.appendChild(ans);
+  }
+
+  function scard(itemIndex){
+    const it = currentActivity().items[itemIndex];
+    const el = document.createElement("div"); el.className = "wrt-scard"; el.dataset.i = itemIndex;
+
+    const num = document.createElement("div"); num.className = "wrt-scard-num"; num.textContent = (itemIndex+1) + ".";
+    el.appendChild(num);
+
+    if (it.img){
+      const im = document.createElement("img"); im.className = "wrt-scard-img"; im.src = it.img;
+      im.onerror = function(){ this.onerror=null; this.src = "images/placeholder.png"; };
+      el.appendChild(im);
+    } else {
+      const sp = document.createElement("div"); sp.className = "wrt-scard-emoji"; sp.textContent = it.emoji || "?";
+      el.appendChild(sp);
+    }
+
+    const inputEl = document.createElement("input");
+    inputEl.type = "text"; inputEl.className = "wrt-scard-input";
+    inputEl.placeholder = "____";
+    inputEl.maxLength = currentActivity().answerMode === "letter" ? 1 : 40;
+    inputEl.addEventListener("input", e=>{
+      studentAnswers[itemIndex] = e.target.value;
+      inputEl.classList.remove("correct","wrong");
+      $("wrtHint").textContent = "";
+    });
+    el.appendChild(inputEl);
+
+    const badge = document.createElement("span"); badge.className = "wrt-scard-badge";
+    el.appendChild(badge);
+
+    return el;
+  }
+
+  function renderActivity(){
+    const activity = currentActivity();
+    $("wrtTitle").textContent = activity.title;
+    $("wrtInstr").textContent = activity.instruction;
+    $("wrtTitle").style.display = state.showTitle ? "block" : "none";
+    $("wrtInstr").style.display = state.showInstr ? "block" : "none";
+
+    studentAnswers = {}; suggestedMarks = {}; confirmedMarks = {};
+    renderExampleCard();
+    grid.innerHTML = "";
+    activity.items.forEach((_, i)=> grid.appendChild(scard(i)));
+    $("wrtHint").textContent = "";
+    if (document.body.classList.contains("wrt-preview-only")) setTimeout(fitStageToScreen, 30);
+  }
+
+  function resetAnswers(){
+    studentAnswers = {}; suggestedMarks = {}; confirmedMarks = {};
+    grid.querySelectorAll(".wrt-scard-input").forEach(i=>{ i.value = ""; i.classList.remove("correct","wrong"); });
+    grid.querySelectorAll(".wrt-scard-badge").forEach(b=>{ b.style.display = "none"; b.className = "wrt-scard-badge"; b.textContent = ""; });
+    $("wrtHint").textContent = "";
+  }
+  $("wrtReset").addEventListener("click", resetAnswers);
+
+  $("wrtCheck").addEventListener("click", ()=>{
+    const items = currentActivity().items;
+    const inputs = grid.querySelectorAll(".wrt-scard-input");
+    const filled = Array.from(inputs).every(i=> i.value.trim().length > 0);
+    if (!filled){
+      $("wrtHint").textContent = "Sagutan muna lahat ng blanko bago mag-check.";
+      return;
+    }
+    let suggestedCount = 0;
+    inputs.forEach((inputEl, idx)=>{
+      const it = items[idx];
+      const typed = inputEl.value;
+      studentAnswers[idx] = typed;
+      const ok = isAnswerCorrect(it, typed);
+      suggestedMarks[idx] = ok;
+      confirmedMarks[idx] = ok;
+      inputEl.classList.toggle("correct", ok);
+      inputEl.classList.toggle("wrong", !ok);
+
+      const card = grid.querySelector('[data-i="'+idx+'"]');
+      const badge = card ? card.querySelector(".wrt-scard-badge") : null;
+      if (badge){
+        badge.textContent = ok ? "✓" : "✗";
+        badge.className = "wrt-scard-badge " + (ok ? "correct" : "wrong");
+        badge.style.display = "flex";
+      }
+
+      if (ok) suggestedCount++;
+    });
+    openScoreModal(suggestedCount, items.length);
+  });
+  window.addEventListener("resize", ()=>{
+    if (document.body.classList.contains("wrt-preview-only")) fitStageToScreen();
+  });
+
+  /* ------------------------------------------------------------- *
+   * 5. SCORE MODAL (auto-suggest + teacher confirm)
+   * ------------------------------------------------------------- */
+
+  function renderReviewRows(stuMode){
+    const wrap = $("wrtReviewRows"); wrap.innerHTML = "";
+    const items = currentActivity().items;
+    Object.keys(studentAnswers).forEach(idx=>{
+      const it = items[idx];
+      const ok = suggestedMarks[idx];
+      const row = document.createElement("div"); row.className = "wrt-review-row";
+
+      const thumb = document.createElement("img"); thumb.className = "wrt-review-thumb";
+      thumb.src = it.img || "images/placeholder.png";
+      thumb.onerror = function(){ this.onerror=null; this.src="images/placeholder.png"; };
+      row.appendChild(thumb);
+
+      const text = document.createElement("div"); text.className = "wrt-review-text";
+      const b = document.createElement("b"); b.textContent = `#${+idx+1}: "${studentAnswers[idx] || '(walang sagot)'}"`;
+      const span = document.createElement("span");
+      if (stuMode) {
+        span.textContent = ok ? "✅ Tama!" : "💡 Clue: Basahin muli ang tanong at isipin ang mas tamang sagot.";
+      } else {
+        span.textContent = "Correct answer: " + it.correct;
+      }
+      text.appendChild(b); text.appendChild(span);
+      row.appendChild(text);
+
+      const status = document.createElement("div");
+      status.className = "wrt-review-status " + (ok ? "correct" : "wrong");
+      status.textContent = ok ? "✓" : "✗";
+      row.appendChild(status);
+
+      wrap.appendChild(row);
+    });
+  }
+
+  function openScoreModal(suggestedCount, totalItems){
+    const percent = suggestedCount / totalItems;
+    let image, message;
+    if (percent === 1){
+      image = "images/perfect.png";
+      message = "Perfect! Tamang-tama ang lahat ng suggested answers! 🎊";
+      confetti({ particleCount:200, spread:120, startVelocity:40, origin:{ y:0.6 } });
+      setTimeout(()=>{
+        confetti({ particleCount:100, spread:80, origin:{ x:0.2, y:0.6 } });
+        confetti({ particleCount:100, spread:80, origin:{ x:0.8, y:0.6 } });
+      }, 300);
+    }
+    else if (percent >= 0.5){ image = "images/goodjob.png"; message = "Good job! Konting practice pa lang! ⭐"; }
+    else { image = "images/tryagain.png"; message = "Let's try again! Practice makes perfect! 💪"; }
+
+    $("wrtModalEmoji").src = image;
+    $("wrtModalEmoji").onerror = function(){ this.onerror=null; this.src="images/placeholder.png"; };
+    $("wrtModalScore").textContent = `${suggestedCount} / ${totalItems} correct`;
+    $("wrtModalMsg").textContent = message;
+
+    // Teacher-in-the-loop: the system only SUGGESTS a score. In teacher preview
+    // (not student mode), show a read-only per-item ✓/✗ list so the teacher can
+    // see at a glance which item(s) the auto-checker flagged as wrong. In
+    // student mode, this list is hidden — the submission is stored as pending
+    // review instead (final grading still happens outside this template).
+    $("wrtReviewList").style.display = "block";
+    $("wrtPendingNote").style.display = _stuMode ? "block" : "none";
+    renderReviewRows(_stuMode);
+
+    $("wrtModalOverlay").classList.add("show");
+
+    if (_stuMode) {
+      _stuLastScore = suggestedCount; _stuLastTotal = totalItems;
+      _stuSlideScores[state.currentIndex] = { correct: suggestedCount, total: totalItems, ansItems: currentActivity().items.map(function(it,i){return{label:(it.emoji||'')+' Item '+(i+1),studentAnswer:studentAnswers[i]||'—',correctAnswer:it.correct||'—',correct:!!suggestedMarks[i]};}) };
+      var _ts = state.activities.length, _isLast = state.currentIndex >= _ts - 1;
+      var _allDone = _stuSlideScores.filter(Boolean).length === _ts;
+      if (_ts > 1 && !_isLast) {
+        $("wrtModalCloseBtn").style.display = ""; $("wrtModalCloseBtn").textContent = "Next Slide →"; $("wrtModalCloseBtn").dataset.nextSlide = "1";
+      } else {
+        $("wrtModalCloseBtn").style.display = "none"; $("wrtModalCloseBtn").dataset.nextSlide = "";
+      }
+      $("wrtModalTryBtn").textContent = "🔁 Retake";
+      $("wrtStudentSubmitBtn").style.display = _allDone ? "" : "none";
+      var ri = $("wrtRetakeInfo");
+      var _csr = _stuSlideRetakes[state.currentIndex] || 0;
+      ri.style.display = _stuRetake > 0 ? "" : "none";
+      if (_stuRetake > 0) ri.textContent = (_ts > 1 ? 'Slide '+(state.currentIndex+1)+': ' : '') + (_csr > 0 ? _csr + ' retake(s). ' : '') + 'Total retakes: ' + _stuRetake;
+    }
+  }
+  function closeScoreModal(){ $("wrtModalOverlay").classList.remove("show"); }
+
+  $("wrtModalCloseBtn").addEventListener("click", function(){
+    var goNext = _stuMode && $("wrtModalCloseBtn").dataset.nextSlide === '1';
+    closeScoreModal();
+    if (goNext) { var ni = state.currentIndex + 1; if (ni < state.activities.length) goToSlide(ni); }
+  });
+  $("wrtModalTryBtn").addEventListener("click", ()=>{
+    if (_stuMode) { _stuRetake++; _stuSlideRetakes[state.currentIndex] = (_stuSlideRetakes[state.currentIndex]||0)+1; _stuSlideScores[state.currentIndex] = undefined; }
+    closeScoreModal(); resetAnswers();
+  });
+
+  /* ------------------------------------------------------------- *
+   * 6. APPEARANCE (Design & Settings panel)
+   * ------------------------------------------------------------- */
+
+  function applyAppearance(){
+    stage.style.background = state.bg;
+    stage.style.fontFamily = state.font;
+    stage.style.fontSize = state.fontSize + "px";
+    stage.style.setProperty("--wrt-text", state.textColor);
+    stage.classList.toggle("bs-dashed", state.border === "dashed");
+    stage.classList.toggle("bs-solid", state.border === "solid");
+    stage.classList.toggle("no-deco", !state.showDeco);
+    grid.style.gap = SPACE_GAP[state.spacing] + "px";
+  }
+
+  function renderSwatches(){
+    const wrap = $("wrtSwatches"); wrap.innerHTML = "";
+    BG_SWATCHES.forEach(color=>{
+      const swatch = document.createElement("div");
+      swatch.className = "wrt-sw" + (color === state.bg ? " sel" : "");
+      swatch.style.background = color;
+      swatch.addEventListener("click", ()=>{ state.bg = color; applyAppearance(); renderSwatches(); });
+      wrap.appendChild(swatch);
+    });
+  }
+
+  $("wrtFont").addEventListener("change", e=>{ state.font = e.target.value; applyAppearance(); });
+
+  function setFontSize(value){
+    value = Math.max(20, Math.min(64, value));
+    state.fontSize = value;
+    $("wrtSize").value = value; $("wrtSizeNum").value = value;
+    applyAppearance();
+  }
+  $("wrtSize").addEventListener("input", e=> setFontSize(+e.target.value));
+  $("wrtSizeNum").addEventListener("input", e=> setFontSize(+e.target.value || 34));
+
+  $("wrtTextColor").addEventListener("input", e=>{ state.textColor = e.target.value; applyAppearance(); });
+
+  document.querySelectorAll("#wrtBorder button").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      state.border = btn.dataset.b;
+      document.querySelectorAll("#wrtBorder button").forEach(b=> b.classList.remove("sel"));
+      btn.classList.add("sel");
+      applyAppearance();
+    });
+  });
+
+  function setSpacing(delta){
+    let index = SPACINGS.indexOf(state.spacing) + delta;
+    index = Math.max(0, Math.min(SPACINGS.length-1, index));
+    state.spacing = SPACINGS[index];
+    $("wrtSpaceVal").textContent = state.spacing;
+    applyAppearance();
+  }
+  $("wrtSpaceMinus").addEventListener("click", ()=> setSpacing(-1));
+  $("wrtSpacePlus").addEventListener("click", ()=> setSpacing(1));
+
+  $("wrtInstrInput").addEventListener("input", e=>{
+    currentActivity().instruction = e.target.value;
+    $("wrtInstr").textContent = e.target.value;
+  });
+  $("wrtTitleInput").addEventListener("input", e=>{
+    currentActivity().title = e.target.value;
+    $("wrtTitle").textContent = e.target.value;
+  });
+
+  $("wrtShowTitle").addEventListener("change", e=>{ state.showTitle = e.target.checked; renderActivity(); });
+  $("wrtShowInstr").addEventListener("change", e=>{ state.showInstr = e.target.checked; renderActivity(); });
+  $("wrtShowDeco").addEventListener("change", e=>{ state.showDeco = e.target.checked; applyAppearance(); });
+
+  $("wrtApply").addEventListener("click", ()=>{ applyAppearance(); flash($("wrtApply"), "✓ Applied"); });
+
+  $("wrtResetAll").addEventListener("click", ()=>{
+    Object.assign(state, structuredClone(DEFAULT_DESIGN));
+    syncDesignControls(); applyAppearance(); renderActivity();
+  });
+
+  function syncDesignControls(){
+    $("wrtFont").value = state.font;
+    $("wrtSize").value = state.fontSize; $("wrtSizeNum").value = state.fontSize;
+    $("wrtTextColor").value = state.textColor;
+    $("wrtSpaceVal").textContent = state.spacing;
+    $("wrtShowTitle").checked = state.showTitle; $("wrtShowInstr").checked = state.showInstr;
+    $("wrtShowDeco").checked = state.showDeco;
+    document.querySelectorAll("#wrtBorder button").forEach(b=> b.classList.toggle("sel", b.dataset.b === state.border));
+    renderSwatches();
+  }
+
+  /* ------------------------------------------------------------- *
+   * 7. TOP BAR ACTIONS
+   * ------------------------------------------------------------- */
+
+  function flash(button, text){
+    const original = button.textContent;
+    button.textContent = text;
+    setTimeout(()=> button.textContent = original, 1100);
+  }
+
+  function requestFullscreen(el){
+    const request = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+    if (request) request.call(el).catch(()=>{});
+  }
+  function exitFullscreen(){
+    const exit = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+    if (document.fullscreenElement || document.webkitFullscreenElement){
+      if (exit) exit.call(document).catch(()=>{});
+    }
+  }
+
+  function enterPreview(){
+    document.body.classList.add("wrt-preview-only");
+    requestFullscreen(document.documentElement);
+    setTimeout(fitStageToScreen, 120);
+  }
+  function exitPreview(){
+    document.body.classList.remove("wrt-preview-only");
+    exitFullscreen();
+    stageScale = 1;
+    stageInner.style.transform = "";
+    stageInner.style.marginBottom = "";
+  }
+  $("wrtPreviewBtn").addEventListener("click", enterPreview);
+  $("wrtExitFloatBtn").addEventListener("click", exitPreview);
+
+  function saveDraft() {
+    var draftId = new URLSearchParams(location.search).get('draft_id') || ('draft_' + Date.now());
+    var firstTitle = (state.activities[0] && state.activities[0].title) || '';
+    var draft = {
+      id: draftId, title: firstTitle || 'Untitled Draft', type: 'WrittenResponse',
+      templateFile: 'TEMPLATES/WRITTEN/written-response.html',
+      learner: sessionStorage.getItem('selected_learner') || 'ALL',
+      condition: sessionStorage.getItem('selected_condition') || '',
+      teacherName: sessionStorage.getItem('teacher_name') || '—',
+      savedAt: new Date().toISOString(),
+      data: JSON.parse(JSON.stringify(state))
+    };
+    var drafts = [];
+    try { drafts = JSON.parse(localStorage.getItem('teacher_drafts') || '[]'); } catch(e) {}
+    var idx = drafts.findIndex(function(d){ return d.id === draftId; });
+    if (idx >= 0) drafts[idx] = draft; else drafts.push(draft);
+    try {
+      localStorage.setItem('teacher_drafts', JSON.stringify(drafts));
+      history.replaceState(null, '', '?draft_id=' + encodeURIComponent(draftId));
+      flash($('wrtDraftBtn'), '✓ Draft Saved!');
+      setTimeout(function(){ window.location.href = '../Teacher_activies.html'; }, 700);
+    } catch(e) { alert('Storage full – could not save draft.'); }
+  }
+  function loadDraftIfAny() {
+    var draftId = new URLSearchParams(location.search).get('draft_id');
+    if (!draftId) return;
+    var drafts = [];
+    try { drafts = JSON.parse(localStorage.getItem('teacher_drafts') || '[]'); } catch(e) {}
+    var draft = drafts.find(function(d){ return d.id === draftId; });
+    if (!draft || !draft.data) return;
+    Object.assign(state, draft.data);
+    refreshSlideUI();
+    syncDesignControls();
+    applyAppearance();
+  }
+  $("wrtDraftBtn").addEventListener("click", saveDraft);
+
+  function fitStageToScreen(){
+    if (!document.body.classList.contains("wrt-preview-only")) return;
+    stageInner.style.transform = "none";
+    stageInner.style.marginBottom = "";
+    stageScale = 1;
+    const sp = window.getComputedStyle(stage);
+    const padV = (parseFloat(sp.paddingTop)||0) + (parseFloat(sp.paddingBottom)||0);
+    const available = window.innerHeight - padV;
+    const naturalH = stageInner.scrollHeight;
+    if (naturalH > available) {
+      stageScale = available / naturalH;
+      stageInner.style.transform = `scale(${stageScale})`;
+      stageInner.style.marginBottom = `-${naturalH * (1 - stageScale)}px`;
+    }
+  }
+
+  ["fullscreenchange", "webkitfullscreenchange"].forEach(evt=>{
+    document.addEventListener(evt, ()=>{
+      const stillFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+      if (!stillFullscreen) document.body.classList.remove("wrt-preview-only");
+    });
+  });
+
+  $("wrtCollapseBtn").addEventListener("click", ()=> document.body.classList.add("wrt-right-collapsed"));
+  $("wrtShowSettingsBtn").addEventListener("click", ()=> document.body.classList.remove("wrt-right-collapsed"));
+
+  function openPublishModal(){
+    $("wrtPublishOverlay").classList.add("show");
+  }
+  function closePublishModal(){ $("wrtPublishOverlay").classList.remove("show"); }
+  $("wrtPubBtn").addEventListener("click", openPublishModal);
+  $("wrtPublishCancelBtn").addEventListener("click", closePublishModal);
+
+  function compressThumb(dataURL, callback) {
+    if (!dataURL) { callback(''); return; }
+    var img = new Image();
+    img.onload = function() {
+      var MAX = 160;
+      var ratio = Math.min(MAX / img.width, MAX / img.height, 1);
+      var cv = document.createElement('canvas');
+      cv.width = Math.round(img.width * ratio);
+      cv.height = Math.round(img.height * ratio);
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      callback(cv.toDataURL('image/jpeg', 0.55));
+    };
+    img.onerror = function() { callback(''); };
+    img.src = dataURL;
+  }
+
+  function confirmPublish() {
+    var deadline = $("wrtDeadlineInput").value;
+    if (!deadline) { alert("Please set a deadline date before publishing."); return; }
+    var domain = document.querySelector('input[name="wrtDomain"]:checked').value;
+    var firstTitle = (state.activities[0] && state.activities[0].title) || 'Untitled Activity';
+    compressThumb(state.thumb, function(smallThumb) {
+    var pub = {
+      id: 'pub-' + Date.now(), title: firstTitle, type: 'WrittenResponse',
+      deadline: deadline, thumbnail: smallThumb,
+      teacherName: sessionStorage.getItem('teacher_name') || '—',
+      teacherId: sessionStorage.getItem('teacher_id') || '',
+      learner: sessionStorage.getItem('selected_learner') || 'ALL',
+      condition: sessionStorage.getItem('selected_condition') || '',
+      publishedAt: new Date().toISOString()
+    };
+    var existing = [];
+    try { existing = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+    existing.push(pub);
+    try { localStorage.setItem('published_activities', JSON.stringify(existing)); } catch(e){ alert('Storage full – try clearing old drafts first.'); return; }
+    _idb.save('pub_data_' + pub.id, JSON.parse(JSON.stringify(state)), function(err){
+      if (err) console.warn('IDB save failed:', err);
+    });
+    var notifs = [];
+    try { notifs = JSON.parse(localStorage.getItem('student_notifications') || '[]'); } catch(e){}
+    notifs.unshift({ id:'notif-'+Date.now(), type:'new_activity',
+      title:'New activity available',
+      message:'Your teacher published "' + firstTitle + '" for ' + grading + ' Grading.',
+      activityId:pub.id, isRead:false, createdAt:new Date().toISOString() });
+    try { localStorage.setItem('student_notifications', JSON.stringify(notifs)); } catch(e){}
+    var _pubRef = pub;
+    var _assignedIds = [];
+    try { _assignedIds = JSON.parse(sessionStorage.getItem('selected_learner_ids') || '[]'); } catch(e) {}
+    if (!_assignedIds.length) { var _fb = parseInt(sessionStorage.getItem('selected_learner_id') || '0'); if (_fb > 0) _assignedIds = [_fb]; }
+    fetch('../TEACHER_BACKEND/teacher_create_activity.php', {
+      method: 'POST',
+      body: new URLSearchParams({
+        teacher_id: _pubRef.teacherId,
+        activity_title: _pubRef.title,
+        activity_type: 'WrittenResponse',
+        subject: domain,
+        grade_level: '',
+        status: 'published',
+        assigned_student_ids: JSON.stringify(_assignedIds)
+      })
+    }).then(function(r){ return r.json(); }).then(function(d){
+      if (d.success && d.activity_id) {
+        var acts = []; try { acts = JSON.parse(localStorage.getItem('published_activities')||'[]'); } catch(e){}
+        var i = acts.findIndex(function(a){ return a.id === _pubRef.id; });
+        if (i >= 0) { acts[i].db_activity_id = d.activity_id; try { localStorage.setItem('published_activities', JSON.stringify(acts)); } catch(e){} }
+      }
+    }).catch(function(){});
+    closePublishModal();
+    setTimeout(function(){ window.location.href = '../Teacher_activies.html'; }, 400);
+    });
+  }
+  $("wrtPublishConfirmBtn").addEventListener("click", confirmPublish);
+
+  /* ------------------------------------------------------------- *
+   * 8. INIT
+   * ------------------------------------------------------------- */
+
+  syncModeSeg();
+  renderExampleEditor();
+  renderItems();
+  renderSwatches();
+  syncDesignControls();
+  applyAppearance();
+  renderActivity();
+  renderSlideNav();
+  loadDraftIfAny();
+
+  /* ── STUDENT MODE ─────────────────────────────────────────── */
+  (function () {
+    var p = new URLSearchParams(location.search);
+    if (p.get('student_mode') !== '1') return;
+    _stuMode = true;
+    _stuPubId = p.get('pub_id') || '';
+
+    try { _stuProg = JSON.parse(localStorage.getItem('student_progress') || '[]'); } catch(e){}
+    var prev = _stuProg.find(function(r){ return r.pubId === _stuPubId; });
+    if (prev) _stuRetake = prev.retakes || 0;
+
+    function showNotAvailable() {
+      document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Poppins,sans-serif;gap:16px;padding:32px;text-align:center;">'
+        + '<div style="font-size:72px;">📭</div>'
+        + '<h2 style="color:#1e3a8a;margin:0;">Activity Not Available</h2>'
+        + '<p style="color:#64748b;max-width:340px;margin:0;">The activity content could not be loaded. Ask your teacher to republish it.</p>'
+        + '<button onclick="window.history.back()" style="margin-top:8px;background:#1e3a8a;color:#fff;border:none;padding:12px 28px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;">← Exit</button>'
+        + '</div>';
+    }
+
+    function applyStudentMode(saved) {
+      if (!saved) { showNotAvailable(); return; }
+      Object.assign(state, saved);
+      state.currentIndex = 0;
+
+      var pubs = [];
+      try { pubs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+      var pub = pubs.find(function(r){ return r.id === _stuPubId; }) || {};
+      var splashThumb = pub.thumbnail
+        ? '<img src="' + pub.thumbnail + '" style="width:120px;height:120px;object-fit:cover;border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.35);" />'
+        : '<div style="font-size:80px;line-height:1;">🔗</div>';
+      var dueText = pub.deadline
+        ? '<p style="color:#fde68a;font-size:15px;margin:0;">📅 Due: ' + new Date(pub.deadline+'T00:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) + '</p>'
+        : '';
+      var retakeText = _stuRetake > 0
+        ? '<p style="color:#fca5a5;font-size:13px;margin:0;">You have retaken this ' + _stuRetake + ' time(s).</p>'
+        : '';
+
+      var splash = document.createElement('div');
+      splash.id = 'stuSplash';
+      splash.style.cssText = 'position:fixed;inset:0;background:linear-gradient(145deg,#1e3a8a 0%,#1e40af 60%,#1d4ed8 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:99999;padding:32px;text-align:center;';
+      splash.innerHTML = splashThumb
+        + '<h1 style="color:#fff;font-family:Fredoka,Poppins,sans-serif;font-size:32px;font-weight:700;margin:0;max-width:520px;line-height:1.2;">' + (pub.title || state.activities[0]&&state.activities[0].title || 'Activity') + '</h1>'
+        + '<p style="color:#93c5fd;font-size:15px;margin:0;">Written Response</p>'
+        + dueText + retakeText
+        + '<button id="stuSplashBtn" style="margin-top:12px;background:#22c55e;color:#fff;border:none;padding:18px 56px;border-radius:18px;font-family:Fredoka,Poppins,sans-serif;font-size:24px;font-weight:700;cursor:pointer;box-shadow:0 6px 0 #15803d;transition:transform .1s;">▶ Start Activity</button>'
+        + '<button onclick="window.history.back()" style="background:transparent;color:#93c5fd;border:none;font-size:14px;cursor:pointer;margin-top:4px;">← Exit</button>';
+      document.body.appendChild(splash);
+
+      function _stuGoBack() {
+        _stuMode = false;
+        if (document.fullscreenElement) document.exitFullscreen();
+        var ret = sessionStorage.getItem('stu_return_url');
+        sessionStorage.removeItem('stu_return_url');
+        if (ret && ret.indexOf('Student_') !== -1) { window.location.href = ret; return; }
+        var base = window.location.href.split('/TEACHER_FILES/')[0];
+        window.location.href = base + '/STUDENT_FILES/Student_mymaterials.html';
+      }
+
+      document.getElementById('stuSplashBtn').addEventListener('click', function(e) {
+        e.stopPropagation();
+        var fs = document.documentElement;
+        if (fs.requestFullscreen) fs.requestFullscreen().catch(function(){});
+        else if (fs.webkitRequestFullscreen) fs.webkitRequestFullscreen();
+        splash.remove();
+
+        syncModeSeg(); renderExampleEditor(); renderItems(); renderSwatches(); syncDesignControls(); applyAppearance(); renderActivity(); renderSlideNav();
+        document.body.classList.add('wrt-preview-only');
+        setTimeout(fitStageToScreen, 50);
+
+        document.addEventListener('fullscreenchange', function() {
+          if (!document.fullscreenElement && _stuMode) _stuGoBack();
+        });
+        document.addEventListener('webkitfullscreenchange', function() {
+          if (!document.webkitFullscreenElement && _stuMode) _stuGoBack();
+        });
+
+        var origExit = document.querySelector('.wrt-exit-float');
+        if (origExit) {
+          var newExit = origExit.cloneNode(false);
+          newExit.textContent = '← Exit';
+          origExit.parentNode.replaceChild(newExit, origExit);
+          newExit.addEventListener('click', function(ev) { ev.preventDefault(); ev.stopPropagation(); _stuGoBack(); });
+        }
+
+        $('wrtStudentSubmitBtn').addEventListener('click', function() {
+          if (_stuSubmitDone) { _stuGoBack(); return; }
+          var _slideCount = state.activities.length;
+          var _missing = []; for (var _si=0;_si<_slideCount;_si++){if(!_stuSlideScores[_si])_missing.push(_si+1);}
+          if (_missing.length>0){alert(_slideCount>1?'Please check all slides first. Missing: Slide '+_missing.join(', Slide '):'Please check your answers first before submitting.');return;}
+          var _totCorrect=_stuSlideScores.reduce(function(s,x){return s+x.correct;},0);
+          var _totItems=_stuSlideScores.reduce(function(s,x){return s+x.total;},0);
+          var pct = Math.round((_totCorrect / _totItems) * 100);
+          var record = { pubId:_stuPubId, title:pub.title||'Activity', type:'WrittenResponse',
+            grading:pub.grading||'', deadline:pub.deadline||'',
+            score:_totCorrect, total:_totItems, percent:pct, retakes:_stuRetake,
+            pendingTeacherReview:true, studentAnswers: JSON.parse(JSON.stringify(studentAnswers)),
+            submittedAt:new Date().toISOString() };
+          var idx = _stuProg.findIndex(function(r){ return r.pubId === _stuPubId; });
+          if (idx >= 0) _stuProg[idx] = record; else _stuProg.push(record);
+          try { localStorage.setItem('student_progress', JSON.stringify(_stuProg)); } catch(e){}
+          var notifs = [];
+          try { notifs = JSON.parse(localStorage.getItem('student_notifications') || '[]'); } catch(e){}
+          notifs.unshift({ id:'notif-'+Date.now(), type:'achievement',
+            title:'Activity Submitted! 🌟',
+            message:'You scored '+pct+'% (suggested) on "'+(pub.title||'Activity')+'"'+(_stuRetake>0?' after '+_stuRetake+' retake(s)':'')+'. Your teacher will confirm your final grade.',
+            isRead:false, createdAt:new Date().toISOString() });
+          try { localStorage.setItem('student_notifications', JSON.stringify(notifs)); } catch(e){}
+          var _stuRecordId = sessionStorage.getItem('student_record_id');
+          var _ansJson = JSON.stringify((function(){var all=[];_stuSlideScores.forEach(function(s,si){if(_slideCount>1){var sr=_stuSlideRetakes[si]||0;all.push({isSlideHeader:true,label:'Slide '+(si+1)+(sr>0?' ('+sr+' retake'+(sr>1?'s':'')+')':''),slideRetakes:sr,studentAnswer:'',correctAnswer:'',correct:null});}s.ansItems.forEach(function(item){all.push(Object.assign({},item));});});return all;})());
+          // Show final summary before going home
+          var _fi=pct>=100?'images/perfect.png':pct>=80?'images/goodjob.png':'images/tryagain.png';
+          var _fm=pct>=80?'Excellent work! 🌟':pct>=50?'Good effort! Keep practicing! ⭐':'Keep trying! Practice makes perfect! 💪';
+          $('wrtModalEmoji').src=_fi; $('wrtModalScore').textContent=_totCorrect+' / '+_totItems+' correct ('+pct+'%)'; $('wrtModalMsg').textContent=_fm;
+          $('wrtModalCloseBtn').style.display='none'; $('wrtModalTryBtn').style.display='none';
+          $('wrtStudentSubmitBtn').textContent='🏠 Go to Dashboard';
+          var _fbR=$('wrtReviewRows'); _fbR.innerHTML='';
+          $('wrtReviewList').style.display=_slideCount>1?'block':'none';
+          if(_slideCount>1){_stuSlideScores.forEach(function(s,si){var sp=Math.round((s.correct/s.total)*100);var sc=sp>=80?'#1f9d44':sp>=50?'#ca8a04':'#e23b54';var sr=_stuSlideRetakes[si]||0;var rd=document.createElement('div');rd.style.cssText='display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:13px;align-items:center;';rd.innerHTML='<span style="font-weight:600;">Slide '+(si+1)+(sr>0?' <span style="color:#e23b54;font-size:10px;">('+sr+'× retake)</span>':'')+'</span><span style="font-weight:700;color:'+sc+';">'+s.correct+'/'+s.total+' ('+sp+'%)</span>';_fbR.appendChild(rd);});}
+          _stuSubmitDone=true;
+          if (pub.db_activity_id && pub.teacherId && _stuRecordId) {
+            fetch('../TEACHER_BACKEND/teacher_complete_activity.php', {
+              method: 'POST', keepalive: true,
+              body: new URLSearchParams({ teacher_id: pub.teacherId, student_id: _stuRecordId, activity_id: pub.db_activity_id, score: pct, total_items: _totItems, pub_id: _stuPubId||'', answers_json: _ansJson, retake_count: _stuRetake||0 })
+            });
+          }
+        });
+      });
+    }
+
+    _idb.load('pub_data_' + _stuPubId, function(err, saved) {
+      if (saved) { applyStudentMode(saved); return; }
+      var ls = null;
+      try { ls = JSON.parse(localStorage.getItem('pub_data_' + _stuPubId) || 'null'); } catch(e){}
+      applyStudentMode(ls);
+    });
+  })();
+
+  /* ── SPOTLIGHT TOUR ── */
+  (function(){
+    var STEPS=[
+      {get:function(){return document.querySelector('.wrt-left-col');},title:'📋 Step 1 of 10 — Activity Slides',desc:'Each slide is a separate Written Response task. Click the arrows to switch slides and "+ Add Slide" to create more.',side:'right'},
+      {get:function(){return document.querySelector('.wrt-type');},title:'✏️ Step 2 of 10 — Activity Type',desc:'This is a Written Response activity. Learners read a question with an optional picture, then type or write their answer.',side:'right'},
+      {get:function(){return $('wrtItems');},title:'📄 Step 3 of 10 — Items List',desc:'Each item is a question. Add optional pictures and set the correct expected answer so the system can check the learner\'s response.',side:'right'},
+      {get:function(){return document.querySelector('.wrt-item-row');},title:'❓ Step 4 of 10 — Question Item',desc:'Each row has question text, an optional picture, and the key answer. The learner types their response and it is checked against your key.',side:'right'},
+      {get:function(){return $('wrtAddItem');},title:'➕ Step 5 of 10 — Add Item',desc:'Click to add more questions to the current slide. 2–4 questions per slide is ideal — keep it manageable for the learner.',side:'right'},
+      {get:function(){document.body.classList.remove('wrt-right-collapsed');return $('wrtInstrInput');},title:'💬 Step 6 of 10 — Instruction Text',desc:'Type the overall direction here — e.g. "Sagutin ang bawat tanong nang maayos." Shown at the top of the learner\'s screen.',side:'left'},
+      {get:function(){document.body.classList.remove('wrt-right-collapsed');return $('wrtRightPanelFull');},title:'🎨 Step 7 of 10 — Design & Settings',desc:'Customize the look: background color, font, text size, and border style. Click "✓ Apply Changes" to preview it live.',side:'left'},
+      {get:function(){return $('wrtPreviewBtn');},title:'🖥️ Step 8 of 10 — Fullscreen Preview',desc:'Opens the exact view your learner sees. Try typing answers yourself to test how the activity feels.',side:'bottom'},
+      {get:function(){return $('wrtDraftBtn');},title:'💾 Step 9 of 10 — Save Draft',desc:'Saves your progress. Drafts appear in your activity list so you can return and keep editing anytime.',side:'bottom'},
+      {get:function(){return $('wrtPubBtn');},title:'🌐 Step 10 of 10 — Publish Activity',desc:'When ready, click Publish to assign this to a learner. Set the grading period and deadline — they can then open it from their portal.',side:'bottom'}
+    ];
+    var _cur=0,_sp=null,_ring=null,_tip=null;
+    function _placeSpot(el){var r=el.getBoundingClientRect(),p=8;var s={left:(r.left-p)+'px',top:(r.top-p)+'px',width:(r.width+p*2)+'px',height:(r.height+p*2)+'px'};['left','top','width','height'].forEach(function(k){_sp.style[k]=s[k];_ring.style[k]=s[k];});}
+    function _placeTip(el,side){var r=el.getBoundingClientRect(),gap=18,p=8;var tw=_tip.offsetWidth||290,th=_tip.offsetHeight||170;var vw=window.innerWidth,vh=window.innerHeight;var left,top;if(side==='right'){left=r.right+p+gap;top=r.top+(r.height-th)/2;}else if(side==='left'){left=r.left-p-gap-tw;top=r.top+(r.height-th)/2;}else{left=r.left+(r.width-tw)/2;top=r.bottom+p+gap;}left=Math.max(10,Math.min(vw-tw-10,left));top=Math.max(10,Math.min(vh-th-10,top));_tip.style.left=left+'px';_tip.style.top=top+'px';}
+    function _showStep(i){if(i<0||i>=STEPS.length){_endTour();return;}_cur=i;var s=STEPS[i],el;try{el=s.get();}catch(e){el=null;}if(!el){_showStep(i+1);return;}try{el.scrollIntoView({behavior:'smooth',block:'nearest',inline:'nearest'});}catch(e){}setTimeout(function(){_placeSpot(el);_sp.style.display=_ring.style.display=_tip.style.display='block';$('wrtTourStep').textContent=s.title;$('wrtTourDesc').textContent=s.desc;$('wrtTourBack').style.visibility=i===0?'hidden':'visible';$('wrtTourNext').textContent=i===STEPS.length-1?'✓ Tapos na':'Next →';setTimeout(function(){_placeTip(el,s.side);},20);},90);}
+    function _endTour(){if(_sp)_sp.style.display=_ring.style.display=_tip.style.display='none';}
+    function _startTour(){_sp=$('wrtTourSpot');_ring=$('wrtTourRing');_tip=$('wrtTourTip');_showStep(0);}
+    $('wrtHelpBtn').addEventListener('click',_startTour);
+    document.addEventListener('keydown',function(e){if(e.key==='Escape'&&_sp&&_sp.style.display!=='none')_endTour();});
+    window.addEventListener('load',function(){$('wrtTourNext').addEventListener('click',function(){if(_cur>=STEPS.length-1)_endTour();else _showStep(_cur+1);});$('wrtTourBack').addEventListener('click',function(){_showStep(_cur-1);});$('wrtTourSkip').addEventListener('click',_endTour);});
+  })();
+</script>
+<!-- TOUR ELEMENTS -->
+<div id="wrtTourSpot"></div>
+<div id="wrtTourRing"></div>
+<div id="wrtTourTip">
+  <div id="wrtTourStep"></div>
+  <div id="wrtTourDesc"></div>
+  <div class="wrt-tour-row">
+    <button id="wrtTourSkip" class="wrt-tour-action" type="button">✕ Skip</button>
+    <button id="wrtTourBack" class="wrt-tour-action" type="button">← Back</button>
+    <button id="wrtTourNext" class="wrt-tour-action" type="button">Next →</button>
+  </div>
+</div>
+</body>
+</html>

@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap"
         rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
-    <link href="TEACHER_CSS/Teacher_IEP.css" rel="stylesheet" />
+    <link href="TEACHER_CSS/Teacher_IEP.css?v=5" rel="stylesheet" />
 </head>
 
 <body>
@@ -102,75 +102,49 @@
                     </a>
                 </div>
             </header>
-            <!-- FILTER BAR -->
-            <div class="teacher-filter-bar">
-                <div class="teacher-filter-item">
-                    <label>Select Learner Profile</label>
-                    <div class="teacher-select-wrap">
-                        <select id="teacher-learnerProfile" name="teacher_learnerprofile" onchange="setCondition()">
-                            <option value="">ALL</option>
-                        </select>
-                        <i class="fa-solid fa-chevron-down teacher-select-arrow"></i>
-                    </div>
-                </div>
-                <div class="teacher-filter-item">
-                    <label>Select Condition <span class="teacher-autofill-tag">Auto-filled</span></label>
-                    <div class="teacher-select-wrap">
-                        <select disabled="" id="teacher-condition" name="teacher_condition">
-                            <option value="">ALL</option>
-                            <option value="ASD">ASD</option>
-                            <option value="ID">ID</option>
-                        </select>
-                        <i class="fa-solid fa-chevron-down teacher-select-arrow"></i>
-                    </div>
-                </div>
-                <button class="btn-refresh" onclick="resetFilters()" type="button">
-                    Refresh
-                </button>
-            </div>
-            <!-- GRADING CARDS -->
+            <!-- GRADING IMAGES -->
             <div class="teacher-grading-grid">
-                <div class="teacher-grading-card">
-                    <div class="teacher-card-badge badge-blue">First Grading</div>
-                    <div class="teacher-card-illustration illus-blue">
-                        <img alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
-                            src="TEACHER_ASSETS/first_grading.jpg" />
-                        <div class="illus-fallback"><i class="fa-solid fa-brain"></i></div>
-                    </div>
-                    <ul class="teacher-topic-list">
-                        <li>Cognitive Development</li>
-                        <li>Communication Skills</li>
-                        <li>Fine Motor Skills</li>
-                        <li>Attention &amp; Routine</li>
-                    </ul>
+                <div class="teacher-grading-frame frame-blue">
+                    <img alt="First Grading" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+                        src="TEACHER_ASSETS/first_grading.jpg" />
+                    <div class="frame-fallback"><i class="fa-solid fa-brain"></i></div>
                 </div>
-                <div class="teacher-grading-card">
-                    <div class="teacher-card-badge badge-pink">Second Grading</div>
-                    <div class="teacher-card-illustration illus-pink">
-                        <img alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
-                            src="TEACHER_ASSETS/second_grading.jpg" />
-                        <div class="illus-fallback"><i class="fa-solid fa-people-arrows"></i></div>
-                    </div>
-                    <ul class="teacher-topic-list">
-                        <li>Social Skills</li>
-                        <li>Emotional Regulation</li>
-                        <li>Gross Motor Skills</li>
-                        <li>Behavior Support</li>
-                    </ul>
+                <div class="teacher-grading-frame frame-pink">
+                    <img alt="Second Grading" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+                        src="TEACHER_ASSETS/second_grading.jpg" />
+                    <div class="frame-fallback"><i class="fa-solid fa-people-arrows"></i></div>
                 </div>
-                <div class="teacher-grading-card">
-                    <div class="teacher-card-badge badge-orange">Third Grading</div>
-                    <div class="teacher-card-illustration illus-orange">
-                        <img alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
-                            src="TEACHER_ASSETS/third_grading.jpg" />
-                        <div class="illus-fallback"><i class="fa-solid fa-book-open-reader"></i></div>
+                <div class="teacher-grading-frame frame-orange">
+                    <img alt="Third Grading" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+                        src="TEACHER_ASSETS/third_grading.jpg" />
+                    <div class="frame-fallback"><i class="fa-solid fa-book-open-reader"></i></div>
+                </div>
+            </div>
+            <!-- STUDENT SELECTION TABLE -->
+            <div class="iep-student-card" id="iepStudentCard">
+                <div class="iep-student-card-header">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <span class="iep-student-card-title">Select Learner(s)</span>
+                        <span class="iep-selected-badge" id="iepSelectedBadge" style="display:none;">0 selected</span>
                     </div>
-                    <ul class="teacher-topic-list">
-                        <li>Life Skills</li>
-                        <li>Self-Help Skills</li>
-                        <li>Functional Communication</li>
-                        <li>Evaluation &amp; Progress Monitoring</li>
-                    </ul>
+                    <label class="iep-select-all-label">
+                        <input type="checkbox" id="iepSelectAll" onchange="toggleAllLearners(this.checked)">
+                        Select All
+                    </label>
+                </div>
+                <div class="iep-table-wrap">
+                    <table class="iep-student-table">
+                        <thead>
+                            <tr>
+                                <th style="width:48px;"></th>
+                                <th>Student Name</th>
+                                <th>Condition</th>
+                            </tr>
+                        </thead>
+                        <tbody id="iep-student-tbody">
+                            <tr><td colspan="3" class="iep-st-empty">Loading learners...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
             <!-- ACTION BUTTONS -->
@@ -183,8 +157,75 @@
                     <i class="fa-solid fa-eye"></i>
                     VIEW ACTIVITIES
                 </button>
+                <button class="btn-upload-mat" onclick="openUploadModal()" type="button">
+                    <i class="fa-solid fa-paperclip"></i>
+                    UPLOAD MATERIAL
+                </button>
             </div>
         </main>
+    </div>
+
+    <!-- ===== UPLOAD MATERIAL MODAL ===== -->
+    <div id="iepUploadModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(15,23,42,.55);align-items:center;justify-content:center;">
+      <div style="background:#fff;border-radius:18px;padding:30px 32px 24px;width:500px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.3);font-family:'Poppins',sans-serif;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+          <h3 style="margin:0;color:#1e3a8a;font-size:17px;font-weight:700;">📎 Upload Material</h3>
+          <button onclick="closeUploadModal()" type="button" style="background:none;border:none;font-size:22px;cursor:pointer;color:#64748b;line-height:1;">&times;</button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <!-- Selected students -->
+          <div id="uploadForStudents" style="background:#eff6ff;border-radius:9px;padding:10px 14px;font-size:13px;color:#1e3a8a;font-weight:600;line-height:1.5;"></div>
+
+          <!-- Upload type toggle -->
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:5px;">Upload Type</label>
+            <div style="display:flex;border-radius:9px;border:1.5px solid #cbd5e1;overflow:hidden;background:#f8fafc;">
+              <button id="uploadTypeFile" onclick="setUploadType('file')" type="button"
+                style="flex:1;padding:9px 12px;border:none;cursor:pointer;font-family:'Poppins',sans-serif;font-size:13px;font-weight:600;background:#1d4ed8;color:#fff;transition:.2s;">📁 File</button>
+              <button id="uploadTypeLink" onclick="setUploadType('link')" type="button"
+                style="flex:1;padding:9px 12px;border:none;cursor:pointer;font-family:'Poppins',sans-serif;font-size:13px;font-weight:600;background:transparent;color:#64748b;transition:.2s;">🔗 Link</button>
+            </div>
+          </div>
+
+          <!-- Title -->
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:5px;">Title <span style="color:#ef4444">*</span></label>
+            <input id="uploadTitle" type="text" placeholder="e.g. Math Worksheet – Week 3" maxlength="200"
+              style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:9px;font-family:'Poppins',sans-serif;font-size:13px;color:#1e293b;background:#f8fafc;outline:none;box-sizing:border-box;" />
+          </div>
+
+          <!-- Description -->
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:5px;">Description <span style="color:#94a3b8;font-weight:400;">(optional)</span></label>
+            <textarea id="uploadDesc" rows="2" placeholder="Brief note for the student..."
+              style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:9px;font-family:'Poppins',sans-serif;font-size:13px;color:#1e293b;background:#f8fafc;outline:none;resize:vertical;box-sizing:border-box;"></textarea>
+          </div>
+
+          <!-- File input -->
+          <div id="uploadFileWrap">
+            <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:5px;">File <span style="color:#ef4444">*</span> <span style="color:#94a3b8;font-weight:400;">(PDF, image, Word, video — max 20 MB)</span></label>
+            <input id="uploadFile" type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.mp4,.mp3,.wav"
+              style="width:100%;padding:8px;border:1.5px dashed #cbd5e1;border-radius:9px;font-family:'Poppins',sans-serif;font-size:13px;background:#f8fafc;box-sizing:border-box;cursor:pointer;" />
+          </div>
+
+          <!-- Link input -->
+          <div id="uploadLinkWrap" style="display:none;">
+            <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:5px;">URL <span style="color:#ef4444">*</span> <span style="color:#94a3b8;font-weight:400;">(YouTube, Google Drive, website, etc.)</span></label>
+            <input id="uploadLinkUrl" type="url" placeholder="https://..."
+              style="width:100%;padding:9px 12px;border:1.5px solid #cbd5e1;border-radius:9px;font-family:'Poppins',sans-serif;font-size:13px;color:#1e293b;background:#f8fafc;outline:none;box-sizing:border-box;" />
+          </div>
+
+          <p id="uploadMsg" style="margin:0;font-size:13px;color:#ef4444;display:none;"></p>
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:22px;">
+          <button onclick="closeUploadModal()" type="button"
+            style="padding:10px 20px;border:1.5px solid #cbd5e1;border-radius:9px;background:#fff;font-family:'Poppins',sans-serif;font-size:13px;font-weight:600;color:#475569;cursor:pointer;">Cancel</button>
+          <button id="uploadSubmitBtn" onclick="submitUpload()" type="button"
+            style="padding:10px 24px;border:none;border-radius:9px;background:#1d4ed8;font-family:'Poppins',sans-serif;font-size:13px;font-weight:600;color:#fff;cursor:pointer;">Upload</button>
+        </div>
+      </div>
     </div>
     <script>
         var TEACHER_ID = parseInt(sessionStorage.getItem('teacher_id') || '1');
@@ -219,66 +260,239 @@
             }
         }
 
+        /* ── Learner state ── */
+        var allLearners = [];
+        var selectedLearnerIds = [];
+        var currentUploadType = 'file';
+
+        function escHtml(s) {
+            return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
         function loadLearners() {
             fetch('TEACHER_BACKEND/teacher_list_learners.php?teacher_id=' + TEACHER_ID)
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
-                    var sel = document.getElementById('teacher-learnerProfile');
-                    sel.innerHTML = '<option value="">ALL</option>';
-                    (data || []).forEach(function(s) {
-                        var disability = s.disability || 'General';
-                        var val = s.name + '|' + disability;
-                        var opt = document.createElement('option');
-                        opt.value = val;
-                        opt.dataset.studentId = s.id;
-                        opt.textContent = s.name;
-                        sel.appendChild(opt);
+                    allLearners = (data || []).map(function(s) {
+                        return { id: String(s.id), name: s.name, disability: s.disability || 'General' };
                     });
-                }).catch(function(){});
+                    renderStudentTable();
+                }).catch(function(){
+                    var tb = document.getElementById('iep-student-tbody');
+                    if (tb) tb.innerHTML = '<tr><td colspan="3" class="iep-st-empty">Could not load learners.</td></tr>';
+                });
         }
 
-        function openTemplate(path) {
-            window.location.href = path;
+        function renderStudentTable() {
+            var tbody = document.getElementById('iep-student-tbody');
+            if (!tbody) return;
+            if (!allLearners.length) {
+                tbody.innerHTML = '<tr><td colspan="3" class="iep-st-empty">No learners enrolled yet.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = allLearners.map(function(s) {
+                var checked = selectedLearnerIds.indexOf(s.id) >= 0;
+                var cond = (s.disability && s.disability !== 'General') ? s.disability : '—';
+                var badgeCls = cond !== '—' ? 'iep-cond-badge' : 'iep-cond-none';
+                return '<tr class="iep-st-row' + (checked ? ' iep-row-sel' : '') + '" onclick="toggleLearnerRow(\'' + s.id + '\')">'
+                    + '<td class="iep-cb-cell"><input type="checkbox" value="' + escHtml(s.id) + '" ' + (checked ? 'checked' : '') + ' onclick="event.stopPropagation();toggleLearnerRow(\'' + s.id + '\')" style="accent-color:#2563eb;width:16px;height:16px;cursor:pointer;"></td>'
+                    + '<td class="iep-st-name">' + escHtml(s.name) + '</td>'
+                    + '<td><span class="' + badgeCls + '">' + escHtml(cond) + '</span></td>'
+                    + '</tr>';
+            }).join('');
+            updateSelectAllState();
+        }
+
+        function toggleLearnerRow(id) {
+            var idx = selectedLearnerIds.indexOf(id);
+            if (idx >= 0) selectedLearnerIds.splice(idx, 1);
+            else selectedLearnerIds.push(id);
+            var row = document.querySelector('#iep-student-tbody tr.iep-st-row input[value="' + id + '"]');
+            if (row) {
+                var isChecked = selectedLearnerIds.indexOf(id) >= 0;
+                row.checked = isChecked;
+                row.closest('tr').classList.toggle('iep-row-sel', isChecked);
+            }
+            updateSelectedBadge();
+            updateSelectAllState();
+            setCondition();
+        }
+
+        function toggleAllLearners(checked) {
+            selectedLearnerIds = checked ? allLearners.map(function(s){ return s.id; }) : [];
+            renderStudentTable();
+            if (checked) document.getElementById('iepSelectAll').checked = true;
+            updateSelectedBadge();
+            setCondition();
+        }
+
+        function updateSelectedBadge() {
+            var badge = document.getElementById('iepSelectedBadge');
+            if (!badge) return;
+            var n = selectedLearnerIds.length;
+            badge.textContent = n + ' selected';
+            badge.style.display = n > 0 ? 'inline-flex' : 'none';
+        }
+
+        function updateSelectAllState() {
+            var cb = document.getElementById('iepSelectAll');
+            if (!cb || !allLearners.length) return;
+            var n = selectedLearnerIds.length;
+            cb.checked = n === allLearners.length;
+            cb.indeterminate = n > 0 && n < allLearners.length;
         }
 
         function setCondition() {
-            var sel = document.getElementById('teacher-learnerProfile');
-            var val = sel.value;
-            var cond = document.getElementById('teacher-condition');
-            cond.value = val ? val.split('|')[1] : '';
-            var opt = sel.options[sel.selectedIndex];
-            sessionStorage.setItem('selected_learner_id', opt ? (opt.dataset.studentId || '') : '');
+            if (!selectedLearnerIds.length) { sessionStorage.setItem('selected_learner_id', ''); return; }
+            var first = null;
+            for (var i = 0; i < allLearners.length; i++) { if (allLearners[i].id === selectedLearnerIds[0]) { first = allLearners[i]; break; } }
+            if (first) sessionStorage.setItem('selected_learner_id', first.id);
         }
+
         function resetFilters() {
-            document.getElementById('teacher-learnerProfile').value = '';
-            document.getElementById('teacher-condition').value = '';
+            selectedLearnerIds = [];
+            renderStudentTable();
+            updateSelectedBadge();
+            sessionStorage.setItem('selected_learner_id', '');
         }
+
         function goGenerate() {
-            var sel = document.getElementById('teacher-learnerProfile');
-            var val = sel.value;
-            if (!val) {
-                sel.style.outline = '2px solid #ef4444';
-                sel.style.borderRadius = '8px';
-                setTimeout(function(){ sel.style.outline = ''; }, 2500);
-                alert('Please select a specific learner before generating materials.');
+            if (!selectedLearnerIds.length) {
+                var card = document.getElementById('iepStudentCard');
+                card.style.outline = '2px solid #ef4444';
+                setTimeout(function(){ card.style.outline = ''; }, 2500);
+                alert('Please select a learner before generating materials.');
                 return;
             }
-            var condition = document.getElementById('teacher-condition').value;
-            var opt = sel.options[sel.selectedIndex];
-            sessionStorage.setItem('selected_learner', val);
-            sessionStorage.setItem('selected_condition', condition || '');
-            sessionStorage.setItem('selected_learner_id', opt ? (opt.dataset.studentId || '') : '');
+            var first = null;
+            for (var i = 0; i < allLearners.length; i++) { if (allLearners[i].id === selectedLearnerIds[0]) { first = allLearners[i]; break; } }
+            sessionStorage.setItem('selected_learner', first.name + '|' + (first.disability || ''));
+            sessionStorage.setItem('selected_condition', first.disability || '');
+            sessionStorage.setItem('selected_learner_id', first.id);
+            sessionStorage.setItem('selected_learner_ids', JSON.stringify(selectedLearnerIds));
             window.location.href = 'Teacher_generate.html';
         }
+
         function goReview() {
             window.location.href = 'Teacher_activies.html';
         }
+
+        function setUploadType(type) {
+            currentUploadType = type;
+            document.getElementById('uploadFileWrap').style.display = type === 'file' ? '' : 'none';
+            document.getElementById('uploadLinkWrap').style.display = type === 'link' ? '' : 'none';
+            var fBtn = document.getElementById('uploadTypeFile');
+            var lBtn = document.getElementById('uploadTypeLink');
+            fBtn.style.background = type === 'file' ? '#1d4ed8' : 'transparent';
+            fBtn.style.color      = type === 'file' ? '#fff' : '#64748b';
+            lBtn.style.background = type === 'link' ? '#1d4ed8' : 'transparent';
+            lBtn.style.color      = type === 'link' ? '#fff' : '#64748b';
+        }
+
+        function openUploadModal() {
+            if (!selectedLearnerIds.length) {
+                alert('Please select at least one learner from the table first.');
+                return;
+            }
+            var modal = document.getElementById('iepUploadModal');
+            var names = selectedLearnerIds.map(function(id) {
+                var s = null;
+                for (var i = 0; i < allLearners.length; i++) { if (allLearners[i].id === id) { s = allLearners[i]; break; } }
+                return s ? s.name : id;
+            }).join(', ');
+            document.getElementById('uploadForStudents').textContent = '📌 For: ' + names;
+            document.getElementById('uploadTitle').value = '';
+            document.getElementById('uploadDesc').value = '';
+            document.getElementById('uploadFile').value = '';
+            document.getElementById('uploadLinkUrl').value = '';
+            setUploadType('file');
+            var msg = document.getElementById('uploadMsg');
+            msg.style.display = 'none'; msg.textContent = '';
+            document.getElementById('uploadSubmitBtn').disabled = false;
+            document.getElementById('uploadSubmitBtn').textContent = 'Upload';
+            modal.style.display = 'flex';
+            modal.style.alignItems = 'center';
+            modal.style.justifyContent = 'center';
+        }
+
+        function closeUploadModal() {
+            document.getElementById('iepUploadModal').style.display = 'none';
+        }
+
+        function submitUpload() {
+            var title = document.getElementById('uploadTitle').value.trim();
+            var desc  = document.getElementById('uploadDesc').value.trim();
+            var msg   = document.getElementById('uploadMsg');
+            var btn   = document.getElementById('uploadSubmitBtn');
+            msg.style.display = 'none'; msg.textContent = '';
+
+            if (!title) { msg.textContent = 'Please enter a title.'; msg.style.display = 'block'; return; }
+
+            var linkUrl = '';
+            if (currentUploadType === 'file') {
+                var fileInput = document.getElementById('uploadFile');
+                if (!fileInput.files || !fileInput.files[0]) {
+                    msg.textContent = 'Please select a file.'; msg.style.display = 'block'; return;
+                }
+                if (fileInput.files[0].size > 20 * 1024 * 1024) {
+                    msg.textContent = 'File is too large (max 20 MB).'; msg.style.display = 'block'; return;
+                }
+            } else {
+                linkUrl = document.getElementById('uploadLinkUrl').value.trim();
+                if (!linkUrl) { msg.textContent = 'Please enter a URL.'; msg.style.display = 'block'; return; }
+                if (!/^https?:\/\//i.test(linkUrl)) {
+                    msg.textContent = 'URL must start with http:// or https://'; msg.style.display = 'block'; return;
+                }
+            }
+
+            btn.disabled = true; btn.textContent = 'Uploading…';
+
+            var requests = selectedLearnerIds.map(function(sid) {
+                var fd = new FormData();
+                fd.append('teacher_id', TEACHER_ID);
+                fd.append('student_id', sid);
+                fd.append('grading_period', 'First');
+                fd.append('title', title);
+                fd.append('description', desc);
+                if (currentUploadType === 'file') {
+                    fd.append('file', document.getElementById('uploadFile').files[0]);
+                } else {
+                    fd.append('link_url', linkUrl);
+                }
+                return fetch('TEACHER_BACKEND/teacher_upload_material.php', { method: 'POST', body: fd })
+                    .then(function(r) { return r.json(); });
+            });
+
+            Promise.all(requests)
+                .then(function(results) {
+                    var failed = results.filter(function(d) { return !d.success; });
+                    if (!failed.length) {
+                        closeUploadModal();
+                        alert('✅ Material uploaded successfully' + (selectedLearnerIds.length > 1 ? ' to ' + selectedLearnerIds.length + ' students!' : '!'));
+                    } else {
+                        msg.textContent = 'Upload failed: ' + (failed[0].message || 'Unknown error');
+                        msg.style.display = 'block';
+                        btn.disabled = false; btn.textContent = 'Upload';
+                    }
+                })
+                .catch(function() {
+                    msg.textContent = 'Network error. Please try again.';
+                    msg.style.display = 'block';
+                    btn.disabled = false; btn.textContent = 'Upload';
+                });
+        }
+
+        document.addEventListener('click', function(e) {
+            var uploadModal = document.getElementById('iepUploadModal');
+            if (e.target === uploadModal) closeUploadModal();
+        });
 
         document.addEventListener('DOMContentLoaded', function() {
             loadSidebar();
             loadLearners();
         });
     </script>
+<script>(function(){var _id=sessionStorage.getItem('admin_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>
 </body>
 
 </html>

@@ -455,21 +455,26 @@
 
             let html = '<div class="teacher-history-title">Activity History</div>' +
                 '<div class="teacher-history-header">' +
-                '<span>Date</span><span>Activity</span><span>Score</span><span>Status</span></div>';
+                '<span>Date</span><span>Activity</span><span>Score</span><span>Assistance Level</span><span>Status</span></div>';
 
             activities.forEach(act => {
                 const dateStr = act.date
                     ? new Date(act.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                     : '—';
-                const scoreStr  = act.score !== null ? act.score + '%' : '—';
+                const displayScore = (act.is_finalized && act.finalized_score !== null) ? act.finalized_score : act.score;
+                const scoreStr  = displayScore !== null ? displayScore + '%' : '—';
                 const scoreCol  = act.score_color || '#CBD5E1';
                 const statusCls = act.status === 'completed' ? 'badge-completed' : 'badge-notstarted';
                 const statusLbl = act.status === 'completed' ? 'Completed' : 'Not Started';
+                const assistLbl = act.assistance_level
+                    ? `<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:#eff6ff;color:#1d4ed8;">${escHtml(act.assistance_level)}</span>`
+                    : '<span style="color:#cbd5e1;">—</span>';
 
                 html += `<div class="teacher-history-row">
                     <span class="teacher-history-date">${dateStr}</span>
                     <span class="teacher-history-activity">${escHtml(act.name)}</span>
                     <span class="teacher-history-score" style="color:${scoreCol};">${scoreStr}</span>
+                    <span>${assistLbl}</span>
                     <span class="teacher-history-badge ${statusCls}">${statusLbl}</span>
                 </div>`;
             });
@@ -573,6 +578,7 @@
                 .replace(/"/g, '&quot;');
         }
     </script>
+<script>(function(){var _id=sessionStorage.getItem('admin_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>
 </body>
 
 </html>
