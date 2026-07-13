@@ -2,6 +2,7 @@
 error_reporting(0);
 ini_set('display_errors', 0);
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/admin_push_notification.php';
 
 header('Content-Type: application/json');
 
@@ -31,6 +32,22 @@ if (empty($ids)) {
 $placeholders = implode(',', array_fill(0, count($ids), '?'));
 $types        = str_repeat('i', count($ids));
 
+// Fetch names before deleting so we can include them in the notification
+$deletedNames = [];
+$fetchStmt = $conn->prepare(
+    "SELECT id, CONCAT(first_name,' ',last_name) AS full_name, role
+     FROM admin_accounts WHERE id IN ($placeholders) AND is_deleted = 0"
+);
+if ($fetchStmt) {
+    $fetchStmt->bind_param($types, ...$ids);
+    $fetchStmt->execute();
+    $fetchRows = $fetchStmt->get_result();
+    while ($r = $fetchRows->fetch_assoc()) {
+        $deletedNames[] = trim($r['full_name']) . ' (' . ucfirst($r['role']) . ')';
+    }
+    $fetchStmt->close();
+}
+
 // Soft delete: set is_deleted = 1, record the deletion timestamp
 $stmt = $conn->prepare(
     "UPDATE admin_accounts SET is_deleted = 1, deleted_at = NOW()
@@ -44,6 +61,14 @@ if (!$stmt) {
 $stmt->bind_param($types, ...$ids);
 $ok = $stmt->execute();
 $stmt->close();
+
+if ($ok && !empty($deletedNames)) {
+    $count = count($deletedNames);
+    $title = $count === 1 ? 'Account Deleted' : "{$count} Accounts Deleted";
+    $msg   = implode(', ', $deletedNames) . ' ' . ($count === 1 ? 'has' : 'have') . ' been moved to deleted accounts.';
+    pushAdminNotification($conn, 'account', $title, $msg);
+}
+
 $conn->close();
 
 echo json_encode(['success' => (bool)$ok]);

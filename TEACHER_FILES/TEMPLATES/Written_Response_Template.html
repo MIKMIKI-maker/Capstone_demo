@@ -1320,7 +1320,7 @@
     try { notifs = JSON.parse(localStorage.getItem('student_notifications') || '[]'); } catch(e){}
     notifs.unshift({ id:'notif-'+Date.now(), type:'new_activity',
       title:'New activity available',
-      message:'Your teacher published "' + firstTitle + '" for ' + grading + ' Grading.',
+      message:'Your teacher published "' + firstTitle + '".',
       activityId:pub.id, isRead:false, createdAt:new Date().toISOString() });
     try { localStorage.setItem('student_notifications', JSON.stringify(notifs)); } catch(e){}
     var _pubRef = pub;

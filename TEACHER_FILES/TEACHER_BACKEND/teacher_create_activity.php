@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/db.php';
+require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/admin_push_notification.php';
 require_once __DIR__ . '/db.php';
 
 header('Content-Type: application/json');
@@ -103,6 +104,15 @@ if ($stmt->execute()) {
             }
             $asStmt->close();
         }
+    }
+
+    // Push admin notification only when published (not drafts)
+    if ($status === 'published') {
+        $notifMsg = "{$teacher_name} published a new {$activity_type} activity: \"{$activity_title}\"";
+        if (!empty($assigned_student_ids)) {
+            $notifMsg .= ' — assigned to ' . count($assigned_student_ids) . ' student(s).';
+        }
+        pushAdminNotification($conn, 'activity', 'New Activity Published', $notifMsg, $activity_id);
     }
 
     echo json_encode(['success' => true, 'activity_id' => $activity_id, 'message' => 'Activity created successfully']);

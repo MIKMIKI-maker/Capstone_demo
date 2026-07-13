@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/db.php';
+require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/admin_push_notification.php';
 
 header('Content-Type: application/json');
 
@@ -95,6 +96,16 @@ if ($stmt->execute()) {
         $subStmt->execute();
         $subStmt->close();
     }
+
+    // Push admin notification
+    $scoreLabel = $score >= 80 ? '✅' : ($score >= 60 ? '⚠️' : '❌');
+    pushAdminNotification(
+        $conn,
+        'activity',
+        'Activity Completed',
+        "{$scoreLabel} {$student_name} completed \"{$activity_title}\" with a score of {$score}%.",
+        $activity_id
+    );
 
     echo json_encode(['success' => true, 'message' => 'Activity completed successfully']);
 } else {

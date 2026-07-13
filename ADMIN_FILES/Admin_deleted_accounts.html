@@ -342,5 +342,6 @@
   /* ── Init ── */
   document.addEventListener('DOMContentLoaded', loadDeletedAccounts);
 </script>
+<script>(function(){var _s=document.createElement('style');_s.textContent='.admin-notif-badge{display:none}';document.head.appendChild(_s);fetch('ADMIN_BACKEND/admin_notif_count.php').then(function(r){return r.json();}).then(function(d){if(d&&d.unread>0){var _b=document.querySelector('.admin-notif-badge');if(_b)_b.style.display='block';}}).catch(function(){});})();</script>
 </body>
 </html>

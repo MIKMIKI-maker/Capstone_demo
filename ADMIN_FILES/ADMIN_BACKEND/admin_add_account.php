@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/admin_push_notification.php';
 session_start();
 
 $conn = getDatabaseConnection();
@@ -71,7 +72,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $logStmt->bind_param("sssss", $logType, $logUType, $logName, $logEmail, $logDetail);
             $logStmt->execute(); $logStmt->close();
         }
-        
+
+        // Push admin notification
+        $roleLabel = ucfirst($role);
+        pushAdminNotification(
+            $conn,
+            'account',
+            "New {$roleLabel} Account Created",
+            "{$fullName} ({$email}) has been added as a {$roleLabel}.",
+            $stmt->insert_id ?? null
+        );
+
         echo json_encode(['success' => true, 'message' => 'Account added successfully']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to add account: ' . $stmt->error]);
