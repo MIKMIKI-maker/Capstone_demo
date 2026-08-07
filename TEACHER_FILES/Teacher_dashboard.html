@@ -533,6 +533,7 @@
         }
     </script>
 <script>(function(){var _id=sessionStorage.getItem('admin_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>
+<script>(function(){var _s=document.createElement('style');_s.textContent='.teacher-notif-badge{display:none!important}.teacher-notif-badge.has-notifs{position:absolute;top:4px;right:4px;min-width:16px;height:16px;border-radius:50%;background:#ef4444;color:#fff;font-size:9px;font-weight:700;display:flex!important;align-items:center;justify-content:center;padding:0 2px;border:2px solid #fff}';document.head.appendChild(_s);var tid=sessionStorage.getItem('teacher_id')||'';if(!tid)return;fetch('TEACHER_BACKEND/teacher_manage_notifications.php?action=get_unread_count&teacher_id='+encodeURIComponent(tid)).then(function(r){return r.json();}).then(function(d){var cnt=d&&d.unread_count>0?d.unread_count:0;if(cnt>0){var b=document.querySelector('.teacher-notif-badge');if(b){b.textContent=cnt>9?'9+':cnt;b.classList.add('has-notifs');}}}).catch(function(){});})();</script>
 </body>
 
 </html>

@@ -36,11 +36,18 @@ if ($action === 'send') {
         exit;
     }
 
+    require_once __DIR__ . '/teacher_push_notification.php';
+
     if ($student_id) {
         // Send to one specific student
         $stmt = $conn->prepare("INSERT INTO student_notifications (teacher_id, student_id, title, message, notification_type) VALUES (?, ?, ?, ?, ?)");
         $stmt->bind_param("iisss", $teacher_id, $student_id, $title, $message, $type);
         if ($stmt->execute()) {
+            // Look up student name for the teacher's sent-log entry
+            $snq = $conn->prepare("SELECT student_name FROM students WHERE id = ? AND teacher_id = ?");
+            $student_label = 'a student';
+            if ($snq) { $snq->bind_param("ii", $student_id, $teacher_id); $snq->execute(); if ($snrow = $snq->get_result()->fetch_assoc()) { $student_label = $snrow['student_name']; } $snq->close(); }
+            pushTeacherNotification($conn, $teacher_id, 'message', 'Notification Sent', 'To ' . $student_label . ': "' . $title . '"');
             echo json_encode(['success' => true, 'message' => 'Notification sent']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Failed to send notification']);
@@ -48,14 +55,25 @@ if ($action === 'send') {
         $stmt->close();
     } else {
         // Broadcast to all students of this teacher
-        $students_res = $conn->query("SELECT id FROM students WHERE teacher_id = $teacher_id AND status = 'active'");
+        $bq = $conn->prepare("SELECT id FROM students WHERE teacher_id = ?");
         $count = 0;
-        while ($s = $students_res->fetch_assoc()) {
-            $sid = $s['id'];
-            $stmt = $conn->prepare("INSERT INTO student_notifications (teacher_id, student_id, title, message, notification_type) VALUES (?, ?, ?, ?, ?)");
-            $stmt->bind_param("iisss", $teacher_id, $sid, $title, $message, $type);
-            if ($stmt->execute()) $count++;
-            $stmt->close();
+        if ($bq) {
+            $bq->bind_param("i", $teacher_id);
+            $bq->execute();
+            $students_res = $bq->get_result();
+            $bq->close();
+            $ins = $conn->prepare("INSERT INTO student_notifications (teacher_id, student_id, title, message, notification_type) VALUES (?, ?, ?, ?, ?)");
+            if ($ins && $students_res) {
+                while ($s = $students_res->fetch_assoc()) {
+                    $sid = (int)$s['id'];
+                    $ins->bind_param("iisss", $teacher_id, $sid, $title, $message, $type);
+                    if ($ins->execute()) $count++;
+                }
+                $ins->close();
+            }
+        }
+        if ($count > 0) {
+            pushTeacherNotification($conn, $teacher_id, 'message', 'Broadcast Sent', '"' . $title . '" sent to ' . $count . ' student(s).');
         }
         echo json_encode(['success' => true, 'message' => "Notification sent to $count student(s)", 'count' => $count]);
     }

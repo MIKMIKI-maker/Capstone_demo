@@ -159,8 +159,8 @@
     box-shadow:0 3px 8px rgba(0,0,0,.25); }
   .wrt-scard-badge.correct{ background:var(--green); }
   .wrt-scard-badge.wrong{ background:var(--red); }
-  .wrt-scard-img{ width:2.4em; height:2.4em; object-fit:contain; flex:none; }
-  .wrt-scard-emoji{ font-size:2.1em; flex:none; }
+  .wrt-scard-img{ width:calc(2.4em * var(--img-scale,1)); height:calc(2.4em * var(--img-scale,1)); object-fit:contain; flex:none; }
+  .wrt-scard-emoji{ font-size:calc(2.1em * var(--img-scale,1)); flex:none; }
   .wrt-scard-num{ font-weight:700; font-size:.6em; color:var(--wrt-text); flex:none; }
   .wrt-scard-input{ flex:1; min-width:0; border:none; border-bottom:3px solid var(--ink-soft); background:transparent;
     font-family:var(--font); font-weight:700; font-size:.65em; color:var(--wrt-text); padding:4px 6px; outline:none; text-align:center; }
@@ -340,7 +340,7 @@
     <div class="wrt-left-col">
 
       <div class="wrt-card">
-        <div class="wrt-step">Activity Slides <span class="wrt-edit-link">(suggested: ~5 per set)</span></div>
+        <div class="wrt-step">Activity Slides <span class="wrt-edit-link">(max 3 — Easy → Medium → Hard)</span></div>
         <div class="wrt-slidebar">
           <button id="wrtPrevSlide" type="button">◂</button>
           <div class="wrt-slide-label" id="wrtSlideLabel">Slide 1 of 1</div>
@@ -455,6 +455,18 @@
         </div>
 
         <div class="wrt-set-group">
+          <div class="wrt-size-head">
+            <div class="wrt-set-label" style="margin:0">Image Size</div>
+            <input class="wrt-size-num" id="wrtImgSizeNum" type="number" min="50" max="200" />
+          </div>
+          <div class="wrt-size-row">
+            <span class="a-sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></span>
+            <input type="range" id="wrtImgSize" min="50" max="200" step="5" />
+            <span class="a-lg"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></span>
+          </div>
+        </div>
+
+        <div class="wrt-set-group">
           <div class="wrt-set-label">Text Color</div>
           <div class="wrt-color-row">
             <input type="color" id="wrtTextColor" />
@@ -530,9 +542,6 @@
         <div class="wrt-review-title">📋 Item-by-Item Results</div>
         <div id="wrtReviewRows"></div>
       </div>
-      <div class="wrt-pending-note" id="wrtPendingNote" style="display:none;">
-        Suggested score lang ito — pending pa rin ang final review ng teacher.
-      </div>
 
       <div id="wrtRetakeInfo" style="display:none;font-size:12px;color:#64748b;margin-bottom:4px;"></div>
       <div class="wrt-modal-actions">
@@ -546,7 +555,7 @@
   <!-- PUBLISH MODAL -->
   <div class="wrt-modal-overlay" id="wrtPublishOverlay">
     <div class="wrt-modal-card wrt-publish-card">
-      <h3>🌐 Publish Activity</h3>
+      <h3 id="wrtPublishTitle">🌐 Publish Activity</h3>
       <div class="wrt-publish-field">
         <label>🎯 Learning Domain</label>
         <div class="wrt-domain-radios">
@@ -571,6 +580,17 @@
     </div>
   </div>
 
+  <!-- TEACHING MODAL (Level 2 scaffold — shown after repeated failed attempts) -->
+  <div class="wrt-modal-overlay" id="wrtTeachOverlay">
+    <div class="wrt-modal-card">
+      <div style="font-size:15px;font-weight:800;color:#1e3a8a;margin-bottom:6px;">📚 Let's Learn Together</div>
+      <div style="font-size:13px;color:#64748b;margin-bottom:14px;">Here is the correct answer for each question. Study this, then try it yourself!</div>
+      <div id="wrtTeachRows" style="text-align:left;max-height:280px;overflow-y:auto;margin-bottom:14px;"></div>
+      <div class="wrt-modal-actions">
+        <button class="wrt-modal-try wrt-publish-confirm" id="wrtTeachCloseBtn" type="button">✅ Got it, Try Again</button>
+      </div>
+    </div>
+  </div>
 
 <script>
 /* =====================================================================
@@ -587,7 +607,50 @@
   const ALPHABET = "abcdefghijklmnopqrstuvwxyz".split("");
 
   var _stuMode = false, _stuPubId = '', _stuRetake = 0,
-      _stuLastScore = null, _stuLastTotal = null, _stuProg = [], _stuSlideScores = [], _stuSlideRetakes = {}, _stuSubmitDone = false;
+      _stuLastScore = null, _stuLastTotal = null, _stuProg = [], _stuSlideScores = [], _stuSlideRetakes = {}, _stuSubmitDone = false,
+      _stuScaffoldLevel = {}, _stuLockedItems = {}, _stuMissedLabels = {}, _stuMissedDetail = {}, _stuMissCountByIdx = {}, PASS_THRESHOLD = 0.8, _stuAlreadyPassed = false, _stuPubMeta = null;
+
+  function isLocked(itemIndex){
+    var locked = _stuLockedItems[state.currentIndex];
+    return !!(locked && locked.indexOf(itemIndex) !== -1);
+  }
+
+  // Level 1 (after 3 failed attempts): anchor the ONE item the student has
+  // actually gotten wrong the most — pre-fill and lock its answer, every
+  // other item still needs to be answered by the student.
+  function pickWorstIndex(slideIndex, fallback){
+    var counts = _stuMissCountByIdx[slideIndex];
+    if (!counts || !Object.keys(counts).length) return fallback;
+    var bestIdx = fallback, bestCount = -1;
+    Object.keys(counts).forEach(function(k){ if (counts[k] > bestCount) { bestCount = counts[k]; bestIdx = +k; } });
+    return bestIdx;
+  }
+  function applyAnchor(slideIndex){
+    _stuLockedItems[slideIndex] = [pickWorstIndex(slideIndex, 0)];
+  }
+
+  // Level 2 (after 4 failed attempts): explicitly teach the correct answer
+  // for every question, then let the student redo the activity from a blank board.
+  function showTeachingModal(slideIndex){
+    var activity = state.activities[slideIndex];
+    var rows = $("wrtTeachRows");
+    rows.innerHTML = "";
+    activity.items.forEach(function(it, i){
+      var row = document.createElement("div");
+      row.style.cssText = "display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9;";
+      var pic = it.img ? '<img src="'+it.img+'" style="width:32px;height:32px;object-fit:cover;border-radius:6px;">' : '<span style="font-size:22px;">'+(it.emoji||"?")+'</span>';
+      row.innerHTML = '<div style="font-size:12px;font-weight:800;color:#7c3aed;min-width:22px;">'+(i+1)+'.</div>'
+        + '<div style="min-width:36px;text-align:center;">'+pic+'</div>'
+        + '<div style="flex:1;font-size:14px;font-weight:700;color:#1f9d44;">'+(it.correct||'')+'</div>';
+      rows.appendChild(row);
+    });
+    $("wrtTeachOverlay").classList.add("show");
+  }
+  $("wrtTeachCloseBtn").addEventListener("click", function(){
+    $("wrtTeachOverlay").classList.remove("show");
+    _stuLockedItems[state.currentIndex] = [];
+    resetAnswers(); renderActivity();
+  });
 
   /* ── IndexedDB helper ─────────── */
   var _idb = (function(){
@@ -610,7 +673,7 @@
    * ------------------------------------------------------------- */
 
   const DEFAULT_DESIGN = {
-    bg:"#fdf6d8", font:"'Comic Sans MS','Comic Sans',cursive", fontSize:34,
+    bg:"#fdf6d8", font:"'Comic Sans MS','Comic Sans',cursive", fontSize:34, imageSize:100,
     textColor:"#243a5e", border:"rounded", spacing:"Medium",
     showTitle:true, showInstr:true, showDeco:true
   };
@@ -669,16 +732,23 @@
    * 2. SLIDE NAVIGATION
    * ------------------------------------------------------------- */
 
+  const MAX_SLIDES = 3;
+  const DIFFICULTY_LABELS = ["Easy", "Medium", "Hard"];
+
   function renderSlideNav(){
     const total = state.activities.length;
-    $("wrtSlideLabel").textContent = `Slide ${state.currentIndex+1} of ${total}`;
+    const diffTag = ` — ${DIFFICULTY_LABELS[state.currentIndex] || "Hard"}`;
+    $("wrtSlideLabel").textContent = `Slide ${state.currentIndex+1} of ${total}${diffTag}`;
     $("wrtPrevSlide").disabled = state.currentIndex === 0;
     $("wrtNextSlide").disabled = state.currentIndex === total-1;
     $("wrtDeleteSlide").disabled = total <= 1;
+    $("wrtAddSlide").disabled = total >= MAX_SLIDES;
 
-    $("wrtStageSlideLabel").textContent = `Slide ${state.currentIndex+1} of ${total}`;
+    $("wrtStageSlideLabel").textContent = `Slide ${state.currentIndex+1} of ${total}${diffTag}`;
     $("wrtStagePrev").disabled = state.currentIndex === 0;
-    $("wrtStageNext").disabled = state.currentIndex === total-1;
+    var _curScore = _stuSlideScores[state.currentIndex];
+    var _curPassed = !!(_curScore && (_curScore.correct / _curScore.total) >= PASS_THRESHOLD);
+    $("wrtStageNext").disabled = state.currentIndex === total-1 || (_stuMode && !_curPassed);
     $("wrtStageNav").style.display = total > 1 ? "flex" : "none";
   }
 
@@ -703,6 +773,7 @@
   $("wrtStageNext").addEventListener("click", ()=> goToSlide(state.currentIndex+1));
 
   $("wrtAddSlide").addEventListener("click", ()=>{
+    if (state.activities.length >= MAX_SLIDES) { alert("Maximum of " + MAX_SLIDES + " slides (Easy → Medium → Hard)."); return; }
     state.activities.push(makeBlankActivity(state.activities.length+1));
     goToSlide(state.activities.length-1);
   });
@@ -751,7 +822,7 @@
     inp.addEventListener("change", e=>{
       const f = e.target.files[0]; if (!f) return;
       const r = new FileReader();
-      r.onload = ev=>{ dataObj.img = ev.target.result; dataObj.imgType = "upload"; onChange(); };
+      r.onload = ev=>{ dataObj.img = ev.target.result; dataObj.imgType = "upload"; dataObj.emoji = ""; onChange(); };
       r.readAsDataURL(f);
     });
     lbl.appendChild(inp); media.appendChild(lbl);
@@ -773,7 +844,7 @@
     });
     linkInput.addEventListener("input", e=>{
       const url = e.target.value.trim();
-      dataObj.img = url || null; dataObj.imgType = "link";
+      dataObj.img = url || null; dataObj.imgType = "link"; if (url) dataObj.emoji = "";
       onChange();
     });
     tabs.appendChild(tabUpload); tabs.appendChild(tabLink);
@@ -914,15 +985,27 @@
     inputEl.type = "text"; inputEl.className = "wrt-scard-input";
     inputEl.placeholder = "____";
     inputEl.maxLength = currentActivity().answerMode === "letter" ? 1 : 40;
-    inputEl.addEventListener("input", e=>{
-      studentAnswers[itemIndex] = e.target.value;
-      inputEl.classList.remove("correct","wrong");
-      $("wrtHint").textContent = "";
-    });
+    if (isLocked(itemIndex)) {
+      inputEl.value = it.correct || "";
+      inputEl.disabled = true;
+      inputEl.style.cssText += "border-color:#7c3aed !important;background:#f3f1fe;color:#3d2d9b;font-weight:700;";
+    } else {
+      inputEl.addEventListener("input", e=>{
+        studentAnswers[itemIndex] = e.target.value;
+        inputEl.classList.remove("correct","wrong");
+        $("wrtHint").textContent = "";
+      });
+    }
     el.appendChild(inputEl);
 
     const badge = document.createElement("span"); badge.className = "wrt-scard-badge";
     el.appendChild(badge);
+
+    if (isLocked(itemIndex)) {
+      const lock = document.createElement("div");
+      lock.textContent = "🔒 Given"; lock.style.cssText = "font-size:9px;font-weight:800;color:#7c3aed;margin-top:2px;text-align:center;";
+      el.appendChild(lock);
+    }
 
     return el;
   }
@@ -935,6 +1018,8 @@
     $("wrtInstr").style.display = state.showInstr ? "block" : "none";
 
     studentAnswers = {}; suggestedMarks = {}; confirmedMarks = {};
+    const locked = _stuLockedItems[state.currentIndex];
+    if (locked && locked.length) locked.forEach(function(idx){ if (activity.items[idx]) studentAnswers[idx] = activity.items[idx].correct || ""; });
     renderExampleCard();
     grid.innerHTML = "";
     activity.items.forEach((_, i)=> grid.appendChild(scard(i)));
@@ -979,6 +1064,23 @@
 
       if (ok) suggestedCount++;
     });
+    if (_stuMode) {
+      var _msi = state.currentIndex;
+      _stuMissedLabels[_msi] = _stuMissedLabels[_msi] || {};
+      _stuMissedDetail[_msi] = _stuMissedDetail[_msi] || {};
+      _stuMissCountByIdx[_msi] = _stuMissCountByIdx[_msi] || {};
+      Object.keys(suggestedMarks).forEach(function(idx){
+        if (suggestedMarks[idx]) return;
+        var it = items[idx];
+        if (!it) return;
+        var label = (it.img ? '' : it.emoji) || ('Item ' + (+idx+1));
+        _stuMissedLabels[_msi][label] = true;
+        var chosen = studentAnswers[idx] || 'Unknown';
+        var d = _stuMissedDetail[_msi][label] = _stuMissedDetail[_msi][label] || { correct: it.correct || '', img: it.img || '', choices: {} };
+        d.choices[chosen] = (d.choices[chosen] || 0) + 1;
+        _stuMissCountByIdx[_msi][idx] = (_stuMissCountByIdx[_msi][idx] || 0) + 1;
+      });
+    }
     openScoreModal(suggestedCount, items.length);
   });
   window.addEventListener("resize", ()=>{
@@ -1006,7 +1108,10 @@
       const b = document.createElement("b"); b.textContent = `#${+idx+1}: "${studentAnswers[idx] || '(walang sagot)'}"`;
       const span = document.createElement("span");
       if (stuMode) {
-        span.textContent = ok ? "✅ Tama!" : "💡 Clue: Basahin muli ang tanong at isipin ang mas tamang sagot.";
+        var _isLetterMode = currentActivity().answerMode === "letter";
+        span.textContent = ok ? "✅ Tama!" : (_isLetterMode
+          ? "💡 Clue: Tingnan muli ang larawan at pakinggan ang unang tunog nito."
+          : "💡 Clue: Tingnan muli ang larawan at isipin ang tamang pangalan nito.");
       } else {
         span.textContent = "Correct answer: " + it.correct;
       }
@@ -1027,15 +1132,15 @@
     let image, message;
     if (percent === 1){
       image = "images/perfect.png";
-      message = "Perfect! Tamang-tama ang lahat ng suggested answers! 🎊";
+      message = "Perfect! You got them all correct! 🎊";
       confetti({ particleCount:200, spread:120, startVelocity:40, origin:{ y:0.6 } });
       setTimeout(()=>{
         confetti({ particleCount:100, spread:80, origin:{ x:0.2, y:0.6 } });
         confetti({ particleCount:100, spread:80, origin:{ x:0.8, y:0.6 } });
       }, 300);
     }
-    else if (percent >= 0.5){ image = "images/goodjob.png"; message = "Good job! Konting practice pa lang! ⭐"; }
-    else { image = "images/tryagain.png"; message = "Let's try again! Practice makes perfect! 💪"; }
+    else if (percent >= PASS_THRESHOLD){ image = "images/goodjob.png"; message = "Good job! You passed! ⭐"; }
+    else { image = "images/tryagain.png"; message = "Let's try again! You need " + Math.round(PASS_THRESHOLD*100) + "% to pass. 💪"; }
 
     $("wrtModalEmoji").src = image;
     $("wrtModalEmoji").onerror = function(){ this.onerror=null; this.src="images/placeholder.png"; };
@@ -1048,23 +1153,22 @@
     // student mode, this list is hidden — the submission is stored as pending
     // review instead (final grading still happens outside this template).
     $("wrtReviewList").style.display = "block";
-    $("wrtPendingNote").style.display = _stuMode ? "block" : "none";
     renderReviewRows(_stuMode);
 
     $("wrtModalOverlay").classList.add("show");
 
     if (_stuMode) {
       _stuLastScore = suggestedCount; _stuLastTotal = totalItems;
-      _stuSlideScores[state.currentIndex] = { correct: suggestedCount, total: totalItems, ansItems: currentActivity().items.map(function(it,i){return{label:(it.emoji||'')+' Item '+(i+1),studentAnswer:studentAnswers[i]||'—',correctAnswer:it.correct||'—',correct:!!suggestedMarks[i]};}) };
+      _stuSlideScores[state.currentIndex] = { correct: suggestedCount, total: totalItems, ansItems: currentActivity().items.map(function(it,i){var lbl=(it.img?'':it.emoji)||('Item '+(i+1));return{label:lbl,img:it.img||'',studentAnswer:studentAnswers[i]||'—',correctAnswer:it.correct||'—',correct:!!suggestedMarks[i]};}) };
       var _ts = state.activities.length, _isLast = state.currentIndex >= _ts - 1;
-      var _allDone = _stuSlideScores.filter(Boolean).length === _ts;
-      if (_ts > 1 && !_isLast) {
+      var _allDone = _stuSlideScores.filter(Boolean).length === _ts && _stuSlideScores.every(function(s){ return s && (s.correct / s.total) >= PASS_THRESHOLD; });
+      if (_ts > 1 && !_isLast && percent >= PASS_THRESHOLD) {
         $("wrtModalCloseBtn").style.display = ""; $("wrtModalCloseBtn").textContent = "Next Slide →"; $("wrtModalCloseBtn").dataset.nextSlide = "1";
       } else {
         $("wrtModalCloseBtn").style.display = "none"; $("wrtModalCloseBtn").dataset.nextSlide = "";
       }
       $("wrtModalTryBtn").textContent = "🔁 Retake";
-      $("wrtStudentSubmitBtn").style.display = _allDone ? "" : "none";
+      $("wrtStudentSubmitBtn").style.display = (_allDone && !_stuAlreadyPassed) ? "" : "none";
       var ri = $("wrtRetakeInfo");
       var _csr = _stuSlideRetakes[state.currentIndex] || 0;
       ri.style.display = _stuRetake > 0 ? "" : "none";
@@ -1073,14 +1177,54 @@
   }
   function closeScoreModal(){ $("wrtModalOverlay").classList.remove("show"); }
 
+  // Live ping to the teacher's notification feed while the student is still
+  // mid-activity (before any final submission) — fires once per slide, right
+  // when the 3rd retake happens, so the teacher can notice struggle in near
+  // real time (teacher notif page polls every 30s).
+  function notifyTeacherRetake(si){
+    if (!_stuPubMeta || !_stuPubMeta.db_activity_id || !_stuPubMeta.teacherId) return;
+    var _stuId = sessionStorage.getItem('student_record_id');
+    if (!_stuId) return;
+    fetch('../../STUDENT_FILES/STUDENT_BACKEND/student_notify_teacher_retake.php', {
+      method: 'POST', keepalive: true,
+      body: new URLSearchParams({
+        teacher_id: _stuPubMeta.teacherId,
+        student_id: _stuId,
+        activity_id: _stuPubMeta.db_activity_id,
+        activity_title: _stuPubMeta.title || 'Activity',
+        slide_number: si + 1,
+        difficulty: DIFFICULTY_LABELS[si] || 'Hard',
+        retake_count: _stuSlideRetakes[si]
+      })
+    });
+  }
+
   $("wrtModalCloseBtn").addEventListener("click", function(){
     var goNext = _stuMode && $("wrtModalCloseBtn").dataset.nextSlide === '1';
     closeScoreModal();
     if (goNext) { var ni = state.currentIndex + 1; if (ni < state.activities.length) goToSlide(ni); }
   });
   $("wrtModalTryBtn").addEventListener("click", ()=>{
-    if (_stuMode) { _stuRetake++; _stuSlideRetakes[state.currentIndex] = (_stuSlideRetakes[state.currentIndex]||0)+1; _stuSlideScores[state.currentIndex] = undefined; }
-    closeScoreModal(); resetAnswers();
+    var showTeach = false, justAnchored = false;
+    var si = state.currentIndex;
+    if (_stuMode) {
+      var lastPct = _stuSlideScores[si] ? (_stuSlideScores[si].correct / _stuSlideScores[si].total) : 1;
+      _stuRetake++; _stuSlideRetakes[si] = (_stuSlideRetakes[si]||0)+1; _stuSlideScores[si] = undefined;
+      if (_stuSlideRetakes[si] === 3) notifyTeacherRetake(si);
+      if (lastPct < PASS_THRESHOLD) {
+        var curLevel = _stuScaffoldLevel[si] || 0;
+        if (curLevel >= 2 || _stuSlideRetakes[si] >= 4) { _stuScaffoldLevel[si] = 2; showTeach = true; }
+        else if (_stuSlideRetakes[si] >= 3) { _stuScaffoldLevel[si] = 1; justAnchored = true; }
+      }
+    }
+    closeScoreModal();
+    if (showTeach) {
+      showTeachingModal(si); // its own close button resets the board once the student is done reading
+      return;
+    }
+    if (justAnchored) applyAnchor(si);
+    resetAnswers(); renderActivity();
+    if (justAnchored) $("wrtHint").textContent = "💡 We filled one in for you. You can do the rest!";
   });
 
   /* ------------------------------------------------------------- *
@@ -1091,6 +1235,7 @@
     stage.style.background = state.bg;
     stage.style.fontFamily = state.font;
     stage.style.fontSize = state.fontSize + "px";
+    stage.style.setProperty("--img-scale", (state.imageSize || 100) / 100);
     stage.style.setProperty("--wrt-text", state.textColor);
     stage.classList.toggle("bs-dashed", state.border === "dashed");
     stage.classList.toggle("bs-solid", state.border === "solid");
@@ -1119,6 +1264,15 @@
   }
   $("wrtSize").addEventListener("input", e=> setFontSize(+e.target.value));
   $("wrtSizeNum").addEventListener("input", e=> setFontSize(+e.target.value || 34));
+
+  function setImageSize(value){
+    value = Math.max(50, Math.min(200, value));
+    state.imageSize = value;
+    $("wrtImgSize").value = value; $("wrtImgSizeNum").value = value;
+    applyAppearance();
+  }
+  $("wrtImgSize").addEventListener("input", e=> setImageSize(+e.target.value));
+  $("wrtImgSizeNum").addEventListener("input", e=> setImageSize(+e.target.value || 100));
 
   $("wrtTextColor").addEventListener("input", e=>{ state.textColor = e.target.value; applyAppearance(); });
 
@@ -1164,6 +1318,7 @@
   function syncDesignControls(){
     $("wrtFont").value = state.font;
     $("wrtSize").value = state.fontSize; $("wrtSizeNum").value = state.fontSize;
+    $("wrtImgSize").value = state.imageSize || 100; $("wrtImgSizeNum").value = state.imageSize || 100;
     $("wrtTextColor").value = state.textColor;
     $("wrtSpaceVal").textContent = state.spacing;
     $("wrtShowTitle").checked = state.showTitle; $("wrtShowInstr").checked = state.showInstr;
@@ -1245,6 +1400,68 @@
   }
   $("wrtDraftBtn").addEventListener("click", saveDraft);
 
+  /* ── Re-open an already-published activity for editing if ?edit_pub_id= in URL ──
+     Content only ever lived in the publishing browser's storage (pub_data_<id>),
+     so this just reloads that same saved state back into the editor. The
+     activity was already locked (server-side) by Teacher_activies.html before
+     navigating here. */
+  var _editingPub = null;
+  function loadPublishedForEditIfAny() {
+    var pubId = new URLSearchParams(location.search).get('edit_pub_id');
+    if (!pubId) return;
+    var pubs = [];
+    try { pubs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+    var pub = pubs.find(function(p){ return p.id === pubId; });
+    _editingPub = pub || { id: pubId };
+
+    function applyLoadedContent(data) {
+      Object.assign(state, data);
+      refreshSlideUI();
+      syncDesignControls();
+      applyAppearance();
+      $("wrtPubBtn").textContent = '💾 Save Changes';
+      var banner = document.createElement('div');
+      banner.style.cssText = 'background:#fff7e6;border:1.5px solid #f5c563;color:#92620a;font-weight:700;font-size:13px;padding:10px 14px;border-radius:10px;margin-bottom:12px;';
+      banner.textContent = '✏️ Editing a published activity — students can\'t open it until you save changes.';
+      var host = document.querySelector('.wrt-left-col');
+      if (host) host.insertBefore(banner, host.firstChild);
+    }
+
+    function fetchRemote() {
+      var actId = _editingPub.db_activity_id || pubId;
+      fetch('../../STUDENT_FILES/STUDENT_BACKEND/student_get_activity_content.php?activity_id=' + encodeURIComponent(actId))
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if (!d.success || !d.content) { alert("Could not load this activity's saved content."); return; }
+          _editingPub.db_activity_id = d.activity_id;
+          _editingPub.teacherId = String(d.teacher_id || _editingPub.teacherId || '');
+          _editingPub.title = d.title || _editingPub.title;
+          _editingPub.deadline = d.deadline || _editingPub.deadline;
+          _editingPub.condition = d.condition || _editingPub.condition;
+          applyLoadedContent(d.content);
+        })
+        .catch(function(){ alert("Could not load this activity's saved content."); });
+    }
+
+    if (!pub) { fetchRemote(); return; }
+
+    _idb.load('pub_data_' + pubId, function(err, saved) {
+      var data = saved;
+      if (!data) { try { data = JSON.parse(localStorage.getItem('pub_data_' + pubId) || 'null'); } catch(e){} }
+      if (!data) { fetchRemote(); return; }
+      applyLoadedContent(data);
+    });
+  }
+
+  window.addEventListener('pagehide', function(){
+    if (_editingPub && !_editingPub._saved && _editingPub.db_activity_id && _editingPub.teacherId) {
+      fetch('../TEACHER_BACKEND/teacher_lock_activity.php', {
+        method: 'POST', keepalive: true,
+        body: new URLSearchParams({ action: 'unlock', teacher_id: _editingPub.teacherId, activity_id: _editingPub.db_activity_id, activity_title: _editingPub.title || 'Activity' })
+      });
+    }
+  });
+
   function fitStageToScreen(){
     if (!document.body.classList.contains("wrt-preview-only")) return;
     stageInner.style.transform = "none";
@@ -1272,6 +1489,15 @@
   $("wrtShowSettingsBtn").addEventListener("click", ()=> document.body.classList.remove("wrt-right-collapsed"));
 
   function openPublishModal(){
+    if (_editingPub) {
+      $("wrtPublishTitle").textContent = '💾 Save Changes';
+      $("wrtPublishConfirmBtn").textContent = '💾 Save Changes';
+      if (_editingPub.deadline) $("wrtDeadlineInput").value = _editingPub.deadline;
+      if (_editingPub.condition) {
+        var r = document.querySelector('input[name="wrtDomain"][value="' + _editingPub.condition + '"]');
+        if (r) r.checked = true;
+      }
+    }
     $("wrtPublishOverlay").classList.add("show");
   }
   function closePublishModal(){ $("wrtPublishOverlay").classList.remove("show"); }
@@ -1294,12 +1520,63 @@
     img.src = dataURL;
   }
 
+  // Small (44px) compressed thumbnail used for per-item images sent in
+  // notification/submission data — keeps notification rows lightweight.
+  function compressItemThumb(dataURL) {
+    return new Promise(function(resolve){
+      if (!dataURL) { resolve(''); return; }
+      var img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function() {
+        try {
+          var MAX = 44;
+          var ratio = Math.min(MAX / img.width, MAX / img.height, 1);
+          var cv = document.createElement('canvas');
+          cv.width = Math.round(img.width * ratio);
+          cv.height = Math.round(img.height * ratio);
+          cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+          resolve(cv.toDataURL('image/jpeg', 0.6));
+        } catch(e) { resolve(''); } // cross-origin image tainted the canvas — skip the thumbnail, don't block submission
+      };
+      img.onerror = function() { resolve(''); };
+      img.src = dataURL;
+    });
+  }
+
   function confirmPublish() {
     var deadline = $("wrtDeadlineInput").value;
     if (!deadline) { alert("Please set a deadline date before publishing."); return; }
     var domain = document.querySelector('input[name="wrtDomain"]:checked').value;
     var firstTitle = (state.activities[0] && state.activities[0].title) || 'Untitled Activity';
     compressThumb(state.thumb, function(smallThumb) {
+
+    if (_editingPub) {
+      var acts = []; try { acts = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+      var i = acts.findIndex(function(a){ return a.id === _editingPub.id; });
+      if (i >= 0) {
+        acts[i].title = firstTitle; acts[i].thumbnail = smallThumb; acts[i].deadline = deadline;
+        acts[i].condition = domain; acts[i].locked = false;
+        try { localStorage.setItem('published_activities', JSON.stringify(acts)); } catch(e){}
+      }
+      _idb.save('pub_data_' + _editingPub.id, JSON.parse(JSON.stringify(state)), function(err){ if(err) console.warn('IDB save failed:',err); });
+      _editingPub._saved = true;
+      var _finishEdit = function(){ closePublishModal(); window.location.href = '../Teacher_activies.html'; };
+      if (_editingPub.db_activity_id && _editingPub.teacherId) {
+        var fdU = new FormData();
+        fdU.append('teacher_id', _editingPub.teacherId);
+        fdU.append('activity_id', _editingPub.db_activity_id);
+        fdU.append('activity_title', firstTitle);
+        fdU.append('subject', domain);
+        fdU.append('content_json', JSON.stringify(state));
+        fdU.append('deadline', deadline);
+        fetch('../TEACHER_BACKEND/teacher_update_activity.php', { method: 'POST', body: fdU })
+          .catch(function(){}).finally(_finishEdit);
+      } else {
+        _finishEdit();
+      }
+      return;
+    }
+
     var pub = {
       id: 'pub-' + Date.now(), title: firstTitle, type: 'WrittenResponse',
       deadline: deadline, thumbnail: smallThumb,
@@ -1327,26 +1604,27 @@
     var _assignedIds = [];
     try { _assignedIds = JSON.parse(sessionStorage.getItem('selected_learner_ids') || '[]'); } catch(e) {}
     if (!_assignedIds.length) { var _fb = parseInt(sessionStorage.getItem('selected_learner_id') || '0'); if (_fb > 0) _assignedIds = [_fb]; }
-    fetch('../TEACHER_BACKEND/teacher_create_activity.php', {
-      method: 'POST',
-      body: new URLSearchParams({
-        teacher_id: _pubRef.teacherId,
-        activity_title: _pubRef.title,
-        activity_type: 'WrittenResponse',
-        subject: domain,
-        grade_level: '',
-        status: 'published',
-        assigned_student_ids: JSON.stringify(_assignedIds)
-      })
-    }).then(function(r){ return r.json(); }).then(function(d){
+    var fdC = new FormData();
+    fdC.append('teacher_id', _pubRef.teacherId);
+    fdC.append('activity_title', _pubRef.title);
+    fdC.append('activity_type', 'WrittenResponse');
+    fdC.append('subject', domain);
+    fdC.append('grade_level', '');
+    fdC.append('status', 'published');
+    fdC.append('assigned_student_ids', JSON.stringify(_assignedIds));
+    fdC.append('content_json', JSON.stringify(state));
+    fdC.append('deadline', deadline);
+    fetch('../TEACHER_BACKEND/teacher_create_activity.php', { method: 'POST', body: fdC })
+    .then(function(r){ return r.json(); }).then(function(d){
       if (d.success && d.activity_id) {
         var acts = []; try { acts = JSON.parse(localStorage.getItem('published_activities')||'[]'); } catch(e){}
         var i = acts.findIndex(function(a){ return a.id === _pubRef.id; });
         if (i >= 0) { acts[i].db_activity_id = d.activity_id; try { localStorage.setItem('published_activities', JSON.stringify(acts)); } catch(e){} }
       }
-    }).catch(function(){});
-    closePublishModal();
-    setTimeout(function(){ window.location.href = '../Teacher_activies.html'; }, 400);
+    }).catch(function(){}).finally(function(){
+      closePublishModal();
+      window.location.href = '../Teacher_activies.html';
+    });
     });
   }
   $("wrtPublishConfirmBtn").addEventListener("click", confirmPublish);
@@ -1364,6 +1642,7 @@
   renderActivity();
   renderSlideNav();
   loadDraftIfAny();
+  loadPublishedForEditIfAny();
 
   /* ── STUDENT MODE ─────────────────────────────────────────── */
   (function () {
@@ -1375,6 +1654,9 @@
     try { _stuProg = JSON.parse(localStorage.getItem('student_progress') || '[]'); } catch(e){}
     var prev = _stuProg.find(function(r){ return r.pubId === _stuPubId; });
     if (prev) _stuRetake = prev.retakes || 0;
+    // Already passed and submitted before — this session is just practice,
+    // so nothing here should be recorded or re-sent to the teacher again.
+    _stuAlreadyPassed = !!(prev && prev.percent >= Math.round(PASS_THRESHOLD*100));
 
     function showNotAvailable() {
       document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Poppins,sans-serif;gap:16px;padding:32px;text-align:center;">'
@@ -1393,6 +1675,16 @@
       var pubs = [];
       try { pubs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
       var pub = pubs.find(function(r){ return r.id === _stuPubId; }) || {};
+      _stuPubMeta = pub;
+      if (pub.locked) {
+        document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Poppins,sans-serif;gap:16px;padding:32px;text-align:center;">'
+          + '<div style="font-size:72px;">⏸️</div>'
+          + '<h2 style="color:#1e3a8a;margin:0;">Activity Temporarily Unavailable</h2>'
+          + '<p style="color:#64748b;max-width:340px;margin:0;">Your teacher is updating "' + (pub.title || 'this activity') + '" right now. Please check back in a bit.</p>'
+          + '<button onclick="window.history.back()" style="margin-top:8px;background:#1e3a8a;color:#fff;border:none;padding:12px 28px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;">← Exit</button>'
+          + '</div>';
+        return;
+      }
       var splashThumb = pub.thumbnail
         ? '<img src="' + pub.thumbnail + '" style="width:120px;height:120px;object-fit:cover;border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.35);" />'
         : '<div style="font-size:80px;line-height:1;">🔗</div>';
@@ -1458,26 +1750,12 @@
           var _totCorrect=_stuSlideScores.reduce(function(s,x){return s+x.correct;},0);
           var _totItems=_stuSlideScores.reduce(function(s,x){return s+x.total;},0);
           var pct = Math.round((_totCorrect / _totItems) * 100);
-          var record = { pubId:_stuPubId, title:pub.title||'Activity', type:'WrittenResponse',
-            grading:pub.grading||'', deadline:pub.deadline||'',
-            score:_totCorrect, total:_totItems, percent:pct, retakes:_stuRetake,
-            pendingTeacherReview:true, studentAnswers: JSON.parse(JSON.stringify(studentAnswers)),
-            submittedAt:new Date().toISOString() };
-          var idx = _stuProg.findIndex(function(r){ return r.pubId === _stuPubId; });
-          if (idx >= 0) _stuProg[idx] = record; else _stuProg.push(record);
-          try { localStorage.setItem('student_progress', JSON.stringify(_stuProg)); } catch(e){}
-          var notifs = [];
-          try { notifs = JSON.parse(localStorage.getItem('student_notifications') || '[]'); } catch(e){}
-          notifs.unshift({ id:'notif-'+Date.now(), type:'achievement',
-            title:'Activity Submitted! 🌟',
-            message:'You scored '+pct+'% (suggested) on "'+(pub.title||'Activity')+'"'+(_stuRetake>0?' after '+_stuRetake+' retake(s)':'')+'. Your teacher will confirm your final grade.',
-            isRead:false, createdAt:new Date().toISOString() });
-          try { localStorage.setItem('student_notifications', JSON.stringify(notifs)); } catch(e){}
-          var _stuRecordId = sessionStorage.getItem('student_record_id');
-          var _ansJson = JSON.stringify((function(){var all=[];_stuSlideScores.forEach(function(s,si){if(_slideCount>1){var sr=_stuSlideRetakes[si]||0;all.push({isSlideHeader:true,label:'Slide '+(si+1)+(sr>0?' ('+sr+' retake'+(sr>1?'s':'')+')':''),slideRetakes:sr,studentAnswer:'',correctAnswer:'',correct:null});}s.ansItems.forEach(function(item){all.push(Object.assign({},item));});});return all;})());
-          // Show final summary before going home
+          if (pct < Math.round(PASS_THRESHOLD*100)) { alert('You need at least ' + Math.round(PASS_THRESHOLD*100) + '% to submit this activity. Keep trying!'); return; }
+
+          // Show final summary right away — the recording/notification below
+          // finishes compressing thumbnails in the background afterward.
           var _fi=pct>=100?'images/perfect.png':pct>=80?'images/goodjob.png':'images/tryagain.png';
-          var _fm=pct>=80?'Excellent work! 🌟':pct>=50?'Good effort! Keep practicing! ⭐':'Keep trying! Practice makes perfect! 💪';
+          var _fm=(pct>=80?'Excellent work! 🌟':pct>=50?'Good effort! Keep practicing! ⭐':'Keep trying! Practice makes perfect! 💪') + (_stuAlreadyPassed ? ' (Practice mode — not recorded)' : '');
           $('wrtModalEmoji').src=_fi; $('wrtModalScore').textContent=_totCorrect+' / '+_totItems+' correct ('+pct+'%)'; $('wrtModalMsg').textContent=_fm;
           $('wrtModalCloseBtn').style.display='none'; $('wrtModalTryBtn').style.display='none';
           $('wrtStudentSubmitBtn').textContent='🏠 Go to Dashboard';
@@ -1485,21 +1763,85 @@
           $('wrtReviewList').style.display=_slideCount>1?'block':'none';
           if(_slideCount>1){_stuSlideScores.forEach(function(s,si){var sp=Math.round((s.correct/s.total)*100);var sc=sp>=80?'#1f9d44':sp>=50?'#ca8a04':'#e23b54';var sr=_stuSlideRetakes[si]||0;var rd=document.createElement('div');rd.style.cssText='display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:13px;align-items:center;';rd.innerHTML='<span style="font-weight:600;">Slide '+(si+1)+(sr>0?' <span style="color:#e23b54;font-size:10px;">('+sr+'× retake)</span>':'')+'</span><span style="font-weight:700;color:'+sc+';">'+s.correct+'/'+s.total+' ('+sp+'%)</span>';_fbR.appendChild(rd);});}
           _stuSubmitDone=true;
-          if (pub.db_activity_id && pub.teacherId && _stuRecordId) {
-            fetch('../TEACHER_BACKEND/teacher_complete_activity.php', {
-              method: 'POST', keepalive: true,
-              body: new URLSearchParams({ teacher_id: pub.teacherId, student_id: _stuRecordId, activity_id: pub.db_activity_id, score: pct, total_items: _totItems, pub_id: _stuPubId||'', answers_json: _ansJson, retake_count: _stuRetake||0 })
+
+          if (_stuAlreadyPassed) return;
+
+          var _scaffoldUsed = Math.max(0, ...Object.keys(_stuScaffoldLevel).map(function(k){ return _stuScaffoldLevel[k]; }));
+          var _struggledRaw = [];
+          Object.keys(_stuMissedDetail).forEach(function(si){
+            Object.keys(_stuMissedDetail[si]).forEach(function(label){
+              if (_struggledRaw.some(function(x){ return x.label === label; })) return;
+              var d = _stuMissedDetail[si][label];
+              var bestChoice = null, bestCount = 0;
+              Object.keys(d.choices).forEach(function(c){ if (d.choices[c] > bestCount) { bestChoice = c; bestCount = d.choices[c]; } });
+              _struggledRaw.push({ label: label, correct: d.correct, thought: bestChoice, img: d.img || '' });
             });
-          }
+          });
+          var _allAnsItems = [];
+          _stuSlideScores.forEach(function(s){ s.ansItems.forEach(function(item){ _allAnsItems.push(item); }); });
+
+          Promise.all(_struggledRaw.concat(_allAnsItems).map(function(it){
+            return compressItemThumb(it.img).then(function(thumb){ it.img = thumb; });
+          })).then(function(){
+            var _struggledItems = _struggledRaw.map(function(it){ return { label: it.label, correct: it.correct, thought: it.thought, img: it.img }; });
+            var record = { pubId:_stuPubId, title:pub.title||'Activity', type:'WrittenResponse',
+              grading:pub.grading||'', deadline:pub.deadline||'',
+              score:_totCorrect, total:_totItems, percent:pct, retakes:_stuRetake,
+              pendingTeacherReview:true, studentAnswers: JSON.parse(JSON.stringify(studentAnswers)),
+              submittedAt:new Date().toISOString() };
+            var idx = _stuProg.findIndex(function(r){ return r.pubId === _stuPubId; });
+            if (idx >= 0) _stuProg[idx] = record; else _stuProg.push(record);
+            try { localStorage.setItem('student_progress', JSON.stringify(_stuProg)); } catch(e){}
+            var notifs = [];
+            try { notifs = JSON.parse(localStorage.getItem('student_notifications') || '[]'); } catch(e){}
+            notifs.unshift({ id:'notif-'+Date.now(), type:'achievement',
+              title:'Activity Submitted! 🌟',
+              message:'You scored '+pct+'% (suggested) on "'+(pub.title||'Activity')+'"'+(_stuRetake>0?' after '+_stuRetake+' retake(s)':'')+'. Your teacher will confirm your final grade.',
+              isRead:false, createdAt:new Date().toISOString() });
+            try { localStorage.setItem('student_notifications', JSON.stringify(notifs)); } catch(e){}
+            var _stuRecordId = sessionStorage.getItem('student_record_id');
+            var _ansJson = JSON.stringify((function(){var all=[];_stuSlideScores.forEach(function(s,si){if(_slideCount>1){var sr=_stuSlideRetakes[si]||0;all.push({isSlideHeader:true,label:'Slide '+(si+1)+(sr>0?' ('+sr+' retake'+(sr>1?'s':'')+')':''),slideRetakes:sr,studentAnswer:'',correctAnswer:'',correct:null});}s.ansItems.forEach(function(item){all.push(Object.assign({},item));});});return all;})());
+            if (pub.db_activity_id && pub.teacherId && _stuRecordId) {
+              fetch('../TEACHER_BACKEND/teacher_complete_activity.php', {
+                method: 'POST', keepalive: true,
+                body: new URLSearchParams({ teacher_id: pub.teacherId, student_id: _stuRecordId, activity_id: pub.db_activity_id, score: pct, total_items: _totItems, pub_id: _stuPubId||'', answers_json: _ansJson, retake_count: _stuRetake||0, scaffold_used: _scaffoldUsed, struggled_items_json: JSON.stringify(_struggledItems) })
+              });
+            }
+          });
         });
       });
+    }
+
+    function fetchRemoteActivity() {
+      fetch('../../STUDENT_FILES/STUDENT_BACKEND/student_get_activity_content.php?activity_id=' + encodeURIComponent(_stuPubId))
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if (!d.success || !d.content) { applyStudentMode(null); return; }
+          var pubs = [];
+          try { pubs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+          var idx = pubs.findIndex(function(p){ return p.id === _stuPubId; });
+          var pubEntry = {
+            id: _stuPubId, title: d.title || 'Activity', type: d.type || 'WrittenResponse',
+            deadline: d.deadline || '', thumbnail: (d.content && d.content.thumb) || '',
+            teacherName: '—', teacherId: String(d.teacher_id || ''),
+            learner: 'ALL', condition: d.condition || '',
+            publishedAt: new Date().toISOString(),
+            db_activity_id: d.activity_id, locked: !!d.is_locked
+          };
+          if (idx >= 0) pubs[idx] = pubEntry; else pubs.push(pubEntry);
+          try { localStorage.setItem('published_activities', JSON.stringify(pubs)); } catch(e){}
+          _idb.save('pub_data_' + _stuPubId, d.content, function(){});
+          applyStudentMode(d.content);
+        })
+        .catch(function(){ applyStudentMode(null); });
     }
 
     _idb.load('pub_data_' + _stuPubId, function(err, saved) {
       if (saved) { applyStudentMode(saved); return; }
       var ls = null;
       try { ls = JSON.parse(localStorage.getItem('pub_data_' + _stuPubId) || 'null'); } catch(e){}
-      applyStudentMode(ls);
+      if (ls) { applyStudentMode(ls); return; }
+      fetchRemoteActivity();
     });
   })();
 

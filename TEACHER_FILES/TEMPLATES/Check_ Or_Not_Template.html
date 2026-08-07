@@ -137,8 +137,8 @@
   .chk-grid{ position:relative; z-index:2; display:grid; grid-template-columns:repeat(3, 1fr); gap:20px; }
   .chk-scard{ background:#fff; border:3px solid #e2c98f; border-radius:18px; padding:12px;
     display:flex; flex-direction:column; align-items:center; gap:10px; box-shadow:0 4px 12px rgba(36,58,94,.08); }
-  .chk-scard-img{ width:100%; height:2.6em; object-fit:contain; display:block; }
-  .chk-scard-emoji{ font-size:2.2em; line-height:1; }
+  .chk-scard-img{ width:100%; height:calc(2.6em * var(--img-scale,1)); object-fit:contain; display:block; }
+  .chk-scard-emoji{ font-size:calc(2.2em * var(--img-scale,1)); line-height:1; }
   .chk-scard-opts{ display:flex; gap:10px; }
   .chk-mopt{ width:1.15em; height:1.15em; border-radius:.32em; border:3px solid #e2c98f; background:#fff;
     font-family:var(--font); font-weight:800; font-size:.5em; cursor:pointer;
@@ -349,7 +349,7 @@
     <div class="chk-left-col">
 
       <div class="chk-card">
-        <div class="chk-step">Activity Slides <span class="chk-edit-link">(suggested: ~5 per set)</span></div>
+        <div class="chk-step">Activity Slides <span class="chk-edit-link">(max 3 — Easy → Medium → Hard)</span></div>
         <div class="chk-slidebar">
           <button id="chkPrevSlide" type="button">◂</button>
           <div class="chk-slide-label" id="chkSlideLabel">Slide 1 of 1</div>
@@ -454,6 +454,18 @@
         </div>
 
         <div class="chk-set-group">
+          <div class="chk-size-head">
+            <div class="chk-set-label" style="margin:0">Image Size</div>
+            <input class="chk-size-num" id="chkImgSizeNum" type="number" min="50" max="200" />
+          </div>
+          <div class="chk-size-row">
+            <span class="a-sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></span>
+            <input type="range" id="chkImgSize" min="50" max="200" step="5" />
+            <span class="a-lg"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></span>
+          </div>
+        </div>
+
+        <div class="chk-set-group">
           <div class="chk-set-label">Text Color</div>
           <div class="chk-color-row">
             <input type="color" id="chkTextColor" />
@@ -529,9 +541,6 @@
         <div class="chk-review-title">📋 Item-by-Item Results</div>
         <div id="chkReviewRows"></div>
       </div>
-      <div class="chk-pending-note" id="chkPendingNote" style="display:none;">
-        Suggested score lang ito — pending pa rin ang final review ng teacher.
-      </div>
 
       <div id="chkRetakeInfo" style="display:none;font-size:12px;color:#64748b;margin-bottom:4px;"></div>
       <div class="chk-modal-actions">
@@ -545,7 +554,7 @@
   <!-- PUBLISH MODAL -->
   <div class="chk-modal-overlay" id="chkPublishOverlay">
     <div class="chk-modal-card chk-publish-card">
-      <h3>🌐 Publish Activity</h3>
+      <h3 id="chkPublishTitle">🌐 Publish Activity</h3>
       <div class="chk-publish-field">
         <label>🎯 Learning Domain</label>
         <div class="chk-domain-radios">
@@ -570,6 +579,17 @@
     </div>
   </div>
 
+  <!-- TEACHING MODAL (Level 2 scaffold — shown after repeated failed attempts) -->
+  <div class="chk-modal-overlay" id="chkTeachOverlay">
+    <div class="chk-modal-card">
+      <div style="font-size:15px;font-weight:800;color:#1e3a8a;margin-bottom:6px;">📚 Let's Learn Together</div>
+      <div style="font-size:13px;color:#64748b;margin-bottom:14px;">Here is the correct answer for each picture. Study this, then try it yourself!</div>
+      <div id="chkTeachRows" style="text-align:left;max-height:280px;overflow-y:auto;margin-bottom:14px;"></div>
+      <div class="chk-modal-actions">
+        <button class="chk-modal-try chk-publish-confirm" id="chkTeachCloseBtn" type="button">✅ Got it, Try Again</button>
+      </div>
+    </div>
+  </div>
 
 <script>
 /* =====================================================================
@@ -583,7 +603,51 @@
   const $ = id => document.getElementById(id);
 
   var _stuMode = false, _stuPubId = '', _stuRetake = 0,
-      _stuLastScore = null, _stuLastTotal = null, _stuProg = [], _stuSlideScores = [], _stuSlideRetakes = {}, _stuSubmitDone = false;
+      _stuLastScore = null, _stuLastTotal = null, _stuProg = [], _stuSlideScores = [], _stuSlideRetakes = {}, _stuSubmitDone = false,
+      _stuScaffoldLevel = {}, _stuLockedItems = {}, _stuMissedLabels = {}, _stuMissedDetail = {}, _stuMissCountByIdx = {}, PASS_THRESHOLD = 0.8, _stuAlreadyPassed = false, _stuPubMeta = null;
+
+  function isLocked(itemIndex){
+    var locked = _stuLockedItems[state.currentIndex];
+    return !!(locked && locked.indexOf(itemIndex) !== -1);
+  }
+
+  // Level 1 (after 3 failed attempts): anchor the ONE item the student has
+  // actually gotten wrong the most — every other item still needs to be
+  // marked by the student. Nothing is removed from the activity, only one
+  // answer is given as a starting point.
+  function pickWorstIndex(slideIndex, fallback){
+    var counts = _stuMissCountByIdx[slideIndex];
+    if (!counts || !Object.keys(counts).length) return fallback;
+    var bestIdx = fallback, bestCount = -1;
+    Object.keys(counts).forEach(function(k){ if (counts[k] > bestCount) { bestCount = counts[k]; bestIdx = +k; } });
+    return bestIdx;
+  }
+  function applyAnchor(slideIndex){
+    _stuLockedItems[slideIndex] = [pickWorstIndex(slideIndex, 0)];
+  }
+
+  // Level 2 (after 4 failed attempts): explicitly teach the correct answer
+  // for every picture, then let the student redo the activity from a blank board.
+  function showTeachingModal(slideIndex){
+    var activity = state.activities[slideIndex];
+    var rows = $("chkTeachRows");
+    rows.innerHTML = "";
+    activity.items.forEach(function(it){
+      var row = document.createElement("div");
+      row.style.cssText = "display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9;";
+      var pic = it.img ? '<img src="'+it.img+'" style="width:32px;height:32px;object-fit:cover;border-radius:6px;">' : '<span style="font-size:22px;">'+(it.emoji||"?")+'</span>';
+      row.innerHTML = '<div style="min-width:36px;text-align:center;">'+pic+'</div>'
+        + '<div style="flex:1;font-size:13px;font-weight:600;color:#334155;">Correct:</div>'
+        + '<div style="font-size:16px;font-weight:800;color:'+(it.correct?'#1f9d44':'#e23b54')+';">'+(it.correct?'✓':'✗')+'</div>';
+      rows.appendChild(row);
+    });
+    $("chkTeachOverlay").classList.add("show");
+  }
+  $("chkTeachCloseBtn").addEventListener("click", function(){
+    $("chkTeachOverlay").classList.remove("show");
+    _stuLockedItems[state.currentIndex] = [];
+    resetAnswers(); renderActivity();
+  });
 
   /* ── IndexedDB helper ─────────── */
   var _idb = (function(){
@@ -606,7 +670,7 @@
    * ------------------------------------------------------------- */
 
   const DEFAULT_DESIGN = {
-    bg:"#fdf6d8", font:"'Comic Sans MS','Comic Sans',cursive", fontSize:38,
+    bg:"#fdf6d8", font:"'Comic Sans MS','Comic Sans',cursive", fontSize:38, imageSize:100,
     textColor:"#243a5e", border:"rounded", spacing:"Medium",
     showTitle:true, showInstr:true, showDeco:true
   };
@@ -651,16 +715,23 @@
    * 2. SLIDE NAVIGATION
    * ------------------------------------------------------------- */
 
+  const MAX_SLIDES = 3;
+  const DIFFICULTY_LABELS = ["Easy", "Medium", "Hard"];
+
   function renderSlideNav(){
     const total = state.activities.length;
-    $("chkSlideLabel").textContent = `Slide ${state.currentIndex+1} of ${total}`;
+    const diffTag = ` — ${DIFFICULTY_LABELS[state.currentIndex] || "Hard"}`;
+    $("chkSlideLabel").textContent = `Slide ${state.currentIndex+1} of ${total}${diffTag}`;
     $("chkPrevSlide").disabled = state.currentIndex === 0;
     $("chkNextSlide").disabled = state.currentIndex === total-1;
     $("chkDeleteSlide").disabled = total <= 1;
+    $("chkAddSlide").disabled = total >= MAX_SLIDES;
 
-    $("chkStageSlideLabel").textContent = `Slide ${state.currentIndex+1} of ${total}`;
+    $("chkStageSlideLabel").textContent = `Slide ${state.currentIndex+1} of ${total}${diffTag}`;
     $("chkStagePrev").disabled = state.currentIndex === 0;
-    $("chkStageNext").disabled = state.currentIndex === total-1;
+    var _curScore = _stuSlideScores[state.currentIndex];
+    var _curPassed = !!(_curScore && (_curScore.correct / _curScore.total) >= PASS_THRESHOLD);
+    $("chkStageNext").disabled = state.currentIndex === total-1 || (_stuMode && !_curPassed);
     $("chkStageNav").style.display = total > 1 ? "flex" : "none";
   }
 
@@ -683,6 +754,7 @@
   $("chkStageNext").addEventListener("click", ()=> goToSlide(state.currentIndex+1));
 
   $("chkAddSlide").addEventListener("click", ()=>{
+    if (state.activities.length >= MAX_SLIDES) { alert("Maximum of " + MAX_SLIDES + " slides (Easy → Medium → Hard)."); return; }
     state.activities.push(makeBlankActivity(state.activities.length+1));
     goToSlide(state.activities.length-1);
   });
@@ -715,7 +787,7 @@
     inp.addEventListener("change", e=>{
       const f = e.target.files[0]; if (!f) return;
       const r = new FileReader();
-      r.onload = ev=>{ it.img = ev.target.result; it.imgType = "upload"; renderItems(); renderActivity(); };
+      r.onload = ev=>{ it.img = ev.target.result; it.imgType = "upload"; it.emoji = ""; renderItems(); renderActivity(); };
       r.readAsDataURL(f);
     });
     lbl.appendChild(inp); media.appendChild(lbl);
@@ -737,7 +809,7 @@
     });
     linkInput.addEventListener("input", e=>{
       const url = e.target.value.trim();
-      it.img = url || null; it.imgType = "link";
+      it.img = url || null; it.imgType = "link"; if (url) it.emoji = "";
       renderItems(); renderActivity();
     });
     tabs.appendChild(tabUpload); tabs.appendChild(tabLink);
@@ -813,10 +885,22 @@
     const opts = document.createElement("div"); opts.className = "chk-scard-opts";
     const checkBtn = document.createElement("button"); checkBtn.className = "chk-mopt mopt-check"; checkBtn.type = "button"; checkBtn.textContent = "✓";
     const xBtn = document.createElement("button"); xBtn.className = "chk-mopt mopt-x"; xBtn.type = "button"; xBtn.textContent = "✗";
-    checkBtn.addEventListener("click", ()=> selectMark(itemIndex, true));
-    xBtn.addEventListener("click", ()=> selectMark(itemIndex, false));
+    const locked = isLocked(itemIndex);
+    if (locked) {
+      el.style.cssText += "border-color:#7c3aed !important;box-shadow:0 0 0 2px rgba(124,58,237,.25);";
+      (it.correct ? checkBtn : xBtn).classList.add("sel");
+      checkBtn.disabled = true; xBtn.disabled = true;
+    } else {
+      checkBtn.addEventListener("click", ()=> selectMark(itemIndex, true));
+      xBtn.addEventListener("click", ()=> selectMark(itemIndex, false));
+    }
     opts.appendChild(checkBtn); opts.appendChild(xBtn);
     el.appendChild(opts);
+    if (locked) {
+      const lock = document.createElement("div");
+      lock.textContent = "🔒 Given"; lock.style.cssText = "font-size:9px;font-weight:800;color:#7c3aed;margin-top:2px;text-align:center;";
+      el.appendChild(lock);
+    }
     return el;
   }
 
@@ -829,6 +913,8 @@
 
     studentMarks = {};
     suggestedMarks = {};
+    const locked = _stuLockedItems[state.currentIndex];
+    if (locked && locked.length) locked.forEach(function(idx){ if (activity.items[idx]) studentMarks[idx] = activity.items[idx].correct; });
     grid.innerHTML = "";
     activity.items.forEach((_, i)=> grid.appendChild(scard(i)));
     $("chkHint").textContent = "";
@@ -836,6 +922,7 @@
   }
 
   function selectMark(itemIndex, mark){
+    if (isLocked(itemIndex)) return; // anchored hint — student can't change this one
     studentMarks[itemIndex] = mark;
     const card = grid.querySelector('[data-i="'+itemIndex+'"]');
     card.querySelectorAll(".chk-mopt").forEach(b=> b.classList.remove("sel"));
@@ -872,6 +959,23 @@
         else if (b.classList.contains("sel")) b.style.borderColor = "#e23b54";
       });
     });
+    if (_stuMode) {
+      var _msi = state.currentIndex;
+      _stuMissedLabels[_msi] = _stuMissedLabels[_msi] || {};
+      _stuMissedDetail[_msi] = _stuMissedDetail[_msi] || {};
+      _stuMissCountByIdx[_msi] = _stuMissCountByIdx[_msi] || {};
+      Object.keys(studentMarks).forEach(function(idx){
+        if (suggestedMarks[idx]) return;
+        var it = currentActivity().items[idx];
+        if (!it) return;
+        var label = (it.img ? '' : it.emoji) || ('Item ' + (+idx+1));
+        _stuMissedLabels[_msi][label] = true;
+        var chosenLabel = studentMarks[idx] ? '✓ Check' : '✗ Not';
+        var d = _stuMissedDetail[_msi][label] = _stuMissedDetail[_msi][label] || { correct: it.correct ? '✓ Check' : '✗ Not', img: it.img || '', choices: {} };
+        d.choices[chosenLabel] = (d.choices[chosenLabel] || 0) + 1;
+        _stuMissCountByIdx[_msi][idx] = (_stuMissCountByIdx[_msi][idx] || 0) + 1;
+      });
+    }
     openScoreModal(correctCount, totalItems);
   });
   window.addEventListener("resize", ()=>{
@@ -922,7 +1026,7 @@
     let image, message;
     if (percent === 1){
       image = "images/perfect.png";
-      message = "Perfect! Tamang-tama ang lahat! 🎊";
+      message = "Perfect! You got them all correct! 🎊";
       if (typeof confetti === "function"){
         confetti({ particleCount:200, spread:120, startVelocity:40, origin:{ y:0.6 } });
         setTimeout(()=>{
@@ -931,8 +1035,8 @@
         }, 300);
       }
     }
-    else if (percent >= 0.5){ image = "images/goodjob.png"; message = "Good job! Konting practice pa lang! ⭐"; }
-    else { image = "images/tryagain.png"; message = "Let's try again! Practice makes perfect! 💪"; }
+    else if (percent >= PASS_THRESHOLD){ image = "images/goodjob.png"; message = "Good job! You passed! ⭐"; }
+    else { image = "images/tryagain.png"; message = "Let's try again! You need " + Math.round(PASS_THRESHOLD*100) + "% to pass. 💪"; }
 
     $("chkModalEmoji").src = image;
     $("chkModalEmoji").onerror = function(){ this.onerror=null; this.src="images/placeholder.png"; };
@@ -940,23 +1044,22 @@
     $("chkModalMsg").textContent = message;
 
     $("chkReviewList").style.display = "block";
-    $("chkPendingNote").style.display = _stuMode ? "block" : "none";
     renderReviewRows(_stuMode);
 
     $("chkModalOverlay").classList.add("show");
 
     if (_stuMode) {
       _stuLastScore = correctCount; _stuLastTotal = totalItems;
-      _stuSlideScores[state.currentIndex] = { correct: correctCount, total: totalItems, ansItems: Object.keys(suggestedMarks).map(function(i){var it=currentActivity().items[+i];return{label:it?(it.emoji||('Item '+(+i+1))):('Item '+(+i+1)),studentAnswer:studentMarks[+i]?'✓ Check':'✗ Not',correctAnswer:(it&&it.correct)?'✓ Check':'✗ Not',correct:!!suggestedMarks[+i]};}) };
+      _stuSlideScores[state.currentIndex] = { correct: correctCount, total: totalItems, ansItems: Object.keys(suggestedMarks).map(function(i){var it=currentActivity().items[+i];var lbl=it?((it.img?'':it.emoji)||('Item '+(+i+1))):('Item '+(+i+1));return{label:lbl,img:(it&&it.img)||'',studentAnswer:studentMarks[+i]?'✓ Check':'✗ Not',correctAnswer:(it&&it.correct)?'✓ Check':'✗ Not',correct:!!suggestedMarks[+i]};}) };
       var _ts = state.activities.length, _isLast = state.currentIndex >= _ts - 1;
-      var _allDone = _stuSlideScores.filter(Boolean).length === _ts;
-      if (_ts > 1 && !_isLast) {
+      var _allDone = _stuSlideScores.filter(Boolean).length === _ts && _stuSlideScores.every(function(s){ return s && (s.correct / s.total) >= PASS_THRESHOLD; });
+      if (_ts > 1 && !_isLast && percent >= PASS_THRESHOLD) {
         $("chkModalCloseBtn").style.display = ""; $("chkModalCloseBtn").textContent = "Next Slide →"; $("chkModalCloseBtn").dataset.nextSlide = "1";
       } else {
         $("chkModalCloseBtn").style.display = "none"; $("chkModalCloseBtn").dataset.nextSlide = "";
       }
       $("chkModalTryBtn").textContent = "🔁 Retake";
-      $("chkStudentSubmitBtn").style.display = _allDone ? "" : "none";
+      $("chkStudentSubmitBtn").style.display = (_allDone && !_stuAlreadyPassed) ? "" : "none";
       var ri = $("chkRetakeInfo");
       var _csr = _stuSlideRetakes[state.currentIndex] || 0;
       ri.style.display = _stuRetake > 0 ? "" : "none";
@@ -965,14 +1068,54 @@
   }
   function closeScoreModal(){ $("chkModalOverlay").classList.remove("show"); }
 
+  // Live ping to the teacher's notification feed while the student is still
+  // mid-activity (before any final submission) — fires once per slide, right
+  // when the 3rd retake happens, so the teacher can notice struggle in near
+  // real time (teacher notif page polls every 30s).
+  function notifyTeacherRetake(si){
+    if (!_stuPubMeta || !_stuPubMeta.db_activity_id || !_stuPubMeta.teacherId) return;
+    var _stuId = sessionStorage.getItem('student_record_id');
+    if (!_stuId) return;
+    fetch('../../STUDENT_FILES/STUDENT_BACKEND/student_notify_teacher_retake.php', {
+      method: 'POST', keepalive: true,
+      body: new URLSearchParams({
+        teacher_id: _stuPubMeta.teacherId,
+        student_id: _stuId,
+        activity_id: _stuPubMeta.db_activity_id,
+        activity_title: _stuPubMeta.title || 'Activity',
+        slide_number: si + 1,
+        difficulty: DIFFICULTY_LABELS[si] || 'Hard',
+        retake_count: _stuSlideRetakes[si]
+      })
+    });
+  }
+
   $("chkModalCloseBtn").addEventListener("click", function(){
     var goNext = _stuMode && $("chkModalCloseBtn").dataset.nextSlide === '1';
     closeScoreModal();
     if (goNext) { var ni = state.currentIndex + 1; if (ni < state.activities.length) goToSlide(ni); }
   });
   $("chkModalTryBtn").addEventListener("click", ()=>{
-    if (_stuMode) { _stuRetake++; _stuSlideRetakes[state.currentIndex] = (_stuSlideRetakes[state.currentIndex]||0)+1; _stuSlideScores[state.currentIndex] = undefined; }
-    closeScoreModal(); resetAnswers();
+    var showTeach = false, justAnchored = false;
+    var si = state.currentIndex;
+    if (_stuMode) {
+      var lastPct = _stuSlideScores[si] ? (_stuSlideScores[si].correct / _stuSlideScores[si].total) : 1;
+      _stuRetake++; _stuSlideRetakes[si] = (_stuSlideRetakes[si]||0)+1; _stuSlideScores[si] = undefined;
+      if (_stuSlideRetakes[si] === 3) notifyTeacherRetake(si);
+      if (lastPct < PASS_THRESHOLD) {
+        var curLevel = _stuScaffoldLevel[si] || 0;
+        if (curLevel >= 2 || _stuSlideRetakes[si] >= 4) { _stuScaffoldLevel[si] = 2; showTeach = true; }
+        else if (_stuSlideRetakes[si] >= 3) { _stuScaffoldLevel[si] = 1; justAnchored = true; }
+      }
+    }
+    closeScoreModal();
+    if (showTeach) {
+      showTeachingModal(si); // its own close button resets the board once the student is done reading
+      return;
+    }
+    if (justAnchored) applyAnchor(si);
+    resetAnswers(); renderActivity();
+    if (justAnchored) $("chkHint").textContent = "💡 We marked one for you. You can do the rest!";
   });
 
   /* ------------------------------------------------------------- *
@@ -983,6 +1126,7 @@
     stage.style.background = state.bg;
     stage.style.fontFamily = state.font;
     stage.style.fontSize = state.fontSize + "px";
+    stage.style.setProperty("--img-scale", (state.imageSize || 100) / 100);
     stage.style.setProperty("--chk-text", state.textColor);
     stage.classList.toggle("bs-dashed", state.border === "dashed");
     stage.classList.toggle("bs-solid", state.border === "solid");
@@ -1012,6 +1156,15 @@
   $("chkFont").addEventListener("change", e=>{ state.font = e.target.value; applyAppearance(); });
   $("chkSize").addEventListener("input", e=> setFontSize(e.target.value));
   $("chkSizeNum").addEventListener("input", e=> setFontSize(e.target.value));
+
+  function setImageSize(value){
+    value = Math.max(50, Math.min(200, +value || 100));
+    state.imageSize = value;
+    $("chkImgSize").value = value; $("chkImgSizeNum").value = value;
+    applyAppearance();
+  }
+  $("chkImgSize").addEventListener("input", e=> setImageSize(e.target.value));
+  $("chkImgSizeNum").addEventListener("input", e=> setImageSize(e.target.value));
 
   $("chkTextColor").addEventListener("input", e=>{ state.textColor = e.target.value; applyAppearance(); });
 
@@ -1057,6 +1210,7 @@
   function syncDesignControls(){
     $("chkFont").value = state.font;
     $("chkSize").value = state.fontSize; $("chkSizeNum").value = state.fontSize;
+    $("chkImgSize").value = state.imageSize || 100; $("chkImgSizeNum").value = state.imageSize || 100;
     $("chkTextColor").value = state.textColor;
     $("chkSpaceVal").textContent = state.spacing;
     $("chkShowTitle").checked = state.showTitle; $("chkShowInstr").checked = state.showInstr;
@@ -1142,6 +1296,68 @@
 
   $("chkDraftBtn").addEventListener("click", saveDraft);
 
+  /* ── Re-open an already-published activity for editing if ?edit_pub_id= in URL ──
+     Content only ever lived in the publishing browser's storage (pub_data_<id>),
+     so this just reloads that same saved state back into the editor. The
+     activity was already locked (server-side) by Teacher_activies.html before
+     navigating here. */
+  var _editingPub = null;
+  function loadPublishedForEditIfAny() {
+    var pubId = new URLSearchParams(location.search).get('edit_pub_id');
+    if (!pubId) return;
+    var pubs = [];
+    try { pubs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+    var pub = pubs.find(function(p){ return p.id === pubId; });
+    _editingPub = pub || { id: pubId };
+
+    function applyLoadedContent(data) {
+      Object.assign(state, data);
+      refreshSlideUI();
+      syncDesignControls();
+      applyAppearance();
+      $("chkPubBtn").textContent = '💾 Save Changes';
+      var banner = document.createElement('div');
+      banner.style.cssText = 'background:#fff7e6;border:1.5px solid #f5c563;color:#92620a;font-weight:700;font-size:13px;padding:10px 14px;border-radius:10px;margin-bottom:12px;';
+      banner.textContent = '✏️ Editing a published activity — students can\'t open it until you save changes.';
+      var host = document.querySelector('.chk-left-col');
+      if (host) host.insertBefore(banner, host.firstChild);
+    }
+
+    function fetchRemote() {
+      var actId = _editingPub.db_activity_id || pubId;
+      fetch('../../STUDENT_FILES/STUDENT_BACKEND/student_get_activity_content.php?activity_id=' + encodeURIComponent(actId))
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if (!d.success || !d.content) { alert("Could not load this activity's saved content."); return; }
+          _editingPub.db_activity_id = d.activity_id;
+          _editingPub.teacherId = String(d.teacher_id || _editingPub.teacherId || '');
+          _editingPub.title = d.title || _editingPub.title;
+          _editingPub.deadline = d.deadline || _editingPub.deadline;
+          _editingPub.condition = d.condition || _editingPub.condition;
+          applyLoadedContent(d.content);
+        })
+        .catch(function(){ alert("Could not load this activity's saved content."); });
+    }
+
+    if (!pub) { fetchRemote(); return; }
+
+    _idb.load('pub_data_' + pubId, function(err, saved) {
+      var data = saved;
+      if (!data) { try { data = JSON.parse(localStorage.getItem('pub_data_' + pubId) || 'null'); } catch(e){} }
+      if (!data) { fetchRemote(); return; }
+      applyLoadedContent(data);
+    });
+  }
+
+  window.addEventListener('pagehide', function(){
+    if (_editingPub && !_editingPub._saved && _editingPub.db_activity_id && _editingPub.teacherId) {
+      fetch('../TEACHER_BACKEND/teacher_lock_activity.php', {
+        method: 'POST', keepalive: true,
+        body: new URLSearchParams({ action: 'unlock', teacher_id: _editingPub.teacherId, activity_id: _editingPub.db_activity_id, activity_title: _editingPub.title || 'Activity' })
+      });
+    }
+  });
+
   function fitStageToScreen(){
     if (!document.body.classList.contains("chk-preview-only")) return;
     stageInner.style.transform = "none";
@@ -1169,6 +1385,15 @@
   $("chkShowSettingsBtn").addEventListener("click", ()=> document.body.classList.remove("chk-right-collapsed"));
 
   function openPublishModal(){
+    if (_editingPub) {
+      $("chkPublishTitle").textContent = '💾 Save Changes';
+      $("chkPublishConfirmBtn").textContent = '💾 Save Changes';
+      if (_editingPub.deadline) $("chkDeadlineInput").value = _editingPub.deadline;
+      if (_editingPub.condition) {
+        var r = document.querySelector('input[name="chkDomain"][value="' + _editingPub.condition + '"]');
+        if (r) r.checked = true;
+      }
+    }
     $("chkPublishOverlay").classList.add("show");
   }
   function closePublishModal(){ $("chkPublishOverlay").classList.remove("show"); }
@@ -1192,12 +1417,63 @@
     img.src = dataURL;
   }
 
+  // Small (44px) compressed thumbnail used for per-item images sent in
+  // notification/submission data — keeps notification rows lightweight.
+  function compressItemThumb(dataURL) {
+    return new Promise(function(resolve){
+      if (!dataURL) { resolve(''); return; }
+      var img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function() {
+        try {
+          var MAX = 44;
+          var ratio = Math.min(MAX / img.width, MAX / img.height, 1);
+          var cv = document.createElement('canvas');
+          cv.width = Math.round(img.width * ratio);
+          cv.height = Math.round(img.height * ratio);
+          cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+          resolve(cv.toDataURL('image/jpeg', 0.6));
+        } catch(e) { resolve(''); } // cross-origin image tainted the canvas — skip the thumbnail, don't block submission
+      };
+      img.onerror = function() { resolve(''); };
+      img.src = dataURL;
+    });
+  }
+
   function confirmPublish() {
     var deadline = $("chkDeadlineInput").value;
     if (!deadline) { alert("Please set a deadline date before publishing."); return; }
     var domain = document.querySelector('input[name="chkDomain"]:checked').value;
     var firstTitle = (state.activities[0] && state.activities[0].title) || 'Untitled Activity';
     compressThumb(state.thumb, function(smallThumb) {
+
+    if (_editingPub) {
+      var acts = []; try { acts = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+      var i = acts.findIndex(function(a){ return a.id === _editingPub.id; });
+      if (i >= 0) {
+        acts[i].title = firstTitle; acts[i].thumbnail = smallThumb; acts[i].deadline = deadline;
+        acts[i].condition = domain; acts[i].locked = false;
+        try { localStorage.setItem('published_activities', JSON.stringify(acts)); } catch(e){}
+      }
+      _idb.save('pub_data_' + _editingPub.id, JSON.parse(JSON.stringify(state)), function(err){ if(err) console.warn('IDB save failed:',err); });
+      _editingPub._saved = true;
+      var _finishEdit = function(){ closePublishModal(); window.location.href = '../Teacher_activies.html'; };
+      if (_editingPub.db_activity_id && _editingPub.teacherId) {
+        var fdU = new FormData();
+        fdU.append('teacher_id', _editingPub.teacherId);
+        fdU.append('activity_id', _editingPub.db_activity_id);
+        fdU.append('activity_title', firstTitle);
+        fdU.append('subject', domain);
+        fdU.append('content_json', JSON.stringify(state));
+        fdU.append('deadline', deadline);
+        fetch('../TEACHER_BACKEND/teacher_update_activity.php', { method: 'POST', body: fdU })
+          .catch(function(){}).finally(_finishEdit);
+      } else {
+        _finishEdit();
+      }
+      return;
+    }
+
     var pub = {
       id:          'pub-' + Date.now(),
       title:       firstTitle,
@@ -1228,26 +1504,27 @@
     var _assignedIds = [];
     try { _assignedIds = JSON.parse(sessionStorage.getItem('selected_learner_ids') || '[]'); } catch(e) {}
     if (!_assignedIds.length) { var _fb = parseInt(sessionStorage.getItem('selected_learner_id') || '0'); if (_fb > 0) _assignedIds = [_fb]; }
-    fetch('../TEACHER_BACKEND/teacher_create_activity.php', {
-      method: 'POST',
-      body: new URLSearchParams({
-        teacher_id: _pubRef.teacherId,
-        activity_title: _pubRef.title,
-        activity_type: 'CheckOrX',
-        subject: domain,
-        grade_level: '',
-        status: 'published',
-        assigned_student_ids: JSON.stringify(_assignedIds)
-      })
-    }).then(function(r){ return r.json(); }).then(function(d){
+    var fdC = new FormData();
+    fdC.append('teacher_id', _pubRef.teacherId);
+    fdC.append('activity_title', _pubRef.title);
+    fdC.append('activity_type', 'CheckOrX');
+    fdC.append('subject', domain);
+    fdC.append('grade_level', '');
+    fdC.append('status', 'published');
+    fdC.append('assigned_student_ids', JSON.stringify(_assignedIds));
+    fdC.append('content_json', JSON.stringify(state));
+    fdC.append('deadline', deadline);
+    fetch('../TEACHER_BACKEND/teacher_create_activity.php', { method: 'POST', body: fdC })
+    .then(function(r){ return r.json(); }).then(function(d){
       if (d.success && d.activity_id) {
         var acts = []; try { acts = JSON.parse(localStorage.getItem('published_activities')||'[]'); } catch(e){}
         var i = acts.findIndex(function(a){ return a.id === _pubRef.id; });
         if (i >= 0) { acts[i].db_activity_id = d.activity_id; try { localStorage.setItem('published_activities', JSON.stringify(acts)); } catch(e){} }
       }
-    }).catch(function(){});
-    closePublishModal();
-    setTimeout(function(){ window.location.href = '../Teacher_activies.html'; }, 400);
+    }).catch(function(){}).finally(function(){
+      closePublishModal();
+      window.location.href = '../Teacher_activies.html';
+    });
     }); // end compressThumb
   }
   $("chkPublishConfirmBtn").addEventListener("click", confirmPublish);
@@ -1263,6 +1540,7 @@
   renderActivity();
   renderSlideNav();
   loadDraftIfAny();
+  loadPublishedForEditIfAny();
 
   /* ── STUDENT MODE ─────────────────────────────────────────── */
   (function () {
@@ -1274,6 +1552,9 @@
     try { _stuProg = JSON.parse(localStorage.getItem('student_progress') || '[]'); } catch(e){}
     var prev = _stuProg.find(function(r){ return r.pubId === _stuPubId; });
     if (prev) _stuRetake = prev.retakes || 0;
+    // Already passed and submitted before — this session is just practice,
+    // so nothing here should be recorded or re-sent to the teacher again.
+    _stuAlreadyPassed = !!(prev && prev.percent >= Math.round(PASS_THRESHOLD*100));
 
     function showNotAvailable() {
       document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Poppins,sans-serif;gap:16px;padding:32px;text-align:center;">'
@@ -1293,6 +1574,16 @@
       var pubs = [];
       try { pubs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
       var pub = pubs.find(function(r){ return r.id === _stuPubId; }) || {};
+      _stuPubMeta = pub;
+      if (pub.locked) {
+        document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Poppins,sans-serif;gap:16px;padding:32px;text-align:center;">'
+          + '<div style="font-size:72px;">⏸️</div>'
+          + '<h2 style="color:#1e3a8a;margin:0;">Activity Temporarily Unavailable</h2>'
+          + '<p style="color:#64748b;max-width:340px;margin:0;">Your teacher is updating "' + (pub.title || 'this activity') + '" right now. Please check back in a bit.</p>'
+          + '<button onclick="window.history.back()" style="margin-top:8px;background:#1e3a8a;color:#fff;border:none;padding:12px 28px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;">← Exit</button>'
+          + '</div>';
+        return;
+      }
       var splashThumb = pub.thumbnail
         ? '<img src="' + pub.thumbnail + '" style="width:120px;height:120px;object-fit:cover;border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.35);" />'
         : '<div style="font-size:80px;line-height:1;">✅</div>';
@@ -1358,25 +1649,12 @@
           var _totCorrect=_stuSlideScores.reduce(function(s,x){return s+x.correct;},0);
           var _totItems=_stuSlideScores.reduce(function(s,x){return s+x.total;},0);
           var pct = Math.round((_totCorrect / _totItems) * 100);
-          var record = { pubId:_stuPubId, title:pub.title||'Activity', type:'CheckOrX',
-            grading:pub.grading||'', deadline:pub.deadline||'',
-            score:_totCorrect, total:_totItems, percent:pct, retakes:_stuRetake,
-            pendingTeacherReview:true, submittedAt:new Date().toISOString() };
-          var idx = _stuProg.findIndex(function(r){ return r.pubId === _stuPubId; });
-          if (idx >= 0) _stuProg[idx] = record; else _stuProg.push(record);
-          try { localStorage.setItem('student_progress', JSON.stringify(_stuProg)); } catch(e){}
-          var notifs = [];
-          try { notifs = JSON.parse(localStorage.getItem('student_notifications') || '[]'); } catch(e){}
-          notifs.unshift({ id:'notif-'+Date.now(), type:'achievement',
-            title:'Activity Submitted! 🌟',
-            message:'You scored '+pct+'% (suggested) on "'+(pub.title||'Activity')+'"'+(_stuRetake>0?' after '+_stuRetake+' retake(s)':'')+'. Your teacher will confirm your final grade.',
-            isRead:false, createdAt:new Date().toISOString() });
-          try { localStorage.setItem('student_notifications', JSON.stringify(notifs)); } catch(e){}
-          var _stuRecordId = sessionStorage.getItem('student_record_id');
-          var _ansJson = JSON.stringify((function(){var all=[];_stuSlideScores.forEach(function(s,si){if(_slideCount>1){var sr=_stuSlideRetakes[si]||0;all.push({isSlideHeader:true,label:'Slide '+(si+1)+(sr>0?' ('+sr+' retake'+(sr>1?'s':'')+')':''),slideRetakes:sr,studentAnswer:'',correctAnswer:'',correct:null});}s.ansItems.forEach(function(item){all.push(Object.assign({},item));});});return all;})());
-          // Show final summary before going home
+          if (pct < Math.round(PASS_THRESHOLD*100)) { alert('You need at least ' + Math.round(PASS_THRESHOLD*100) + '% to submit this activity. Keep trying!'); return; }
+
+          // Show final summary right away — the recording/notification below
+          // finishes compressing thumbnails in the background afterward.
           var _fi=pct>=100?'images/perfect.png':pct>=80?'images/goodjob.png':'images/tryagain.png';
-          var _fm=pct>=80?'Excellent work! 🌟':pct>=50?'Good effort! Keep practicing! ⭐':'Keep trying! Practice makes perfect! 💪';
+          var _fm=(pct>=80?'Excellent work! 🌟':pct>=50?'Good effort! Keep practicing! ⭐':'Keep trying! Practice makes perfect! 💪') + (_stuAlreadyPassed ? ' (Practice mode — not recorded)' : '');
           $('chkModalEmoji').src=_fi; $('chkModalScore').textContent=_totCorrect+' / '+_totItems+' correct ('+pct+'%)'; $('chkModalMsg').textContent=_fm;
           $('chkModalCloseBtn').style.display='none'; $('chkModalTryBtn').style.display='none';
           $('chkStudentSubmitBtn').textContent='🏠 Go to Dashboard';
@@ -1384,21 +1662,84 @@
           $('chkReviewList').style.display=_slideCount>1?'block':'none';
           if(_slideCount>1){_stuSlideScores.forEach(function(s,si){var sp=Math.round((s.correct/s.total)*100);var sc=sp>=80?'#1f9d44':sp>=50?'#ca8a04':'#e23b54';var sr=_stuSlideRetakes[si]||0;var rd=document.createElement('div');rd.style.cssText='display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:13px;align-items:center;';rd.innerHTML='<span style="font-weight:600;">Slide '+(si+1)+(sr>0?' <span style="color:#e23b54;font-size:10px;">('+sr+'× retake)</span>':'')+'</span><span style="font-weight:700;color:'+sc+';">'+s.correct+'/'+s.total+' ('+sp+'%)</span>';_fbR.appendChild(rd);});}
           _stuSubmitDone=true;
-          if (pub.db_activity_id && pub.teacherId && _stuRecordId) {
-            fetch('../TEACHER_BACKEND/teacher_complete_activity.php', {
-              method: 'POST', keepalive: true,
-              body: new URLSearchParams({ teacher_id: pub.teacherId, student_id: _stuRecordId, activity_id: pub.db_activity_id, score: pct, total_items: _totItems, pub_id: _stuPubId||'', answers_json: _ansJson, retake_count: _stuRetake||0 })
+
+          if (_stuAlreadyPassed) return;
+
+          var _scaffoldUsed = Math.max(0, ...Object.keys(_stuScaffoldLevel).map(function(k){ return _stuScaffoldLevel[k]; }));
+          var _struggledRaw = [];
+          Object.keys(_stuMissedDetail).forEach(function(si){
+            Object.keys(_stuMissedDetail[si]).forEach(function(label){
+              if (_struggledRaw.some(function(x){ return x.label === label; })) return;
+              var d = _stuMissedDetail[si][label];
+              var bestChoice = null, bestCount = 0;
+              Object.keys(d.choices).forEach(function(c){ if (d.choices[c] > bestCount) { bestChoice = c; bestCount = d.choices[c]; } });
+              _struggledRaw.push({ label: label, correct: d.correct, thought: bestChoice, img: d.img || '' });
             });
-          }
+          });
+          var _allAnsItems = [];
+          _stuSlideScores.forEach(function(s){ s.ansItems.forEach(function(item){ _allAnsItems.push(item); }); });
+
+          Promise.all(_struggledRaw.concat(_allAnsItems).map(function(it){
+            return compressItemThumb(it.img).then(function(thumb){ it.img = thumb; });
+          })).then(function(){
+            var _struggledItems = _struggledRaw.map(function(it){ return { label: it.label, correct: it.correct, thought: it.thought, img: it.img }; });
+            var record = { pubId:_stuPubId, title:pub.title||'Activity', type:'CheckOrX',
+              grading:pub.grading||'', deadline:pub.deadline||'',
+              score:_totCorrect, total:_totItems, percent:pct, retakes:_stuRetake,
+              pendingTeacherReview:true, submittedAt:new Date().toISOString() };
+            var idx = _stuProg.findIndex(function(r){ return r.pubId === _stuPubId; });
+            if (idx >= 0) _stuProg[idx] = record; else _stuProg.push(record);
+            try { localStorage.setItem('student_progress', JSON.stringify(_stuProg)); } catch(e){}
+            var notifs = [];
+            try { notifs = JSON.parse(localStorage.getItem('student_notifications') || '[]'); } catch(e){}
+            notifs.unshift({ id:'notif-'+Date.now(), type:'achievement',
+              title:'Activity Submitted! 🌟',
+              message:'You scored '+pct+'% (suggested) on "'+(pub.title||'Activity')+'"'+(_stuRetake>0?' after '+_stuRetake+' retake(s)':'')+'. Your teacher will confirm your final grade.',
+              isRead:false, createdAt:new Date().toISOString() });
+            try { localStorage.setItem('student_notifications', JSON.stringify(notifs)); } catch(e){}
+            var _stuRecordId = sessionStorage.getItem('student_record_id');
+            var _ansJson = JSON.stringify((function(){var all=[];_stuSlideScores.forEach(function(s,si){if(_slideCount>1){var sr=_stuSlideRetakes[si]||0;all.push({isSlideHeader:true,label:'Slide '+(si+1)+(sr>0?' ('+sr+' retake'+(sr>1?'s':'')+')':''),slideRetakes:sr,studentAnswer:'',correctAnswer:'',correct:null});}s.ansItems.forEach(function(item){all.push(Object.assign({},item));});});return all;})());
+            if (pub.db_activity_id && pub.teacherId && _stuRecordId) {
+              fetch('../TEACHER_BACKEND/teacher_complete_activity.php', {
+                method: 'POST', keepalive: true,
+                body: new URLSearchParams({ teacher_id: pub.teacherId, student_id: _stuRecordId, activity_id: pub.db_activity_id, score: pct, total_items: _totItems, pub_id: _stuPubId||'', answers_json: _ansJson, retake_count: _stuRetake||0, scaffold_used: _scaffoldUsed, struggled_items_json: JSON.stringify(_struggledItems) })
+              });
+            }
+          });
         });
       });
+    }
+
+    function fetchRemoteActivity() {
+      fetch('../../STUDENT_FILES/STUDENT_BACKEND/student_get_activity_content.php?activity_id=' + encodeURIComponent(_stuPubId))
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if (!d.success || !d.content) { applyStudentMode(null); return; }
+          var pubs = [];
+          try { pubs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+          var idx = pubs.findIndex(function(p){ return p.id === _stuPubId; });
+          var pubEntry = {
+            id: _stuPubId, title: d.title || 'Activity', type: d.type || 'CheckOrX',
+            deadline: d.deadline || '', thumbnail: (d.content && d.content.thumb) || '',
+            teacherName: '—', teacherId: String(d.teacher_id || ''),
+            learner: 'ALL', condition: d.condition || '',
+            publishedAt: new Date().toISOString(),
+            db_activity_id: d.activity_id, locked: !!d.is_locked
+          };
+          if (idx >= 0) pubs[idx] = pubEntry; else pubs.push(pubEntry);
+          try { localStorage.setItem('published_activities', JSON.stringify(pubs)); } catch(e){}
+          _idb.save('pub_data_' + _stuPubId, d.content, function(){});
+          applyStudentMode(d.content);
+        })
+        .catch(function(){ applyStudentMode(null); });
     }
 
     _idb.load('pub_data_' + _stuPubId, function(err, saved) {
       if (saved) { applyStudentMode(saved); return; }
       var ls = null;
       try { ls = JSON.parse(localStorage.getItem('pub_data_' + _stuPubId) || 'null'); } catch(e){}
-      applyStudentMode(ls);
+      if (ls) { applyStudentMode(ls); return; }
+      fetchRemoteActivity();
     });
   })();
 

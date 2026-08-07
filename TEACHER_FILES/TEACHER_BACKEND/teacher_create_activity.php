@@ -24,6 +24,11 @@ $subject = isset($_POST['subject']) ? trim($_POST['subject']) : '';
 $grade_level = isset($_POST['grade_level']) ? trim($_POST['grade_level']) : '';
 $difficulty = isset($_POST['difficulty']) ? trim($_POST['difficulty']) : '';
 $status = isset($_POST['status']) ? trim($_POST['status']) : 'draft';
+// Full activity content (slides/items/answer keys/design settings) so any
+// device can load it later — not just the browser that published it.
+$content_json = isset($_POST['content_json']) ? $_POST['content_json'] : null;
+$deadline = isset($_POST['deadline']) ? trim($_POST['deadline']) : '';
+if ($deadline === '') $deadline = null;
 // JSON array of students.id values to assign this activity to
 $assigned_student_ids_raw = isset($_POST['assigned_student_ids']) ? trim($_POST['assigned_student_ids']) : '[]';
 $assigned_student_ids = json_decode($assigned_student_ids_raw, true);
@@ -42,8 +47,8 @@ if (!$teacher_conn) {
 }
 
 // Insert activity into teacher database
-$sql = "INSERT INTO teacher_activities (teacher_id, activity_title, activity_description, activity_type, subject, grade_level, difficulty, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+$sql = "INSERT INTO teacher_activities (teacher_id, activity_title, activity_description, activity_type, subject, grade_level, difficulty, status, content_json, deadline)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 $stmt = $teacher_conn->prepare($sql);
 
 if (!$stmt) {
@@ -51,7 +56,7 @@ if (!$stmt) {
     exit;
 }
 
-$stmt->bind_param("isssssss", $teacher_id, $activity_title, $activity_description, $activity_type, $subject, $grade_level, $difficulty, $status);
+$stmt->bind_param("isssssssss", $teacher_id, $activity_title, $activity_description, $activity_type, $subject, $grade_level, $difficulty, $status, $content_json, $deadline);
 
 if ($stmt->execute()) {
     $activity_id = $stmt->insert_id;
@@ -113,6 +118,14 @@ if ($stmt->execute()) {
             $notifMsg .= ' — assigned to ' . count($assigned_student_ids) . ' student(s).';
         }
         pushAdminNotification($conn, 'activity', 'New Activity Published', $notifMsg, $activity_id);
+
+        // Push to teacher's own notification inbox
+        require_once __DIR__ . '/teacher_push_notification.php';
+        $selfMsg = 'You published "' . $activity_title . '"';
+        if (!empty($assigned_student_ids)) {
+            $selfMsg .= ' — assigned to ' . count($assigned_student_ids) . ' student(s).';
+        }
+        pushTeacherNotification($teacher_conn, $teacher_id, 'activity', 'Activity Published', $selfMsg);
     }
 
     echo json_encode(['success' => true, 'activity_id' => $activity_id, 'message' => 'Activity created successfully']);

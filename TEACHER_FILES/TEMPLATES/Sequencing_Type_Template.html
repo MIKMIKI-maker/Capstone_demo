@@ -83,6 +83,13 @@
   .seq-thumb{ width:100%; height:54px; flex:none; border-radius:10px; border:1.5px solid var(--field-border);
     background:var(--field); display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden; font-size:24px; }
   .seq-thumb img{ width:100%; height:100%; object-fit:cover; }
+  .seq-media-tabs{ display:flex; gap:4px; width:100%; }
+  .seq-media-tabs button{ flex:1; cursor:pointer; border:1.5px solid var(--field-border); background:#fff; color:var(--ink-soft);
+    border-radius:6px; font-family:var(--font); font-size:9.5px; font-weight:700; padding:3px 0; }
+  .seq-media-tabs button.sel{ border-color:var(--blue); background:#eaf2ff; color:var(--blue); }
+  .seq-link-input{ width:100%; padding:5px 6px; border-radius:7px; border:1.5px solid var(--field-border);
+    font-family:var(--font); font-size:9.5px; outline:none; display:none; box-sizing:border-box; }
+  .seq-link-input.show{ display:block; }
   .seq-order-controls{ display:flex; flex-direction:column; gap:3px; margin-top:11px; }
   .seq-order-controls button{ cursor:pointer; border:1.5px solid var(--field-border); background:#fff; color:var(--ink-soft); width:24px; height:20px; border-radius:6px; font-size:11px; line-height:1; }
   .seq-order-controls button:hover{ background:#f1f4fa; }
@@ -141,8 +148,8 @@
   }
   .seq-card-it:hover{ transform:translateY(-2px); }
   .seq-card-it.tapped{ border-color:var(--seq-badge) !important; }
-  .seq-card-it-img{ width:100%; height:3.6em; object-fit:contain; display:block; }
-  .seq-card-it-emoji{ font-size:3em; line-height:1; }
+  .seq-card-it-img{ width:100%; height:calc(3.6em * var(--img-scale,1)); object-fit:contain; display:block; }
+  .seq-card-it-emoji{ font-size:calc(3em * var(--img-scale,1)); line-height:1; }
   .seq-card-it-name{ font-weight:700; font-size:.6em; margin-top:8px; color:var(--seq-text); text-align:center; }
   .seq-badge-num{
     position:absolute; top:-14px; left:50%; transform:translateX(-50%);
@@ -377,7 +384,7 @@
 
       <!-- Multiple activities (slides) inside one activity set -->
       <div class="seq-card">
-        <div class="seq-step">Activity Slides <span class="seq-edit-link">(suggested: ~5 per set)</span></div>
+        <div class="seq-step">Activity Slides <span class="seq-edit-link">(max 3 — Easy → Medium → Hard)</span></div>
         <div class="seq-slidebar">
           <button id="seqPrevSlide" type="button">◂</button>
           <div class="seq-slide-label" id="seqSlideLabel">Slide 1 of 1</div>
@@ -477,6 +484,18 @@
             <span class="a-sm">A</span>
             <input type="range" id="seqSize" min="20" max="64" step="1" />
             <span class="a-lg">A</span>
+          </div>
+        </div>
+
+        <div class="seq-set-group">
+          <div class="seq-size-head">
+            <div class="seq-set-label" style="margin:0">Image Size</div>
+            <input class="seq-size-num" id="seqImgSizeNum" type="number" min="50" max="200" />
+          </div>
+          <div class="seq-size-row">
+            <span class="a-sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></span>
+            <input type="range" id="seqImgSize" min="50" max="200" step="5" />
+            <span class="a-lg"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></span>
           </div>
         </div>
 
@@ -593,6 +612,7 @@
     <div id="seqReviewList" style="display:none;text-align:left;border-top:1.5px dashed #e2e8f0;padding-top:12px;margin-bottom:12px;max-height:220px;overflow-y:auto;">
       <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#7c3aed;margin-bottom:10px;">📋 Item-by-Item Results</div>
       <div id="seqReviewRows"></div>
+      
     </div>
     <div id="seqRetakeInfo" style="display:none;font-size:12px;color:#64748b;margin-bottom:4px;"></div>
     <div class="seq-modal-actions">
@@ -607,7 +627,7 @@
   <!-- PUBLISH MODAL (appears when "Publish" is clicked) -->
   <div class="seq-modal-overlay" id="seqPublishOverlay">
     <div class="seq-modal-card seq-publish-card">
-      <h3>🌐 Publish Activity</h3>
+      <h3 id="seqPublishTitle">🌐 Publish Activity</h3>
       <div class="seq-publish-field">
         <label>🎯 Learning Domain</label>
         <div class="seq-domain-radios">
@@ -632,6 +652,18 @@
     </div>
   </div>
 
+  <!-- TEACHING MODAL (Level 2 scaffold — shown after repeated failed attempts) -->
+  <div class="seq-modal-overlay" id="seqTeachOverlay">
+    <div class="seq-modal-card">
+      <div style="font-size:15px;font-weight:800;color:#1e3a8a;margin-bottom:6px;">📚 Let's Learn Together</div>
+      <div style="font-size:13px;color:#64748b;margin-bottom:14px;">Here is the correct order of steps. Study this, then try it yourself!</div>
+      <div id="seqTeachRows" style="text-align:left;max-height:280px;overflow-y:auto;margin-bottom:14px;"></div>
+      <div class="seq-modal-actions">
+        <button class="seq-modal-try seq-publish-confirm" id="seqTeachCloseBtn" type="button">✅ Got it, Try Again</button>
+      </div>
+    </div>
+  </div>
+
 <script>
 /* =====================================================================
    SEQUENCING TEMPLATE GENERATOR — main script
@@ -649,7 +681,49 @@
 
   const $ = id => document.getElementById(id);
   var _stuMode = false, _stuPubId = '', _stuRetake = 0,
-      _stuLastScore = null, _stuLastTotal = null, _stuProg = [], _stuSlideScores = [], _stuSlideRetakes = {}, _stuSubmitDone = false;
+      _stuLastScore = null, _stuLastTotal = null, _stuProg = [], _stuSlideScores = [], _stuSlideRetakes = {}, _stuSubmitDone = false,
+      _stuScaffoldLevel = {}, _stuLockedSteps = {}, _stuMissedLabels = {}, _stuMissedDetail = {}, _stuMissCountByIdx = {}, PASS_THRESHOLD = 0.8, _stuAlreadyPassed = false, _stuPubMeta = null;
+
+  // Level 1 (after 3 failed attempts): anchor the 2 steps the student has
+  // actually gotten wrong the most (not just the first 2) — every other
+  // step still needs to be ordered by the student. Nothing is removed from
+  // the sequence, only a starting point is given (the full real-life
+  // routine must still be completed in full).
+  function pickWorstIndices(slideIndex, count, fallback){
+    var counts = _stuMissCountByIdx[slideIndex];
+    if (!counts || !Object.keys(counts).length) return fallback;
+    var sorted = Object.keys(counts).map(function(k){ return +k; }).sort(function(a,b){ return counts[b]-counts[a]; });
+    return sorted.slice(0, count);
+  }
+  function applyAnchor(slideIndex){
+    var activity = state.activities[slideIndex];
+    var n = Math.min(2, activity ? activity.steps.length : 0);
+    var fallback = []; for (var i=0;i<n;i++) fallback.push(i);
+    _stuLockedSteps[slideIndex] = pickWorstIndices(slideIndex, n, fallback);
+  }
+
+  // Level 2 (after 4 failed attempts): explicitly teach the full correct
+  // order, then let the student redo the activity from a blank board.
+  function showTeachingModal(slideIndex){
+    var activity = state.activities[slideIndex];
+    var rows = $("seqTeachRows");
+    rows.innerHTML = "";
+    activity.steps.forEach(function(step, i){
+      var row = document.createElement("div");
+      row.style.cssText = "display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9;";
+      var pic = step.img ? '<img src="'+step.img+'" style="width:32px;height:32px;object-fit:cover;border-radius:6px;">' : '<span style="font-size:22px;">'+(step.emoji||"?")+'</span>';
+      row.innerHTML = '<div style="font-size:12px;font-weight:800;color:#7c3aed;min-width:22px;">'+(i+1)+'.</div>'
+        + '<div style="min-width:36px;text-align:center;">'+pic+'</div>'
+        + '<div style="flex:1;font-size:13px;font-weight:600;color:#334155;">'+(step.label||'')+'</div>';
+      rows.appendChild(row);
+    });
+    $("seqTeachOverlay").classList.add("show");
+  }
+  $("seqTeachCloseBtn").addEventListener("click", function(){
+    $("seqTeachOverlay").classList.remove("show");
+    _stuLockedSteps[state.currentIndex] = [];
+    resetTaps(); renderActivity();
+  });
 
   /* ── IndexedDB helper ──────────────────────────────────────── */
   var _idb = (function(){
@@ -669,7 +743,7 @@
   // Design settings are shared by every slide, so the whole activity
   // set keeps one consistent look.
   const DEFAULT_DESIGN = {
-    bg:"#fdf6d8", font:"'Comic Sans MS','Comic Sans',cursive", fontSize:40,
+    bg:"#fdf6d8", font:"'Comic Sans MS','Comic Sans',cursive", fontSize:40, imageSize:100,
     textColor:"#243a5e", badgeColor:"#2f6fed", border:"rounded", spacing:"Medium", cols:4,
     showTitle:true, showInstr:true, showDeco:true, showLabels:true
   };
@@ -721,17 +795,24 @@
    * 2. SLIDE NAVIGATION (multiple activities in one set)
    * ------------------------------------------------------------- */
 
+  const MAX_SLIDES = 3;
+  const DIFFICULTY_LABELS = ["Easy", "Medium", "Hard"];
+
   function renderSlideNav(){
     const total = state.activities.length;
-    $("seqSlideLabel").textContent = `Slide ${state.currentIndex+1} of ${total}`;
+    const diffTag = ` — ${DIFFICULTY_LABELS[state.currentIndex] || "Hard"}`;
+    $("seqSlideLabel").textContent = `Slide ${state.currentIndex+1} of ${total}${diffTag}`;
     $("seqPrevSlide").disabled = state.currentIndex === 0;
     $("seqNextSlide").disabled = state.currentIndex === total-1;
     $("seqDeleteSlide").disabled = total <= 1;
+    $("seqAddSlide").disabled = total >= MAX_SLIDES;
 
     // Keep the in-stage navigator (visible even in student/preview mode) in sync.
-    $("seqStageSlideLabel").textContent = `Slide ${state.currentIndex+1} of ${total}`;
+    $("seqStageSlideLabel").textContent = `Slide ${state.currentIndex+1} of ${total}${diffTag}`;
     $("seqStagePrev").disabled = state.currentIndex === 0;
-    $("seqStageNext").disabled = state.currentIndex === total-1;
+    var _curScore = _stuSlideScores[state.currentIndex];
+    var _curPassed = !!(_curScore && (_curScore.correct / _curScore.total) >= PASS_THRESHOLD);
+    $("seqStageNext").disabled = state.currentIndex === total-1 || (_stuMode && !_curPassed);
     $("seqStageNav").style.display = total > 1 ? "flex" : "none";
   }
 
@@ -755,6 +836,7 @@
   $("seqStageNext").addEventListener("click", ()=> goToSlide(state.currentIndex+1));
 
   $("seqAddSlide").addEventListener("click", ()=>{
+    if (state.activities.length >= MAX_SLIDES) { alert("Maximum of " + MAX_SLIDES + " slides (Easy → Medium → Hard)."); return; }
     state.activities.push(makeBlankActivity(state.activities.length+1));
     goToSlide(state.activities.length-1); // jump straight to the new slide
   });
@@ -788,10 +870,33 @@
     fileInput.addEventListener("change", e=>{
       const file = e.target.files[0]; if (!file) return;
       const reader = new FileReader();
-      reader.onload = ev=>{ steps[stepIndex].img = ev.target.result; renderItems(); renderActivity(); };
+      reader.onload = ev=>{ steps[stepIndex].img = ev.target.result; steps[stepIndex].imgType = "upload"; steps[stepIndex].emoji = ""; renderItems(); renderActivity(); };
       reader.readAsDataURL(file);
     });
     thumbLabel.appendChild(fileInput); box.appendChild(thumbLabel);
+
+    const tabs = document.createElement("div"); tabs.className = "seq-media-tabs";
+    const tabUpload = document.createElement("button"); tabUpload.type = "button"; tabUpload.textContent = "Upload";
+    const tabLink = document.createElement("button"); tabLink.type = "button"; tabLink.textContent = "Link";
+    (step.imgType === "link" ? tabLink : tabUpload).classList.add("sel");
+    const linkInput = document.createElement("input");
+    linkInput.type = "url"; linkInput.className = "seq-link-input"; linkInput.placeholder = "Image URL";
+    if (step.imgType === "link"){ linkInput.classList.add("show"); linkInput.value = step.img || ""; }
+    tabUpload.addEventListener("click", ()=>{
+      tabUpload.classList.add("sel"); tabLink.classList.remove("sel"); linkInput.classList.remove("show");
+      fileInput.click();
+    });
+    tabLink.addEventListener("click", ()=>{
+      tabLink.classList.add("sel"); tabUpload.classList.remove("sel"); linkInput.classList.add("show");
+      linkInput.focus();
+    });
+    linkInput.addEventListener("input", e=>{
+      const url = e.target.value.trim();
+      steps[stepIndex].img = url || null; steps[stepIndex].imgType = "link"; if (url) steps[stepIndex].emoji = "";
+      renderItems(); renderActivity();
+    });
+    tabs.appendChild(tabUpload); tabs.appendChild(tabLink);
+    box.appendChild(tabs); box.appendChild(linkInput);
 
     // Step label text field
     const labelInput = document.createElement("input");
@@ -863,6 +968,11 @@
     return copy;
   }
 
+  function isLocked(stepIndex){
+    var locked = _stuLockedSteps[state.currentIndex];
+    return !!(locked && locked.indexOf(stepIndex) !== -1);
+  }
+
   function stepCard(stepIndex){
     const step = currentActivity().steps[stepIndex];
     const card = document.createElement("div"); card.className = "seq-card-it"; card.dataset.i = stepIndex;
@@ -878,13 +988,21 @@
       card.appendChild(labelBox);
     }
 
-    card.addEventListener("click", ()=> onCardTap(stepIndex));
+    if (isLocked(stepIndex)){
+      card.style.cssText += "border-color:#7c3aed !important;box-shadow:0 0 0 2px rgba(124,58,237,.25);cursor:default;";
+      const lock = document.createElement("div");
+      lock.textContent = "🔒 Given"; lock.style.cssText = "font-size:9px;font-weight:800;color:#7c3aed;margin-top:2px;text-align:center;";
+      card.appendChild(lock);
+    } else {
+      card.addEventListener("click", ()=> onCardTap(stepIndex));
+    }
     return card;
   }
 
   // Tapping a card adds it to tapOrder; tapping an already-tapped card
   // removes it again, so students can undo a mistake.
   function onCardTap(stepIndex){
+    if (isLocked(stepIndex)) return; // anchored hint — student can't move this one
     const existingPosition = tapOrder.indexOf(stepIndex);
     if (existingPosition === -1) tapOrder.push(stepIndex);
     else tapOrder.splice(existingPosition, 1);
@@ -912,11 +1030,13 @@
     $("seqTitle").style.display = state.showTitle ? "block" : "none";
     $("seqInstr").style.display = state.showInstr ? "block" : "none";
 
-    tapOrder = [];
+    const locked = _stuLockedSteps[state.currentIndex];
+    tapOrder = (locked && locked.length) ? locked.slice() : [];
     const shuffledOrder = shuffle(activity.steps.map((_, i)=> i));
     grid.innerHTML = "";
     applyCols();
     shuffledOrder.forEach(stepIndex=> grid.appendChild(stepCard(stepIndex)));
+    if (locked && locked.length) refreshBadges();
     $("seqHint").textContent = "";
   }
 
@@ -947,6 +1067,22 @@
       card.style.borderColor = isCorrect ? "#1f9d44" : "#e23b54";
       card.querySelector(".seq-badge-num").style.background = isCorrect ? "#1f9d44" : "#e23b54";
     });
+    if (_stuMode) {
+      var _msi = state.currentIndex;
+      _stuMissedLabels[_msi] = _stuMissedLabels[_msi] || {};
+      _stuMissedDetail[_msi] = _stuMissedDetail[_msi] || {};
+      _stuMissCountByIdx[_msi] = _stuMissCountByIdx[_msi] || {};
+      _seqResults.forEach(function(r){
+        if (r.correct) return;
+        var label = (r.step.emoji||'') + ' ' + (r.step.label || ('Hakbang ' + (r.idx+1)));
+        _stuMissedLabels[_msi][label] = true;
+        var correctName = 'Step ' + (r.idx+1);
+        var chosenName = 'Step ' + (r.position+1);
+        var d = _stuMissedDetail[_msi][label] = _stuMissedDetail[_msi][label] || { correct: correctName, choices: {} };
+        d.choices[chosenName] = (d.choices[chosenName] || 0) + 1;
+        _stuMissCountByIdx[_msi][r.idx] = (_stuMissCountByIdx[_msi][r.idx] || 0) + 1;
+      });
+    }
     openScoreModal(correctCount, totalSteps);
   });
 
@@ -984,13 +1120,13 @@
         });
     }, 300);
 }
-    else if (percent >= 0.5) {
+    else if (percent >= PASS_THRESHOLD) {
         image = "images/goodjob.png";
-        message = "Try again, you can do it! ⭐";
+        message = "Good job! You passed! ⭐";
     }
     else {
         image = "images/tryagain.png";
-        message = "Good try! Let's practice again! 💪";
+        message = "Let's try again! You need " + Math.round(PASS_THRESHOLD*100) + "% to pass. 💪";
     }
 
     $("seqModalEmoji").src = image;
@@ -1004,14 +1140,14 @@
       _stuLastScore = correctCount; _stuLastTotal = totalSteps;
       _stuSlideScores[state.currentIndex] = { correct: correctCount, total: totalSteps, ansItems: _seqResults.map(function(r){return{label:(r.step.emoji||'')+' '+(r.step.label||('Hakbang '+(r.idx+1))),studentAnswer:'Ika-'+(r.position+1),correctAnswer:'Ika-'+(r.idx+1),correct:r.correct};}) };
       var _ts = state.activities.length, _isLast = state.currentIndex >= _ts - 1;
-      var _allDone = _stuSlideScores.filter(Boolean).length === _ts;
-      if (_ts > 1 && !_isLast) {
+      var _allDone = _stuSlideScores.filter(Boolean).length === _ts && _stuSlideScores.every(function(s){ return s && (s.correct / s.total) >= PASS_THRESHOLD; });
+      if (_ts > 1 && !_isLast && percent >= PASS_THRESHOLD) {
         $("seqModalCloseBtn").style.display = ""; $("seqModalCloseBtn").textContent = "Next Slide →"; $("seqModalCloseBtn").dataset.nextSlide = "1";
       } else {
         $("seqModalCloseBtn").style.display = "none"; $("seqModalCloseBtn").dataset.nextSlide = "";
       }
       $("seqModalTryBtn").textContent = "🔁 Retake";
-      $("seqStudentSubmitBtn").style.display = _allDone ? "" : "none";
+      $("seqStudentSubmitBtn").style.display = (_allDone && !_stuAlreadyPassed) ? "" : "none";
       var ri = $("seqRetakeInfo");
       var _csr = _stuSlideRetakes[state.currentIndex] || 0;
       ri.style.display = _stuRetake > 0 ? "" : "none";
@@ -1046,14 +1182,54 @@
 
   function closeScoreModal(){ $("seqModalOverlay").classList.remove("show"); }
 
+  // Live ping to the teacher's notification feed while the student is still
+  // mid-activity (before any final submission) — fires once per slide, right
+  // when the 3rd retake happens, so the teacher can notice struggle in near
+  // real time (teacher notif page polls every 30s).
+  function notifyTeacherRetake(si){
+    if (!_stuPubMeta || !_stuPubMeta.db_activity_id || !_stuPubMeta.teacherId) return;
+    var _stuId = sessionStorage.getItem('student_record_id');
+    if (!_stuId) return;
+    fetch('../../STUDENT_FILES/STUDENT_BACKEND/student_notify_teacher_retake.php', {
+      method: 'POST', keepalive: true,
+      body: new URLSearchParams({
+        teacher_id: _stuPubMeta.teacherId,
+        student_id: _stuId,
+        activity_id: _stuPubMeta.db_activity_id,
+        activity_title: _stuPubMeta.title || 'Activity',
+        slide_number: si + 1,
+        difficulty: DIFFICULTY_LABELS[si] || 'Hard',
+        retake_count: _stuSlideRetakes[si]
+      })
+    });
+  }
+
   $("seqModalCloseBtn").addEventListener("click", function(){
     var goNext = _stuMode && $("seqModalCloseBtn").dataset.nextSlide === '1';
     closeScoreModal();
     if (goNext) { var ni = state.currentIndex + 1; if (ni < state.activities.length) goToSlide(ni); }
   });
   $("seqModalTryBtn").addEventListener("click", ()=>{
-    if (_stuMode) { _stuRetake++; _stuSlideRetakes[state.currentIndex] = (_stuSlideRetakes[state.currentIndex]||0)+1; _stuSlideScores[state.currentIndex] = undefined; }
-    closeScoreModal(); resetTaps();
+    var showTeach = false, justAnchored = false;
+    var si = state.currentIndex;
+    if (_stuMode) {
+      var lastPct = _stuSlideScores[si] ? (_stuSlideScores[si].correct / _stuSlideScores[si].total) : 1;
+      _stuRetake++; _stuSlideRetakes[si] = (_stuSlideRetakes[si]||0)+1; _stuSlideScores[si] = undefined;
+      if (_stuSlideRetakes[si] === 3) notifyTeacherRetake(si);
+      if (lastPct < PASS_THRESHOLD) {
+        var curLevel = _stuScaffoldLevel[si] || 0;
+        if (curLevel >= 2 || _stuSlideRetakes[si] >= 4) { _stuScaffoldLevel[si] = 2; showTeach = true; }
+        else if (_stuSlideRetakes[si] >= 3) { _stuScaffoldLevel[si] = 1; justAnchored = true; }
+      }
+    }
+    closeScoreModal();
+    if (showTeach) {
+      showTeachingModal(si); // its own close button resets the board once the student is done reading
+      return;
+    }
+    if (justAnchored) applyAnchor(si);
+    resetTaps(); renderActivity();
+    if (justAnchored) $("seqHint").textContent = "💡 We placed the first 2 steps for you. You can do the rest!";
   });
 
   /* ------------------------------------------------------------- *
@@ -1064,6 +1240,7 @@
     stage.style.background = state.bg;
     stage.style.fontFamily = state.font;
     stage.style.fontSize = state.fontSize + "px";
+    stage.style.setProperty("--img-scale", (state.imageSize || 100) / 100);
     stage.style.setProperty("--seq-text", state.textColor);
     stage.style.setProperty("--seq-badge", state.badgeColor);
     stage.classList.toggle("bs-dashed", state.border === "dashed");
@@ -1094,6 +1271,15 @@
   }
   $("seqSize").addEventListener("input", e=> setFontSize(+e.target.value));
   $("seqSizeNum").addEventListener("input", e=> setFontSize(+e.target.value || 40));
+
+  function setImageSize(value){
+    value = Math.max(50, Math.min(200, value));
+    state.imageSize = value;
+    $("seqImgSize").value = value; $("seqImgSizeNum").value = value;
+    applyAppearance();
+  }
+  $("seqImgSize").addEventListener("input", e=> setImageSize(+e.target.value));
+  $("seqImgSizeNum").addEventListener("input", e=> setImageSize(+e.target.value || 100));
 
   $("seqTextColor").addEventListener("input", e=>{ state.textColor = e.target.value; applyAppearance(); });
   $("seqBadgeColor").addEventListener("input", e=>{ state.badgeColor = e.target.value; applyAppearance(); });
@@ -1151,6 +1337,7 @@
   function syncDesignControls(){
     $("seqFont").value = state.font;
     $("seqSize").value = state.fontSize; $("seqSizeNum").value = state.fontSize;
+    $("seqImgSize").value = state.imageSize || 100; $("seqImgSizeNum").value = state.imageSize || 100;
     $("seqTextColor").value = state.textColor; $("seqBadgeColor").value = state.badgeColor;
     $("seqSpaceVal").textContent = state.spacing; $("seqColsVal").textContent = state.cols;
     $("seqShowTitle").checked = state.showTitle; $("seqShowInstr").checked = state.showInstr;
@@ -1265,6 +1452,68 @@
 
   $("seqDraftBtn").addEventListener("click", saveDraft);
 
+  /* ── Re-open an already-published activity for editing if ?edit_pub_id= in URL ──
+     Content only ever lived in the publishing browser's storage (pub_data_<id>),
+     so this just reloads that same saved state back into the editor. The
+     activity was already locked (server-side) by Teacher_activies.html before
+     navigating here. */
+  var _editingPub = null;
+  function loadPublishedForEditIfAny() {
+    var pubId = new URLSearchParams(location.search).get('edit_pub_id');
+    if (!pubId) return;
+    var pubs = [];
+    try { pubs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+    var pub = pubs.find(function(p){ return p.id === pubId; });
+    _editingPub = pub || { id: pubId };
+
+    function applyLoadedContent(data) {
+      Object.assign(state, data);
+      refreshSlideUI();
+      syncDesignControls();
+      applyAppearance();
+      $("seqPubBtn").textContent = '💾 Save Changes';
+      var banner = document.createElement('div');
+      banner.style.cssText = 'background:#fff7e6;border:1.5px solid #f5c563;color:#92620a;font-weight:700;font-size:13px;padding:10px 14px;border-radius:10px;margin-bottom:12px;';
+      banner.textContent = '✏️ Editing a published activity — students can\'t open it until you save changes.';
+      var host = document.querySelector('.seq-left-col');
+      if (host) host.insertBefore(banner, host.firstChild);
+    }
+
+    function fetchRemote() {
+      var actId = _editingPub.db_activity_id || pubId;
+      fetch('../../STUDENT_FILES/STUDENT_BACKEND/student_get_activity_content.php?activity_id=' + encodeURIComponent(actId))
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if (!d.success || !d.content) { alert("Could not load this activity's saved content."); return; }
+          _editingPub.db_activity_id = d.activity_id;
+          _editingPub.teacherId = String(d.teacher_id || _editingPub.teacherId || '');
+          _editingPub.title = d.title || _editingPub.title;
+          _editingPub.deadline = d.deadline || _editingPub.deadline;
+          _editingPub.condition = d.condition || _editingPub.condition;
+          applyLoadedContent(d.content);
+        })
+        .catch(function(){ alert("Could not load this activity's saved content."); });
+    }
+
+    if (!pub) { fetchRemote(); return; }
+
+    _idb.load('pub_data_' + pubId, function(err, saved) {
+      var data = saved;
+      if (!data) { try { data = JSON.parse(localStorage.getItem('pub_data_' + pubId) || 'null'); } catch(e){} }
+      if (!data) { fetchRemote(); return; }
+      applyLoadedContent(data);
+    });
+  }
+
+  window.addEventListener('pagehide', function(){
+    if (_editingPub && !_editingPub._saved && _editingPub.db_activity_id && _editingPub.teacherId) {
+      fetch('../TEACHER_BACKEND/teacher_lock_activity.php', {
+        method: 'POST', keepalive: true,
+        body: new URLSearchParams({ action: 'unlock', teacher_id: _editingPub.teacherId, activity_id: _editingPub.db_activity_id, activity_title: _editingPub.title || 'Activity' })
+      });
+    }
+  });
+
   // Collapse / expand the right-hand "Design & Settings" panel. When it's
   // hidden, the Template Guide card is shown in that same space instead.
   $("seqCollapseBtn").addEventListener("click", ()=> document.body.classList.add("seq-right-collapsed"));
@@ -1272,6 +1521,15 @@
 
   // Thumbnail upload
   function openPublishModal(){
+    if (_editingPub) {
+      $("seqPublishTitle").textContent = '💾 Save Changes';
+      $("seqPublishConfirmBtn").textContent = '💾 Save Changes';
+      if (_editingPub.deadline) $("seqDeadlineInput").value = _editingPub.deadline;
+      if (_editingPub.condition) {
+        var r = document.querySelector('input[name="seqDomain"][value="' + _editingPub.condition + '"]');
+        if (r) r.checked = true;
+      }
+    }
     $("seqPublishOverlay").classList.add("show");
   }
 
@@ -1309,6 +1567,34 @@
     var domain = document.querySelector('input[name="seqDomain"]:checked').value;
     var firstTitle = (state.activities[0] && state.activities[0].title) || 'Untitled Activity';
     compressThumb(state.thumb, function(smallThumb) {
+
+    if (_editingPub) {
+      var acts = []; try { acts = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+      var i = acts.findIndex(function(a){ return a.id === _editingPub.id; });
+      if (i >= 0) {
+        acts[i].title = firstTitle; acts[i].thumbnail = smallThumb; acts[i].deadline = deadline;
+        acts[i].condition = domain; acts[i].locked = false;
+        try { localStorage.setItem('published_activities', JSON.stringify(acts)); } catch(e){}
+      }
+      _idb.save('pub_data_' + _editingPub.id, JSON.parse(JSON.stringify(state)), function(err){ if(err) console.warn('IDB save failed:',err); });
+      _editingPub._saved = true;
+      var _finishEdit = function(){ closePublishModal(); window.location.href = '../Teacher_activies.html'; };
+      if (_editingPub.db_activity_id && _editingPub.teacherId) {
+        var fdU = new FormData();
+        fdU.append('teacher_id', _editingPub.teacherId);
+        fdU.append('activity_id', _editingPub.db_activity_id);
+        fdU.append('activity_title', firstTitle);
+        fdU.append('subject', domain);
+        fdU.append('content_json', JSON.stringify(state));
+        fdU.append('deadline', deadline);
+        fetch('../TEACHER_BACKEND/teacher_update_activity.php', { method: 'POST', body: fdU })
+          .catch(function(){}).finally(_finishEdit);
+      } else {
+        _finishEdit();
+      }
+      return;
+    }
+
     var pub = {
       id:          'pub-' + Date.now(),
       title:       firstTitle,
@@ -1328,26 +1614,27 @@
     _idb.save('pub_data_' + pub.id, JSON.parse(JSON.stringify(state)), function(err){ if(err) console.warn('IDB save failed:',err); });
     var _pubRef = pub;
     var _assignedIds = assignedIds;
-    fetch('../TEACHER_BACKEND/teacher_create_activity.php', {
-      method: 'POST',
-      body: new URLSearchParams({
-        teacher_id: _pubRef.teacherId,
-        activity_title: _pubRef.title,
-        activity_type: 'Sequencing',
-        subject: domain,
-        grade_level: '',
-        status: 'published',
-        assigned_student_ids: JSON.stringify(_assignedIds)
-      })
-    }).then(function(r){ return r.json(); }).then(function(d){
+    var fdC = new FormData();
+    fdC.append('teacher_id', _pubRef.teacherId);
+    fdC.append('activity_title', _pubRef.title);
+    fdC.append('activity_type', 'Sequencing');
+    fdC.append('subject', domain);
+    fdC.append('grade_level', '');
+    fdC.append('status', 'published');
+    fdC.append('assigned_student_ids', JSON.stringify(_assignedIds));
+    fdC.append('content_json', JSON.stringify(state));
+    fdC.append('deadline', deadline);
+    fetch('../TEACHER_BACKEND/teacher_create_activity.php', { method: 'POST', body: fdC })
+    .then(function(r){ return r.json(); }).then(function(d){
       if (d.success && d.activity_id) {
         var acts = []; try { acts = JSON.parse(localStorage.getItem('published_activities')||'[]'); } catch(e){}
         var i = acts.findIndex(function(a){ return a.id === _pubRef.id; });
         if (i >= 0) { acts[i].db_activity_id = d.activity_id; try { localStorage.setItem('published_activities', JSON.stringify(acts)); } catch(e){} }
       }
-    }).catch(function(){});
-    closePublishModal();
-    setTimeout(function(){ window.location.href = '../Teacher_activies.html'; }, 400);
+    }).catch(function(){}).finally(function(){
+      closePublishModal();
+      window.location.href = '../Teacher_activies.html';
+    });
     }); // end compressThumb
   }
   $("seqPublishConfirmBtn").addEventListener("click", confirmPublish);
@@ -1386,6 +1673,7 @@
   renderActivity();
   renderSlideNav();
   loadDraftIfAny();
+  loadPublishedForEditIfAny();
 
   /* ── STUDENT MODE ─────────────────────────────────────────── */
   (function () {
@@ -1397,6 +1685,9 @@
     try { _stuProg = JSON.parse(localStorage.getItem('student_progress') || '[]'); } catch(e){}
     var prev = _stuProg.find(function(r){ return r.pubId === _stuPubId; });
     if (prev) _stuRetake = prev.retakes || 0;
+    // Already passed and submitted before — this session is just practice,
+    // so nothing here should be recorded or re-sent to the teacher again.
+    _stuAlreadyPassed = !!(prev && prev.percent >= Math.round(PASS_THRESHOLD*100));
 
     function showNotAvailable() {
       document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Poppins,sans-serif;gap:16px;padding:32px;text-align:center;">'
@@ -1416,6 +1707,16 @@
       var pubs = [];
       try { pubs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
       var pub = pubs.find(function(r){ return r.id === _stuPubId; }) || {};
+      _stuPubMeta = pub;
+      if (pub.locked) {
+        document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Poppins,sans-serif;gap:16px;padding:32px;text-align:center;">'
+          + '<div style="font-size:72px;">⏸️</div>'
+          + '<h2 style="color:#1e3a8a;margin:0;">Activity Temporarily Unavailable</h2>'
+          + '<p style="color:#64748b;max-width:340px;margin:0;">Your teacher is updating "' + (pub.title || 'this activity') + '" right now. Please check back in a bit.</p>'
+          + '<button onclick="window.history.back()" style="margin-top:8px;background:#1e3a8a;color:#fff;border:none;padding:12px 28px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;">← Exit</button>'
+          + '</div>';
+        return;
+      }
       var splashThumb = pub.thumbnail
         ? '<img src="' + pub.thumbnail + '" style="width:120px;height:120px;object-fit:cover;border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.35);" />'
         : '<div style="font-size:80px;line-height:1;">📋</div>';
@@ -1481,26 +1782,46 @@
           var _totCorrect=_stuSlideScores.reduce(function(s,x){return s+x.correct;},0);
           var _totItems=_stuSlideScores.reduce(function(s,x){return s+x.total;},0);
           var pct = Math.round((_totCorrect / _totItems) * 100);
-          var record = { pubId:_stuPubId, title:pub.title||'Activity', type:'Sequencing',
-            grading:pub.grading||'', deadline:pub.deadline||'',
-            score:_totCorrect, total:_totItems, percent:pct, retakes:_stuRetake,
-            submittedAt:new Date().toISOString() };
-          var idx = _stuProg.findIndex(function(r){ return r.pubId === _stuPubId; });
-          if (idx >= 0) _stuProg[idx] = record; else _stuProg.push(record);
-          try { localStorage.setItem('student_progress', JSON.stringify(_stuProg)); } catch(e){}
-          var notifs = [];
-          try { notifs = JSON.parse(localStorage.getItem('student_notifications') || '[]'); } catch(e){}
-          notifs.unshift({ id:'notif-'+Date.now(), type:'achievement',
-            title:'Activity Submitted! 🌟',
-            message:'You scored '+pct+'% on "'+(pub.title||'Activity')+'"'+(_stuRetake>0?' after '+_stuRetake+' retake(s)':'')+'. Great job!',
-            isRead:false, createdAt:new Date().toISOString() });
-          try { localStorage.setItem('student_notifications', JSON.stringify(notifs)); } catch(e){}
-          // Mirror completion to DB so teacher reports show real student progress
-          var _stuId = sessionStorage.getItem('student_record_id');
-          var _ansJson = JSON.stringify((function(){var all=[];_stuSlideScores.forEach(function(s,si){if(_slideCount>1){var sr=_stuSlideRetakes[si]||0;all.push({isSlideHeader:true,label:'Slide '+(si+1)+(sr>0?' ('+sr+' retake'+(sr>1?'s':'')+')':''),slideRetakes:sr,studentAnswer:'',correctAnswer:'',correct:null});}s.ansItems.forEach(function(item){all.push(Object.assign({},item));});});return all;})());
+          if (pct < Math.round(PASS_THRESHOLD*100)) { alert('You need at least ' + Math.round(PASS_THRESHOLD*100) + '% to submit this activity. Keep trying!'); return; }
+          if (!_stuAlreadyPassed) {
+            var _scaffoldUsed = Math.max(0, ...Object.keys(_stuScaffoldLevel).map(function(k){ return _stuScaffoldLevel[k]; }));
+            var _struggledItems = [];
+            Object.keys(_stuMissedDetail).forEach(function(si){
+              Object.keys(_stuMissedDetail[si]).forEach(function(label){
+                if (_struggledItems.some(function(x){ return x.label === label; })) return;
+                var d = _stuMissedDetail[si][label];
+                var bestChoice = null, bestCount = 0;
+                Object.keys(d.choices).forEach(function(c){ if (d.choices[c] > bestCount) { bestChoice = c; bestCount = d.choices[c]; } });
+                _struggledItems.push({ label: label, correct: d.correct, thought: bestChoice });
+              });
+            });
+            var record = { pubId:_stuPubId, title:pub.title||'Activity', type:'Sequencing',
+              grading:pub.grading||'', deadline:pub.deadline||'',
+              score:_totCorrect, total:_totItems, percent:pct, retakes:_stuRetake,
+              submittedAt:new Date().toISOString() };
+            var idx = _stuProg.findIndex(function(r){ return r.pubId === _stuPubId; });
+            if (idx >= 0) _stuProg[idx] = record; else _stuProg.push(record);
+            try { localStorage.setItem('student_progress', JSON.stringify(_stuProg)); } catch(e){}
+            var notifs = [];
+            try { notifs = JSON.parse(localStorage.getItem('student_notifications') || '[]'); } catch(e){}
+            notifs.unshift({ id:'notif-'+Date.now(), type:'achievement',
+              title:'Activity Submitted! 🌟',
+              message:'You scored '+pct+'% on "'+(pub.title||'Activity')+'"'+(_stuRetake>0?' after '+_stuRetake+' retake(s)':'')+'. Great job!',
+              isRead:false, createdAt:new Date().toISOString() });
+            try { localStorage.setItem('student_notifications', JSON.stringify(notifs)); } catch(e){}
+            // Mirror completion to DB so teacher reports show real student progress
+            var _stuId = sessionStorage.getItem('student_record_id');
+            var _ansJson = JSON.stringify((function(){var all=[];_stuSlideScores.forEach(function(s,si){if(_slideCount>1){var sr=_stuSlideRetakes[si]||0;all.push({isSlideHeader:true,label:'Slide '+(si+1)+(sr>0?' ('+sr+' retake'+(sr>1?'s':'')+')':''),slideRetakes:sr,studentAnswer:'',correctAnswer:'',correct:null});}s.ansItems.forEach(function(item){all.push(Object.assign({},item));});});return all;})());
+            if (pub.db_activity_id && pub.teacherId && _stuId) {
+              fetch('../TEACHER_BACKEND/teacher_complete_activity.php', {
+                method: 'POST', keepalive: true,
+                body: new URLSearchParams({ teacher_id: pub.teacherId, student_id: _stuId, activity_id: pub.db_activity_id, score: pct, total_items: _totItems, pub_id: _stuPubId||'', answers_json: _ansJson, retake_count: _stuRetake||0, scaffold_used: _scaffoldUsed, struggled_items_json: JSON.stringify(_struggledItems) })
+              });
+            }
+          }
           // Show final summary before going home
           var _fi=pct>=100?'images/perfect.png':pct>=80?'images/goodjob.png':'images/tryagain.png';
-          var _fm=pct>=80?'Excellent work! 🌟':pct>=50?'Good effort! Keep practicing! ⭐':'Keep trying! Practice makes perfect! 💪';
+          var _fm=(pct>=80?'Excellent work! 🌟':pct>=50?'Good effort! Keep practicing! ⭐':'Keep trying! Practice makes perfect! 💪') + (_stuAlreadyPassed ? ' (Practice mode — not recorded)' : '');
           $('seqModalEmoji').src=_fi; $('seqModalScore').textContent=_totCorrect+' / '+_totItems+' correct ('+pct+'%)'; $('seqModalMsg').textContent=_fm;
           $('seqModalCloseBtn').style.display='none'; $('seqModalTryBtn').style.display='none';
           $('seqStudentSubmitBtn').textContent='🏠 Go to Dashboard';
@@ -1508,21 +1829,40 @@
           $('seqReviewList').style.display=_slideCount>1?'block':'none';
           if(_slideCount>1){_stuSlideScores.forEach(function(s,si){var sp=Math.round((s.correct/s.total)*100);var sc=sp>=80?'#1f9d44':sp>=50?'#ca8a04':'#e23b54';var sr=_stuSlideRetakes[si]||0;var rd=document.createElement('div');rd.style.cssText='display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:13px;align-items:center;';rd.innerHTML='<span style="font-weight:600;">Slide '+(si+1)+(sr>0?' <span style="color:#e23b54;font-size:10px;">('+sr+'× retake)</span>':'')+'</span><span style="font-weight:700;color:'+sc+';">'+s.correct+'/'+s.total+' ('+sp+'%)</span>';_fbR.appendChild(rd);});}
           _stuSubmitDone=true;
-          if (pub.db_activity_id && pub.teacherId && _stuId) {
-            fetch('../TEACHER_BACKEND/teacher_complete_activity.php', {
-              method: 'POST', keepalive: true,
-              body: new URLSearchParams({ teacher_id: pub.teacherId, student_id: _stuId, activity_id: pub.db_activity_id, score: pct, total_items: _totItems, pub_id: _stuPubId||'', answers_json: _ansJson, retake_count: _stuRetake||0 })
-            });
-          }
         });
       });
+    }
+
+    function fetchRemoteActivity() {
+      fetch('../../STUDENT_FILES/STUDENT_BACKEND/student_get_activity_content.php?activity_id=' + encodeURIComponent(_stuPubId))
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if (!d.success || !d.content) { applyStudentMode(null); return; }
+          var pubs = [];
+          try { pubs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+          var idx = pubs.findIndex(function(p){ return p.id === _stuPubId; });
+          var pubEntry = {
+            id: _stuPubId, title: d.title || 'Activity', type: d.type || 'Sequencing',
+            deadline: d.deadline || '', thumbnail: (d.content && d.content.thumb) || '',
+            teacherName: '—', teacherId: String(d.teacher_id || ''),
+            learner: 'ALL', condition: d.condition || '',
+            publishedAt: new Date().toISOString(),
+            db_activity_id: d.activity_id, locked: !!d.is_locked
+          };
+          if (idx >= 0) pubs[idx] = pubEntry; else pubs.push(pubEntry);
+          try { localStorage.setItem('published_activities', JSON.stringify(pubs)); } catch(e){}
+          _idb.save('pub_data_' + _stuPubId, d.content, function(){});
+          applyStudentMode(d.content);
+        })
+        .catch(function(){ applyStudentMode(null); });
     }
 
     _idb.load('pub_data_' + _stuPubId, function(err, saved) {
       if (saved) { applyStudentMode(saved); return; }
       var ls = null;
       try { ls = JSON.parse(localStorage.getItem('pub_data_' + _stuPubId) || 'null'); } catch(e){}
-      applyStudentMode(ls);
+      if (ls) { applyStudentMode(ls); return; }
+      fetchRemoteActivity();
     });
   })();
 

@@ -4,6 +4,8 @@
 <head>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
   <title>SPED ALM - Notifications</title>
   <link href="STUDENT_CSS/Student_notif.css" rel="stylesheet" />
   <link
@@ -89,7 +91,7 @@
     <header class="student-page-header">
       <div class="student-page-header-left">
         <h1 class="student-page-title">Notifications 🔔</h1>
-        <p class="student-page-sub" id="student-unreadCount">2 unread notifications</p>
+        <p class="student-page-sub" id="student-unreadCount">0 unread notifications</p>
       </div>
       <div class="student-page-actions">
         <button class="student-action-btn" onclick="markAllRead()" type="button">✓ Mark all read</button>
@@ -100,12 +102,12 @@
     <div class="student-filter-row">
       <div class="student-filter-tabs">
         <button class="student-ftab student-active" onclick="switchTab(this, 'all')" type="button">All Notifications</button>
-        <button class="student-ftab" id="student-unreadTab" onclick="switchTab(this, 'unread')" type="button">Unread (2)</button>
+        <button class="student-ftab" id="student-unreadTab" onclick="switchTab(this, 'unread')" type="button">Unread (0)</button>
       </div>
       <button class="student-mark-all-btn" onclick="markAllRead()" type="button">Mark All as Read</button>
     </div>
     <!-- NOTIFICATIONS LIST -->
-    <div class=”student-notif-list” id=”student-notifList”></div>
+    <div class="student-notif-list" id="student-notifList"></div>
   </main>
   <script>
     // Init sidebar profile from localStorage/sessionStorage
@@ -148,10 +150,10 @@
     var currentTab = 'all';
 
     var EMPTY_HTML =
-      '<div class=”student-notif-empty”>' +
-      '<div class=”student-notif-empty-icon”>🔔</div>' +
-      '<p class=”student-notif-empty-title”>No notifications yet</p>' +
-      '<p class=”student-notif-empty-desc”>Notifications from activities, your teacher, and system updates will appear here once available.</p>' +
+      '<div class="student-notif-empty">' +
+      '<div class="student-notif-empty-icon">🔔</div>' +
+      '<p class="student-notif-empty-title">No notifications yet</p>' +
+      '<p class="student-notif-empty-desc">Notifications from activities, your teacher, and system updates will appear here once available.</p>' +
       '</div>';
 
     function timeAgo(isoStr) {
@@ -165,87 +167,142 @@
     }
 
     function notifIcon(type) {
-      if (type === 'new_activity') return { icon: '📚', cls: 'student-notif-icon--blue' };
-      if (type === 'achievement')  return { icon: '⭐', cls: 'student-notif-icon--gold' };
-      return { icon: '💬', cls: 'student-notif-icon--purple' };
+      if (type === 'new_activity') return { icon: '📚', cls: 'student-notif-icon--blue'   };
+      if (type === 'achievement')  return { icon: '⭐', cls: 'student-notif-icon--gold'   };
+      if (type === 'reminder')     return { icon: '🔔', cls: 'student-notif-icon--blue'   };
+      if (type === 'alert')        return { icon: '⚠️', cls: 'student-notif-icon--red'    };
+      return                              { icon: '💬', cls: 'student-notif-icon--purple' };
     }
 
     function renderNotifs(notifs) {
+      var list = document.getElementById('student-notifList')
+              || document.querySelector('.student-notif-list');
+      if (!list) return;
       if (notifs.length === 0) {
-        document.getElementById('student-notifList').innerHTML = EMPTY_HTML;
+        list.innerHTML = EMPTY_HTML;
         return;
       }
       var html = notifs.map(function(n, i) {
         var ic = notifIcon(n.type);
         var unreadCls = n.isRead ? '' : ' unread';
-        return '<div class=”notif-item' + unreadCls + '” data-idx=”' + i + '”>' +
-          '<div class=”student-notif-icon ' + ic.cls + '”>' + ic.icon + '</div>' +
-          '<div class=”student-notif-body”>' +
-            '<div class=”student-notif-row1”>' +
-              '<span class=”student-notif-title”>' + n.title + '</span>' +
-              '<span class=”student-notif-time”>' + timeAgo(n.createdAt) + '</span>' +
+        return '<div class="notif-item' + unreadCls + '" data-idx="' + i + '">' +
+          '<div class="student-notif-icon ' + ic.cls + '">' + ic.icon + '</div>' +
+          '<div class="student-notif-body" style="flex:1;min-width:0;">' +
+            '<div class="student-notif-row1">' +
+              '<span class="student-notif-title">' + n.title + '</span>' +
             '</div>' +
-            '<p class=”student-notif-text”>' + n.message + '</p>' +
+            '<p class="student-notif-text">' + n.message + '</p>' +
+            '<span class="student-notif-time">' + timeAgo(n.createdAt) + '</span>' +
           '</div>' +
+          '<div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;min-width:70px;margin-left:auto;">' +
           (n.isRead
-            ? '<button class=”mark-read-btn” disabled type=”button”>Read</button>'
-            : '<button class=”mark-read-btn” onclick=”markOne(this,' + i + ')” type=”button”>Mark read</button>') +
+            ? '<button class="mark-read-btn" disabled type="button">✓ Read</button>'
+            : '<button class="mark-read-btn" onclick="markOne(this,' + i + ')" type="button">✓ Read</button>') +
+          '<button class="student-delete-btn" onclick="deleteOne(' + i + ',this)" type="button" title="Delete">🗑</button>' +
+          '</div>' +
           '</div>';
       }).join('');
-      document.getElementById('student-notifList').innerHTML = html;
+      list.innerHTML = html;
     }
 
     var _cachedNotifs = [];
 
+    // localStorage keys scoped per student so different accounts on the same browser don't bleed into each other
+    function _lsKey(suffix) {
+      var srid = sessionStorage.getItem('student_record_id') || '';
+      return srid ? ('student_notif_' + suffix + '_' + srid) : ('student_notif_' + suffix);
+    }
+
+    // Load cached notifications from localStorage — deferred until DOM is ready
+    function _initFromCache() {
+      try {
+        var raw = JSON.parse(localStorage.getItem(_lsKey('cache')) || '[]');
+        _cachedNotifs = Array.isArray(raw) ? raw : [];
+      } catch(e) { _cachedNotifs = []; }
+      renderNotifs(_cachedNotifs);
+      recount();
+    }
+
+    function _applyServerData(data) {
+      if (!data || !data.success) return;
+      var list = Array.isArray(data.notifications) ? data.notifications : [];
+
+      // Filter out notifications that existed before the last "clear all"
+      var clearedAt = localStorage.getItem(_lsKey('cleared_at'));
+      if (clearedAt) {
+        var cutoff = new Date(clearedAt).getTime();
+        list = list.filter(function(n) {
+          if (!n.time) return false;
+          return new Date(n.time.replace(' ', 'T')).getTime() > cutoff;
+        });
+      }
+
+      _cachedNotifs = list.map(function(n) {
+        return {
+          id:        n.id   || null,
+          title:     n.title || '(no title)',
+          message:   n.text  || n.message || '',
+          type:      n.type  || 'message',
+          isRead:    !!n.read,
+          createdAt: n.time  || null
+        };
+      });
+      try { localStorage.setItem(_lsKey('cache'), JSON.stringify(_cachedNotifs)); } catch(e) {}
+      renderNotifs(_cachedNotifs);
+      recount();
+    }
+
+    function _bgFetch(srid, tid) {
+      var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      var timer = ctrl ? setTimeout(function() { ctrl.abort(); }, 15000) : null;
+      var opts = ctrl ? { signal: ctrl.signal } : {};
+      fetch('STUDENT_BACKEND/student_get_notifications.php?student_record_id=' + srid + '&teacher_id=' + tid + '&_t=' + Date.now(), opts)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (timer) clearTimeout(timer);
+          _applyServerData(data);
+        })
+        .catch(function(e) {
+          if (timer) clearTimeout(timer);
+        });
+    }
+
     function loadNotifs() {
       var srid = sessionStorage.getItem('student_record_id');
       var tid  = sessionStorage.getItem('teacher_id');
-      if (!srid || !tid) {
-        // Fallback to localStorage if session not available
-        try {
-          var _raw = JSON.parse(localStorage.getItem('student_notifications') || '[]');
-          _cachedNotifs = Array.isArray(_raw) ? _raw.map(function(n, i) {
-            return { id: null, title: n.title || 'Notification', message: n.message || n.text || '', type: n.type || 'message', isRead: !!n.isRead, createdAt: n.createdAt || n.time || null };
-          }) : [];
-        } catch(e) { _cachedNotifs = []; }
-        renderNotifs(_cachedNotifs);
-        recount();
+
+      if (srid && tid) {
+        _bgFetch(srid, tid);
         return;
       }
-      fetch('STUDENT_BACKEND/student_get_notifications.php?student_record_id=' + srid + '&teacher_id=' + tid)
+
+      var sid  = sessionStorage.getItem('student_id') || '';
+      var snam = sessionStorage.getItem('student_name') || '';
+      if (!sid) return;
+
+      var ctrl2 = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      if (ctrl2) setTimeout(function() { ctrl2.abort(); }, 5000);
+      var opts2 = ctrl2 ? { signal: ctrl2.signal } : {};
+      fetch('STUDENT_BACKEND/student_check_enrollment.php?student_id=' + encodeURIComponent(sid) + '&student_name=' + encodeURIComponent(snam), opts2)
         .then(function(r) { return r.json(); })
-        .then(function(data) {
-          if (!data.success) { renderNotifs([]); recount(); return; }
-          _cachedNotifs = data.notifications.map(function(n) {
-            return {
-              id:        n.id || null,
-              title:     n.title,
-              message:   n.text || n.message || '',
-              type:      n.type || 'message',
-              isRead:    !!n.read,
-              createdAt: n.time || null
-            };
-          });
-          // Also persist to localStorage as cache
-          try { localStorage.setItem('student_notifications', JSON.stringify(_cachedNotifs)); } catch(e) {}
-          renderNotifs(_cachedNotifs);
-          recount();
+        .then(function(d) {
+          if (d.enrolled && d.student_record_id && d.teacher_id) {
+            var sr = String(d.student_record_id);
+            var ti = String(d.teacher_id);
+            sessionStorage.setItem('student_record_id', sr);
+            sessionStorage.setItem('teacher_id', ti);
+            _bgFetch(sr, ti);
+          }
         })
-        .catch(function() {
-          // Fallback to localStorage
-          try {
-            var _raw = JSON.parse(localStorage.getItem('student_notifications') || '[]');
-            _cachedNotifs = Array.isArray(_raw) ? _raw : [];
-          } catch(e) { _cachedNotifs = []; }
-          renderNotifs(_cachedNotifs);
-          recount();
-        });
+        .catch(function() {});
     }
 
     function recount() {
       var n = document.querySelectorAll('.notif-item.unread').length;
-      document.getElementById('student-unreadCount').textContent = n + ' unread notification' + (n === 1 ? '' : 's');
-      document.getElementById('student-unreadTab').textContent = 'Unread (' + n + ')';
+      var uc = document.getElementById('student-unreadCount');
+      var ut = document.getElementById('student-unreadTab');
+      if (uc) uc.textContent = n + ' unread notification' + (n === 1 ? '' : 's');
+      if (ut) ut.textContent = 'Unread (' + n + ')';
       applyFilter();
     }
 
@@ -265,7 +322,7 @@
 
     function markOne(btn, idx) {
       if (_cachedNotifs[idx]) _cachedNotifs[idx].isRead = true;
-      try { localStorage.setItem('student_notifications', JSON.stringify(_cachedNotifs)); } catch(e) {}
+      try { localStorage.setItem(_lsKey('cache'), JSON.stringify(_cachedNotifs)); } catch(e) {}
       // Sync to server if it has a DB id
       var notif = _cachedNotifs[idx];
       var srid = sessionStorage.getItem('student_record_id');
@@ -287,7 +344,7 @@
 
     function markAllRead() {
       _cachedNotifs.forEach(function(n) { n.isRead = true; });
-      try { localStorage.setItem('student_notifications', JSON.stringify(_cachedNotifs)); } catch(e) {}
+      try { localStorage.setItem(_lsKey('cache'), JSON.stringify(_cachedNotifs)); } catch(e) {}
       // Sync all to server
       var srid = sessionStorage.getItem('student_record_id');
       var tid  = sessionStorage.getItem('teacher_id');
@@ -303,16 +360,63 @@
       recount();
     }
 
+    function deleteOne(idx, btn) {
+      var notif = _cachedNotifs[idx];
+      if (!notif) return;
+      // Optimistic: remove from DOM immediately
+      var item = btn ? btn.closest('.notif-item') : null;
+      if (item) item.remove();
+      _cachedNotifs.splice(idx, 1);
+      try { localStorage.setItem(_lsKey('cache'), JSON.stringify(_cachedNotifs)); } catch(e) {}
+      recount();
+      if (!_cachedNotifs.length) {
+        var list = document.getElementById('student-notifList') || document.querySelector('.student-notif-list');
+        if (list) list.innerHTML = EMPTY_HTML;
+      }
+      // Only server-delete if it's a real DB row (direct teacher notification)
+      if (notif.id) {
+        var srid = sessionStorage.getItem('student_record_id');
+        if (srid) {
+          var fd = new FormData();
+          fd.append('notif_id', notif.id);
+          fd.append('student_id', srid);
+          fetch('STUDENT_BACKEND/student_delete_notification.php', { method: 'POST', body: fd }).catch(function() {});
+        }
+      }
+    }
+
     function clearAll() {
+      // Record when we cleared so background fetches don't repopulate old notifications
+      var now = new Date().toISOString();
       _cachedNotifs = [];
-      try { localStorage.setItem('student_notifications', '[]'); } catch(e) {}
-      document.getElementById('student-notifList').innerHTML = EMPTY_HTML;
-      document.getElementById('student-unreadCount').textContent = '0 unread notifications';
-      document.getElementById('student-unreadTab').textContent = 'Unread (0)';
+      try {
+        localStorage.setItem(_lsKey('cache'), '[]');
+        localStorage.setItem(_lsKey('cleared_at'), now);
+      } catch(e) {}
+      var list = document.getElementById('student-notifList') || document.querySelector('.student-notif-list');
+      if (list) list.innerHTML = EMPTY_HTML;
+      var uc = document.getElementById('student-unreadCount');
+      var ut = document.getElementById('student-unreadTab');
+      if (uc) uc.textContent = '0 unread notifications';
+      if (ut) ut.textContent = 'Unread (0)';
+      // Permanently delete direct notifications from server
+      var srid = sessionStorage.getItem('student_record_id');
+      if (srid) {
+        var fd = new FormData();
+        fd.append('student_id', srid);
+        fetch('STUDENT_BACKEND/student_clear_notifications.php', { method: 'POST', body: fd }).catch(function() {});
+      }
     }
 
     document.addEventListener('visibilitychange', function() { if (!document.hidden) loadNotifs(); });
-    loadNotifs();
+
+    // Wait for DOM to be fully ready before touching any elements
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() { _initFromCache(); loadNotifs(); });
+    } else {
+      _initFromCache();
+      loadNotifs();
+    }
   </script>
 <script>(function(){var _id=sessionStorage.getItem('student_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>
 </body>

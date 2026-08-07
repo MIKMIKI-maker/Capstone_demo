@@ -25,6 +25,8 @@ $total_items   = isset($_POST['total_items'])   ? intval($_POST['total_items']) 
 $pub_id        = isset($_POST['pub_id'])        ? trim($_POST['pub_id'])          : '';
 $answers_json  = isset($_POST['answers_json'])  ? trim($_POST['answers_json'])    : '';
 $retake_count  = isset($_POST['retake_count'])  ? intval($_POST['retake_count'])  : 0;
+$scaffold_used = isset($_POST['scaffold_used']) ? intval($_POST['scaffold_used']) : 0;
+$struggled_items_json = isset($_POST['struggled_items_json']) ? trim($_POST['struggled_items_json']) : '';
 
 if (!$teacher_id || !$student_id || !$activity_id) {
     echo json_encode(['success' => false, 'message' => 'Teacher ID, student ID, and activity ID are required']);
@@ -87,12 +89,12 @@ if ($stmt->execute()) {
     
     // Also upsert into activity_submissions so teacher can review item-by-item answers
     $subStmt = $teacher_conn->prepare(
-        "INSERT INTO activity_submissions (teacher_id, student_id, activity_id, pub_id, score, total_items, retake_count, answers_json)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-         ON DUPLICATE KEY UPDATE score=VALUES(score), total_items=VALUES(total_items), retake_count=VALUES(retake_count), answers_json=VALUES(answers_json), submitted_at=NOW()"
+        "INSERT INTO activity_submissions (teacher_id, student_id, activity_id, pub_id, score, total_items, retake_count, scaffold_used, struggled_items_json, answers_json)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE score=VALUES(score), total_items=VALUES(total_items), retake_count=VALUES(retake_count), scaffold_used=VALUES(scaffold_used), struggled_items_json=VALUES(struggled_items_json), answers_json=VALUES(answers_json), submitted_at=NOW()"
     );
     if ($subStmt) {
-        $subStmt->bind_param("iiisiiis", $teacher_id, $student_id, $activity_id, $pub_id, $score, $total_items, $retake_count, $answers_json);
+        $subStmt->bind_param("iiisiiiiss", $teacher_id, $student_id, $activity_id, $pub_id, $score, $total_items, $retake_count, $scaffold_used, $struggled_items_json, $answers_json);
         $subStmt->execute();
         $subStmt->close();
     }
@@ -106,6 +108,63 @@ if ($stmt->execute()) {
         "{$scoreLabel} {$student_name} completed \"{$activity_title}\" with a score of {$score}%.",
         $activity_id
     );
+
+    // Push teacher notification
+    require_once __DIR__ . '/teacher_push_notification.php';
+    pushTeacherNotification(
+        $teacher_conn,
+        $teacher_id,
+        'activity',
+        'Student Activity Completed',
+        "{$scoreLabel} {$student_name} completed \"{$activity_title}\" with a score of {$score}%."
+    );
+
+    // If the system had to step in after repeated failed attempts, let the
+    // teacher know separately so they can factor it into grading/IEP notes.
+    // Level 1 = a light hint was shown (mild); Level 2 = the system had to
+    // fully re-teach the activity (more serious) — these get distinct
+    // notification types so the teacher can tell them apart at a glance.
+    if ($scaffold_used >= 2) {
+        $struggledItems = [];
+        if ($struggled_items_json) {
+            $decoded = json_decode($struggled_items_json, true);
+            if (is_array($decoded)) $struggledItems = $decoded;
+        }
+        pushTeacherNotification(
+            $teacher_conn,
+            $teacher_id,
+            'scaffold',
+            '🚨 Student Needed Extra Help',
+            "{$student_name} needed the system to re-teach \"{$activity_title}\" after {$retake_count} attempt(s) before passing. Please review when grading.",
+            [
+                'student_name'    => $student_name,
+                'activity_title'  => $activity_title,
+                'retake_count'    => $retake_count,
+                'final_score'     => $score,
+                'struggled_items' => $struggledItems,
+            ]
+        );
+    } elseif ($scaffold_used == 1) {
+        $struggledItems = [];
+        if ($struggled_items_json) {
+            $decoded = json_decode($struggled_items_json, true);
+            if (is_array($decoded)) $struggledItems = $decoded;
+        }
+        pushTeacherNotification(
+            $teacher_conn,
+            $teacher_id,
+            'scaffold_hint',
+            '💡 Student Needed a Hint',
+            "{$student_name} needed a hint on \"{$activity_title}\" after {$retake_count} attempt(s) before passing.",
+            [
+                'student_name'    => $student_name,
+                'activity_title'  => $activity_title,
+                'retake_count'    => $retake_count,
+                'final_score'     => $score,
+                'struggled_items' => $struggledItems,
+            ]
+        );
+    }
 
     echo json_encode(['success' => true, 'message' => 'Activity completed successfully']);
 } else {

@@ -35,13 +35,13 @@ function getDatabaseConnection() {
     $conn->query("ALTER TABLE admin_accounts ADD COLUMN IF NOT EXISTS assigned_teacher_id INT DEFAULT NULL AFTER condition_info");
     $conn->query("ALTER TABLE admin_accounts ADD COLUMN IF NOT EXISTS parent_name VARCHAR(255) DEFAULT NULL AFTER assigned_teacher_id");
     // profile_photo — MySQL 5.7 compatible migration (IF NOT EXISTS not supported before MySQL 8)
-    $pp_col = $conn->query("SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='admin_accounts' AND COLUMN_NAME='profile_photo'");
-    if ($pp_col && $pp_col->fetch_assoc()['cnt'] == 0) {
+    $pp_col = $conn->query("SHOW COLUMNS FROM admin_accounts LIKE 'profile_photo'");
+    if ($pp_col && $pp_col->num_rows == 0) {
         $conn->query("ALTER TABLE admin_accounts ADD COLUMN profile_photo LONGTEXT NULL DEFAULT NULL");
     }
     // Soft-delete column
-    $sd_col = $conn->query("SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='admin_accounts' AND COLUMN_NAME='is_deleted'");
-    if ($sd_col && $sd_col->fetch_assoc()['cnt'] == 0) {
+    $sd_col = $conn->query("SHOW COLUMNS FROM admin_accounts LIKE 'is_deleted'");
+    if ($sd_col && $sd_col->num_rows == 0) {
         $conn->query("ALTER TABLE admin_accounts ADD COLUMN is_deleted TINYINT(1) NOT NULL DEFAULT 0");
         $conn->query("ALTER TABLE admin_accounts ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL");
     }

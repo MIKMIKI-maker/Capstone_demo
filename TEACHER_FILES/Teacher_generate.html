@@ -96,6 +96,12 @@
                     <p class="teacher-page-sub">Select a structural format and configure specific elements for a child's
                         needs</p>
                 </div>
+                <div class="teacher-topbar-right">
+                    <a class="teacher-notif-btn" href="Teacher_notif.html" title="Notifications">
+                        <i class="fa-regular fa-bell"></i>
+                        <span class="teacher-notif-badge"></span>
+                    </a>
+                </div>
             </header>
             <hr class="teacher-divider" />
             <!-- SECTION HEADER -->
@@ -321,7 +327,7 @@
             { key: 'Sorting',         name: 'Sorting / Categorization',      desc: 'Group items such as animals vs fruits, big vs small', goal: 'Cognitive / Classification', icon: 'fa-layer-group',    color: 'tpl-yellow', file: 'TEMPLATES/Sorting_Type_Template.html' },
             { key: 'Sequencing',      name: 'Sequencing / Arrange in Order', desc: 'Put steps in correct order',                   goal: 'Daily Living / Self-Help',    icon: 'fa-list-ol',        color: 'tpl-green',  file: 'TEMPLATES/Sequencing_Type_Template.html' },
             { key: 'CheckOrX',        name: 'Check or X',                    desc: 'Mark each item as correct (✓) or wrong (✗)',   goal: 'Cognitive / Identification',  icon: 'fa-check-double',   color: 'tpl-blue',   file: 'TEMPLATES/Check_ Or_Not_Template.html' },
-            { key: 'LetterID',        name: 'Letter / Sound Identification', desc: 'Identify beginning letters or sounds of words', goal: 'Cognitive / Literacy',        icon: 'fa-magnifying-glass',color: 'tpl-yellow', file: 'TEMPLATES/Identification_Template.html' },
+            { key: 'LetterID',        name: 'Beginning Letter Identification', desc: 'Identify beginning letters of words', goal: 'Cognitive / Literacy',        icon: 'fa-magnifying-glass',color: 'tpl-yellow', file: 'TEMPLATES/Identification_Template.html' },
             { key: 'PictureLabeling', name: 'Picture Labeling',              desc: 'Label parts of a picture by dragging words to the correct spots', goal: 'Communication / Vocabulary', icon: 'fa-tag', color: 'tpl-green', file: 'TEMPLATES/Picture_ Labeling_Template.html' },
             { key: 'WrittenResponse', name: 'Written Response',              desc: 'Answer questions with short written responses', goal: 'Communication / Expression',  icon: 'fa-pencil',         color: 'tpl-blue',   file: 'TEMPLATES/Written_Response_Template.html' }
         ];
@@ -356,6 +362,7 @@
         });
     </script>
 <script>(function(){var _id=sessionStorage.getItem('admin_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>
+<script>(function(){var _s=document.createElement('style');_s.textContent='.teacher-notif-badge{display:none!important}.teacher-notif-badge.has-notifs{position:absolute;top:4px;right:4px;min-width:16px;height:16px;border-radius:50%;background:#ef4444;color:#fff;font-size:9px;font-weight:700;display:flex!important;align-items:center;justify-content:center;padding:0 2px;border:2px solid #fff}';document.head.appendChild(_s);var tid=sessionStorage.getItem('teacher_id')||'';if(!tid)return;fetch('TEACHER_BACKEND/teacher_manage_notifications.php?action=get_unread_count&teacher_id='+encodeURIComponent(tid)).then(function(r){return r.json();}).then(function(d){var cnt=d&&d.unread_count>0?d.unread_count:0;if(cnt>0){var b=document.querySelector('.teacher-notif-badge');if(b){b.textContent=cnt>9?'9+':cnt;b.classList.add('has-notifs');}}}).catch(function(){});})();</script>
 </body>
 
 </html>

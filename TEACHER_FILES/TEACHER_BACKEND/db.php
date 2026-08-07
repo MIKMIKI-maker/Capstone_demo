@@ -39,8 +39,8 @@ function getTeacherDatabaseConnection() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
     $conn->query($createTeacherTableSql);
     // Migration: old schema lacked bio/class_section columns
-    $ta_col = $conn->query("SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='teacher_accounts' AND COLUMN_NAME='bio'");
-    if ($ta_col && $ta_col->fetch_assoc()['cnt'] == 0) {
+    $ta_col = $conn->query("SHOW COLUMNS FROM teacher_accounts LIKE 'bio'");
+    if ($ta_col && $ta_col->num_rows == 0) {
         $conn->query("ALTER TABLE teacher_accounts ADD COLUMN bio TEXT NULL");
         $conn->query("ALTER TABLE teacher_accounts ADD COLUMN class_section VARCHAR(50) NULL");
     }
@@ -65,8 +65,8 @@ function getTeacherDatabaseConnection() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
     $conn->query($createStudentsTableSql);
     // Add admin_account_id column if missing (migration — MySQL 8.0 safe)
-    $col_check = $conn->query("SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='students' AND COLUMN_NAME='admin_account_id'");
-    if ($col_check && $col_check->fetch_assoc()['cnt'] == 0) {
+    $col_check = $conn->query("SHOW COLUMNS FROM students LIKE 'admin_account_id'");
+    if ($col_check && $col_check->num_rows == 0) {
         $conn->query("ALTER TABLE students ADD COLUMN admin_account_id INT NULL DEFAULT NULL");
     }
 
@@ -89,9 +89,26 @@ function getTeacherDatabaseConnection() {
         INDEX (teacher_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
     $conn->query($createActivitiesTableSql);
-    $act_col = $conn->query("SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='teacher_activities' AND COLUMN_NAME='activity_type'");
-    if ($act_col && $act_col->fetch_assoc()['cnt'] == 0) {
+    $act_col = $conn->query("SHOW COLUMNS FROM teacher_activities LIKE 'activity_type'");
+    if ($act_col && $act_col->num_rows == 0) {
         $conn->query("ALTER TABLE teacher_activities ADD COLUMN activity_type VARCHAR(50) DEFAULT NULL AFTER activity_description");
+    }
+    // content_json holds the full activity state (slides, items, answer keys,
+    // design settings) so students can load it from ANY device/browser —
+    // previously this only ever lived in the publishing teacher's own
+    // localStorage/IndexedDB, which broke once teacher and student were on
+    // different machines (i.e. any real deployment).
+    $cj_col = $conn->query("SHOW COLUMNS FROM teacher_activities LIKE 'content_json'");
+    if ($cj_col && $cj_col->num_rows == 0) {
+        $conn->query("ALTER TABLE teacher_activities ADD COLUMN content_json LONGTEXT DEFAULT NULL");
+    }
+    $dl_col = $conn->query("SHOW COLUMNS FROM teacher_activities LIKE 'deadline'");
+    if ($dl_col && $dl_col->num_rows == 0) {
+        $conn->query("ALTER TABLE teacher_activities ADD COLUMN deadline DATE DEFAULT NULL");
+    }
+    $lock_col = $conn->query("SHOW COLUMNS FROM teacher_activities LIKE 'is_locked'");
+    if ($lock_col && $lock_col->num_rows == 0) {
+        $conn->query("ALTER TABLE teacher_activities ADD COLUMN is_locked TINYINT(1) DEFAULT 0");
     }
 
     // Create IEP materials table
@@ -113,8 +130,8 @@ function getTeacherDatabaseConnection() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
     $conn->query($createIEPTableSql);
     // Migration: old schema used learner_id — add student_id/teacher_id if missing
-    $iep_col = $conn->query("SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='iep_materials' AND COLUMN_NAME='student_id'");
-    if ($iep_col && $iep_col->fetch_assoc()['cnt'] == 0) {
+    $iep_col = $conn->query("SHOW COLUMNS FROM iep_materials LIKE 'student_id'");
+    if ($iep_col && $iep_col->num_rows == 0) {
         $conn->query("ALTER TABLE iep_materials ADD COLUMN student_id INT NULL DEFAULT NULL");
         $conn->query("ALTER TABLE iep_materials ADD COLUMN teacher_id INT NULL DEFAULT NULL");
     }
@@ -139,8 +156,8 @@ function getTeacherDatabaseConnection() {
     // If the old database.sql schema is present, learner_progress has a FK on activity_id
     // pointing to learner_activities (wrong table). Every INSERT the new app does is rejected.
     // Detect by checking for the old learner_id column and recreate the table cleanly.
-    $lp_old = $conn->query("SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='learner_progress' AND COLUMN_NAME='learner_id'");
-    if ($lp_old && $lp_old->fetch_assoc()['cnt'] > 0) {
+    $lp_old = $conn->query("SHOW COLUMNS FROM learner_progress LIKE 'learner_id'");
+    if ($lp_old && $lp_old->num_rows > 0) {
         $conn->query("SET FOREIGN_KEY_CHECKS = 0");
         $conn->query("DROP TABLE IF EXISTS learner_progress");
         $conn->query("SET FOREIGN_KEY_CHECKS = 1");
@@ -199,6 +216,8 @@ function getTeacherDatabaseConnection() {
         score            INT DEFAULT 0,
         total_items      INT DEFAULT 0,
         retake_count     INT DEFAULT 0,
+        scaffold_used    TINYINT(1) DEFAULT 0,
+        struggled_items_json LONGTEXT DEFAULT NULL,
         answers_json     LONGTEXT DEFAULT NULL,
         assistance_level VARCHAR(100) DEFAULT NULL,
         teacher_note     TEXT DEFAULT NULL,
@@ -213,9 +232,19 @@ function getTeacherDatabaseConnection() {
         INDEX idx_teacher_activity (teacher_id, activity_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     // Migration: add retake_count if missing
-    $rc_col = $conn->query("SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='activity_submissions' AND COLUMN_NAME='retake_count'");
-    if ($rc_col && $rc_col->fetch_assoc()['cnt'] == 0) {
+    $rc_col = $conn->query("SHOW COLUMNS FROM activity_submissions LIKE 'retake_count'");
+    if ($rc_col && $rc_col->num_rows == 0) {
         $conn->query("ALTER TABLE activity_submissions ADD COLUMN retake_count INT DEFAULT 0 AFTER total_items");
+    }
+    // Migration: add scaffold_used if missing
+    $sf_col = $conn->query("SHOW COLUMNS FROM activity_submissions LIKE 'scaffold_used'");
+    if ($sf_col && $sf_col->num_rows == 0) {
+        $conn->query("ALTER TABLE activity_submissions ADD COLUMN scaffold_used TINYINT(1) DEFAULT 0 AFTER retake_count");
+    }
+    // Migration: add struggled_items_json if missing
+    $si_col = $conn->query("SHOW COLUMNS FROM activity_submissions LIKE 'struggled_items_json'");
+    if ($si_col && $si_col->num_rows == 0) {
+        $conn->query("ALTER TABLE activity_submissions ADD COLUMN struggled_items_json LONGTEXT DEFAULT NULL AFTER scaffold_used");
     }
 
     // Personal task/checklist notes for teacher dashboard

@@ -1,5 +1,6 @@
 <?php
-require_once __DIR__ . '/../../TEACHER_FILES/TEACHER_BACKEND/db.php';
+error_reporting(0);
+ini_set('display_errors', 0);
 
 header('Content-Type: application/json');
 header('Cache-Control: no-cache');
@@ -12,11 +13,13 @@ if (!$student_record_id || !$teacher_id) {
     exit;
 }
 
-$conn = getTeacherDatabaseConnection();
-if (!$conn) {
+// Direct lightweight connection — skip getTeacherDatabaseConnection() migration overhead
+$conn = new mysqli('127.0.0.1', 'root', '', 'spedalm_db', 3307);
+if ($conn->connect_error) {
     echo json_encode(['success' => false, 'message' => 'Database connection failed']);
     exit;
 }
+$conn->set_charset('utf8mb4');
 
 $notifications = [];
 
@@ -30,20 +33,24 @@ $stmt0 = $conn->prepare("
     ORDER BY sn.created_at DESC
     LIMIT 30
 ");
-$stmt0->bind_param("i", $student_record_id);
-$stmt0->execute();
-$directs = $stmt0->get_result();
-while ($row = $directs->fetch_assoc()) {
-    $notifications[] = [
-        'id'         => (int)$row['id'],
-        'type'       => $row['notification_type'] ?: 'message',
-        'title'      => htmlspecialchars($row['title']),
-        'text'       => htmlspecialchars($row['message']),
-        'time'       => $row['created_at'],
-        'read'       => (bool)$row['is_read'],
-    ];
+if ($stmt0) {
+    $stmt0->bind_param("i", $student_record_id);
+    $stmt0->execute();
+    $directs = $stmt0->get_result();
+    if ($directs) {
+        while ($row = $directs->fetch_assoc()) {
+            $notifications[] = [
+                'id'   => (int)$row['id'],
+                'type' => $row['notification_type'] ?: 'message',
+                'title'=> htmlspecialchars($row['title']),
+                'text' => htmlspecialchars($row['message']),
+                'time' => $row['created_at'],
+                'read' => (bool)$row['is_read'],
+            ];
+        }
+    }
+    $stmt0->close();
 }
-$stmt0->close();
 
 // 2. Teacher notes as notifications
 $stmt = $conn->prepare("
@@ -55,20 +62,25 @@ $stmt = $conn->prepare("
     ORDER BY n.created_at DESC
     LIMIT 15
 ");
-$stmt->bind_param("ii", $teacher_id, $student_record_id);
-$stmt->execute();
-$notes = $stmt->get_result();
-while ($row = $notes->fetch_assoc()) {
-    $notifications[] = [
-        'id'    => null,
-        'type'  => 'message',
-        'title' => 'Note from ' . htmlspecialchars($row['teacher_name']),
-        'text'  => htmlspecialchars($row['note']),
-        'time'  => $row['created_at'],
-        'read'  => false,
-    ];
+if ($stmt) {
+    $stmt->bind_param("ii", $teacher_id, $student_record_id);
+    $stmt->execute();
+    $notes = $stmt->get_result();
+    if ($notes) {
+        while ($row = $notes->fetch_assoc()) {
+            $tname = htmlspecialchars($row['teacher_name'] ?: 'Your teacher');
+            $notifications[] = [
+                'id'    => null,
+                'type'  => 'message',
+                'title' => 'Note from ' . $tname,
+                'text'  => htmlspecialchars($row['note']),
+                'time'  => $row['created_at'],
+                'read'  => false,
+            ];
+        }
+    }
+    $stmt->close();
 }
-$stmt->close();
 
 // 3. Newly published activities (not yet completed) as notifications
 $stmt2 = $conn->prepare("
@@ -79,21 +91,25 @@ $stmt2 = $conn->prepare("
     ORDER BY a.created_at DESC
     LIMIT 10
 ");
-$stmt2->bind_param("ii", $student_record_id, $teacher_id);
-$stmt2->execute();
-$acts = $stmt2->get_result();
-while ($row = $acts->fetch_assoc()) {
-    $type_label = $row['activity_type'] ? ' (' . $row['activity_type'] . ')' : '';
-    $notifications[] = [
-        'id'    => null,
-        'type'  => 'new_activity',
-        'title' => 'New activity available',
-        'text'  => 'Your teacher added "' . htmlspecialchars($row['activity_title']) . '"' . $type_label . ' to your materials.',
-        'time'  => $row['created_at'],
-        'read'  => false,
-    ];
+if ($stmt2) {
+    $stmt2->bind_param("ii", $student_record_id, $teacher_id);
+    $stmt2->execute();
+    $acts = $stmt2->get_result();
+    if ($acts) {
+        while ($row = $acts->fetch_assoc()) {
+            $type_label = $row['activity_type'] ? ' (' . $row['activity_type'] . ')' : '';
+            $notifications[] = [
+                'id'    => null,
+                'type'  => 'new_activity',
+                'title' => 'New activity available',
+                'text'  => 'Your teacher added "' . htmlspecialchars($row['activity_title']) . '"' . $type_label . ' to your materials.',
+                'time'  => $row['created_at'],
+                'read'  => false,
+            ];
+        }
+    }
+    $stmt2->close();
 }
-$stmt2->close();
 $conn->close();
 
 // Sort all by time descending

@@ -1,30 +1,28 @@
-﻿<!DOCTYPE html>
-
+<!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
   <title>SPED ALM - Notifications</title>
   <link href="ADMIN_CSS/animations.css" rel="stylesheet" />
   <link href="ADMIN_CSS/Admin_Notif.css" rel="stylesheet" />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;family=Nunito:wght@400;600;700;800;900&amp;family=Inter:wght@400;500;600&amp;display=swap"
-    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Nunito:wght@400;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
 </head>
-
 <body>
+
+<!-- PAGE LOADER -->
 <div id="spedLoading" style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 60%,#2563eb 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .5s ease;pointer-events:all;">
   <img src="../ASSETS/logo.png" alt="SPED ALM" onerror="this.style.display='none'" style="width:88px;height:88px;border-radius:22px;background:#fff;padding:6px;box-shadow:0 10px 36px rgba(0,0,0,.35);animation:spedLdPulse 2s ease-in-out infinite;">
-  <p style="color:#fff;font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;margin:0;letter-spacing:1px;text-shadow:0 2px 8px rgba(0,0,0,.2);">SPED ALM</p>
+  <p style="color:#fff;font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;margin:0;letter-spacing:1px;">SPED ALM</p>
   <div style="display:flex;gap:10px;align-items:center;">
     <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite 0s;"></span>
     <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .18s;"></span>
     <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .36s;"></span>
   </div>
-  <p style="color:rgba(255,255,255,.65);font-family:'Poppins',sans-serif;font-size:13px;font-weight:400;margin:0;">Loading, please wait...</p>
+  <p style="color:rgba(255,255,255,.65);font-family:'Poppins',sans-serif;font-size:13px;margin:0;">Loading, please wait...</p>
 </div>
 <style>
 @keyframes spedLdBounce{0%,80%,100%{transform:translateY(0);opacity:.5}40%{transform:translateY(-16px);opacity:1}}
@@ -32,332 +30,262 @@
 </style>
 <script>
 (function(){
-  function hideLoader(){
-    var e=document.getElementById('spedLoading');
-    if(!e) return;
-    e.style.opacity='0';
-    e.style.pointerEvents='none';
-    setTimeout(function(){ if(e.parentNode) e.parentNode.removeChild(e); }, 520);
-  }
-  if(document.readyState==='complete'){ setTimeout(hideLoader,200); }
-  else { window.addEventListener('load', function(){ setTimeout(hideLoader,200); }); }
+  function hideLoader(){var e=document.getElementById('spedLoading');if(!e)return;e.style.opacity='0';e.style.pointerEvents='none';setTimeout(function(){if(e.parentNode)e.parentNode.removeChild(e);},520);}
+  if(document.readyState==='complete'){setTimeout(hideLoader,200);}
+  else{window.addEventListener('load',function(){setTimeout(hideLoader,200);});}
 })();
 </script>
-  <!-- SIDEBAR -->
-  <aside class="admin-sidebar">
-    <div class="admin-sidebar-logo">
-      <img alt="SPED ALM Logo" class="admin-sidebar-logo-img" src="../ASSETS/logo.png" />
-      <div class="admin-sidebar-logo-text">
-        <span class="admin-sidebar-title">SPED ALM</span>
-        <span class="admin-sidebar-sub">Admin Portal</span>
+
+<!-- SIDEBAR -->
+<aside class="admin-sidebar">
+  <div class="admin-sidebar-logo">
+    <img alt="SPED ALM Logo" class="admin-sidebar-logo-img" src="../ASSETS/logo.png" />
+    <div class="admin-sidebar-logo-text">
+      <span class="admin-sidebar-title">SPED ALM</span>
+      <span class="admin-sidebar-sub">Admin Portal</span>
+    </div>
+  </div>
+  <nav class="admin-sidebar-nav">
+    <a class="admin-nav-item" href="Admin_dashboard.html"><i class="fa-solid fa-table-cells-large"></i><span>Dashboard</span></a>
+    <a class="admin-nav-item" href="Admin_activity_library.html"><i class="fa-solid fa-book-bookmark"></i><span>Activity Library</span></a>
+    <a class="admin-nav-item" href="Admin_manage_user.html"><i class="fa-solid fa-users-gear"></i><span>Manage Users</span></a>
+    <a class="admin-nav-item active" href="Admin_notif.html"><i class="fa-solid fa-bell"></i><span>Notifications</span></a>
+    <a class="admin-nav-item" href="Admin_setting.html"><i class="fa-solid fa-gear"></i><span>Settings</span></a>
+  </nav>
+  <div class="admin-sidebar-footer">
+    <div class="admin-sidebar-user">
+      <div class="admin-user-avatar" id="adminSideAvatar">A</div>
+      <div class="admin-user-info">
+        <span class="admin-user-name" id="adminSideName">Admin</span>
+        <span class="admin-user-role">School Administrator</span>
       </div>
     </div>
-    <nav class="admin-sidebar-nav">
-      <a class="admin-nav-item" href="Admin_dashboard.html">
-        <i class="fa-solid fa-table-cells-large"></i>
-        <span>Dashboard</span>
-      </a>
-      <a class="admin-nav-item" href="Admin_activity_library.html">
-        <i class="fa-solid fa-book-bookmark"></i>
-        <span>Activity Library</span>
-      </a>
-      <a class="admin-nav-item" href="Admin_manage_user.html">
-        <i class="fa-solid fa-users-gear"></i>
-        <span>Manage Users</span>
-      </a>
-      <a class="admin-nav-item" href="Admin_setting.html">
-        <i class="fa-solid fa-gear"></i>
-        <span>Settings</span>
-      </a>
-    </nav>
-    <div class="admin-sidebar-footer">
-      <div class="admin-sidebar-user">
-        <div class="admin-user-avatar">PS</div>
-        <div class="admin-user-info">
-          <span class="admin-user-name">Admin</span>
-          <span class="admin-user-role">School Administrat...</span>
-        </div>
-      </div>
-      <a class="admin-signout-btn" href="#" onclick="var _id=sessionStorage.getItem('admin_id');fetch('ADMIN_BACKEND/logout.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'admin_id='+encodeURIComponent(_id||'')}).finally(function(){sessionStorage.clear();window.location.href='login_screen.html';});return false;">
-        <i class="fa-solid fa-right-from-bracket"></i>
-        <span>Sign Out</span>
-      </a>
+    <a class="admin-signout-btn" href="#" onclick="var _id=sessionStorage.getItem('admin_id');fetch('ADMIN_BACKEND/logout.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'admin_id='+encodeURIComponent(_id||'')}).finally(function(){sessionStorage.clear();window.location.href='login_screen.html';});return false;">
+      <i class="fa-solid fa-right-from-bracket"></i><span>Sign Out</span>
+    </a>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="admin-main page-enter">
+
+  <!-- PAGE HEADER -->
+  <header class="admin-page-header">
+    <div class="admin-page-header-left">
+      <h1 class="admin-page-title">Notifications 🔔</h1>
+      <p class="admin-page-sub" id="admin-unread-sub">0 unread notifications</p>
     </div>
-  </aside>
-  <!-- MAIN -->
-  <main class="admin-main page-enter">
-    <!-- TOPBAR -->
-    <header class="admin-topbar">
-      <div class="admin-topbar-left">
-        <h1 class="admin-page-title">Notifications</h1>
-        <p class="admin-page-sub">0 unread notifications</p>
-      </div>
-      <div class="admin-topbar-actions">
-        <button class="admin-topbar-btn" type="button">Mark all read</button>
-        <button class="admin-topbar-btn" type="button">Clear all</button>
-      </div>
-    </header>
-    <!-- NOTIF BANNER -->
-    <div class="admin-notif-banner">
-      <div class="admin-notif-banner-left">
-        <div class="admin-notif-bell-icon">🔔</div>
-        <div>
-          <p class="admin-notif-banner-title">You have <span class="admin-notif-count">0 unread notifications</span></p>
-          <p class="admin-notif-banner-sub">No new notifications at the moment.</p>
-        </div>
-      </div>
-      <button class="admin-mark-read-btn" type="button">Mark all as read</button>
+    <div class="admin-page-actions">
+      <button class="admin-action-btn" id="btn-mark-all" type="button">✓ Mark all read</button>
+      <button class="admin-action-btn admin-action-btn--danger" id="btn-clear-all" type="button">🗑 Clear all</button>
     </div>
-    <!-- FILTER TABS -->
-    <div class="admin-notif-tabs">
-      <button class="admin-notif-tab active" type="button">All</button>
-      <button class="admin-notif-tab" type="button">Unread (0)</button>
+  </header>
+
+  <!-- FILTER TABS -->
+  <div class="admin-filter-row">
+    <div class="admin-filter-tabs">
+      <button class="admin-ftab active" id="tab-all" type="button">All Notifications</button>
+      <button class="admin-ftab" id="tab-unread" type="button">Unread (0)</button>
     </div>
-    <!-- EMPTY STATE -->
-    <div class="admin-notif-empty">
-      <div class="admin-notif-empty-icon">🔔</div>
-      <p class="admin-notif-empty-title">No notifications yet</p>
-      <p class="admin-notif-empty-desc">Notifications from activities, users, and system updates will appear here once
-        available.</p>
-    </div>
-  </main>
-  <script>
-    var notificationsList = [];
+  </div>
 
-    function markAllRead() {
-      fetch('ADMIN_BACKEND/admin_mark_notifications_read.php', {
-        method: 'POST'
-      })
-        .then(function(response) { return response.json(); })
-        .then(function(result) {
-          if (result.success) {
-            notificationsList = notificationsList.map(function(n) {
-              n.read = true;
-              return n;
-            });
-            updateNotificationUI();
-          }
-        })
-        .catch(function(error) {});
-    }
+  <!-- NOTIFICATION LIST -->
+  <div class="admin-notif-list" id="admin-notif-list"></div>
 
-    function clearAll() {
-      if (!confirm('Are you sure you want to clear all notifications? This cannot be undone.')) {
-        return;
-      }
+</main>
 
-      fetch('ADMIN_BACKEND/admin_clear_notifications.php', {
-        method: 'POST'
-      })
-        .then(function(response) { return response.json(); })
-        .then(function(result) {
-          if (result.success) {
-            notificationsList = [];
-            updateNotificationUI();
-          }
-        })
-        .catch(function(error) {});
-    }
+<script>
+  /* ── Sidebar profile ── */
+  (function() {
+    var name = sessionStorage.getItem('admin_name') || sessionStorage.getItem('admin_first_name') || 'Admin';
+    var el = document.getElementById('adminSideName');
+    if (el) el.textContent = name;
+    var av = document.getElementById('adminSideAvatar');
+    if (av) av.textContent = name.charAt(0).toUpperCase();
+  })();
 
-    function loadNotifications() {
-      fetch('ADMIN_BACKEND/admin_list_notifications.php')
-        .then(function(response) { return response.json(); })
-        .then(function(data) {
-          notificationsList = data;
-          updateNotificationUI();
-        })
-        .catch(function(error) {
-          notificationsList = [];
-          updateNotificationUI();
-        });
-    }
+  var notificationsList = [];
+  var currentTab = 'all';
 
-    function renderNotificationsList(notificationsToRender) {
-      var container = document.querySelector('.admin-notif-empty');
-      if (!container) { return; }
+  var EMPTY_HTML =
+    '<div class="admin-notif-empty">' +
+      '<div class="admin-notif-empty-icon">🔔</div>' +
+      '<p class="admin-notif-empty-title">No notifications yet</p>' +
+      '<p class="admin-notif-empty-desc">Notifications from activities, users, and system updates will appear here once available.</p>' +
+    '</div>';
 
-      if (!notificationsToRender || notificationsToRender.length === 0) {
-        container.style.display = 'block';
-        return;
-      }
-
-      container.style.display = 'none';
-      
-      // Create or update notifications table
-      var notifList = document.getElementById('admin-notif-list');
-      if (!notifList) {
-        notifList = document.createElement('div');
-        notifList.id = 'admin-notif-list';
-        notifList.style.cssText = 'display: flex; flex-direction: column; gap: 0;';
-        container.parentNode.insertBefore(notifList, container);
-      }
-
-      notifList.innerHTML = notificationsToRender.map(function(notif) {
-        var readClass = notif.read ? 'admin-notif-item--read' : 'admin-notif-item--unread';
-        var typeIcon = getNotificationIcon(notif.type);
-        var timeAgo = getTimeAgo(notif.timestamp);
-        
-        return '<div class="admin-notif-item ' + readClass + '" style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; cursor: pointer; background: ' + (notif.read ? '#ffffff' : '#f9fafb') + ';">'
-          + '<div style="display: flex; gap: 12px; align-items: flex-start;">'
-          + '<div style="font-size: 20px; flex-shrink: 0;">' + typeIcon + '</div>'
-          + '<div style="flex: 1; min-width: 0;">'
-          + '<div style="display: flex; justify-content: space-between; align-items: start; gap: 8px;">'
-          + '<h3 style="margin: 0; font-size: 14px; font-weight: 600; color: #1f2937;">' + escapeHtml(notif.title) + '</h3>'
-          + '<span style="font-size: 12px; color: #9ca3af; flex-shrink: 0;">' + timeAgo + '</span>'
-          + '</div>'
-          + (notif.message ? '<p style="margin: 4px 0 0 0; font-size: 13px; color: #6b7280; line-height: 1.4;">' + escapeHtml(notif.message) + '</p>' : '')
-          + '</div>'
-          + '</div>'
-          + '</div>';
-      }).join('');
-    }
-
-    function getNotificationIcon(type) {
-      var icons = {
-        'account': '👤',
-        'activity': '📖',
-        'system': '⚙️',
-        'warning': '⚠️',
-        'success': '✅'
-      };
-      return icons[type] || '🔔';
-    }
-
-    function getTimeAgo(timestamp) {
-      if (!timestamp) return '';
-      var date = new Date(timestamp);
-      var now = new Date();
-      var seconds = Math.floor((now - date) / 1000);
-      
-      if (seconds < 60) return 'now';
-      var minutes = Math.floor(seconds / 60);
-      if (minutes < 60) return minutes + 'm ago';
-      var hours = Math.floor(minutes / 60);
-      if (hours < 24) return hours + 'h ago';
-      var days = Math.floor(hours / 24);
-      return days + 'd ago';
-    }
-
-    function escapeHtml(text) {
-      var map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-      };
-      return text.replace(/[&<>"']/g, function(m) { return map[m]; });
-    }
-
-    function updateNotificationUI() {
-      var unreadCount = notificationsList.filter(function(n) { return !n.read; }).length;
-      var totalCount = notificationsList.length;
-      
-      // Update banner text
-      var pageSubEl = document.querySelector('.admin-page-sub');
-      if (pageSubEl) {
-        pageSubEl.textContent = unreadCount + ' unread notification' + (unreadCount !== 1 ? 's' : '');
-      }
-      
-      var notifCountEl = document.querySelector('.admin-notif-count');
-      if (notifCountEl) {
-        notifCountEl.textContent = unreadCount + ' unread notification' + (unreadCount !== 1 ? 's' : '');
-      }
-      
-      // Update banner sub text
-      var bannerSubEl = document.querySelector('.admin-notif-banner-sub');
-      if (bannerSubEl) {
-        if (unreadCount === 0) {
-          bannerSubEl.textContent = 'All caught up! No new notifications.';
-        } else {
-          bannerSubEl.textContent = 'You have ' + unreadCount + ' new notification' + (unreadCount !== 1 ? 's' : '');
-        }
-      }
-      
-      // Update unread tab count
-      var tabs = document.querySelectorAll('.admin-notif-tab');
-      if (tabs && tabs[1]) {
-        tabs[1].textContent = 'Unread (' + unreadCount + ')';
-      }
-      
-      // Render notifications based on current tab
-      var activeTab = document.querySelector('.admin-notif-tab.active');
-      if (activeTab && activeTab.textContent.includes('Unread')) {
-        var unreadNotifs = notificationsList.filter(function(n) { return !n.read; });
-        renderNotificationsList(unreadNotifs);
-      } else {
-        renderNotificationsList(notificationsList);
-      }
-    }
-
-    var currentFilterType = 'all';
-
-    function filterNotifications(type) {
-      currentFilterType = type;
-      var tabs = document.querySelectorAll('.admin-notif-tab');
-      tabs.forEach(function(tab) { tab.classList.remove('active'); });
-      
-      if (type === 'all') {
-        tabs[0].classList.add('active');
-        renderNotificationsList(notificationsList);
-      } else if (type === 'unread') {
-        tabs[1].classList.add('active');
-        var unreadOnly = notificationsList.filter(function(n) { return !n.read; });
-        renderNotificationsList(unreadOnly);
-      }
-    }
-
-    document.addEventListener("DOMContentLoaded", function () {
-      // Add click handlers for action buttons in topbar
-      var topbarButtons = document.querySelectorAll('.admin-topbar-btn');
-      topbarButtons.forEach(function(btn, index) {
-        if (index === 0 || btn.textContent.includes('Mark')) {
-          btn.addEventListener('click', markAllRead);
-        } else if (index === 1 || btn.textContent.includes('Clear')) {
-          btn.addEventListener('click', clearAll);
-        }
-      });
-
-      // Add click handler for banner button
-      var bannerBtn = document.querySelector('.admin-mark-read-btn');
-      if (bannerBtn) {
-        bannerBtn.addEventListener('click', markAllRead);
-      }
-
-      // Add click handlers for tabs
-      var tabs = document.querySelectorAll('.admin-notif-tab');
-      tabs.forEach(function(tab, index) {
-        tab.addEventListener('click', function() {
-          tabs.forEach(function(t) { t.classList.remove('active'); });
-          tab.classList.add('active');
-          filterNotifications(index === 0 ? 'all' : 'unread');
-        });
-      });
-
-      /* Ripple effect on buttons */
-      document.querySelectorAll(".admin-btn-signin, .admin-modal-got-it, .admin-signout-btn, .admin-topbar-btn, .admin-mark-read-btn").forEach(function (btn) {
-        btn.addEventListener("click", function (e) {
-          var rect = this.getBoundingClientRect();
-          var size = Math.max(rect.width, rect.height);
-          var span = document.createElement("span");
-          span.className = "ripple-span";
-          span.style.width = span.style.height = size + "px";
-          span.style.left = (e.clientX - rect.left - size / 2) + "px";
-          span.style.top = (e.clientY - rect.top - size / 2) + "px";
-          this.style.position = "relative";
-          this.style.overflow = "hidden";
-          this.appendChild(span);
-          setTimeout(function () { span.remove(); }, 520);
-          if (this.classList.contains('admin-signout-btn')) {
-            window.location.href = this.getAttribute('href') || 'login_screen.html';
-          }
-        });
-      });
-
-      // Load notifications on page load
-      loadNotifications();
+  function escapeHtml(text) {
+    if (!text) return '';
+    return String(text).replace(/[&<>"']/g, function(m) {
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m];
     });
-  </script>
-</body>
+  }
 
+  function getTimeAgo(timestamp) {
+    if (!timestamp) return '';
+    var diff = Math.floor((Date.now() - new Date(timestamp.replace(' ','T')).getTime()) / 1000);
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+    if (diff < 172800) return 'Yesterday';
+    return new Date(timestamp).toLocaleDateString('en-US', { month:'short', day:'numeric' });
+  }
+
+  function getNotifIcon(type) {
+    var map = {
+      'account':  { icon:'👤', cls:'admin-ni--account'  },
+      'activity': { icon:'📚', cls:'admin-ni--activity' },
+      'system':   { icon:'⚙️',  cls:'admin-ni--system'   },
+      'warning':  { icon:'⚠️',  cls:'admin-ni--warning'  },
+      'success':  { icon:'✅', cls:'admin-ni--success'  }
+    };
+    return map[type] || { icon:'🔔', cls:'admin-ni--system' };
+  }
+
+  function renderList(list) {
+    var container = document.getElementById('admin-notif-list');
+    if (!container) return;
+    if (!list || list.length === 0) {
+      container.innerHTML = EMPTY_HTML;
+      return;
+    }
+    container.innerHTML = list.map(function(n) {
+      var ic = getNotifIcon(n.type);
+      var unreadCls = n.read ? '' : ' unread';
+      return '<div class="admin-notif-item' + unreadCls + '" data-id="' + (n.id || '') + '">' +
+        '<div class="admin-notif-icon ' + ic.cls + '">' + ic.icon + '</div>' +
+        '<div class="admin-notif-body" style="flex:1;min-width:0;">' +
+          '<span class="admin-notif-title">' + escapeHtml(n.title) + '</span>' +
+          (n.message ? '<p class="admin-notif-msg">' + escapeHtml(n.message) + '</p>' : '') +
+          '<span class="admin-notif-time">' + getTimeAgo(n.timestamp) + '</span>' +
+        '</div>' +
+        '<div class="admin-notif-actions" style="margin-left:auto;">' +
+          (!n.read
+            ? '<button class="ani-btn ani-btn--blue" onclick="markReadOne(' + (n.id || 0) + ',this)">✓ Read</button>'
+            : '<span class="ani-read-lbl">Read</span>') +
+          '<button class="ani-btn ani-btn--red" onclick="deleteOne(' + (n.id || 0) + ',this)" title="Delete">🗑</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function recount() {
+    var unread = notificationsList.filter(function(n) { return !n.read; }).length;
+    var sub = document.getElementById('admin-unread-sub');
+    if (sub) sub.textContent = unread + ' unread notification' + (unread !== 1 ? 's' : '');
+    var tabU = document.getElementById('tab-unread');
+    if (tabU) tabU.textContent = 'Unread (' + unread + ')';
+  }
+
+  function applyFilter() {
+    var list = currentTab === 'unread'
+      ? notificationsList.filter(function(n) { return !n.read; })
+      : notificationsList;
+    renderList(list);
+    recount();
+  }
+
+  function markReadOne(id, btn) {
+    notificationsList = notificationsList.map(function(n) {
+      if (n.id == id) n.read = true;
+      return n;
+    });
+    // Update just this card in the DOM
+    var card = btn ? btn.closest('.admin-notif-item') : null;
+    if (card) {
+      card.classList.remove('unread');
+      var actDiv = card.querySelector('.admin-notif-actions');
+      if (actDiv) actDiv.innerHTML =
+        '<span class="ani-read-lbl">Read</span>' +
+        '<button class="ani-btn ani-btn--red" onclick="deleteOne(' + id + ',this)" title="Delete">🗑</button>';
+    }
+    recount();
+    if (id) {
+      var fd = new FormData(); fd.append('notif_id', id);
+      fetch('ADMIN_BACKEND/admin_mark_one_read.php', { method: 'POST', body: fd }).catch(function() {});
+    }
+  }
+
+  function markAllRead() {
+    notificationsList = notificationsList.map(function(n) { n.read = true; return n; });
+    applyFilter();
+    fetch('ADMIN_BACKEND/admin_mark_notifications_read.php', { method: 'POST' }).catch(function() {});
+  }
+
+  function deleteOne(id, btn) {
+    // Optimistic: remove from DOM immediately
+    var item = btn ? btn.closest('.admin-notif-item') : null;
+    if (item) item.remove();
+    notificationsList = notificationsList.filter(function(n) { return n.id != id; });
+    recount();
+    if (!notificationsList.length) {
+      var c = document.getElementById('admin-notif-list');
+      if (c) c.innerHTML = EMPTY_HTML;
+    }
+    if (id) {
+      var fd = new FormData();
+      fd.append('notif_id', id);
+      fetch('ADMIN_BACKEND/admin_delete_notification.php', { method: 'POST', body: fd }).catch(function() {});
+    }
+  }
+
+  function clearAll() {
+    notificationsList = [];
+    applyFilter();
+    fetch('ADMIN_BACKEND/admin_clear_notifications.php', { method: 'POST' }).catch(function() {});
+  }
+
+  function loadNotifications() {
+    fetch('ADMIN_BACKEND/admin_list_notifications.php')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        notificationsList = Array.isArray(data) ? data : [];
+        applyFilter();
+      })
+      .catch(function() {
+        notificationsList = [];
+        applyFilter();
+      });
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    /* Sidebar active state */
+    var adminId = sessionStorage.getItem('admin_id') || sessionStorage.getItem('admin_account_id') || '';
+    if (adminId) {
+      fetch('ADMIN_BACKEND/admin_get_profile.php?id=' + encodeURIComponent(adminId))
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d && d.first_name) {
+            var fullName = (d.first_name + ' ' + (d.last_name || '')).trim();
+            var el = document.getElementById('adminSideName');
+            if (el) el.textContent = fullName;
+            var av = document.getElementById('adminSideAvatar');
+            if (av) av.textContent = (d.first_name.charAt(0) + (d.last_name ? d.last_name.charAt(0) : '')).toUpperCase();
+          }
+        }).catch(function() {});
+    }
+
+    /* Tab buttons */
+    document.getElementById('tab-all').addEventListener('click', function() {
+      currentTab = 'all';
+      document.getElementById('tab-all').classList.add('active');
+      document.getElementById('tab-unread').classList.remove('active');
+      applyFilter();
+    });
+    document.getElementById('tab-unread').addEventListener('click', function() {
+      currentTab = 'unread';
+      document.getElementById('tab-unread').classList.add('active');
+      document.getElementById('tab-all').classList.remove('active');
+      applyFilter();
+    });
+
+    /* Action buttons */
+    document.getElementById('btn-mark-all').addEventListener('click', markAllRead);
+    document.getElementById('btn-clear-all').addEventListener('click', clearAll);
+
+    loadNotifications();
+    setInterval(loadNotifications, 30000);
+  });
+</script>
+</body>
 </html>

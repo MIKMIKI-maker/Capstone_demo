@@ -39,6 +39,9 @@ switch($action) {
     case 'clear_all':
         clearAllNotifications($conn, $teacher_id);
         break;
+    case 'seed_history':
+        seedHistoryFromProgress($conn, $teacher_id);
+        break;
     default:
         echo json_encode(['success' => false, 'message' => 'Unknown action']);
 }
@@ -167,5 +170,81 @@ function clearAllNotifications($conn, $teacher_id) {
     $stmt->execute();
     echo json_encode(['success' => true]);
     $stmt->close();
+}
+
+function seedHistoryFromProgress($conn, $teacher_id) {
+    // Only seed when the teacher has zero notifications (avoid duplicates)
+    $chk = $conn->prepare("SELECT COUNT(*) AS cnt FROM notifications WHERE teacher_id=?");
+    if (!$chk) { echo json_encode(['success' => true, 'seeded' => 0]); return; }
+    $chk->bind_param("i", $teacher_id);
+    $chk->execute();
+    $cnt = (int)$chk->get_result()->fetch_assoc()['cnt'];
+    $chk->close();
+    if ($cnt > 0) { echo json_encode(['success' => true, 'seeded' => 0]); return; }
+
+    $ins = $conn->prepare(
+        "INSERT INTO notifications (teacher_id, notification_type, title, message, is_read, created_at)
+         VALUES (?, ?, ?, ?, 1, ?)"
+    );
+    if (!$ins) { echo json_encode(['success' => true, 'seeded' => 0]); return; }
+    $seeded = 0;
+
+    // 1. Seed past published activities ("Activity Published")
+    $actStmt = $conn->prepare("
+        SELECT ta.activity_title, ta.activity_type, ta.created_at,
+               COUNT(aa.student_id) AS assigned_count
+        FROM teacher_activities ta
+        LEFT JOIN activity_assignments aa ON aa.activity_id = ta.id
+        WHERE ta.teacher_id = ? AND ta.status = 'published'
+        GROUP BY ta.id
+        ORDER BY ta.created_at ASC
+    ");
+    if ($actStmt) {
+        $actStmt->bind_param("i", $teacher_id);
+        $actStmt->execute();
+        $actRows = $actStmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $actStmt->close();
+        foreach ($actRows as $row) {
+            $msg  = 'You published "' . $row['activity_title'] . '"';
+            if ((int)$row['assigned_count'] > 0) {
+                $msg .= ' — assigned to ' . $row['assigned_count'] . ' student(s).';
+            }
+            $ts   = $row['created_at'] ?: date('Y-m-d H:i:s');
+            $type = 'activity';
+            $ttl  = 'Activity Published';
+            $ins->bind_param("issss", $teacher_id, $type, $ttl, $msg, $ts);
+            $ins->execute();
+            $seeded++;
+        }
+    }
+
+    // 2. Seed past student completions ("Student Activity Completed")
+    $lpStmt = $conn->prepare("
+        SELECT lp.score, lp.assessment_date, s.student_name, ta.activity_title
+        FROM learner_progress lp
+        JOIN students s  ON s.id  = lp.student_id  AND s.teacher_id = ?
+        JOIN teacher_activities ta ON ta.id = lp.activity_id AND ta.teacher_id = ?
+        ORDER BY lp.assessment_date ASC
+    ");
+    if ($lpStmt) {
+        $lpStmt->bind_param("ii", $teacher_id, $teacher_id);
+        $lpStmt->execute();
+        $lpRows = $lpStmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $lpStmt->close();
+        foreach ($lpRows as $row) {
+            $sc   = $row['score'];
+            $msg  = $row['student_name'] . ' completed "' . $row['activity_title'] . '"'
+                  . ($sc !== null ? ' with a score of ' . intval($sc) . '%.' : '.');
+            $ts   = $row['assessment_date'] ?: date('Y-m-d H:i:s');
+            $type = 'activity';
+            $ttl  = 'Student Activity Completed';
+            $ins->bind_param("issss", $teacher_id, $type, $ttl, $msg, $ts);
+            $ins->execute();
+            $seeded++;
+        }
+    }
+
+    $ins->close();
+    echo json_encode(['success' => true, 'seeded' => $seeded]);
 }
 ?>

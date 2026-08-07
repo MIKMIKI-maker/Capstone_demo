@@ -145,6 +145,12 @@
     </div>
   </div>
 </section>
+    <!-- STORIES / READING -->
+    <section class="student-stories-row">
+      <button class="student-story-bubble" onclick="openStoryViewer()" type="button">
+        <span class="student-story-ring"><img src="ASSETS/story/1.jpg" alt="My Holiday Activities" /></span>
+        <span class="student-story-label">My Holiday</span>
+      </button>
     </section>
     <!-- PROGRESS BANNER -->
     <section class="student-progress-banner">
@@ -453,6 +459,160 @@
     </script>
   </main>
 <script>(function(){var _id=sessionStorage.getItem('student_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>
+
+  <!-- STORY / READING CAROUSEL VIEWER -->
+  <div class="student-story-viewer" id="storyViewer" onclick="if(event.target===this) closeStoryViewer();">
+    <div class="student-story-frame" id="storyFrameSingle">
+      <div class="student-story-progress" id="storyProgress"></div>
+      <div class="student-story-topbar">
+        <span class="student-story-title-txt" id="storyTitleTxt"></span>
+        <div class="student-story-controls">
+          <button class="student-story-btn" id="storyPauseBtn" onclick="storyTogglePause()" type="button">⏸</button>
+          <button class="student-story-btn" onclick="closeStoryViewer()" type="button">✕</button>
+        </div>
+      </div>
+      <img class="student-story-img" id="storyImg" src="" alt="Story slide" />
+      <div class="student-story-nav student-story-nav--prev" onclick="storyPrev()"></div>
+      <div class="student-story-nav student-story-nav--next" onclick="storyNext()"></div>
+      <div class="student-story-counter" id="storyCounter"></div>
+    </div>
+
+    <div class="student-story-coverflow" id="storyCoverflow">
+      <div class="student-story-cf-topbar">
+        <span class="student-story-cf-title" id="cfTitle"></span>
+        <button class="student-story-btn" onclick="closeStoryViewer()" type="button">✕</button>
+      </div>
+      <button class="student-story-cf-arrow student-story-cf-arrow--prev" onclick="cfPrev()" type="button">‹</button>
+      <div class="student-story-cf-stage" id="cfStage"></div>
+      <button class="student-story-cf-arrow student-story-cf-arrow--next" onclick="cfNext()" type="button">›</button>
+      <div class="student-story-cf-dots" id="cfDots"></div>
+    </div>
+  </div>
+  <script>
+  (function(){
+    var STORY = { title: "My Holiday Activities", slides: [] };
+    for (var i = 1; i <= 12; i++) STORY.slides.push('ASSETS/story/' + i + '.jpg');
+
+    var _idx = 0, _raf = null, _startTs = 0, _elapsedPaused = 0, _paused = false;
+    var _DURATION = 5000;
+    var _reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var _cfIdx = 0, _cfMode = false;
+
+    window.openStoryViewer = function(){
+      var isDesktop = window.matchMedia && window.matchMedia('(min-width: 900px)').matches;
+      _cfMode = isDesktop;
+      document.getElementById('storyFrameSingle').style.display = isDesktop ? 'none' : '';
+      document.getElementById('storyCoverflow').style.display = isDesktop ? 'flex' : 'none';
+      document.getElementById('storyViewer').classList.add('show');
+      if (isDesktop) {
+        cfOpen();
+      } else {
+        document.getElementById('storyTitleTxt').textContent = STORY.title;
+        var wrap = document.getElementById('storyProgress');
+        wrap.innerHTML = STORY.slides.map(function(){ return '<div class="student-story-seg"><div class="student-story-seg-fill"></div></div>'; }).join('');
+        _idx = -1;
+        showSlide(0);
+      }
+    };
+    window.closeStoryViewer = function(){
+      cancelAnimationFrame(_raf);
+      document.getElementById('storyViewer').classList.remove('show');
+    };
+
+    function cfOpen(){
+      _cfIdx = 0;
+      document.getElementById('cfTitle').textContent = STORY.title;
+      var dotsWrap = document.getElementById('cfDots');
+      dotsWrap.innerHTML = STORY.slides.map(function(_s, i){
+        return '<button class="student-story-cf-dot" onclick="cfGoTo(' + i + ')" type="button" aria-label="Slide ' + (i + 1) + '"></button>';
+      }).join('');
+      cfRender();
+    }
+    function cfRender(){
+      var stage = document.getElementById('cfStage');
+      stage.innerHTML = '';
+      STORY.slides.forEach(function(src, i){
+        var offset = i - _cfIdx;
+        if (Math.abs(offset) > 2) return;
+        var card = document.createElement('div');
+        card.className = 'student-story-cf-card' + (offset === 0 ? ' cf-current' : '');
+        var scale = 1 - Math.abs(offset) * 0.16;
+        var tx = offset * 280;
+        var rot = offset * -32;
+        card.style.transform = 'translateX(' + tx + 'px) rotateY(' + rot + 'deg) scale(' + scale + ')';
+        card.style.opacity = offset === 0 ? '1' : (Math.abs(offset) === 1 ? '.85' : '.5');
+        card.style.zIndex = String(10 - Math.abs(offset));
+        var img = document.createElement('img');
+        img.src = src; img.alt = 'Slide ' + (i + 1);
+        card.appendChild(img);
+        if (offset !== 0) card.addEventListener('click', (function(idx){ return function(){ cfGoTo(idx); }; })(i));
+        stage.appendChild(card);
+      });
+      document.querySelectorAll('#cfDots .student-story-cf-dot').forEach(function(dot, i){
+        dot.classList.toggle('active', i === _cfIdx);
+      });
+    }
+    window.cfGoTo = function(i){
+      if (i < 0 || i >= STORY.slides.length) return;
+      _cfIdx = i;
+      cfRender();
+    };
+    window.cfNext = function(){ cfGoTo(_cfIdx + 1); };
+    window.cfPrev = function(){ cfGoTo(_cfIdx - 1); };
+    function showSlide(i){
+      cancelAnimationFrame(_raf);
+      if (i < 0) return;
+      if (i >= STORY.slides.length) { closeStoryViewer(); return; }
+      var direction = i > _idx ? 'next' : 'prev';
+      _idx = i; _elapsedPaused = 0; _paused = _reduceMotion;
+      document.getElementById('storyPauseBtn').textContent = _paused ? '▶' : '⏸';
+      var img = document.getElementById('storyImg');
+      img.src = STORY.slides[i];
+      img.classList.remove('anim-next', 'anim-prev');
+      void img.offsetWidth;
+      img.classList.add(direction === 'prev' ? 'anim-prev' : 'anim-next');
+      document.getElementById('storyCounter').textContent = (i + 1) + ' / ' + STORY.slides.length;
+      var segs = document.querySelectorAll('#storyProgress .student-story-seg');
+      segs.forEach(function(seg, si){
+        seg.classList.remove('active');
+        seg.querySelector('.student-story-seg-fill').style.width = si < i ? '100%' : '0%';
+      });
+      if (segs[i]) segs[i].classList.add('active');
+      _startTs = performance.now();
+      if (!_paused) _raf = requestAnimationFrame(tick);
+    }
+    function tick(){
+      var seg = document.querySelectorAll('#storyProgress .student-story-seg')[_idx];
+      if (!seg) return;
+      var fill = seg.querySelector('.student-story-seg-fill');
+      var elapsed = _elapsedPaused + (performance.now() - _startTs);
+      var pct = Math.min(1, elapsed / _DURATION);
+      fill.style.width = (pct * 100) + '%';
+      if (pct >= 1) { showSlide(_idx + 1); return; }
+      _raf = requestAnimationFrame(tick);
+    }
+    window.storyNext = function(){ showSlide(_idx + 1); };
+    window.storyPrev = function(){ showSlide(_idx - 1); };
+    window.storyTogglePause = function(){
+      _paused = !_paused;
+      document.getElementById('storyPauseBtn').textContent = _paused ? '▶' : '⏸';
+      if (_paused) {
+        _elapsedPaused += performance.now() - _startTs;
+        cancelAnimationFrame(_raf);
+      } else {
+        _startTs = performance.now();
+        _raf = requestAnimationFrame(tick);
+      }
+    };
+    document.addEventListener('keydown', function(e){
+      var v = document.getElementById('storyViewer');
+      if (!v || !v.classList.contains('show')) return;
+      if (e.key === 'ArrowRight') { if (_cfMode) cfNext(); else storyNext(); }
+      else if (e.key === 'ArrowLeft') { if (_cfMode) cfPrev(); else storyPrev(); }
+      else if (e.key === 'Escape') closeStoryViewer();
+    });
+  })();
+  </script>
 </body>
 
 </html>

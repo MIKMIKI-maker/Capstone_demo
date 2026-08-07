@@ -96,6 +96,12 @@
                     <h1 class="teacher-page-title">Review Activities</h1>
                     <p class="teacher-page-sub">View and edit personalized IEP learning materials</p>
                 </div>
+                <div class="teacher-topbar-right">
+                    <a class="teacher-notif-btn" href="Teacher_notif.html" title="Notifications">
+                        <i class="fa-regular fa-bell"></i>
+                        <span class="teacher-notif-badge"></span>
+                    </a>
+                </div>
             </header>
             <hr class="teacher-divider" />
             <!-- SEARCH BAR -->
@@ -397,12 +403,15 @@
                             + '<i class="fa-solid fa-trash"></i> Delete</button>';
                 } else if (a.status === 'published' && a._isLocal) {
                     var _subDbId = a.db_activity_id || 0;
-                    actions = (_subDbId ? '<button class="btn-edit" onclick="window.location.href=\'Teacher_reviewact.html?id='+_subDbId+'\'" type="button"><i class="fa-solid fa-eye"></i> View Submissions</button>' : '')
+                    actions = (EDITABLE_TYPES[a.type] ? '<button class="btn-edit" onclick="editPublished(\'' + esc(a.id) + '\',\'' + esc(a.type) + '\')" type="button"><i class="fa-solid fa-pen"></i> Edit</button>' : '')
+                            + (_subDbId ? '<button class="btn-edit" onclick="window.location.href=\'Teacher_reviewact.html?id='+_subDbId+'\'" type="button"><i class="fa-solid fa-eye"></i> View Submissions</button>' : '')
                             + '<button class="btn-delete" onclick="deletePublished(\'' + esc(a.id) + '\')" type="button">'
                             + '<i class="fa-solid fa-trash"></i> Unpublish</button>';
                 } else if (a.status === 'published' && !a._isLocal) {
-                    // Backend-only published: allow direct DB unpublish
-                    actions = '<button class="btn-edit" onclick="window.location.href=\'Teacher_reviewact.html?id='+a.id+'\'" type="button"><i class="fa-solid fa-eye"></i> View Submissions</button>'
+                    // Backend-only published: no local copy in this browser, but
+                    // content_json now lives server-side too, so editing still works.
+                    actions = (EDITABLE_TYPES[a.type] ? '<button class="btn-edit" onclick="editPublishedRemote(' + a.id + ',\'' + esc(a.type) + '\')" type="button"><i class="fa-solid fa-pen"></i> Edit</button>' : '')
+                            + '<button class="btn-edit" onclick="window.location.href=\'Teacher_reviewact.html?id='+a.id+'\'" type="button"><i class="fa-solid fa-eye"></i> View Submissions</button>'
                             + '<button class="btn-delete" onclick="deleteBackendPublished(' + a.id + ')" type="button">'
                             + '<i class="fa-solid fa-trash"></i> Unpublish</button>';
                 } else {
@@ -441,6 +450,57 @@
         function editDraft(id, templateFile) {
             localStorage.setItem('edit_draft_id', id);
             window.location.href = templateFile + '?draft_id=' + encodeURIComponent(id);
+        }
+
+        /* ── Edit an already-published activity ──
+           Content only ever lived in the publishing browser's storage
+           (pub_data_<id> in IndexedDB/localStorage) — there's no server copy
+           to edit, so this only works in the browser that published it. */
+        var EDITABLE_TYPES = {
+            Matching:         'TEMPLATES/Matching_Type_Template.html',
+            Sorting:          'TEMPLATES/Sorting_Type_Template.html',
+            Sequencing:       'TEMPLATES/Sequencing_Type_Template.html',
+            CheckOrX:         'TEMPLATES/Check_%20Or_Not_Template.html',
+            LetterID:         'TEMPLATES/Identification_Template.html',
+            PictureLabeling:  'TEMPLATES/Picture_%20Labeling_Template.html',
+            WrittenResponse:  'TEMPLATES/Written_Response_Template.html'
+        };
+        function editPublished(id, type) {
+            var tpl = EDITABLE_TYPES[type];
+            if (!tpl) { alert('Editing is not supported yet for this activity type.'); return; }
+            var allPubs = getLocalPublished();
+            var target  = allPubs.find(function(p) { return p.id === id; });
+            if (!target) { alert("Could not find this activity's saved content in this browser."); return; }
+
+            var teacherId = sessionStorage.getItem('teacher_id') || '';
+            // Lock it immediately so the student can't open it mid-edit, and
+            // let them know via their notification inbox.
+            if (target.db_activity_id && teacherId) {
+                fetch('TEACHER_BACKEND/teacher_lock_activity.php', {
+                    method: 'POST', keepalive: true,
+                    body: new URLSearchParams({ action: 'lock', teacher_id: teacherId, activity_id: target.db_activity_id, activity_title: target.title || 'Activity' })
+                }).catch(function(){});
+            }
+            target.locked = true;
+            localStorage.setItem('published_activities', JSON.stringify(allPubs));
+            window.location.href = tpl + '?edit_pub_id=' + encodeURIComponent(id);
+        }
+
+        // Edit a published activity that has no local copy in this browser
+        // (e.g. a groupmate published it, or it was opened on another
+        // device) — content_json is now saved server-side, so the template
+        // itself fetches it via ?edit_pub_id=<db activity id>.
+        function editPublishedRemote(dbId, type) {
+            var tpl = EDITABLE_TYPES[type];
+            if (!tpl) { alert('Editing is not supported yet for this activity type.'); return; }
+            var teacherId = sessionStorage.getItem('teacher_id') || '';
+            if (teacherId) {
+                fetch('TEACHER_BACKEND/teacher_lock_activity.php', {
+                    method: 'POST', keepalive: true,
+                    body: new URLSearchParams({ action: 'lock', teacher_id: teacherId, activity_id: dbId, activity_title: 'Activity' })
+                }).catch(function(){});
+            }
+            window.location.href = tpl + '?edit_pub_id=' + encodeURIComponent(dbId);
         }
 
         function deleteDraft(id) {
@@ -581,6 +641,7 @@
         });
     </script>
 <script>(function(){var _id=sessionStorage.getItem('admin_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>
+<script>(function(){var _s=document.createElement('style');_s.textContent='.teacher-notif-badge{display:none!important}.teacher-notif-badge.has-notifs{position:absolute;top:4px;right:4px;min-width:16px;height:16px;border-radius:50%;background:#ef4444;color:#fff;font-size:9px;font-weight:700;display:flex!important;align-items:center;justify-content:center;padding:0 2px;border:2px solid #fff}';document.head.appendChild(_s);var tid=sessionStorage.getItem('teacher_id')||'';if(!tid)return;fetch('TEACHER_BACKEND/teacher_manage_notifications.php?action=get_unread_count&teacher_id='+encodeURIComponent(tid)).then(function(r){return r.json();}).then(function(d){var cnt=d&&d.unread_count>0?d.unread_count:0;if(cnt>0){var b=document.querySelector('.teacher-notif-badge');if(b){b.textContent=cnt>9?'9+':cnt;b.classList.add('has-notifs');}}}).catch(function(){});})();</script>
 </body>
 
 </html>

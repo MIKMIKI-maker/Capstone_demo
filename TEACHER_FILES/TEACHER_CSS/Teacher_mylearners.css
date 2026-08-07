@@ -135,15 +135,22 @@ body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-s
 /* ── ACTIVITY HISTORY ── */
 .teacher-history-card { background: var(--white); border-radius: 18px; padding: 22px 24px; box-shadow: var(--shadow-sm); border: 1px solid #E8EDF4; }
 .teacher-history-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 16px; }
-.teacher-history-row { display: flex; align-items: center; gap: 12px; padding: 13px 0; border-bottom: 1px solid #F1F5F9; }
+.teacher-history-row { display: grid; grid-template-columns: 96px minmax(130px, 200px) 60px 140px 140px; align-items: center; column-gap: 14px; padding: 14px 0; border-bottom: 1px solid #F1F5F9; }
+.teacher-history-row:hover { background: #FAFBFC; }
 .teacher-history-row:last-child { border-bottom: none; }
-.teacher-history-date { font-size: 12px; color: var(--muted); min-width: 82px; font-family: 'Courier New', monospace; }
-.teacher-history-activity { flex: 1; font-size: 13px; font-weight: 600; color: var(--text); }
-.teacher-history-score { font-size: 13px; font-weight: 700; min-width: 44px; text-align: right; }
+.teacher-history-date { font-size: 12px; color: var(--muted); font-family: 'Courier New', monospace; }
+.teacher-history-activity { font-size: 13.5px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.teacher-history-score { font-size: 14px; font-weight: 700; text-align: right; }
 .score-green { color: #10B981; }
 .score-yellow { color: #F59E0B; }
 .score-orange { color: #F97316; }
-.teacher-history-badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; min-width: 84px; text-align: center; }
+.teacher-history-badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.teacher-history-header > span:nth-child(3),
+.teacher-history-header > span:nth-child(4),
+.teacher-history-header > span:nth-child(5),
+.teacher-history-row > *:nth-child(3),
+.teacher-history-row > *:nth-child(4),
+.teacher-history-row > *:nth-child(5) { border-left: 1px solid #EEF2F7; padding-left: 14px; }
 .badge-completed { background: #D1FAE5; color: #065F46; }
 .badge-inprogress { background: #FEF3C7; color: #92400E; }
 .badge-notstarted { background: #F1F5F9; color: #64748B; }
@@ -181,12 +188,13 @@ body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-s
 .teacher-ring-label { font-size: 15px !important; }
 
 /* ── ACTIVITY HISTORY ENHANCEMENTS ── */
-.teacher-history-header { display: flex; align-items: center; gap: 12px; padding: 0 0 10px; border-bottom: 2px solid #E8EDF4; margin-bottom: 4px; }
+.teacher-history-header { display: grid; grid-template-columns: 96px minmax(130px, 200px) 60px 140px 140px; align-items: center; column-gap: 14px; padding: 0 0 10px; border-bottom: 2px solid #E8EDF4; margin-bottom: 4px; }
 .teacher-history-header span { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
-.teacher-history-header span:nth-child(1) { min-width: 82px; }
-.teacher-history-header span:nth-child(2) { flex: 1; }
-.teacher-history-header span:nth-child(3) { min-width: 44px; text-align: right; }
-.teacher-history-header span:nth-child(4) { min-width: 84px; text-align: center; }
+.teacher-history-header span:nth-child(3) { text-align: right; }
+.teacher-history-header span:nth-child(4),
+.teacher-history-header span:nth-child(5) { text-align: center; }
+.teacher-history-assist { display: flex; justify-content: center; }
+.teacher-history-status-cell { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .teacher-history-empty { font-size: 13px; color: #94A3B8; font-style: italic; text-align: center; padding: 20px 0; }
 
 /* ── NOTES ITEMS ── */
@@ -211,3 +219,20 @@ body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-s
 .note-modal-save { background: var(--accent); border: none; padding: 10px 26px; border-radius: 10px; font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 700; color: #fff; cursor: pointer; transition: var(--transition); box-shadow: 0 4px 12px rgba(37,99,235,.25); }
 .note-modal-save:hover { background: #1D4ED8; }
 .note-modal-save:disabled { background: #93C5FD; cursor: not-allowed; box-shadow: none; }
+
+/* ── STRUGGLE DETAIL MODAL ── */
+.sm-overlay { display: none; position: fixed; inset: 0; z-index: 9100; background: rgba(15,23,42,.45); align-items: center; justify-content: center; padding: 20px; }
+.sm-overlay.show { display: flex; }
+.sm-card { background: #fff; border-radius: 18px; max-width: 420px; width: 100%; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.25); padding: 26px; position: relative; }
+.sm-close { position: absolute; top: 16px; right: 16px; width: 30px; height: 30px; border-radius: 50%; border: none; background: #f1f5f9; color: #64748b; font-size: 15px; cursor: pointer; }
+.sm-close:hover { background: #e2e8f0; color: #1e293b; }
+.sm-title { font-size: 15px; font-weight: 800; color: #1e293b; margin-bottom: 16px; padding-right: 24px; }
+.sm-chips { display: flex; flex-direction: column; gap: 8px; }
+.sm-struggle-item { display: flex; align-items: center; gap: 10px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 9px 12px; }
+.sm-struggle-emoji { font-size: 22px; flex-shrink: 0; width: 28px; text-align: center; }
+.sm-struggle-emoji--text { font-size: 11px; font-weight: 700; color: #7f1d1d; width: auto; min-width: 44px; white-space: nowrap; }
+.sm-struggle-thumb { width: 32px; height: 32px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+.sm-struggle-text { min-width: 0; flex: 1; }
+.sm-struggle-main { display: block; font-size: 12.5px; color: #7f1d1d; line-height: 1.4; }
+.sm-struggle-main b { color: #b91c1c; }
+.sm-struggle-correct { display: inline-block; margin-top: 4px; font-size: 11px; font-weight: 700; color: #15803d; background: #dcfce7; padding: 2px 9px; border-radius: 10px; }

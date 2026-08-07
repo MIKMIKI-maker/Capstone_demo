@@ -97,10 +97,7 @@
                     <p class="teacher-page-sub" id="teacher-unread-subtitle"><!-- backend: unread count --></p>
                 </div>
                 <div class="teacher-topbar-right">
-                    <div class="teacher-search-box">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                        <input name="search" placeholder="Search..." type="text" />
-                    </div>
+                  
                 </div>
             </header>
             <!-- FILTER BAR -->
@@ -160,6 +157,29 @@
                 <!-- backend: e.g. Showing 0 of 0 notifications --></div>
         </main>
     </div><!-- /teacher-app-wrapper -->
+
+    <!-- NOTIFICATION DETAIL MODAL -->
+    <div class="tn-modal-overlay" id="tnModalOverlay">
+        <div class="tn-modal-card" id="tnModalCard">
+            <button class="tn-modal-close" id="tnModalCloseBtn" type="button">✖</button>
+            <div class="tn-modal-columns">
+                <div class="tn-modal-left">
+                    <div class="tn-modal-title" id="tnModalTitle"></div>
+                    <div class="tn-modal-time" id="tnModalTime"></div>
+                    <div class="tn-modal-msg" id="tnModalMsg"></div>
+                    <div class="tn-elab-box" id="tnElabBox" style="display:none;">
+                        <div class="tn-elab-title">Details</div>
+                        <div id="tnElabRows"></div>
+                    </div>
+                </div>
+                <div class="tn-modal-right" id="tnModalRight" style="display:none;">
+                    <div class="tn-struggle-title" id="tnStruggleTitle">Struggled with:</div>
+                    <div class="tn-struggle-chips" id="tnStruggleChips"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         var TEACHER_ID = parseInt(sessionStorage.getItem('teacher_id') || '1');
         var allNotifications = [];
@@ -198,13 +218,30 @@
 
         /* ── Load notifications from backend ── */
         function loadNotifications() {
-            fetch('TEACHER_BACKEND/teacher_manage_notifications.php?action=list&teacher_id=' + TEACHER_ID + '&limit=50')
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
-                    allNotifications = data.notifications || [];
-                    renderAll();
-                    updateUnreadBadge();
-                }).catch(function() { renderAll(); });
+            var _base = 'TEACHER_BACKEND/teacher_manage_notifications.php';
+            var seedKey = 'teacher_hist_seeded_' + TEACHER_ID;
+            var alreadySeeded = !!localStorage.getItem(seedKey);
+
+            var doList = function() {
+                return fetch(_base + '?action=list&teacher_id=' + TEACHER_ID + '&limit=50')
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        allNotifications = data.notifications || [];
+                        renderAll();
+                        updateUnreadBadge();
+                    }).catch(function() { renderAll(); });
+            };
+
+            if (alreadySeeded) {
+                doList();
+            } else {
+                fetch(_base + '?action=seed_history&teacher_id=' + TEACHER_ID)
+                    .catch(function(){})
+                    .then(function() {
+                        localStorage.setItem(seedKey, '1');
+                        return doList();
+                    });
+            }
         }
 
         function updateUnreadBadge() {
@@ -216,12 +253,16 @@
         }
 
         function typeIcon(type) {
-            var icons = { info: 'fa-circle-info', success: 'fa-circle-check', warning: 'fa-triangle-exclamation', error: 'fa-circle-xmark' };
+            var icons = { info: 'fa-circle-info', success: 'fa-circle-check', warning: 'fa-triangle-exclamation', error: 'fa-circle-xmark', activity: 'fa-star', message: 'fa-envelope', scaffold: 'fa-triangle-exclamation', scaffold_hint: 'fa-lightbulb', retake_alert: 'fa-rotate' };
             return icons[type] || 'fa-bell';
         }
         function typeColor(type) {
-            var colors = { info: '#3b82f6', success: '#10b981', warning: '#f59e0b', error: '#ef4444' };
+            var colors = { info: '#3b82f6', success: '#10b981', warning: '#f59e0b', error: '#ef4444', activity: '#8b5cf6', message: '#0ea5e9', scaffold: '#ef4444', scaffold_hint: '#f59e0b', retake_alert: '#f97316' };
             return colors[type] || '#6b7280';
+        }
+        function typeLabel(type) {
+            var labels = { info: 'Info', success: 'Success', warning: 'Warning', error: 'Error', activity: 'Activity', message: 'Message', scaffold: 'Needs Review', scaffold_hint: 'Needed a Hint', retake_alert: 'Live Retake Alert' };
+            return labels[type] || 'Notice';
         }
         function timeAgo(ts) {
             var d = new Date(ts.replace(' ', 'T'));
@@ -241,7 +282,8 @@
             var footer = document.getElementById('teacher-notif-footer');
 
             if (!list.length) {
-                if (empty) empty.style.display = '';
+                container.innerHTML = '';
+                if (empty) { container.appendChild(empty); empty.style.display = ''; }
                 footer.textContent = 'Showing 0 of 0 notifications';
                 return;
             }
@@ -250,16 +292,24 @@
             var html = '';
             list.forEach(function(n) {
                 var readClass = n.is_read ? ' read' : '';
-                html += '<div class="teacher-notif-item' + readClass + '" data-id="' + n.id + '" data-read="' + (n.is_read ? 'true' : 'false') + '" style="display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-bottom:1px solid #f1f5f9;background:' + (n.is_read ? '#fff' : '#f0f7ff') + '">'
-                    + '<div style="font-size:20px;color:' + typeColor(n.notification_type) + ';margin-top:2px;"><i class="fa-solid ' + typeIcon(n.notification_type) + '"></i></div>'
-                    + '<div style="flex:1;min-width:0;">'
-                    + '<div style="font-weight:' + (n.is_read ? '500' : '700') + ';font-size:14px;color:#1e293b;">' + escHtml(n.title) + '</div>'
-                    + (n.message ? '<div style="font-size:13px;color:#64748b;margin-top:2px;">' + escHtml(n.message) + '</div>' : '')
-                    + '<div style="font-size:11px;color:#94a3b8;margin-top:4px;">' + timeAgo(n.created_at) + '</div>'
+                var isUrgent = n.notification_type === 'scaffold';
+                var isMild = n.notification_type === 'scaffold_hint';
+                var urgentClass = isUrgent ? ' urgent' : '';
+                var color = typeColor(n.notification_type);
+                var badgeHtml = isUrgent ? '<span class="tni-type-badge tni-type-badge--urgent">Needs Review</span>'
+                              : isMild ? '<span class="tni-type-badge tni-type-badge--mild">Needed a Hint</span>' : '';
+                html += '<div class="teacher-notif-item' + readClass + urgentClass + '" data-id="' + n.id + '" style="border-left-color:' + color + ';" onclick="openDetailModal(' + n.id + ')">'
+                    + '<div class="tni-icon" style="background:' + color + '22;"><i class="fa-solid ' + typeIcon(n.notification_type) + '" style="color:' + color + ';font-size:17px;"></i></div>'
+                    + '<div class="tni-body" style="flex:1;min-width:0;">'
+                    +   '<div class="tni-title">' + escHtml(n.title) + badgeHtml + '</div>'
+                    +   (n.message ? '<div class="tni-msg">' + escHtml(n.message) + '</div>' : '')
+                    +   '<div class="tni-time">' + timeAgo(n.created_at) + '</div>'
                     + '</div>'
-                    + '<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">'
-                    + (!n.is_read ? '<button class="teacher-mark-read-btn" onclick="markRead(' + n.id + ')" style="font-size:11px;padding:3px 8px;border:1px solid #93c5fd;border-radius:4px;background:#eff6ff;color:#2563eb;cursor:pointer;">Mark Read</button>' : '<span style="font-size:11px;color:#94a3b8;">Read</span>')
-                    + '<button onclick="dismiss(' + n.id + ')" style="font-size:11px;padding:3px 8px;border:1px solid #fca5a5;border-radius:4px;background:#fff5f5;color:#ef4444;cursor:pointer;">Dismiss</button>'
+                    + '<div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;min-width:70px;margin-left:auto;" onclick="event.stopPropagation();">'
+                    +   (!n.is_read
+                          ? '<button class="tni-btn tni-btn--blue" onclick="markRead(' + n.id + ')" style="width:100%;text-align:center;">✓ Read</button>'
+                          : '<span class="tni-read-lbl" style="width:100%;text-align:center;display:block;">Read</span>')
+                    +   '<button class="tni-btn tni-btn--red" onclick="dismiss(' + n.id + ')" title="Delete" style="width:100%;text-align:center;">🗑</button>'
                     + '</div>'
                     + '</div>';
             });
@@ -281,55 +331,117 @@
 
         /* ── Mark single read ── */
         function markRead(id) {
+            var n = allNotifications.find(function(x) { return x.id == id; });
+            if (n) n.is_read = true;
+            renderAll(); updateUnreadBadge();
             var fd = new URLSearchParams();
             fd.append('action', 'mark_read');
             fd.append('teacher_id', TEACHER_ID);
             fd.append('notification_id', id);
-            fetch('TEACHER_BACKEND/teacher_manage_notifications.php', { method: 'POST', body: fd })
-                .then(function() {
-                    var n = allNotifications.find(function(x) { return x.id == id; });
-                    if (n) n.is_read = true;
-                    renderAll(); updateUnreadBadge();
-                }).catch(function(){});
+            fetch('TEACHER_BACKEND/teacher_manage_notifications.php', { method: 'POST', body: fd }).catch(function(){});
         }
 
         /* ── Dismiss single ── */
         function dismiss(id) {
+            allNotifications = allNotifications.filter(function(x) { return x.id != id; });
+            renderAll(); updateUnreadBadge();
             var fd = new URLSearchParams();
             fd.append('action', 'delete');
             fd.append('teacher_id', TEACHER_ID);
             fd.append('notification_id', id);
-            fetch('TEACHER_BACKEND/teacher_manage_notifications.php', { method: 'POST', body: fd })
-                .then(function() {
-                    allNotifications = allNotifications.filter(function(x) { return x.id != id; });
-                    renderAll(); updateUnreadBadge();
-                }).catch(function(){});
+            fetch('TEACHER_BACKEND/teacher_manage_notifications.php', { method: 'POST', body: fd }).catch(function(){});
         }
 
         /* ── Mark all read ── */
         function markAllRead() {
+            allNotifications.forEach(function(n) { n.is_read = true; });
+            renderAll(); updateUnreadBadge();
             var fd = new URLSearchParams();
             fd.append('action', 'mark_all_read');
             fd.append('teacher_id', TEACHER_ID);
-            fetch('TEACHER_BACKEND/teacher_manage_notifications.php', { method: 'POST', body: fd })
-                .then(function() {
-                    allNotifications.forEach(function(n) { n.is_read = true; });
-                    renderAll(); updateUnreadBadge();
-                }).catch(function(){});
+            fetch('TEACHER_BACKEND/teacher_manage_notifications.php', { method: 'POST', body: fd }).catch(function(){});
         }
 
         /* ── Clear all ── */
         function clearAll() {
             if (!allNotifications.length) return;
+            localStorage.setItem('teacher_hist_seeded_' + TEACHER_ID, '1');
+            allNotifications = [];
+            renderAll(); updateUnreadBadge();
             var fd = new URLSearchParams();
             fd.append('action', 'clear_all');
             fd.append('teacher_id', TEACHER_ID);
-            fetch('TEACHER_BACKEND/teacher_manage_notifications.php', { method: 'POST', body: fd })
-                .then(function() {
-                    allNotifications = [];
-                    renderAll(); updateUnreadBadge();
-                }).catch(function(){});
+            fetch('TEACHER_BACKEND/teacher_manage_notifications.php', { method: 'POST', body: fd }).catch(function(){});
         }
+
+        /* ── Detail modal ── */
+        function openDetailModal(id) {
+            var n = allNotifications.find(function(x) { return x.id == id; });
+            if (!n) return;
+            if (!n.is_read) markRead(id);
+
+            var isUrgent = n.notification_type === 'scaffold';
+            var isMild = n.notification_type === 'scaffold_hint';
+            var modalBadgeHtml = isUrgent ? '<span class="tni-type-badge tni-type-badge--urgent">Needs Review</span>'
+                                : isMild ? '<span class="tni-type-badge tni-type-badge--mild">Needed a Hint</span>' : '';
+            document.getElementById('tnModalTitle').innerHTML = escHtml(n.title) + modalBadgeHtml;
+            document.getElementById('tnModalTime').textContent = timeAgo(n.created_at) + ' · ' + typeLabel(n.notification_type);
+            document.getElementById('tnModalMsg').textContent = n.message || '';
+
+            var elabBox = document.getElementById('tnElabBox');
+            var rows = document.getElementById('tnElabRows');
+            var struggleTitle = document.getElementById('tnStruggleTitle');
+            var chipsWrap = document.getElementById('tnStruggleChips');
+            rows.innerHTML = ''; chipsWrap.innerHTML = ''; struggleTitle.style.display = 'none';
+
+            var data = null;
+            if (n.data_json) { try { data = JSON.parse(n.data_json); } catch (e) { data = null; } }
+
+            if (data) {
+                elabBox.style.display = 'block';
+                function row(label, value, cls) {
+                    rows.innerHTML += '<div class="tn-elab-row"><span class="tn-elab-label">' + label + '</span><span class="tn-elab-value' + (cls ? ' ' + cls : '') + '">' + value + '</span></div>';
+                }
+                if (data.student_name)   row('Student', escHtml(data.student_name));
+                if (data.activity_title) row('Activity', escHtml(data.activity_title));
+                if (data.retake_count !== undefined) row('Attempts before passing', data.retake_count);
+                if (data.final_score !== undefined)  row('Final score', data.final_score + '%', data.final_score >= 80 ? 'tn-score-ok' : 'tn-score-low');
+                if (Array.isArray(data.struggled_items) && data.struggled_items.length) {
+                    struggleTitle.style.display = 'block';
+                    data.struggled_items.forEach(function(item) {
+                        if (typeof item === 'string') {
+                            chipsWrap.innerHTML += '<span class="tn-chip">' + escHtml(item) + '</span>';
+                            return;
+                        }
+                        var _lbl = item.label || '?';
+                        var _isIcon = _lbl.length <= 2; // short emoji/glyph vs. a text fallback like "Item 4"
+                        var _iconHtml = item.img
+                            ? '<img src="' + item.img + '" class="tn-struggle-thumb" alt="">'
+                            : '<span class="tn-struggle-emoji' + (_isIcon ? '' : ' tn-struggle-emoji--text') + '">' + escHtml(_lbl) + '</span>';
+                        chipsWrap.innerHTML += '<div class="tn-struggle-item">'
+                            + _iconHtml
+                            + '<span class="tn-struggle-text">'
+                            +   '<span class="tn-struggle-main">' + (item.thought ? 'Keeps placing this in <b>' + escHtml(item.thought) + '</b>' : 'Repeatedly got this wrong') + '</span>'
+                            +   (item.correct ? '<span class="tn-struggle-correct">Correct: ' + escHtml(item.correct) + '</span>' : '')
+                            + '</span>'
+                            + '</div>';
+                    });
+                }
+            } else {
+                elabBox.style.display = 'none';
+            }
+
+            var hasStruggled = !!(data && Array.isArray(data.struggled_items) && data.struggled_items.length);
+            document.getElementById('tnModalRight').style.display = hasStruggled ? 'block' : 'none';
+            document.getElementById('tnModalCard').classList.toggle('single-col', !hasStruggled);
+
+            document.getElementById('tnModalOverlay').classList.add('show');
+        }
+        function closeDetailModal() { document.getElementById('tnModalOverlay').classList.remove('show'); }
+        document.getElementById('tnModalCloseBtn').addEventListener('click', closeDetailModal);
+        document.getElementById('tnModalOverlay').addEventListener('click', function(e) {
+            if (e.target === this) closeDetailModal();
+        });
 
         /* ── Load students into send-notif dropdown ── */
         function loadStudentDropdown() {
@@ -338,7 +450,8 @@
                 .then(function(d) {
                     var sel = document.getElementById('notif-student-select');
                     if (!sel) return;
-                    var students = d.students || d.learners || [];
+                    // Endpoint returns a plain array, not {students:[...]}
+                    var students = Array.isArray(d) ? d : (d.students || d.learners || []);
                     students.forEach(function(s) {
                         var opt = document.createElement('option');
                         opt.value = s.id;
@@ -393,6 +506,8 @@
             loadSidebar();
             loadNotifications();
             loadStudentDropdown();
+            // Auto-refresh every 30 seconds so new notifications appear without reloading
+            setInterval(loadNotifications, 30000);
         });
     </script>
 <script>(function(){var _id=sessionStorage.getItem('admin_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>

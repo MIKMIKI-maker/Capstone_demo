@@ -62,6 +62,8 @@ $stmt->bind_param("ssssssisi", $first_name, $last_name, $email_address, $phone_n
 if ($stmt->execute()) {
     if ($user_role === 'teacher') {
         syncTeacherAccount($email_address, $first_name, $last_name);
+    } elseif ($user_role === 'student') {
+        syncStudentRecord($user_id, trim($full_name), $parent_name_val);
     }
     echo json_encode(['success' => true, 'message' => 'User updated successfully']);
 } else {
@@ -102,6 +104,23 @@ function syncTeacherAccount($email, $firstName, $lastName) {
     }
     
     $check_stmt->close();
+    $teacher_conn->close();
+    return true;
+}
+
+// Function to sync a student's corrected name/parent name into the teacher-facing students table
+function syncStudentRecord($adminAccountId, $studentName, $parentName) {
+    require_once __DIR__ . '/../../TEACHER_FILES/TEACHER_BACKEND/db.php';
+    $teacher_conn = getTeacherDatabaseConnection();
+
+    if (!$teacher_conn) {
+        return false;
+    }
+
+    $stmt = $teacher_conn->prepare("UPDATE students SET student_name = ?, parent_name = ? WHERE admin_account_id = ?");
+    $stmt->bind_param("ssi", $studentName, $parentName, $adminAccountId);
+    $stmt->execute();
+    $stmt->close();
     $teacher_conn->close();
     return true;
 }

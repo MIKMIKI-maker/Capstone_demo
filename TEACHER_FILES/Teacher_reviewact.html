@@ -185,7 +185,8 @@
     <button class="rv-modal-close" onclick="closeModal()" title="Close">✕</button>
     <div class="rv-modal-title" id="modalStudentName">—</div>
     <div class="rv-modal-score" id="modalScoreInfo">—</div>
-    <div id="modalRetakeChip" style="margin:-4px 0 14px;"></div>
+    <div id="modalRetakeChip" style="margin:-4px 0 8px;"></div>
+    <div id="modalNeedsReviewBanner" style="display:none;margin:0 0 14px;"></div>
 
     <!-- Per-item table -->
     <div style="overflow-x:auto;margin-bottom:20px;">
@@ -331,6 +332,8 @@ function renderCards(list, containerId, hasSubmission) {
     var assistHtml = s.assistance_level ? '<span class="rv-tag">' + esc(s.assistance_level) + '</span>' : '';
     var finalHtml  = s.is_finalized ? '<span class="rv-tag rv-tag-finalized">✓ Finalized</span>' : '';
     var retakeHtml = (hasSubmission && s.retake_count > 0) ? '<span class="rv-tag" title="Number of retakes">🔁 ' + s.retake_count + 'x retake</span>' : '';
+    var needsReviewHtml = (hasSubmission && s.scaffold_used >= 2) ? '<span class="rv-tag" style="background:#fee2e2;color:#b91c1c;font-weight:700;" title="The system had to fully re-teach this activity after repeated failed attempts">🚨 Needs Review</span>'
+      : (hasSubmission && s.scaffold_used == 1) ? '<span class="rv-tag" style="background:#fef3c7;color:#92400e;font-weight:700;" title="The student needed a hint before passing">💡 Needed a Hint</span>' : '';
     var dateHtml   = s.submitted_at ? '<div class="rv-card-sub">Submitted ' + fmtDate(s.submitted_at) + fmtTime(s.submitted_at) + '</div>' : '';
 
     var reviewBtn = hasSubmission
@@ -346,7 +349,7 @@ function renderCards(list, containerId, hasSubmission) {
             dateHtml +
           '</div>' +
         '</div>' +
-        '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">' + scoreHtml + retakeHtml + assistHtml + finalHtml + '</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">' + scoreHtml + retakeHtml + needsReviewHtml + assistHtml + finalHtml + '</div>' +
         (hasSubmission ? '<div class="rv-card-actions">' + reviewBtn + '</div>' : '') +
       '</div>'
     );
@@ -374,6 +377,19 @@ function openModal(s) {
     chipEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;background:#fff7ed;color:#c2410c;">🔁 ' + retakes + ' Retake' + (retakes === 1 ? '' : 's') + ' before this submission</span>';
   }
 
+  // Needs-review banner — shown when the system had to simplify the activity for this student
+  var reviewBanner = document.getElementById('modalNeedsReviewBanner');
+  if (s.scaffold_used >= 2) {
+    reviewBanner.style.display = '';
+    reviewBanner.innerHTML = '<div style="display:flex;align-items:center;gap:10px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:10px 14px;font-size:12.5px;color:#7f1d1d;font-weight:600;">🚨 This student needed the system to fully re-teach the activity after repeated failed attempts. Factor this into the assistance level and final score.</div>';
+  } else if (s.scaffold_used == 1) {
+    reviewBanner.style.display = '';
+    reviewBanner.innerHTML = '<div style="display:flex;align-items:center;gap:10px;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 14px;font-size:12.5px;color:#92400e;font-weight:600;">💡 This student needed a hint before passing. Consider factoring this into the assistance level.</div>';
+  } else {
+    reviewBanner.style.display = 'none';
+    reviewBanner.innerHTML = '';
+  }
+
   // Parse answers_json
   var items = [];
   try { items = JSON.parse(s.answers_json || '[]'); } catch(e){ items = []; }
@@ -398,10 +414,13 @@ function openModal(s) {
       }
       itemNum++;
       var ok = it.correct;
+      var itemCell = it.img
+        ? '<img src="' + it.img + '" style="width:28px;height:28px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:6px;" alt="">' + esc(it.label || '')
+        : esc(it.label || '—');
       tbody.insertAdjacentHTML('beforeend',
         '<tr>' +
           '<td style="color:#94a3b8;">' + itemNum + '</td>' +
-          '<td>' + esc(it.label || '—') + '</td>' +
+          '<td>' + itemCell + '</td>' +
           '<td>' + esc(it.studentAnswer || '—') + '</td>' +
           '<td>' + esc(it.correctAnswer || '—') + '</td>' +
           '<td class="' + (ok ? 'rv-ok' : 'rv-bad') + '">' + (ok ? '✓' : '✗') + '</td>' +
@@ -504,5 +523,6 @@ function saveAssessment() {
 loadData();
 </script>
 <script>(function(){var _id=sessionStorage.getItem('admin_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>
+<script>(function(){var _s=document.createElement('style');_s.textContent='.teacher-notif-badge{display:none!important}.teacher-notif-badge.has-notifs{position:absolute;top:4px;right:4px;min-width:16px;height:16px;border-radius:50%;background:#ef4444;color:#fff;font-size:9px;font-weight:700;display:flex!important;align-items:center;justify-content:center;padding:0 2px;border:2px solid #fff}';document.head.appendChild(_s);var tid=sessionStorage.getItem('teacher_id')||'';if(!tid)return;fetch('TEACHER_BACKEND/teacher_manage_notifications.php?action=get_unread_count&teacher_id='+encodeURIComponent(tid)).then(function(r){return r.json();}).then(function(d){var cnt=d&&d.unread_count>0?d.unread_count:0;if(cnt>0){var b=document.querySelector('.teacher-notif-badge');if(b){b.textContent=cnt>9?'9+':cnt;b.classList.add('has-notifs');}}}).catch(function(){});})();</script>
 </body>
 </html>

@@ -106,10 +106,10 @@
                         <i class="fa-solid fa-download"></i>
                         Generate PDF
                     </button>
-                    <button class="teacher-notif-btn" type="button">
+                    <a class="teacher-notif-btn" href="Teacher_notif.html" title="Notifications">
                         <i class="fa-regular fa-bell"></i>
-                        <span class="teacher-notif-badge">3</span>
-                    </button>
+                        <span class="teacher-notif-badge"></span>
+                    </a>
                 </div>
             </header>
             <!-- SCROLLABLE BODY -->
@@ -289,6 +289,15 @@
         </div>
     </div>
 
+    <!-- STRUGGLE DETAIL MODAL -->
+    <div class="sm-overlay" id="smOverlay">
+        <div class="sm-card">
+            <button class="sm-close" onclick="closeStruggleModal()" type="button">✖</button>
+            <div class="sm-title" id="smTitle">🚨 Struggled With</div>
+            <div class="sm-chips" id="smChips"></div>
+        </div>
+    </div>
+
     <script>
         // ── Globals ──────────────────────────────────────────────
         const TEACHER_ID     = parseInt(sessionStorage.getItem('teacher_id') || '1');
@@ -443,9 +452,11 @@
         }
 
         // ── Activity history ──────────────────────────────────────
+        var _historyActivities = [];
         function renderActivityHistory(activities) {
             const container = document.querySelector('.teacher-history-card');
             if (!container) return;
+            _historyActivities = activities || [];
 
             if (!activities || activities.length === 0) {
                 container.innerHTML = '<div class="teacher-history-title">Activity History</div>' +
@@ -457,7 +468,7 @@
                 '<div class="teacher-history-header">' +
                 '<span>Date</span><span>Activity</span><span>Score</span><span>Assistance Level</span><span>Status</span></div>';
 
-            activities.forEach(act => {
+            activities.forEach((act, actIdx) => {
                 const dateStr = act.date
                     ? new Date(act.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                     : '—';
@@ -467,20 +478,64 @@
                 const statusCls = act.status === 'completed' ? 'badge-completed' : 'badge-notstarted';
                 const statusLbl = act.status === 'completed' ? 'Completed' : 'Not Started';
                 const assistLbl = act.assistance_level
-                    ? `<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:#eff6ff;color:#1d4ed8;">${escHtml(act.assistance_level)}</span>`
+                    ? `<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:#eff6ff;color:#1d4ed8;white-space:nowrap;">${escHtml(act.assistance_level)}</span>`
                     : '<span style="color:#cbd5e1;">—</span>';
+                const needsReviewLbl = act.scaffold_used >= 2
+                    ? `<span onclick="openStruggleModal(${actIdx})" style="cursor:pointer;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:#fee2e2;color:#b91c1c;white-space:nowrap;flex-shrink:0;" title="Click to see where the learner struggled">🚨 Needs Review</span>`
+                    : act.scaffold_used == 1
+                    ? `<span onclick="openStruggleModal(${actIdx})" style="cursor:pointer;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:#fef3c7;color:#92400e;white-space:nowrap;flex-shrink:0;" title="Click to see where the learner struggled">💡 Needed a Hint</span>`
+                    : '';
 
                 html += `<div class="teacher-history-row">
                     <span class="teacher-history-date">${dateStr}</span>
                     <span class="teacher-history-activity">${escHtml(act.name)}</span>
                     <span class="teacher-history-score" style="color:${scoreCol};">${scoreStr}</span>
-                    <span>${assistLbl}</span>
-                    <span class="teacher-history-badge ${statusCls}">${statusLbl}</span>
+                    <span class="teacher-history-assist">${assistLbl}</span>
+                    <span class="teacher-history-status-cell">
+                        <span class="teacher-history-badge ${statusCls}">${statusLbl}</span>
+                        ${needsReviewLbl}
+                    </span>
                 </div>`;
             });
 
             container.innerHTML = html;
         }
+
+        // ── Struggle detail modal ──────────────────────────────────
+        function openStruggleModal(actIdx) {
+            var act = _historyActivities[actIdx];
+            if (!act) return;
+            document.getElementById('smTitle').textContent = '🚨 Struggled With — ' + (act.name || 'Activity');
+            var chipsWrap = document.getElementById('smChips');
+            chipsWrap.innerHTML = '';
+            var items = act.struggled_items || [];
+            if (!items.length) {
+                chipsWrap.innerHTML = '<div style="color:#94a3b8;font-size:13px;text-align:center;padding:20px 0;">No item-level detail available.</div>';
+            }
+            items.forEach(function(item) {
+                if (typeof item === 'string') {
+                    chipsWrap.innerHTML += '<div class="sm-struggle-item"><span class="sm-struggle-text">' + escHtml(item) + '</span></div>';
+                    return;
+                }
+                var lbl = item.label || '?';
+                var isIcon = lbl.length <= 2;
+                var iconHtml = item.img
+                    ? '<img src="' + item.img + '" class="sm-struggle-thumb" alt="">'
+                    : '<span class="sm-struggle-emoji' + (isIcon ? '' : ' sm-struggle-emoji--text') + '">' + escHtml(lbl) + '</span>';
+                chipsWrap.innerHTML += '<div class="sm-struggle-item">'
+                    + iconHtml
+                    + '<span class="sm-struggle-text">'
+                    +   '<span class="sm-struggle-main">' + (item.thought ? 'Keeps placing this in <b>' + escHtml(item.thought) + '</b>' : 'Repeatedly got this wrong') + '</span>'
+                    +   (item.correct ? '<span class="sm-struggle-correct">Correct: ' + escHtml(item.correct) + '</span>' : '')
+                    + '</span>'
+                    + '</div>';
+            });
+            document.getElementById('smOverlay').classList.add('show');
+        }
+        function closeStruggleModal() { document.getElementById('smOverlay').classList.remove('show'); }
+        document.getElementById('smOverlay').addEventListener('click', function(e) {
+            if (e.target === this) closeStruggleModal();
+        });
 
         // ── Skills breakdown ──────────────────────────────────────
         function updateSkillsBreakdown(skills) {
@@ -579,6 +634,7 @@
         }
     </script>
 <script>(function(){var _id=sessionStorage.getItem('admin_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>
+<script>(function(){var _s=document.createElement('style');_s.textContent='.teacher-notif-badge{display:none!important}.teacher-notif-badge.has-notifs{position:absolute;top:4px;right:4px;min-width:16px;height:16px;border-radius:50%;background:#ef4444;color:#fff;font-size:9px;font-weight:700;display:flex!important;align-items:center;justify-content:center;padding:0 2px;border:2px solid #fff}';document.head.appendChild(_s);var tid=sessionStorage.getItem('teacher_id')||'';if(!tid)return;fetch('TEACHER_BACKEND/teacher_manage_notifications.php?action=get_unread_count&teacher_id='+encodeURIComponent(tid)).then(function(r){return r.json();}).then(function(d){var cnt=d&&d.unread_count>0?d.unread_count:0;if(cnt>0){var b=document.querySelector('.teacher-notif-badge');if(b){b.textContent=cnt>9?'9+':cnt;b.classList.add('has-notifs');}}}).catch(function(){});})();</script>
 </body>
 
 </html>
