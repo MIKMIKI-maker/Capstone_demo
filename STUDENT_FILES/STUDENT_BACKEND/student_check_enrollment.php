@@ -14,7 +14,7 @@ if (!$student_admin_id) {
 }
 
 // Direct lightweight connection — skip getTeacherDatabaseConnection() migration overhead
-$conn = new mysqli('127.0.0.1', 'root', '', 'spedalm_db', 3307);
+$conn = new mysqli('127.0.0.1', 'root', '', 'spedalm_db', 3306);
 if ($conn->connect_error) { echo json_encode(['enrolled' => false]); exit; }
 $conn->set_charset('utf8mb4');
 

@@ -26,7 +26,8 @@
 body {
   font-family: var(--font-body);
   color: var(--ink);
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   display: flex;
   /* soft & easy on the eyes */
   background: linear-gradient(180deg, #f5f8ff, #eaf1fc);
@@ -96,7 +97,7 @@ body {
 /* ============================================================
    MAIN
    ============================================================ */
-.student-main { display: block; flex: 1; padding: 26px 32px; }
+.student-main { display: block; flex: 1; padding: 26px 32px; height: 100vh; overflow-y: auto; }
 
 /* ---- Page header with panda mascot ---- */
 .student-page-header {

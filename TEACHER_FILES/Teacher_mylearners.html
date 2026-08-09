@@ -466,7 +466,7 @@
 
             let html = '<div class="teacher-history-title">Activity History</div>' +
                 '<div class="teacher-history-header">' +
-                '<span>Date</span><span>Activity</span><span>Score</span><span>Assistance Level</span><span>Status</span></div>';
+                '<span>Date</span><span>Activity</span><span>Score</span><span>Retakes</span><span>Assistance Level</span><span>Status</span></div>';
 
             activities.forEach((act, actIdx) => {
                 const dateStr = act.date
@@ -485,11 +485,16 @@
                     : act.scaffold_used == 1
                     ? `<span onclick="openStruggleModal(${actIdx})" style="cursor:pointer;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:#fef3c7;color:#92400e;white-space:nowrap;flex-shrink:0;" title="Click to see where the learner struggled">💡 Needed a Hint</span>`
                     : '';
+                const retakeCount = act.retake_count || 0;
+                const retakeLbl = retakeCount > 0
+                    ? `<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:#fef3c7;color:#92400e;white-space:nowrap;" title="${retakeCount} retake(s)">🔁 ${retakeCount}</span>`
+                    : '<span style="color:#cbd5e1;">—</span>';
 
                 html += `<div class="teacher-history-row">
                     <span class="teacher-history-date">${dateStr}</span>
                     <span class="teacher-history-activity">${escHtml(act.name)}</span>
                     <span class="teacher-history-score" style="color:${scoreCol};">${scoreStr}</span>
+                    <span class="teacher-history-retakes">${retakeLbl}</span>
                     <span class="teacher-history-assist">${assistLbl}</span>
                     <span class="teacher-history-status-cell">
                         <span class="teacher-history-badge ${statusCls}">${statusLbl}</span>

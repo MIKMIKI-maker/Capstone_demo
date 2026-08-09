@@ -182,8 +182,65 @@
             </div>
         </main>
     </div>
+
+    <!-- Activity submissions modal -->
+    <div id="activitySubModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:9999;align-items:center;justify-content:center;" onclick="if(event.target===this) closeActivitySubmissions();">
+        <div style="background:#fff;border-radius:16px;width:min(480px,92vw);max-height:80vh;overflow-y:auto;padding:22px 24px;box-shadow:0 20px 50px rgba(0,0,0,.25);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                <div id="activitySubTitle" style="font-weight:700;font-size:15px;color:#1e293b;font-family:'Poppins',sans-serif;">Activity</div>
+                <span onclick="closeActivitySubmissions()" style="cursor:pointer;color:#94a3b8;font-size:18px;line-height:1;">&times;</span>
+            </div>
+            <div id="activitySubBody" style="font-size:13px;color:#64748b;font-family:'Poppins',sans-serif;">Loading...</div>
+        </div>
+    </div>
+
     <script>
         var TEACHER_ID = parseInt(sessionStorage.getItem('teacher_id') || '1');
+        var _reportActivities = [];
+
+        function openActivitySubmissions(idx) {
+            var a = _reportActivities[idx];
+            if (!a) return;
+            var modal = document.getElementById('activitySubModal');
+            var titleEl = document.getElementById('activitySubTitle');
+            var bodyEl = document.getElementById('activitySubBody');
+            titleEl.textContent = a.activity_title;
+            bodyEl.innerHTML = 'Loading...';
+            modal.style.display = 'flex';
+
+            fetch('TEACHER_BACKEND/teacher_list_submissions.php?teacher_id=' + TEACHER_ID + '&activity_id=' + a.activity_id)
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    if (!d.success || !d.students || !d.students.length) {
+                        bodyEl.innerHTML = '<div style="text-align:center;padding:16px;color:#cbd5e1;">No learners assigned to this activity.</div>';
+                        return;
+                    }
+                    var submitted = d.students.filter(function(s){ return s.submitted; });
+                    var html = '<div style="margin-bottom:10px;font-size:12px;color:#94a3b8;">'
+                        + submitted.length + ' of ' + d.students.length + ' learners submitted</div>';
+                    html += d.students.map(function(s) {
+                        var scoreStr = s.submitted
+                            ? ((s.is_finalized && s.finalized_score !== null ? s.finalized_score : s.score) + '%')
+                            : '';
+                        var retakeStr = s.submitted && s.retake_count > 0 ? (' · 🔁 ' + s.retake_count + ' retake(s)') : '';
+                        var badge = s.submitted
+                            ? '<span style="font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;background:#D1FAE5;color:#065F46;white-space:nowrap;">✅ Submitted</span>'
+                            : '<span style="font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;background:#F1F5F9;color:#64748B;white-space:nowrap;">⭕ Not submitted</span>';
+                        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9;">'
+                            + '<div><div style="font-weight:600;color:#334155;font-size:13px;">' + escHtml(s.student_name) + '</div>'
+                            + (s.submitted ? '<div style="font-size:11px;color:#94a3b8;">' + scoreStr + retakeStr + '</div>' : '')
+                            + '</div>' + badge + '</div>';
+                    }).join('');
+                    bodyEl.innerHTML = html;
+                })
+                .catch(function() {
+                    bodyEl.innerHTML = '<div style="text-align:center;padding:16px;color:#ef4444;">Failed to load submissions.</div>';
+                });
+        }
+
+        function closeActivitySubmissions() {
+            document.getElementById('activitySubModal').style.display = 'none';
+        }
 
         function _applyTeacherPhoto(pic) {
             var el = document.getElementById('teacher-avatar-letter');
@@ -270,10 +327,11 @@
                         if (!d.activities || !d.activities.length) {
                             actEl.innerHTML = '<div style="text-align:center;padding:20px;color:#cbd5e1;">No activities published yet</div>';
                         } else {
-                            actEl.innerHTML = d.activities.slice(0, 6).map(function(a) {
+                            _reportActivities = d.activities;
+                            actEl.innerHTML = d.activities.slice(0, 6).map(function(a, idx) {
                                 var pct = a.avg_score ? a.avg_score + '%' : '—';
                                 var barW = a.avg_score ? a.avg_score : 0;
-                                return '<div style="margin-bottom:12px;">'
+                                return '<div style="margin-bottom:12px;cursor:pointer;" onclick="openActivitySubmissions(' + idx + ')" title="Click to see who submitted">'
                                     + '<div style="display:flex;justify-content:space-between;margin-bottom:4px;">'
                                     + '<span style="font-weight:600;color:#334155;font-size:12px;">' + escHtml(a.activity_title) + '</span>'
                                     + '<span style="color:#1e3a8a;font-weight:700;font-size:12px;">' + pct + '</span>'
@@ -281,7 +339,7 @@
                                     + '<div style="height:6px;background:#e2e8f0;border-radius:3px;">'
                                     + '<div style="height:6px;background:#1e3a8a;border-radius:3px;width:' + barW + '%;transition:width .4s;"></div>'
                                     + '</div>'
-                                    + '<div style="font-size:11px;color:#94a3b8;margin-top:2px;">' + a.submissions + ' submission(s)</div>'
+                                    + '<div style="font-size:11px;color:#94a3b8;margin-top:2px;">' + a.submissions + ' submission(s) · view details</div>'
                                     + '</div>';
                             }).join('');
                         }

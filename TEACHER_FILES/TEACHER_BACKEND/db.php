@@ -9,7 +9,7 @@ function getTeacherDatabaseConnection() {
     $db_password = "";
     $database = "spedalm_db";
 
-    $conn = new mysqli($servername, $db_username, $db_password, '', 3307);
+    $conn = new mysqli($servername, $db_username, $db_password, '', 3306);
     if ($conn->connect_error) {
         return null;
     }

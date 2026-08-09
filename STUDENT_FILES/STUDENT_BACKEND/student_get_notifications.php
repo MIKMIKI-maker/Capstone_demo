@@ -14,7 +14,7 @@ if (!$student_record_id || !$teacher_id) {
 }
 
 // Direct lightweight connection — skip getTeacherDatabaseConnection() migration overhead
-$conn = new mysqli('127.0.0.1', 'root', '', 'spedalm_db', 3307);
+$conn = new mysqli('127.0.0.1', 'root', '', 'spedalm_db', 3306);
 if ($conn->connect_error) {
     echo json_encode(['success' => false, 'message' => 'Database connection failed']);
     exit;

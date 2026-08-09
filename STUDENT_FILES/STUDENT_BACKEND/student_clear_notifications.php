@@ -15,7 +15,7 @@ if (!$student_record_id) {
     exit;
 }
 
-$conn = new mysqli('127.0.0.1', 'root', '', 'spedalm_db', 3307);
+$conn = new mysqli('127.0.0.1', 'root', '', 'spedalm_db', 3306);
 if ($conn->connect_error) {
     echo json_encode(['success' => false]);
     exit;

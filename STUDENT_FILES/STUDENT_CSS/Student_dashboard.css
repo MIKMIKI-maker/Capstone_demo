@@ -42,7 +42,8 @@
 body {
   font-family: var(--font-body);
   color: var(--ink);
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   display: flex;
   background: radial-gradient(circle at 18% -10%, var(--sky-2), var(--sky-1));
 }
@@ -125,6 +126,8 @@ body {
   flex: 1;
   padding: 28px 34px;
   perspective: 1500px;
+  height: 100vh;
+  overflow-y: auto;
 }
 
 /* ---- Top bar / greeting ---- */
@@ -185,14 +188,24 @@ body {
 }
 
 .student-notif-badge {
+  display: none;
   position: absolute;
-  top: 11px;
-  right: 12px;
-  width: 9px;
-  height: 9px;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 2px;
+  align-items: center;
+  justify-content: center;
   border-radius: 50%;
-  background: var(--coral);
-  box-shadow: 0 0 0 3px #fff;
+  background: #ef4444;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  border: 2px solid #fff;
+}
+.student-notif-badge.has-notifs {
+  display: flex;
 }
 
 

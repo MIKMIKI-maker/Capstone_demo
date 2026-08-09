@@ -13,7 +13,7 @@ if (!$student_id || !$teacher_id) {
     exit;
 }
 
-$conn = new mysqli('127.0.0.1', 'root', '', 'spedalm_db', 3307);
+$conn = new mysqli('127.0.0.1', 'root', '', 'spedalm_db', 3306);
 if ($conn->connect_error) {
     echo json_encode(['unread' => 0]);
     exit;
@@ -31,21 +31,6 @@ if ($stmt) {
     $stmt->fetch();
     $stmt->close();
     $unread += (int)$cnt;
-}
-
-// Count published activities not yet completed by this student
-$stmt2 = $conn->prepare("
-    SELECT COUNT(*) FROM teacher_activities a
-    LEFT JOIN learner_progress lp ON lp.activity_id = a.id AND lp.student_id = ?
-    WHERE a.teacher_id = ? AND a.status = 'published' AND lp.id IS NULL
-");
-if ($stmt2) {
-    $stmt2->bind_param("ii", $student_id, $teacher_id);
-    $stmt2->execute();
-    $stmt2->bind_result($acts);
-    $stmt2->fetch();
-    $stmt2->close();
-    $unread += (int)$acts;
 }
 
 $conn->close();

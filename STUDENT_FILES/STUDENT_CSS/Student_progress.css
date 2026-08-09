@@ -24,7 +24,8 @@
 body {
   font-family: var(--font-body);
   color: var(--ink);
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   display: flex;
   background: linear-gradient(180deg, #f5f8ff, #eaf1fc);
 }
@@ -91,7 +92,7 @@ body {
 /* ============================================================
    MAIN
    ============================================================ */
-.student-main { display: block; flex: 1; padding: 28px 34px; }
+.student-main { display: block; flex: 1; padding: 28px 34px; height: 100vh; overflow-y: auto; }
 
 /* ---- Page header ---- */
 .student-page-header {
@@ -117,9 +118,15 @@ body {
   box-shadow: 0 4px 12px rgba(36, 58, 94, .12);
 }
 .student-notif-badge {
-  position: absolute; top: 12px; right: 13px;
-  width: 9px; height: 9px; border-radius: 50%;
-  background: var(--coral); box-shadow: 0 0 0 3px #fff;
+  display: none;
+  position: absolute; top: -4px; right: -4px;
+  min-width: 16px; height: 16px; padding: 0 2px;
+  align-items: center; justify-content: center;
+  border-radius: 50%; background: #ef4444; color: #fff;
+  font-size: 9px; font-weight: 700; border: 2px solid #fff;
+}
+.student-notif-badge.has-notifs {
+  display: flex;
 }
 
 

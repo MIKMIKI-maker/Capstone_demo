@@ -5,6 +5,7 @@
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>SPED ALM - My Progress</title>
+    <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
     <link href="STUDENT_CSS/Student_progress.css" rel="stylesheet" />
     <link
         href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;family=Nunito:wght@400;600;700;800;900&amp;display=swap"
@@ -357,14 +358,7 @@
     }
 
     function loadProfileAndNotifs() {
-        // Notification badge
-        var notifs = [];
-        var _srid = sessionStorage.getItem('student_record_id') || '';
-        var _lsNotifKey = _srid ? ('student_notif_cache_' + _srid) : 'student_notif_cache';
-        try { notifs = JSON.parse(localStorage.getItem(_lsNotifKey) || '[]'); } catch(e) {}
-        var unread = notifs.filter(function(n){ return !n.isRead; }).length;
-        var badge = document.querySelector('.student-notif-badge');
-        if (badge) badge.textContent = unread > 0 ? (unread > 9 ? '9+' : unread) : '';
+        // Notification badge is handled by the shared IIFE at the bottom of the page
 
         var sp = {};
         try { sp = JSON.parse(localStorage.getItem('student_profile') || '{}'); } catch(e) {}

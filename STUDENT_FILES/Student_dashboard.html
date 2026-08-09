@@ -5,6 +5,7 @@
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
   <title>SPED ALM - Student Dashboard</title>
+  <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
 
   <link href="STUDENT_CSS/Student_dashboard.css" rel="stylesheet" />
   <link
@@ -407,12 +408,20 @@
                 }
 
                 // Notification badge
-                fetch('STUDENT_BACKEND/student_get_notifications.php?student_record_id=' + srid + '&teacher_id=' + tid)
+                fetch('STUDENT_BACKEND/student_notif_count.php?student_id=' + srid + '&teacher_id=' + tid)
                   .then(function(r){ return r.json(); })
                   .then(function(nd){
-                    var unread = nd.success ? (nd.unread || 0) : 0;
+                    var unread = nd.unread || 0;
                     var badge = document.querySelector('.student-notif-badge');
-                    if (badge) { badge.textContent = unread > 0 ? (unread > 9 ? '9+' : unread) : ''; }
+                    if (badge) {
+                      if (unread > 0) {
+                        badge.textContent = unread > 9 ? '9+' : unread;
+                        badge.classList.add('has-notifs');
+                      } else {
+                        badge.textContent = '';
+                        badge.classList.remove('has-notifs');
+                      }
+                    }
                   }).catch(function(){});
               })
               .catch(function() {
