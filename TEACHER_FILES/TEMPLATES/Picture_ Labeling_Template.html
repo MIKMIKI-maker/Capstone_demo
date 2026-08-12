@@ -338,7 +338,7 @@ body.lbl-preview-only .lbl-exit-float{display:flex;}
 
 @media print{
   body *{ visibility:hidden; }
-  .lbl-print-area, .lbl-print-area *{ visibility:visible; }
+  .lbl-print-area, .lbl-print-area *{ visibility:visible; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   .lbl-print-area{ display:block; position:absolute; left:0; top:0; width:100%; margin:0; padding:0; }
   .lbl-print-page{ page-break-after:always; padding:6mm 8mm; min-height:100vh; display:flex; flex-direction:column; box-sizing:border-box; }
   .lbl-print-page:last-child{ page-break-after:auto; }

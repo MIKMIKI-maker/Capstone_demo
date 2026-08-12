@@ -327,7 +327,7 @@
 
   @media print{
     body *{ visibility:hidden; }
-    .wrt-print-area, .wrt-print-area *{ visibility:visible; }
+    .wrt-print-area, .wrt-print-area *{ visibility:visible; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .wrt-print-area{ display:block; position:absolute; left:0; top:0; width:100%; margin:0; padding:0; }
     .wrt-print-page{ page-break-after:always; padding:6mm 8mm; min-height:100vh; display:flex; flex-direction:column; box-sizing:border-box; }
     .wrt-print-page:last-child{ page-break-after:auto; }

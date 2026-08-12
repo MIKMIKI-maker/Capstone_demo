@@ -322,7 +322,7 @@
 
   @media print{
     body *{ visibility:hidden; }
-    .bgl-print-area, .bgl-print-area *{ visibility:visible; }
+    .bgl-print-area, .bgl-print-area *{ visibility:visible; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .bgl-print-area{ display:block; position:absolute; left:0; top:0; width:100%; margin:0; padding:0; }
     .bgl-print-page{ page-break-after:always; padding:6mm 8mm; min-height:100vh; display:flex; flex-direction:column; box-sizing:border-box; }
     .bgl-print-page:last-child{ page-break-after:auto; }

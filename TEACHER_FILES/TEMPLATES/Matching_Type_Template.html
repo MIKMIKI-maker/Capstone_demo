@@ -299,19 +299,20 @@
   .mtg-print-checks{ display:flex; flex-wrap:wrap; gap:16px; margin-top:8px; }
   .mtg-print-checks label{ display:flex; align-items:center; gap:6px; }
   .mtg-print-box{ width:13px; height:13px; border:1.5px solid #64748b; border-radius:3px; display:inline-block; }
-  .mtg-print-grid{ display:flex; justify-content:space-between; gap:90px; flex:1; }
+  .mtg-print-grid{ display:flex; justify-content:space-between; gap:150px; flex:1; }
   .mtg-print-col{ flex:1; display:flex; flex-direction:column; gap:22px; }
   .mtg-print-item{ position:relative; border:2px solid #cbd5e1; border-radius:14px; padding:16px 10px; flex:1;
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; min-height:130px; }
   .mtg-print-item img{ max-width:100%; max-height:120px; object-fit:contain; }
   .mtg-print-item .mtg-print-emoji{ font-size:64px; line-height:1; }
   .mtg-print-item .mtg-print-label{ font-size:13px; font-weight:700; }
-  .mtg-print-num{ position:absolute; top:-13px; left:-13px; width:26px; height:26px; border-radius:50%;
-    background:#7b6ef0; color:#fff; font-size:13px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+  .mtg-print-dot{ position:absolute; top:50%; width:18px; height:18px; border-radius:50%; background:#000; transform:translateY(-50%); }
+  .mtg-print-dot-left{ right:-10px; }
+  .mtg-print-dot-right{ left:-10px; }
 
   @media print{
     body *{ visibility:hidden; }
-    .mtg-print-area, .mtg-print-area *{ visibility:visible; }
+    .mtg-print-area, .mtg-print-area *{ visibility:visible; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .mtg-print-area{ display:block; position:absolute; left:0; top:0; width:100%; margin:0; padding:0; }
     .mtg-print-page{ page-break-after:always; padding:6mm 8mm; min-height:100vh; display:flex; flex-direction:column; box-sizing:border-box; }
     .mtg-print-page:last-child{ page-break-after:auto; }
@@ -1372,12 +1373,13 @@
   function printEscape(s){
     var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML;
   }
-  function printSideBox(it, label){
+  function printSideBox(it, side){
     var visual = it.img
       ? '<img src="'+it.img+'" alt="">'
       : '<span class="mtg-print-emoji">'+printEscape(it.emoji || "?")+'</span>';
     var name = it.name ? '<span class="mtg-print-label">'+printEscape(it.name)+'</span>' : '';
-    return '<div class="mtg-print-item"><span class="mtg-print-num">'+label+'</span>'+visual+name+'</div>';
+    var dot = '<span class="mtg-print-dot mtg-print-dot-'+side+'"></span>';
+    return '<div class="mtg-print-item">'+dot+visual+name+'</div>';
   }
   function printChecklistHtml(){
     return '<div class="mtg-print-footer"><span class="mtg-print-footer-label">Note: Pupils Performance Checklist</span>'
@@ -1392,8 +1394,8 @@
     var pages = "";
     state.activities.forEach(function(activity, slideIdx){
       var order = shuffle(activity.items.map(function(_, i){ return i; }));
-      var leftHtml = activity.items.map(function(it, i){ return printSideBox(it.left, String(i+1)); }).join("");
-      var rightHtml = order.map(function(i, pos){ return printSideBox(activity.items[i].right, String.fromCharCode(65+pos)); }).join("");
+      var leftHtml = activity.items.map(function(it){ return printSideBox(it.left, "left"); }).join("");
+      var rightHtml = order.map(function(i){ return printSideBox(activity.items[i].right, "right"); }).join("");
       pages += '<div class="mtg-print-page">'
         + '<div class="mtg-print-head"><h2>'+printEscape(activity.title)+'</h2>'
         + '<div class="mtg-print-objective">('+printEscape(activity.instruction)+')</div>'

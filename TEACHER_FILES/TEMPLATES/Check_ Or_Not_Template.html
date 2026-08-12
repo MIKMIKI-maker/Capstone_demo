@@ -314,7 +314,7 @@
 
   @media print{
     body *{ visibility:hidden; }
-    .chk-print-area, .chk-print-area *{ visibility:visible; }
+    .chk-print-area, .chk-print-area *{ visibility:visible; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .chk-print-area{ display:block; position:absolute; left:0; top:0; width:100%; margin:0; padding:0; }
     .chk-print-page{ page-break-after:always; padding:6mm 8mm; min-height:100vh; display:flex; flex-direction:column; box-sizing:border-box; }
     .chk-print-page:last-child{ page-break-after:auto; }
