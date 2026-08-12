@@ -307,11 +307,18 @@
   .wrt-print-page{ font-family:'Poppins',sans-serif; color:#243a5e; }
   .wrt-print-head{ text-align:center; margin-bottom:10px; }
   .wrt-print-head h2{ font-size:21px; font-weight:700; margin:0 0 4px; }
-  .wrt-print-sub{ font-size:12.5px; color:#5d7299; font-weight:500; }
-  .wrt-print-divider{ border-top:2px dashed #cbd5e1; margin:14px 0 20px; }
-  .wrt-print-instr{ font-size:15px; font-weight:600; margin-bottom:18px; }
+  .wrt-print-objective{ font-size:13.5px; font-style:italic; color:#5d7299; font-weight:600; }
+  .wrt-print-sub{ font-size:12.5px; color:#5d7299; font-weight:500; margin-top:4px; }
+  .wrt-print-divider{ margin:14px 0 20px; display:flex; flex-direction:column; gap:22px; }
+  .wrt-print-divider .wrt-print-rule{ border-top:2.5px solid #94a3b8; }
+  .wrt-print-divider .wrt-print-rule-dash{ border-top:2.5px dashed #94a3b8; }
   .wrt-print-example{ border:2px dashed #7b6ef0; border-radius:14px; padding:14px 18px; display:flex; align-items:center; gap:16px; margin-bottom:24px; }
   .wrt-print-example .wrt-print-ex-tag{ font-size:12px; font-weight:800; color:#5546c4; text-transform:uppercase; }
+  .wrt-print-footer{ margin-top:auto; padding-top:14px; border-top:1.5px solid #cbd5e1; font-size:11.5px; }
+  .wrt-print-footer-label{ font-weight:700; }
+  .wrt-print-checks{ display:flex; flex-wrap:wrap; gap:16px; margin-top:8px; }
+  .wrt-print-checks label{ display:flex; align-items:center; gap:6px; }
+  .wrt-print-box{ width:13px; height:13px; border:1.5px solid #64748b; border-radius:3px; display:inline-block; }
   .wrt-print-grid{ display:grid; grid-template-columns:1fr 1fr; gap:24px 32px; flex:1; }
   .wrt-print-item{ border:2px solid #cbd5e1; border-radius:16px; padding:20px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; }
   .wrt-print-item img{ max-width:100%; max-height:150px; object-fit:contain; }
@@ -1396,6 +1403,15 @@
   function printEscape(s){
     var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML;
   }
+  function printChecklistHtml(){
+    return '<div class="wrt-print-footer"><span class="wrt-print-footer-label">Note: Pupils Performance Checklist</span>'
+      + '<div class="wrt-print-checks">'
+      + '<label><span class="wrt-print-box"></span> Full Physical Prompt</label>'
+      + '<label><span class="wrt-print-box"></span> Assisted</label>'
+      + '<label><span class="wrt-print-box"></span> Verbal Cuing</label>'
+      + '<label><span class="wrt-print-box"></span> Independent</label>'
+      + '</div></div>';
+  }
   function buildPrintPages(){
     var pages = "";
     state.activities.forEach(function(activity, slideIdx){
@@ -1416,12 +1432,13 @@
       }).join("");
       pages += '<div class="wrt-print-page">'
         + '<div class="wrt-print-head"><h2>'+printEscape(activity.title)+'</h2>'
+        + '<div class="wrt-print-objective">('+printEscape(activity.instruction)+')</div>'
         + (state.activities.length > 1 ? '<div class="wrt-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+'</div>' : '')
         + '</div>'
-        + '<div class="wrt-print-divider"></div>'
-        + '<div class="wrt-print-instr">'+printEscape(activity.instruction)+'</div>'
+        + '<div class="wrt-print-divider"><div class="wrt-print-rule"></div><div class="wrt-print-rule-dash"></div><div class="wrt-print-rule"></div></div>'
         + exampleHtml
         + '<div class="wrt-print-grid">'+itemsHtml+'</div>'
+        + printChecklistHtml()
         + '</div>';
     });
     return pages;

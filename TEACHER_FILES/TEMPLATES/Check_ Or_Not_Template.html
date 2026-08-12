@@ -295,9 +295,16 @@
   .chk-print-page{ font-family:'Poppins',sans-serif; color:#243a5e; }
   .chk-print-head{ text-align:center; margin-bottom:10px; }
   .chk-print-head h2{ font-size:21px; font-weight:700; margin:0 0 4px; }
-  .chk-print-sub{ font-size:12.5px; color:#5d7299; font-weight:500; }
-  .chk-print-divider{ border-top:2px dashed #cbd5e1; margin:14px 0 22px; }
-  .chk-print-instr{ font-size:15px; font-weight:600; margin-bottom:26px; }
+  .chk-print-objective{ font-size:13.5px; font-style:italic; color:#5d7299; font-weight:600; }
+  .chk-print-sub{ font-size:12.5px; color:#5d7299; font-weight:500; margin-top:4px; }
+  .chk-print-divider{ margin:14px 0 22px; display:flex; flex-direction:column; gap:22px; }
+  .chk-print-divider .chk-print-rule{ border-top:2.5px solid #94a3b8; }
+  .chk-print-divider .chk-print-rule-dash{ border-top:2.5px dashed #94a3b8; }
+  .chk-print-footer{ margin-top:auto; padding-top:14px; border-top:1.5px solid #cbd5e1; font-size:11.5px; }
+  .chk-print-footer-label{ font-weight:700; }
+  .chk-print-checks{ display:flex; flex-wrap:wrap; gap:16px; margin-top:8px; }
+  .chk-print-checks label{ display:flex; align-items:center; gap:6px; }
+  .chk-print-box{ width:13px; height:13px; border:1.5px solid #64748b; border-radius:3px; display:inline-block; }
   .chk-print-grid{ display:grid; grid-template-columns:1fr 1fr; gap:24px 30px; flex:1; }
   .chk-print-item{ border:2px solid #cbd5e1; border-radius:16px; padding:18px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; }
   .chk-print-item img{ max-width:100%; max-height:140px; object-fit:contain; }
@@ -1287,6 +1294,15 @@
   function printEscape(s){
     var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML;
   }
+  function printChecklistHtml(){
+    return '<div class="chk-print-footer"><span class="chk-print-footer-label">Note: Pupils Performance Checklist</span>'
+      + '<div class="chk-print-checks">'
+      + '<label><span class="chk-print-box"></span> Full Physical Prompt</label>'
+      + '<label><span class="chk-print-box"></span> Assisted</label>'
+      + '<label><span class="chk-print-box"></span> Verbal Cuing</label>'
+      + '<label><span class="chk-print-box"></span> Independent</label>'
+      + '</div></div>';
+  }
   function buildPrintPages(){
     var pages = "";
     state.activities.forEach(function(activity, slideIdx){
@@ -1300,11 +1316,12 @@
       }).join("");
       pages += '<div class="chk-print-page">'
         + '<div class="chk-print-head"><h2>'+printEscape(activity.title)+'</h2>'
+        + '<div class="chk-print-objective">('+printEscape(activity.instruction)+')</div>'
         + (state.activities.length > 1 ? '<div class="chk-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+'</div>' : '')
         + '</div>'
-        + '<div class="chk-print-divider"></div>'
-        + '<div class="chk-print-instr">'+printEscape(activity.instruction)+'</div>'
+        + '<div class="chk-print-divider"><div class="chk-print-rule"></div><div class="chk-print-rule-dash"></div><div class="chk-print-rule"></div></div>'
         + '<div class="chk-print-grid">'+itemsHtml+'</div>'
+        + printChecklistHtml()
         + '</div>';
     });
     return pages;
