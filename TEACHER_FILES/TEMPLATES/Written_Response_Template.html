@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SPED ALM — Written Response Template Generator</title>
+<link rel="icon" type="image/png" href="../../ASSETS/logo.png" />
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
@@ -300,6 +301,31 @@
   .wrt-domain-opt input[type="radio"]{ accent-color:#0891b2; cursor:pointer; }
 
   @media (max-width:1100px){ .wrt-body{ grid-template-columns:1fr; } }
+
+  /* ===== PRINTABLE WORKSHEET (Generate Printable button / PDF via browser print) ===== */
+  .wrt-print-area{ display:none; }
+  .wrt-print-page{ font-family:'Poppins',sans-serif; color:#243a5e; }
+  .wrt-print-head{ text-align:center; margin-bottom:10px; }
+  .wrt-print-head h2{ font-size:21px; font-weight:700; margin:0 0 4px; }
+  .wrt-print-sub{ font-size:12.5px; color:#5d7299; font-weight:500; }
+  .wrt-print-divider{ border-top:2px dashed #cbd5e1; margin:14px 0 20px; }
+  .wrt-print-instr{ font-size:15px; font-weight:600; margin-bottom:18px; }
+  .wrt-print-example{ border:2px dashed #7b6ef0; border-radius:14px; padding:14px 18px; display:flex; align-items:center; gap:16px; margin-bottom:24px; }
+  .wrt-print-example .wrt-print-ex-tag{ font-size:12px; font-weight:800; color:#5546c4; text-transform:uppercase; }
+  .wrt-print-grid{ display:grid; grid-template-columns:1fr 1fr; gap:24px 32px; flex:1; }
+  .wrt-print-item{ border:2px solid #cbd5e1; border-radius:16px; padding:20px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; }
+  .wrt-print-item img{ max-width:100%; max-height:150px; object-fit:contain; }
+  .wrt-print-item .wrt-print-emoji{ font-size:84px; line-height:1; }
+  .wrt-print-blank{ width:75%; border-bottom:2px solid #94a3b8; height:30px; }
+
+  @media print{
+    body *{ visibility:hidden; }
+    .wrt-print-area, .wrt-print-area *{ visibility:visible; }
+    .wrt-print-area{ display:block; position:absolute; left:0; top:0; width:100%; margin:0; padding:0; }
+    .wrt-print-page{ page-break-after:always; padding:6mm 8mm; min-height:100vh; display:flex; flex-direction:column; box-sizing:border-box; }
+    .wrt-print-page:last-child{ page-break-after:auto; }
+    @page{ margin:8mm; size:auto; }
+  }
   /* ── SPOTLIGHT TOUR ── */
   .wrt-btn--help{background:#ffc34d;color:#5c4400;box-shadow:0 4px 0 #d9a416;}
   #wrtTourSpot{display:none;position:fixed;z-index:8999;pointer-events:none;border-radius:14px;box-shadow:0 0 0 9999px rgba(15,23,55,.72);transition:left .22s ease,top .22s ease,width .22s ease,height .22s ease;}
@@ -579,6 +605,9 @@
       </div>
     </div>
   </div>
+
+  <!-- PRINTABLE WORKSHEET AREA (populated just before window.print()) -->
+  <div class="wrt-print-area" id="wrtPrintArea"></div>
 
   <!-- TEACHING MODAL (Level 2 scaffold — shown after repeated failed attempts) -->
   <div class="wrt-modal-overlay" id="wrtTeachOverlay">
@@ -1362,6 +1391,47 @@
   }
   $("wrtPreviewBtn").addEventListener("click", enterPreview);
   $("wrtExitFloatBtn").addEventListener("click", exitPreview);
+
+  /* ── Generate Printable (worksheet handout / PDF via browser print) ── */
+  function printEscape(s){
+    var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML;
+  }
+  function buildPrintPages(){
+    var pages = "";
+    state.activities.forEach(function(activity, slideIdx){
+      var exampleHtml = "";
+      if (activity.example) {
+        var ex = activity.example;
+        var exVisual = ex.img
+          ? '<img src="'+ex.img+'" alt="" style="max-height:56px;object-fit:contain;">'
+          : '<span style="font-size:34px;line-height:1;">'+printEscape(ex.emoji || "?")+'</span>';
+        exampleHtml = '<div class="wrt-print-example"><span class="wrt-print-ex-tag">Example</span>'+exVisual
+          + '<span style="font-weight:800;">→ '+printEscape(ex.correct || "")+'</span></div>';
+      }
+      var itemsHtml = activity.items.map(function(it){
+        var visual = it.img
+          ? '<img src="'+it.img+'" alt="">'
+          : '<span class="wrt-print-emoji">'+printEscape(it.emoji || "?")+'</span>';
+        return '<div class="wrt-print-item">'+visual+'<div class="wrt-print-blank"></div></div>';
+      }).join("");
+      pages += '<div class="wrt-print-page">'
+        + '<div class="wrt-print-head"><h2>'+printEscape(activity.title)+'</h2>'
+        + (state.activities.length > 1 ? '<div class="wrt-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+'</div>' : '')
+        + '</div>'
+        + '<div class="wrt-print-divider"></div>'
+        + '<div class="wrt-print-instr">'+printEscape(activity.instruction)+'</div>'
+        + exampleHtml
+        + '<div class="wrt-print-grid">'+itemsHtml+'</div>'
+        + '</div>';
+    });
+    return pages;
+  }
+  function generatePrintable(){
+    $("wrtPrintArea").innerHTML = buildPrintPages();
+    setTimeout(function(){ window.print(); }, 60);
+  }
+  window.addEventListener("afterprint", function(){ $("wrtPrintArea").innerHTML = ""; });
+  $("wrtPrintBtn").addEventListener("click", generatePrintable);
 
   function saveDraft() {
     var draftId = new URLSearchParams(location.search).get('draft_id') || ('draft_' + Date.now());

@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SPED ALM — Matching Type Template Generator</title>
+<link rel="icon" type="image/png" href="../../ASSETS/logo.png" />
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
@@ -281,6 +282,34 @@
 
   @media (max-width:1100px){
     .mtg-body{ grid-template-columns:1fr; }
+  }
+
+  /* ===== PRINTABLE WORKSHEET (Generate Printable button / PDF via browser print) ===== */
+  .mtg-print-area{ display:none; }
+  .mtg-print-page{ font-family:'Poppins',sans-serif; color:#243a5e; }
+  .mtg-print-head{ text-align:center; margin-bottom:10px; }
+  .mtg-print-head h2{ font-size:21px; font-weight:700; margin:0 0 4px; }
+  .mtg-print-sub{ font-size:12.5px; color:#5d7299; font-weight:500; }
+  .mtg-print-divider{ border-top:2px dashed #cbd5e1; margin:14px 0 22px; }
+  .mtg-print-instr{ font-size:15px; font-weight:600; margin-bottom:26px; }
+  .mtg-print-grid{ display:flex; justify-content:space-between; gap:90px; flex:1; }
+  .mtg-print-col{ flex:1; display:flex; flex-direction:column; gap:22px; }
+  .mtg-print-item{ position:relative; border:2px solid #cbd5e1; border-radius:14px; padding:16px 10px; flex:1;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; min-height:130px; }
+  .mtg-print-item img{ max-width:100%; max-height:120px; object-fit:contain; }
+  .mtg-print-item .mtg-print-emoji{ font-size:64px; line-height:1; }
+  .mtg-print-item .mtg-print-label{ font-size:13px; font-weight:700; }
+  .mtg-print-num{ position:absolute; top:-13px; left:-13px; width:26px; height:26px; border-radius:50%;
+    background:#7b6ef0; color:#fff; font-size:13px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+
+  @media print{
+    body *{ visibility:hidden; }
+    .mtg-print-area, .mtg-print-area *{ visibility:visible; }
+    .mtg-print-area{ display:block; position:absolute; left:0; top:0; width:100%; margin:0; padding:0; }
+    .mtg-print-page{ page-break-after:always; padding:6mm 8mm; min-height:100vh; display:flex; flex-direction:column; box-sizing:border-box; }
+    .mtg-print-page:last-child{ page-break-after:auto; }
+    .mtg-print-page .mtg-print-grid{ flex:1; }
+    @page{ margin:8mm; size:auto; }
   }
   /* ── SPOTLIGHT TOUR ── */
   .mtg-btn--help{background:#ffc34d;color:#5c4400;box-shadow:0 4px 0 #d9a416;}
@@ -586,6 +615,9 @@
       </div>
     </div>
   </div>
+
+  <!-- PRINTABLE WORKSHEET AREA (populated just before window.print()) -->
+  <div class="mtg-print-area" id="mtgPrintArea"></div>
 
   <!-- TEACHING MODAL (Level 2 scaffold — shown after repeated failed attempts) -->
   <div class="mtg-modal-overlay" id="mtgTeachOverlay">
@@ -1328,6 +1360,42 @@
   }
   $("mtgPreviewBtn").addEventListener("click", enterPreview);
   $("mtgExitFloatBtn").addEventListener("click", exitPreview);
+
+  /* ── Generate Printable (worksheet handout / PDF via browser print) ── */
+  function printEscape(s){
+    var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML;
+  }
+  function printSideBox(it, label){
+    var visual = it.img
+      ? '<img src="'+it.img+'" alt="">'
+      : '<span class="mtg-print-emoji">'+printEscape(it.emoji || "?")+'</span>';
+    var name = it.name ? '<span class="mtg-print-label">'+printEscape(it.name)+'</span>' : '';
+    return '<div class="mtg-print-item"><span class="mtg-print-num">'+label+'</span>'+visual+name+'</div>';
+  }
+  function buildPrintPages(){
+    var pages = "";
+    state.activities.forEach(function(activity, slideIdx){
+      var order = shuffle(activity.items.map(function(_, i){ return i; }));
+      var leftHtml = activity.items.map(function(it, i){ return printSideBox(it.left, String(i+1)); }).join("");
+      var rightHtml = order.map(function(i, pos){ return printSideBox(activity.items[i].right, String.fromCharCode(65+pos)); }).join("");
+      pages += '<div class="mtg-print-page">'
+        + '<div class="mtg-print-head"><h2>'+printEscape(activity.title)+'</h2>'
+        + (state.activities.length > 1 ? '<div class="mtg-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+' — '+(DIFFICULTY_LABELS[slideIdx]||"")+'</div>' : '')
+        + '</div>'
+        + '<div class="mtg-print-divider"></div>'
+        + '<div class="mtg-print-instr">'+printEscape(activity.instruction)+'</div>'
+        + '<div class="mtg-print-grid"><div class="mtg-print-col">'+leftHtml+'</div><div class="mtg-print-col">'+rightHtml+'</div></div>'
+        + '</div>';
+    });
+    return pages;
+  }
+  function generatePrintable(){
+    $("mtgPrintArea").innerHTML = buildPrintPages();
+    setTimeout(function(){ window.print(); }, 60);
+  }
+  window.addEventListener("afterprint", function(){ $("mtgPrintArea").innerHTML = ""; });
+  $("mtgPrintBtn").addEventListener("click", generatePrintable);
+
   /* ── Save Draft to localStorage ── */
   function saveDraft() {
     var draftId = new URLSearchParams(location.search).get('draft_id') || ('draft_' + Date.now());

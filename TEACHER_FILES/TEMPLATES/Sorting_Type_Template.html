@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SPED ALM — Sorting Template Generator</title>
+<link rel="icon" type="image/png" href="../../ASSETS/logo.png" />
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
@@ -307,6 +308,31 @@
     border-radius:8px; background:#fff; transition:border-color .15s,background .15s; }
   .srt-domain-opt:has(input:checked){ border-color:#0891b2; background:#ecfeff; color:#0891b2; }
   .srt-domain-opt input[type="radio"]{ accent-color:#0891b2; cursor:pointer; }
+
+  /* ===== PRINTABLE WORKSHEET (Generate Printable button / PDF via browser print) ===== */
+  .srt-print-area{ display:none; }
+  .srt-print-page{ font-family:'Poppins',sans-serif; color:#243a5e; }
+  .srt-print-head{ text-align:center; margin-bottom:10px; }
+  .srt-print-head h2{ font-size:21px; font-weight:700; margin:0 0 4px; }
+  .srt-print-sub{ font-size:12.5px; color:#5d7299; font-weight:500; }
+  .srt-print-divider{ border-top:2px dashed #cbd5e1; margin:14px 0 18px; }
+  .srt-print-instr{ font-size:15px; font-weight:600; margin-bottom:20px; }
+  .srt-print-cats{ display:flex; gap:20px; margin-bottom:26px; flex:1.3; min-height:0; }
+  .srt-print-cat{ flex:1; border:2px dashed #cbb8f3; border-radius:18px; padding:16px; display:flex; flex-direction:column; align-items:center; }
+  .srt-print-cat-name{ font-weight:700; font-size:18px; color:#243a5e; margin-bottom:8px; }
+  .srt-print-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:18px 20px; flex:1; align-content:center; min-height:0; }
+  .srt-print-item{ border:1.5px dashed #94a3b8; border-radius:12px; padding:14px; display:flex; align-items:center; justify-content:center; min-height:96px; }
+  .srt-print-item img{ max-width:100%; max-height:78px; object-fit:contain; }
+  .srt-print-item .srt-print-emoji{ font-size:50px; line-height:1; }
+
+  @media print{
+    body *{ visibility:hidden; }
+    .srt-print-area, .srt-print-area *{ visibility:visible; }
+    .srt-print-area{ display:block; position:absolute; left:0; top:0; width:100%; margin:0; padding:0; }
+    .srt-print-page{ page-break-after:always; padding:6mm 8mm; min-height:100vh; display:flex; flex-direction:column; box-sizing:border-box; }
+    .srt-print-page:last-child{ page-break-after:auto; }
+    @page{ margin:8mm; size:auto; }
+  }
 
   @media (max-width:1100px){
     .srt-body{ grid-template-columns:1fr; }
@@ -629,6 +655,9 @@
       </div>
     </div>
   </div>
+
+  <!-- PRINTABLE WORKSHEET AREA (populated just before window.print()) -->
+  <div class="srt-print-area" id="srtPrintArea"></div>
 
   <!-- TEACHING MODAL (Level 2 scaffold — shown after repeated failed attempts) -->
   <div class="srt-modal-overlay" id="srtTeachOverlay">
@@ -1482,6 +1511,42 @@
   }
   $("srtPreviewBtn").addEventListener("click", enterPreview);
   $("srtExitFloatBtn").addEventListener("click", exitPreview);
+
+  /* ── Generate Printable (worksheet handout / PDF via browser print) ── */
+  function printEscape(s){
+    var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML;
+  }
+  function buildPrintPages(){
+    var pages = "";
+    state.activities.forEach(function(activity, slideIdx){
+      var catsHtml = activity.categories.map(function(c){ return '<div class="srt-print-cat"><div class="srt-print-cat-name">'+printEscape(c.name)+'</div></div>'; }).join("");
+      var order = shuffle(activity.items.map(function(_, i){ return i; }));
+      var itemsHtml = order.map(function(i){
+        var it = activity.items[i];
+        var visual = it.img
+          ? '<img src="'+it.img+'" alt="">'
+          : '<span class="srt-print-emoji">'+printEscape(it.emoji || "?")+'</span>';
+        return '<div class="srt-print-item">'+visual+'</div>';
+      }).join("");
+      pages += '<div class="srt-print-page">'
+        + '<div class="srt-print-head"><h2>'+printEscape(activity.title)+'</h2>'
+        + (state.activities.length > 1 ? '<div class="srt-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+'</div>' : '')
+        + '</div>'
+        + '<div class="srt-print-divider"></div>'
+        + '<div class="srt-print-instr">'+printEscape(activity.instruction)+'</div>'
+        + '<div class="srt-print-cats">'+catsHtml+'</div>'
+        + '<div class="srt-print-grid">'+itemsHtml+'</div>'
+        + '</div>';
+    });
+    return pages;
+  }
+  function generatePrintable(){
+    $("srtPrintArea").innerHTML = buildPrintPages();
+    setTimeout(function(){ window.print(); }, 60);
+  }
+  window.addEventListener("afterprint", function(){ $("srtPrintArea").innerHTML = ""; });
+  $("srtPrintBtn").addEventListener("click", generatePrintable);
+
   /* ── Save Draft to localStorage ── */
   function saveDraft() {
     var draftId = new URLSearchParams(location.search).get('draft_id') || ('draft_' + Date.now());

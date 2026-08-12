@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SPED ALM — Sequencing Template Generator</title>
+<link rel="icon" type="image/png" href="../../ASSETS/logo.png" />
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
@@ -287,6 +288,30 @@
   }
   .seq-exit-float:hover{ background:rgba(36,58,94,1); }
   body.seq-preview-only .seq-exit-float{ display:flex; }
+
+  /* ===== PRINTABLE WORKSHEET (Generate Printable button / PDF via browser print) ===== */
+  .seq-print-area{ display:none; }
+  .seq-print-page{ font-family:'Poppins',sans-serif; color:#243a5e; }
+  .seq-print-head{ text-align:center; margin-bottom:10px; }
+  .seq-print-head h2{ font-size:21px; font-weight:700; margin:0 0 4px; }
+  .seq-print-sub{ font-size:12.5px; color:#5d7299; font-weight:500; }
+  .seq-print-divider{ border-top:2px dashed #cbd5e1; margin:14px 0 22px; }
+  .seq-print-instr{ font-size:15px; font-weight:600; margin-bottom:26px; }
+  .seq-print-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:22px 24px; flex:1; }
+  .seq-print-item{ border:2px solid #cbd5e1; border-radius:16px; padding:16px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; }
+  .seq-print-item img{ max-width:100%; max-height:120px; object-fit:contain; }
+  .seq-print-item .seq-print-emoji{ font-size:64px; line-height:1; }
+  .seq-print-item .seq-print-label{ font-size:13px; font-weight:700; text-align:center; }
+  .seq-print-numbox{ width:40px; height:40px; border:2px solid #94a3b8; border-radius:10px; }
+
+  @media print{
+    body *{ visibility:hidden; }
+    .seq-print-area, .seq-print-area *{ visibility:visible; }
+    .seq-print-area{ display:block; position:absolute; left:0; top:0; width:100%; margin:0; padding:0; }
+    .seq-print-page{ page-break-after:always; padding:6mm 8mm; min-height:100vh; display:flex; flex-direction:column; box-sizing:border-box; }
+    .seq-print-page:last-child{ page-break-after:auto; }
+    @page{ margin:8mm; size:auto; }
+  }
 
   @media (max-width:1100px){
     .seq-body{ grid-template-columns:1fr; }
@@ -651,6 +676,9 @@
       </div>
     </div>
   </div>
+
+  <!-- PRINTABLE WORKSHEET AREA (populated just before window.print()) -->
+  <div class="seq-print-area" id="seqPrintArea"></div>
 
   <!-- TEACHING MODAL (Level 2 scaffold — shown after repeated failed attempts) -->
   <div class="seq-modal-overlay" id="seqTeachOverlay">
@@ -1382,6 +1410,40 @@
 
   $("seqPreviewBtn").addEventListener("click", enterPreviewMode);
   $("seqExitFloatBtn").addEventListener("click", exitPreviewMode);
+
+  /* ── Generate Printable (worksheet handout / PDF via browser print) ── */
+  function printEscape(s){
+    var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML;
+  }
+  function buildPrintPages(){
+    var pages = "";
+    state.activities.forEach(function(activity, slideIdx){
+      var order = shuffle(activity.steps.map(function(_, i){ return i; }));
+      var stepsHtml = order.map(function(i){
+        var step = activity.steps[i];
+        var visual = step.img
+          ? '<img src="'+step.img+'" alt="">'
+          : '<span class="seq-print-emoji">'+printEscape(step.emoji || "?")+'</span>';
+        var label = step.label ? '<span class="seq-print-label">'+printEscape(step.label)+'</span>' : '';
+        return '<div class="seq-print-item">'+visual+label+'<span class="seq-print-numbox"></span></div>';
+      }).join("");
+      pages += '<div class="seq-print-page">'
+        + '<div class="seq-print-head"><h2>'+printEscape(activity.title)+'</h2>'
+        + (state.activities.length > 1 ? '<div class="seq-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+'</div>' : '')
+        + '</div>'
+        + '<div class="seq-print-divider"></div>'
+        + '<div class="seq-print-instr">'+printEscape(activity.instruction)+'</div>'
+        + '<div class="seq-print-grid">'+stepsHtml+'</div>'
+        + '</div>';
+    });
+    return pages;
+  }
+  function generatePrintable(){
+    $("seqPrintArea").innerHTML = buildPrintPages();
+    setTimeout(function(){ window.print(); }, 60);
+  }
+  window.addEventListener("afterprint", function(){ $("seqPrintArea").innerHTML = ""; });
+  $("seqPrintBtn").addEventListener("click", generatePrintable);
 
   // If the student/teacher exits fullscreen another way (ESC key on desktop,
   // swipe-down on some devices), make sure our own preview mode follows suit.

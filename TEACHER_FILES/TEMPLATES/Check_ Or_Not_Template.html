@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SPED ALM — Check or X Template Generator</title>
+<link rel="icon" type="image/png" href="../../ASSETS/logo.png" />
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
@@ -287,6 +288,30 @@
 
   @media (max-width:1100px){
     .chk-body{ grid-template-columns:1fr; }
+  }
+
+  /* ===== PRINTABLE WORKSHEET (Generate Printable button / PDF via browser print) ===== */
+  .chk-print-area{ display:none; }
+  .chk-print-page{ font-family:'Poppins',sans-serif; color:#243a5e; }
+  .chk-print-head{ text-align:center; margin-bottom:10px; }
+  .chk-print-head h2{ font-size:21px; font-weight:700; margin:0 0 4px; }
+  .chk-print-sub{ font-size:12.5px; color:#5d7299; font-weight:500; }
+  .chk-print-divider{ border-top:2px dashed #cbd5e1; margin:14px 0 22px; }
+  .chk-print-instr{ font-size:15px; font-weight:600; margin-bottom:26px; }
+  .chk-print-grid{ display:grid; grid-template-columns:1fr 1fr; gap:24px 30px; flex:1; }
+  .chk-print-item{ border:2px solid #cbd5e1; border-radius:16px; padding:18px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; }
+  .chk-print-item img{ max-width:100%; max-height:140px; object-fit:contain; }
+  .chk-print-item .chk-print-emoji{ font-size:80px; line-height:1; }
+  .chk-print-marks{ display:flex; gap:16px; }
+  .chk-print-mark{ width:44px; height:44px; border:2px solid #94a3b8; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:19px; font-weight:700; color:#94a3b8; }
+
+  @media print{
+    body *{ visibility:hidden; }
+    .chk-print-area, .chk-print-area *{ visibility:visible; }
+    .chk-print-area{ display:block; position:absolute; left:0; top:0; width:100%; margin:0; padding:0; }
+    .chk-print-page{ page-break-after:always; padding:6mm 8mm; min-height:100vh; display:flex; flex-direction:column; box-sizing:border-box; }
+    .chk-print-page:last-child{ page-break-after:auto; }
+    @page{ margin:8mm; size:auto; }
   }
   @media (max-width:700px){
     .chk-grid{ grid-template-columns:repeat(2, 1fr); }
@@ -578,6 +603,9 @@
       </div>
     </div>
   </div>
+
+  <!-- PRINTABLE WORKSHEET AREA (populated just before window.print()) -->
+  <div class="chk-print-area" id="chkPrintArea"></div>
 
   <!-- TEACHING MODAL (Level 2 scaffold — shown after repeated failed attempts) -->
   <div class="chk-modal-overlay" id="chkTeachOverlay">
@@ -1254,6 +1282,39 @@
   }
   $("chkPreviewBtn").addEventListener("click", enterPreview);
   $("chkExitFloatBtn").addEventListener("click", exitPreview);
+
+  /* ── Generate Printable (worksheet handout / PDF via browser print) ── */
+  function printEscape(s){
+    var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML;
+  }
+  function buildPrintPages(){
+    var pages = "";
+    state.activities.forEach(function(activity, slideIdx){
+      var itemsHtml = activity.items.map(function(it){
+        var visual = it.img
+          ? '<img src="'+it.img+'" alt="">'
+          : '<span class="chk-print-emoji">'+printEscape(it.emoji || "?")+'</span>';
+        return '<div class="chk-print-item">'+visual
+          + '<div class="chk-print-marks"><span class="chk-print-mark">✓</span><span class="chk-print-mark">✗</span></div>'
+          + '</div>';
+      }).join("");
+      pages += '<div class="chk-print-page">'
+        + '<div class="chk-print-head"><h2>'+printEscape(activity.title)+'</h2>'
+        + (state.activities.length > 1 ? '<div class="chk-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+'</div>' : '')
+        + '</div>'
+        + '<div class="chk-print-divider"></div>'
+        + '<div class="chk-print-instr">'+printEscape(activity.instruction)+'</div>'
+        + '<div class="chk-print-grid">'+itemsHtml+'</div>'
+        + '</div>';
+    });
+    return pages;
+  }
+  function generatePrintable(){
+    $("chkPrintArea").innerHTML = buildPrintPages();
+    setTimeout(function(){ window.print(); }, 60);
+  }
+  window.addEventListener("afterprint", function(){ $("chkPrintArea").innerHTML = ""; });
+  $("chkPrintBtn").addEventListener("click", generatePrintable);
 
   function saveDraft() {
     var draftId = new URLSearchParams(location.search).get('draft_id') || ('draft_' + Date.now());
