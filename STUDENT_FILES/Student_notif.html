@@ -157,6 +157,13 @@
       '<p class="student-notif-empty-desc">Notifications from activities, your teacher, and system updates will appear here once available.</p>' +
       '</div>';
 
+    function escapeHtml(text) {
+      if (!text) return '';
+      return String(text).replace(/[&<>"']/g, function(m) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m];
+      });
+    }
+
     function timeAgo(isoStr) {
       if (!isoStr) return '';
       var diff = Math.floor((Date.now() - new Date(isoStr).getTime()) / 1000);
@@ -190,9 +197,9 @@
           '<div class="student-notif-icon ' + ic.cls + '">' + ic.icon + '</div>' +
           '<div class="student-notif-body" style="flex:1;min-width:0;">' +
             '<div class="student-notif-row1">' +
-              '<span class="student-notif-title">' + n.title + '</span>' +
+              '<span class="student-notif-title">' + escapeHtml(n.title) + '</span>' +
             '</div>' +
-            '<p class="student-notif-text">' + n.message + '</p>' +
+            '<p class="student-notif-text">' + escapeHtml(n.message) + '</p>' +
             '<span class="student-notif-time">' + timeAgo(n.createdAt) + '</span>' +
           '</div>' +
           '<div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;min-width:70px;margin-left:auto;">' +

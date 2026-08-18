@@ -306,7 +306,7 @@
   .chk-print-checks label{ display:flex; align-items:center; gap:6px; }
   .chk-print-box{ width:13px; height:13px; border:1.5px solid #64748b; border-radius:3px; display:inline-block; }
   .chk-print-grid{ display:grid; grid-template-columns:1fr 1fr; gap:24px 30px; flex:1; }
-  .chk-print-item{ border:2px solid #cbd5e1; border-radius:16px; padding:18px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; }
+  .chk-print-item{ border:2px solid #cbd5e1; border-radius:16px; padding:18px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; break-inside:avoid; page-break-inside:avoid; }
   .chk-print-item img{ max-width:100%; max-height:140px; object-fit:contain; }
   .chk-print-item .chk-print-emoji{ font-size:80px; line-height:1; }
   .chk-print-marks{ display:flex; gap:16px; }
@@ -1294,6 +1294,14 @@
   function printEscape(s){
     var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML;
   }
+  // printEscape() does not escape quote characters, so it is not safe inside an
+  // HTML attribute (e.g. src="..."). Use this for any teacher-entered value
+  // placed inside an attribute, so a value like `x" onerror="...` can't break out.
+  function escAttr(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
   function printChecklistHtml(){
     return '<div class="chk-print-footer"><span class="chk-print-footer-label">Note: Pupils Performance Checklist</span>'
       + '<div class="chk-print-checks">'
@@ -1308,7 +1316,7 @@
     state.activities.forEach(function(activity, slideIdx){
       var itemsHtml = activity.items.map(function(it){
         var visual = it.img
-          ? '<img src="'+it.img+'" alt="">'
+          ? '<img src="'+escAttr(it.img)+'" alt="">'
           : '<span class="chk-print-emoji">'+printEscape(it.emoji || "?")+'</span>';
         return '<div class="chk-print-item">'+visual
           + '<div class="chk-print-marks"><span class="chk-print-mark">✓</span><span class="chk-print-mark">✗</span></div>'
@@ -1317,7 +1325,7 @@
       pages += '<div class="chk-print-page">'
         + '<div class="chk-print-head"><h2>'+printEscape(activity.title)+'</h2>'
         + '<div class="chk-print-objective">('+printEscape(activity.instruction)+')</div>'
-        + (state.activities.length > 1 ? '<div class="chk-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+'</div>' : '')
+        + (state.activities.length > 1 ? '<div class="chk-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+' — '+(DIFFICULTY_LABELS[slideIdx]||"")+'</div>' : '')
         + '</div>'
         + '<div class="chk-print-divider"><div class="chk-print-rule"></div><div class="chk-print-rule-dash"></div><div class="chk-print-rule"></div></div>'
         + '<div class="chk-print-grid">'+itemsHtml+'</div>'

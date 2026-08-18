@@ -3,6 +3,21 @@ error_reporting(0);
 ini_set('display_errors', '0');
 mysqli_report(MYSQLI_REPORT_OFF);
 
+// Guards account-management endpoints (create/edit/delete/restore/reset password)
+// so they can only be used by a logged-in admin, instead of trusting whatever
+// user_id/ids the caller sends. Call this before touching request input.
+function requireAdminSession() {
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        session_start();
+    }
+    if (empty($_SESSION['admin_id']) || ($_SESSION['admin_role'] ?? '') !== 'admin') {
+        http_response_code(403);
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => 'Unauthorized. Please log in as an admin.']);
+        exit;
+    }
+}
+
 function getDatabaseConnection() {
     $conn = new mysqli("127.0.0.1", "root", "", "", 3306);
     if ($conn->connect_error) { return null; }

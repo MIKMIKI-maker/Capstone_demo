@@ -154,6 +154,22 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 
+    // Brute-force lockout: block after 5 failed attempts from this IP within 15 minutes
+    $MAX_ATTEMPTS = 5;
+    $LOCKOUT_MINUTES = 15;
+    $chk = $conn->prepare("SELECT COUNT(*) AS cnt FROM login_attempts WHERE ip_address = ? AND attempted_at > DATE_SUB(NOW(), INTERVAL ? MINUTE)");
+    if ($chk) {
+        $chk->bind_param("si", $ip, $LOCKOUT_MINUTES);
+        $chk->execute();
+        $chkRow = $chk->get_result()->fetch_assoc();
+        $chk->close();
+        if ($chkRow && (int)$chkRow['cnt'] >= $MAX_ATTEMPTS) {
+            echo json_encode(['status' => 'error', 'code' => 'too_many_attempts', 'message' => 'Too many failed login attempts. Please try again in ' . $LOCKOUT_MINUTES . ' minutes.']);
+            $conn->close();
+            exit;
+        }
+    }
+
     $stmt = $conn->prepare("SELECT id, admin_password, first_name, last_name, role, COALESCE(profile_photo,'') AS profile_photo, COALESCE(is_deleted,0) AS is_deleted FROM admin_accounts WHERE admin_email = ?");
     if (!$stmt) {
         echo json_encode(['status' => 'error', 'message' => 'Database query failed']);

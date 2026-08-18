@@ -302,7 +302,8 @@
   .mtg-print-grid{ display:flex; justify-content:space-between; gap:230px; flex:1; }
   .mtg-print-col{ flex:1; display:flex; flex-direction:column; gap:22px; }
   .mtg-print-item{ position:relative; border:2px solid #cbd5e1; border-radius:14px; padding:16px 10px; flex:1;
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; min-height:130px; }
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; min-height:130px;
+    break-inside:avoid; page-break-inside:avoid; }
   .mtg-print-item img{ max-width:100%; max-height:120px; object-fit:contain; }
   .mtg-print-item .mtg-print-emoji{ font-size:64px; line-height:1; }
   .mtg-print-item .mtg-print-label{ font-size:13px; font-weight:700; }
@@ -1373,9 +1374,17 @@
   function printEscape(s){
     var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML;
   }
+  // printEscape() does not escape quote characters, so it is not safe inside an
+  // HTML attribute (e.g. src="..."). Use this for any teacher-entered value
+  // placed inside an attribute, so a value like `x" onerror="...` can't break out.
+  function escAttr(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
   function printSideBox(it, side){
     var visual = it.img
-      ? '<img src="'+it.img+'" alt="">'
+      ? '<img src="'+escAttr(it.img)+'" alt="">'
       : '<span class="mtg-print-emoji">'+printEscape(it.emoji || "?")+'</span>';
     var name = it.name ? '<span class="mtg-print-label">'+printEscape(it.name)+'</span>' : '';
     var dot = '<span class="mtg-print-dot mtg-print-dot-'+side+'"></span>';

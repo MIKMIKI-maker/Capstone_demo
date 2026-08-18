@@ -320,7 +320,7 @@
   .wrt-print-checks label{ display:flex; align-items:center; gap:6px; }
   .wrt-print-box{ width:13px; height:13px; border:1.5px solid #64748b; border-radius:3px; display:inline-block; }
   .wrt-print-grid{ display:grid; grid-template-columns:1fr 1fr; gap:24px 32px; flex:1; }
-  .wrt-print-item{ border:2px solid #cbd5e1; border-radius:16px; padding:20px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; }
+  .wrt-print-item{ border:2px solid #cbd5e1; border-radius:16px; padding:20px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; break-inside:avoid; page-break-inside:avoid; }
   .wrt-print-item img{ max-width:100%; max-height:150px; object-fit:contain; }
   .wrt-print-item .wrt-print-emoji{ font-size:84px; line-height:1; }
   .wrt-print-blank{ width:75%; border-bottom:2px solid #94a3b8; height:30px; }
@@ -1403,6 +1403,14 @@
   function printEscape(s){
     var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML;
   }
+  // printEscape() does not escape quote characters, so it is not safe inside an
+  // HTML attribute (e.g. src="..."). Use this for any teacher-entered value
+  // placed inside an attribute, so a value like `x" onerror="...` can't break out.
+  function escAttr(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
   function printChecklistHtml(){
     return '<div class="wrt-print-footer"><span class="wrt-print-footer-label">Note: Pupils Performance Checklist</span>'
       + '<div class="wrt-print-checks">'
@@ -1419,21 +1427,21 @@
       if (activity.example) {
         var ex = activity.example;
         var exVisual = ex.img
-          ? '<img src="'+ex.img+'" alt="" style="max-height:56px;object-fit:contain;">'
+          ? '<img src="'+escAttr(ex.img)+'" alt="" style="max-height:56px;object-fit:contain;">'
           : '<span style="font-size:34px;line-height:1;">'+printEscape(ex.emoji || "?")+'</span>';
         exampleHtml = '<div class="wrt-print-example"><span class="wrt-print-ex-tag">Example</span>'+exVisual
           + '<span style="font-weight:800;">→ '+printEscape(ex.correct || "")+'</span></div>';
       }
       var itemsHtml = activity.items.map(function(it){
         var visual = it.img
-          ? '<img src="'+it.img+'" alt="">'
+          ? '<img src="'+escAttr(it.img)+'" alt="">'
           : '<span class="wrt-print-emoji">'+printEscape(it.emoji || "?")+'</span>';
         return '<div class="wrt-print-item">'+visual+'<div class="wrt-print-blank"></div></div>';
       }).join("");
       pages += '<div class="wrt-print-page">'
         + '<div class="wrt-print-head"><h2>'+printEscape(activity.title)+'</h2>'
         + '<div class="wrt-print-objective">('+printEscape(activity.instruction)+')</div>'
-        + (state.activities.length > 1 ? '<div class="wrt-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+'</div>' : '')
+        + (state.activities.length > 1 ? '<div class="wrt-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+' — '+(DIFFICULTY_LABELS[slideIdx]||"")+'</div>' : '')
         + '</div>'
         + '<div class="wrt-print-divider"><div class="wrt-print-rule"></div><div class="wrt-print-rule-dash"></div><div class="wrt-print-rule"></div></div>'
         + exampleHtml

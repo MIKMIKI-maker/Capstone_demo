@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db.php';
+requireAdminSession();
 
 header('Content-Type: application/json');
 
@@ -23,11 +24,7 @@ $createTableSql = "CREATE TABLE IF NOT EXISTS admin_settings (
 $conn->query($createTableSql);
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    $admin_id = isset($_GET['admin_id']) ? intval($_GET['admin_id']) : 0;
-    if (!$admin_id) {
-        echo json_encode(['success' => false, 'message' => 'Missing admin_id']);
-        exit;
-    }
+    $admin_id = (int)$_SESSION['admin_id'];
 
     $settings = [];
     $stmt = $conn->prepare("SELECT setting_name, setting_value FROM admin_settings WHERE admin_id = ?");
@@ -45,11 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $admin_id = isset($_POST['admin_id']) ? intval($_POST['admin_id']) : 0;
-    if (!$admin_id) {
-        echo json_encode(['success' => false, 'message' => 'Missing admin_id']);
-        exit;
-    }
+    $admin_id = (int)$_SESSION['admin_id'];
 
     // Collect notification preferences
     $notification_attendance = isset($_POST['checkbox_input']) ? 1 : 0;
