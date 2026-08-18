@@ -22,11 +22,35 @@ $createTableSql = "CREATE TABLE IF NOT EXISTS admin_settings (
 
 $conn->query($createTableSql);
 
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    $admin_id = isset($_GET['admin_id']) ? intval($_GET['admin_id']) : 0;
+    if (!$admin_id) {
+        echo json_encode(['success' => false, 'message' => 'Missing admin_id']);
+        exit;
+    }
+
+    $settings = [];
+    $stmt = $conn->prepare("SELECT setting_name, setting_value FROM admin_settings WHERE admin_id = ?");
+    $stmt->bind_param("i", $admin_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $settings[$row['setting_name']] = $row['setting_value'];
+    }
+    $stmt->close();
+
+    echo json_encode(['success' => true, 'settings' => $settings]);
+    $conn->close();
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Get the first admin ID (assuming there's a logged-in admin)
-    // For now, we'll use admin ID 1 as default
-    $admin_id = 1;
-    
+    $admin_id = isset($_POST['admin_id']) ? intval($_POST['admin_id']) : 0;
+    if (!$admin_id) {
+        echo json_encode(['success' => false, 'message' => 'Missing admin_id']);
+        exit;
+    }
+
     // Collect notification preferences
     $notification_attendance = isset($_POST['checkbox_input']) ? 1 : 0;
     $notification_activity = isset($_POST['checkbox_input_2']) ? 1 : 0;

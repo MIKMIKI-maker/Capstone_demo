@@ -86,7 +86,7 @@
     </div>
   </aside>
   <!-- MAIN -->
-  <form action="../backend/student_settings_save.php" id="student_settings_form_1" method="post"
+  <form action="STUDENT_BACKEND/student_settings_save.php" id="student_settings_form_1" method="post"
     style="display: contents;"><main class="student-main">
       <!-- PAGE HEADER -->
       <header class="student-page-header">
@@ -177,7 +177,7 @@
     </main></form>
   <!-- CHANGE PASSWORD MODAL -->
   <div class="student-modal-overlay" id="student-pwModal">
-    <form action="../backend/student_settings_password.php" id="student_settings_form_2" method="post"
+    <form action="STUDENT_BACKEND/student_settings_password.php" id="student_settings_form_2" method="post"
       style="display: contents;">
       <div class="student-modal">
         <div class="student-modal-header">
@@ -369,11 +369,27 @@
         }
       }
 
+      // Persist name to the database so teacher/admin views stay accurate
+      var _nsid = sessionStorage.getItem('student_id') || '';
+      if (_nsid) {
+        var nameFd = new FormData();
+        nameFd.append('admin_account_id', _nsid);
+        nameFd.append('first_name', p.firstName || '');
+        nameFd.append('last_name', p.lastName || '');
+        fetch('STUDENT_BACKEND/student_settings_save.php', { method: 'POST', body: nameFd })
+          .then(function (r) { return r.json(); })
+          .then(function (d) {
+            showToast(d && d.success ? '✅ Changes saved!' : '⚠️ Saved locally, but failed to sync to server');
+          })
+          .catch(function () { showToast('⚠️ Saved locally, but failed to sync to server'); });
+      } else {
+        showToast('✅ Changes saved!');
+      }
+
       applyProfileDisplay(p);
       // Update sidebar name live
       var _sn = document.querySelector('.student-sidebar .student-user-name');
       if (_sn) _sn.textContent = [p.firstName, p.lastName].filter(Boolean).join(' ') || 'Student';
-      showToast('✅ Changes saved!');
     });
 
     /* ── toast notification ── */
@@ -396,6 +412,37 @@
     function closeModal() { document.getElementById('student-pwModal').classList.remove('open'); }
     document.getElementById('student-pwModal').addEventListener('click', function (e) {
       if (e.target === this) closeModal();
+    });
+
+    document.getElementById('student_settings_form_2').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var sid = sessionStorage.getItem('student_id') || '';
+      var currentPw = document.getElementById('student-currentPw').value;
+      var newPw     = document.getElementById('student-newPw').value;
+      var confirmPw = document.getElementById('student-confirmPw').value;
+
+      if (!sid) { showToast('⚠️ Session expired, please log in again'); return; }
+      if (!currentPw || !newPw || !confirmPw) { showToast('⚠️ Please fill in all password fields'); return; }
+      if (newPw !== confirmPw) { showToast('⚠️ New passwords do not match'); return; }
+      if (newPw.length < 8) { showToast('⚠️ Password must be at least 8 characters'); return; }
+
+      var fd = new FormData();
+      fd.append('admin_account_id', sid);
+      fd.append('current_password', currentPw);
+      fd.append('new_password', newPw);
+
+      fetch('STUDENT_BACKEND/student_settings_password.php', { method: 'POST', body: fd })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          showToast((d && d.success ? '✅ ' : '⚠️ ') + ((d && d.message) || 'Something went wrong'));
+          if (d && d.success) {
+            document.getElementById('student-currentPw').value = '';
+            document.getElementById('student-newPw').value = '';
+            document.getElementById('student-confirmPw').value = '';
+            closeModal();
+          }
+        })
+        .catch(function () { showToast('⚠️ Failed to update password'); });
     });
 
     function togglePw(id, btn) {

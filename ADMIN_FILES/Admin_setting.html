@@ -325,6 +325,38 @@
         });
       });
       loadUserAccessTables();
+      loadAdminNotificationSettings();
+    });
+
+    function getAdminId() {
+      return sessionStorage.getItem('admin_id') || sessionStorage.getItem('admin_account_id') || '';
+    }
+
+    function loadAdminNotificationSettings() {
+      var adminId = getAdminId();
+      if (!adminId) return;
+      fetch('ADMIN_BACKEND/admin_setting_save.php?admin_id=' + encodeURIComponent(adminId))
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (!d || !d.success || !d.settings) return;
+          var s = d.settings;
+          if ('notification_attendance' in s) document.querySelector('[name="checkbox_input"]').checked = s.notification_attendance === '1';
+          if ('notification_activity' in s) document.querySelector('[name="checkbox_input_2"]').checked = s.notification_activity === '1';
+          if ('notification_system' in s) document.querySelector('[name="checkbox_input_3"]').checked = s.notification_system === '1';
+        })
+        .catch(function () {});
+    }
+
+    document.getElementById('admin_setting_form_1').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var adminId = getAdminId();
+      if (!adminId) { alert('Session expired, please log in again'); return; }
+      var fd = new FormData(this);
+      fd.append('admin_id', adminId);
+      fetch('ADMIN_BACKEND/admin_setting_save.php', { method: 'POST', body: fd })
+        .then(function (r) { return r.json(); })
+        .then(function (d) { alert(d && d.message ? d.message : (d && d.success ? 'Settings saved successfully' : 'Failed to save settings')); })
+        .catch(function () { alert('Failed to save settings'); });
     });
   </script>
 <script>(function(){var _s=document.createElement('style');_s.textContent='.admin-notif-badge{display:none}';document.head.appendChild(_s);fetch('ADMIN_BACKEND/admin_notif_count.php').then(function(r){return r.json();}).then(function(d){if(d&&d.unread>0){var _b=document.querySelector('.admin-notif-badge');if(_b)_b.style.display='block';}}).catch(function(){});})();</script>
