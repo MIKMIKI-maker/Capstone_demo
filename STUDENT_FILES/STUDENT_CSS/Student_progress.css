@@ -258,6 +258,22 @@ body {
 
 
 /* ============================================================
+   PRINT / EXPORT PDF — "Export PDF" button uses the browser's
+   print-to-PDF, same approach as the worksheet "Generate Printable".
+   ============================================================ */
+@media print {
+  .student-sidebar, .student-export-btn, .student-notif-btn, #spedLoading { display: none !important; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { display: block; height: auto; overflow: visible; background: #fff; }
+  .student-main { height: auto; overflow: visible; padding: 0; }
+  .student-overview-card, .student-perf-card, .student-notes-card, .student-history-card {
+    break-inside: avoid; box-shadow: none; border: 1px solid #e2e8f0;
+  }
+  .student-content-grid { grid-template-columns: 1fr 1fr; }
+}
+
+
+/* ============================================================
    ACCESSIBILITY (ASD-friendly) — stop motion if requested
    ============================================================ */
 @media (prefers-reduced-motion: reduce) {

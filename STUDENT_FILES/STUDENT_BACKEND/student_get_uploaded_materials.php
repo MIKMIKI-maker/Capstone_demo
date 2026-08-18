@@ -1,20 +1,24 @@
 <?php
 require_once __DIR__ . '/../../TEACHER_FILES/TEACHER_BACKEND/db.php';
+require_once __DIR__ . '/student_auth.php';
 header('Content-Type: application/json');
 header('Cache-Control: no-cache');
 
-$student_id = isset($_GET['student_id']) ? intval($_GET['student_id']) : 0;
-
-if (!$student_id) {
-    echo json_encode(['success' => false, 'files' => []]);
-    exit;
-}
+$student_admin_id = requireStudentSession();
 
 $conn = getTeacherDatabaseConnection();
 if (!$conn) {
     echo json_encode(['success' => false, 'files' => []]);
     exit;
 }
+
+$rec = resolveStudentRecord($conn, $student_admin_id);
+if (!$rec) {
+    echo json_encode(['success' => false, 'files' => []]);
+    $conn->close();
+    exit;
+}
+$student_id = (int)$rec['student_record_id'];
 
 $conn->query("CREATE TABLE IF NOT EXISTS teacher_uploaded_materials (
     id INT AUTO_INCREMENT PRIMARY KEY,

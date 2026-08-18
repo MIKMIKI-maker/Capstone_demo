@@ -1,15 +1,12 @@
 <?php
 require_once __DIR__ . '/../../TEACHER_FILES/TEACHER_BACKEND/db.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/db.php';
+require_once __DIR__ . '/student_auth.php';
 
 header('Content-Type: application/json');
 header('Cache-Control: no-cache');
 
-$admin_account_id = isset($_GET['admin_account_id']) ? intval($_GET['admin_account_id']) : 0;
-if (!$admin_account_id) {
-    echo json_encode(['success' => false, 'message' => 'Missing admin_account_id']);
-    exit;
-}
+$admin_account_id = requireStudentSession();
 
 $admin_conn = getDatabaseConnection();
 $teacher_conn = getTeacherDatabaseConnection();

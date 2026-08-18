@@ -1,16 +1,11 @@
 <?php
 require_once __DIR__ . '/../../TEACHER_FILES/TEACHER_BACKEND/db.php';
+require_once __DIR__ . '/student_auth.php';
 
 header('Content-Type: application/json');
 header('Cache-Control: no-cache');
 
-$student_record_id = isset($_GET['student_record_id']) ? intval($_GET['student_record_id']) : 0;
-$teacher_id = isset($_GET['teacher_id']) ? intval($_GET['teacher_id']) : 0;
-
-if (!$student_record_id) {
-    echo json_encode(['success' => false, 'enrolled' => false, 'message' => 'Not enrolled']);
-    exit;
-}
+$student_admin_id = requireStudentSession();
 
 $conn = getTeacherDatabaseConnection();
 if (!$conn) {
@@ -18,22 +13,13 @@ if (!$conn) {
     exit;
 }
 
-// Verify student enrollment record exists
-$enrStmt = $conn->prepare("SELECT id FROM students WHERE id = ? AND status = 'active' LIMIT 1");
-if (!$enrStmt) {
-    echo json_encode(['success' => false, 'enrolled' => false, 'message' => 'Not enrolled']);
-    exit;
-}
-$enrStmt->bind_param("i", $student_record_id);
-$enrStmt->execute();
-$enrolled = $enrStmt->get_result()->num_rows > 0;
-$enrStmt->close();
-
-if (!$enrolled) {
+$rec = resolveStudentRecord($conn, $student_admin_id);
+if (!$rec) {
     echo json_encode(['success' => false, 'enrolled' => false, 'message' => 'Not enrolled']);
     $conn->close();
     exit;
 }
+$student_record_id = (int)$rec['student_record_id'];
 
 // Only return activities explicitly assigned to this student via activity_assignments
 $stmt = $conn->prepare("

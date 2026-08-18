@@ -182,6 +182,30 @@
       return                              { icon: '💬', cls: 'student-notif-icon--purple' };
     }
 
+    // Where clicking a notification should take the student — only notifications
+    // that actually reference something get a target; plain announcements don't.
+    function notifTargetUrl(n) {
+      if (n.type === 'new_activity' && typeof n.id === 'string' && n.id.indexOf('activity_') === 0) {
+        var actId = n.id.slice('activity_'.length);
+        return 'Student_mymaterials.html?activity_id=' + encodeURIComponent(actId);
+      }
+      if (typeof n.id === 'string' && n.id.indexOf('note_') === 0) {
+        return 'Student_progress.html';
+      }
+      return null;
+    }
+
+    function openNotif(idx) {
+      var notif = _cachedNotifs[idx];
+      if (!notif) return;
+      if (!notif.isRead) {
+        var btn = document.querySelector('.notif-item[data-idx="' + idx + '"] .mark-read-btn');
+        if (btn && !btn.disabled) markOne(btn, idx);
+      }
+      var target = notifTargetUrl(notif);
+      if (target) window.location.href = target;
+    }
+
     function renderNotifs(notifs) {
       var list = document.getElementById('student-notifList')
               || document.querySelector('.student-notif-list');
@@ -193,7 +217,10 @@
       var html = notifs.map(function(n, i) {
         var ic = notifIcon(n.type);
         var unreadCls = n.isRead ? '' : ' unread';
-        return '<div class="notif-item' + unreadCls + '" data-idx="' + i + '">' +
+        var clickable = !!notifTargetUrl(n);
+        var clickableCls = clickable ? ' notif-item--clickable' : '';
+        var rowClick = clickable ? ' onclick="openNotif(' + i + ')"' : '';
+        return '<div class="notif-item' + unreadCls + clickableCls + '" data-idx="' + i + '"' + rowClick + '>' +
           '<div class="student-notif-icon ' + ic.cls + '">' + ic.icon + '</div>' +
           '<div class="student-notif-body" style="flex:1;min-width:0;">' +
             '<div class="student-notif-row1">' +
@@ -205,8 +232,8 @@
           '<div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;min-width:70px;margin-left:auto;">' +
           (n.isRead
             ? '<button class="mark-read-btn" disabled type="button">✓ Read</button>'
-            : '<button class="mark-read-btn" onclick="markOne(this,' + i + ')" type="button">✓ Read</button>') +
-          '<button class="student-delete-btn" onclick="deleteOne(' + i + ',this)" type="button" title="Delete">🗑</button>' +
+            : '<button class="mark-read-btn" onclick="event.stopPropagation();markOne(this,' + i + ')" type="button">✓ Read</button>') +
+          '<button class="student-delete-btn" onclick="event.stopPropagation();deleteOne(' + i + ',this)" type="button" title="Delete">🗑</button>' +
           '</div>' +
           '</div>';
       }).join('');
@@ -328,20 +355,33 @@
       applyFilter();
     }
 
+    // Direct teacher messages have a numeric DB id (student_notifications.id).
+    // Notes/assigned-activity notifications use a string key like "note_12" / "activity_5"
+    // and live in student_notification_reads instead — they must go to a different endpoint.
+    function _isDbId(id) {
+      return /^\d+$/.test(String(id));
+    }
+
     function markOne(btn, idx) {
       if (_cachedNotifs[idx]) _cachedNotifs[idx].isRead = true;
       try { localStorage.setItem(_lsKey('cache'), JSON.stringify(_cachedNotifs)); } catch(e) {}
-      // Sync to server if it has a DB id
       var notif = _cachedNotifs[idx];
       var srid = sessionStorage.getItem('student_record_id');
       var tid  = sessionStorage.getItem('teacher_id');
-      if (notif && notif.id && srid && tid) {
-        var fd = new FormData();
-        fd.append('action', 'mark_read');
-        fd.append('teacher_id', tid);
-        fd.append('student_id', srid);
-        fd.append('notif_id', notif.id);
-        fetch('../TEACHER_FILES/TEACHER_BACKEND/teacher_notify_student.php', { method: 'POST', body: fd }).catch(function(){});
+      if (notif && notif.id && srid) {
+        if (_isDbId(notif.id) && tid) {
+          var fd = new FormData();
+          fd.append('action', 'mark_read');
+          fd.append('teacher_id', tid);
+          fd.append('student_id', srid);
+          fd.append('notif_id', notif.id);
+          fetch('../TEACHER_FILES/TEACHER_BACKEND/teacher_notify_student.php', { method: 'POST', body: fd }).catch(function(){});
+        } else if (!_isDbId(notif.id)) {
+          var fd2 = new FormData();
+          fd2.append('student_id', srid);
+          fd2.append('notif_key', notif.id);
+          fetch('STUDENT_BACKEND/student_mark_notification_read.php', { method: 'POST', body: fd2 }).catch(function(){});
+        }
       }
       var item = btn.closest('.notif-item');
       item.classList.remove('unread');
@@ -362,6 +402,12 @@
         fd.append('teacher_id', tid);
         fd.append('student_id', srid);
         fetch('../TEACHER_FILES/TEACHER_BACKEND/teacher_notify_student.php', { method: 'POST', body: fd }).catch(function(){});
+
+        var fd2 = new FormData();
+        fd2.append('student_id', srid);
+        fd2.append('teacher_id', tid);
+        fd2.append('notif_key', 'all');
+        fetch('STUDENT_BACKEND/student_mark_notification_read.php', { method: 'POST', body: fd2 }).catch(function(){});
       }
       document.querySelectorAll('.notif-item.unread').forEach(function(el) { el.classList.remove('unread'); });
       document.querySelectorAll('.mark-read-btn').forEach(function(btn) { btn.textContent = 'Read'; btn.disabled = true; });
@@ -381,14 +427,21 @@
         var list = document.getElementById('student-notifList') || document.querySelector('.student-notif-list');
         if (list) list.innerHTML = EMPTY_HTML;
       }
-      // Only server-delete if it's a real DB row (direct teacher notification)
       if (notif.id) {
         var srid = sessionStorage.getItem('student_record_id');
-        if (srid) {
+        if (srid && _isDbId(notif.id)) {
+          // Real DB row (direct teacher notification) — permanently delete it
           var fd = new FormData();
           fd.append('notif_id', notif.id);
           fd.append('student_id', srid);
           fetch('STUDENT_BACKEND/student_delete_notification.php', { method: 'POST', body: fd }).catch(function() {});
+        } else if (srid && !_isDbId(notif.id)) {
+          // Note/assigned-activity notification — no delete concept, mark it read instead
+          // so it doesn't come back as unread (and re-inflate the badge) on the next refresh
+          var fd2 = new FormData();
+          fd2.append('student_id', srid);
+          fd2.append('notif_key', notif.id);
+          fetch('STUDENT_BACKEND/student_mark_notification_read.php', { method: 'POST', body: fd2 }).catch(function() {});
         }
       }
     }

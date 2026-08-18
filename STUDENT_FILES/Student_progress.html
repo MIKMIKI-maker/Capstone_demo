@@ -94,7 +94,7 @@
                 <p class="student-page-sub">Generated Date: —  ·  School Year: 2025–2026</p>
             </div>
             <div class="student-page-header-right">
-                <button class="student-export-btn" type="button">⬇ Export PDF</button>
+                <button class="student-export-btn" type="button" onclick="exportProgressPdf()">⬇ Export PDF</button>
                 <a class="student-notif-btn" href="Student_notif.html">
                     <i class="fa-regular fa-bell"></i>
                     <span class="student-notif-badge"></span>
@@ -350,6 +350,20 @@
         // Date
         document.querySelector('.student-page-sub').textContent =
             'Generated: ' + new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) + '  ·  School Year: 2025–2026';
+    }
+
+    // "Export PDF" uses the browser's print-to-PDF (same approach as the
+    // worksheet "Generate Printable" buttons) — no external library needed.
+    function exportProgressPdf() {
+        var name = (document.querySelector('.student-ov-name') || {}).textContent || 'Student';
+        var dateStr = new Date().toISOString().slice(0, 10);
+        var prevTitle = document.title;
+        document.title = name.trim() + ' - Progress Report - ' + dateStr;
+        window.addEventListener('afterprint', function restoreTitle() {
+            document.title = prevTitle;
+            window.removeEventListener('afterprint', restoreTitle);
+        });
+        window.print();
     }
 
     function escStr(s) {

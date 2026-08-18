@@ -111,6 +111,8 @@ body {
   transition:transform .12s ease, box-shadow .15s ease;
 }
 .notif-item:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,.08); }
+.notif-item--clickable { cursor:pointer; }
+.notif-item--clickable:hover { border-left-color:var(--blue); }
 .notif-item.unread {
   background:#f8fbff;
   border-left-color:var(--blue);

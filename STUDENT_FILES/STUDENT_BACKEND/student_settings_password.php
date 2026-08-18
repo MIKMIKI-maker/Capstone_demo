@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/db.php';
+require_once __DIR__ . '/student_auth.php';
 
 header('Content-Type: application/json');
 header('Cache-Control: no-cache');
@@ -9,11 +10,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$admin_account_id = isset($_POST['admin_account_id']) ? intval($_POST['admin_account_id']) : 0;
+$admin_account_id = requireStudentSession();
 $current_pw = isset($_POST['current_password']) ? trim($_POST['current_password']) : '';
 $new_pw = isset($_POST['new_password']) ? trim($_POST['new_password']) : '';
 
-if (!$admin_account_id || !$current_pw || !$new_pw) {
+if (!$current_pw || !$new_pw) {
     echo json_encode(['success' => false, 'message' => 'All fields are required']);
     exit;
 }

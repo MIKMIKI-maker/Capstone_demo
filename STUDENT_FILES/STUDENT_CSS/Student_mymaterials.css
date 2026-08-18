@@ -230,6 +230,14 @@ body {
   transform: translateY(-5px);
   box-shadow: 0 16px 30px rgba(36, 58, 94, .14);
 }
+.student-mat-card--highlight {
+  animation: studentMatHighlightPulse 1.5s ease-in-out 2;
+  box-shadow: 0 0 0 4px var(--blue, #2f6fed), 0 16px 30px rgba(36, 58, 94, .14);
+}
+@keyframes studentMatHighlightPulse {
+  0%, 100% { box-shadow: 0 0 0 4px var(--blue, #2f6fed), 0 16px 30px rgba(36, 58, 94, .14); }
+  50% { box-shadow: 0 0 0 8px rgba(47, 111, 237, .35), 0 16px 30px rgba(36, 58, 94, .14); }
+}
 .student-mat-badge {
   position: absolute; top: 14px; left: 14px; z-index: 2;
   padding: 4px 11px; border-radius: 999px;

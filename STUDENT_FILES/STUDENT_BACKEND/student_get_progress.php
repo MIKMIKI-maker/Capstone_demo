@@ -1,22 +1,26 @@
 <?php
 require_once __DIR__ . '/../../TEACHER_FILES/TEACHER_BACKEND/db.php';
+require_once __DIR__ . '/student_auth.php';
 
 header('Content-Type: application/json');
 header('Cache-Control: no-cache');
 
-$student_record_id = isset($_GET['student_record_id']) ? intval($_GET['student_record_id']) : 0;
-$teacher_id = isset($_GET['teacher_id']) ? intval($_GET['teacher_id']) : 0;
-
-if (!$student_record_id || !$teacher_id) {
-    echo json_encode(['success' => false, 'message' => 'Missing parameters']);
-    exit;
-}
+$student_admin_id = requireStudentSession();
 
 $conn = getTeacherDatabaseConnection();
 if (!$conn) {
     echo json_encode(['success' => false, 'message' => 'Database connection failed']);
     exit;
 }
+
+$rec = resolveStudentRecord($conn, $student_admin_id);
+if (!$rec) {
+    echo json_encode(['success' => false, 'message' => 'Not enrolled']);
+    $conn->close();
+    exit;
+}
+$student_record_id = (int)$rec['student_record_id'];
+$teacher_id         = (int)$rec['teacher_id'];
 
 // Overall stats — only from activities actually assigned to this student
 $stmt = $conn->prepare("

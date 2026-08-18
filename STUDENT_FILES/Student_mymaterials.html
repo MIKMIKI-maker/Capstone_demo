@@ -320,6 +320,22 @@
 
       document.getElementById('gradingSections').innerHTML =
         renderAllActivities(allForRender) + renderFilesSection(uploadedFiles || []);
+      highlightActivityFromQuery();
+    }
+
+    // Clicking a "New activity available" notification lands here with
+    // ?activity_id=<id> — scroll to and highlight that specific card.
+    var _highlightedOnce = false;
+    function highlightActivityFromQuery() {
+      if (_highlightedOnce) return;
+      var actId = new URLSearchParams(window.location.search).get('activity_id');
+      if (!actId) return;
+      var card = document.querySelector('.student-material-card[data-id="' + CSS.escape(actId) + '"]');
+      if (!card) return;
+      _highlightedOnce = true;
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      card.classList.add('student-mat-card--highlight');
+      setTimeout(function () { card.classList.remove('student-mat-card--highlight'); }, 3000);
     }
 
     function loadMaterials() {
