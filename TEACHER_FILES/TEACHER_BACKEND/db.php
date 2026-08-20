@@ -295,6 +295,16 @@ function getTeacherDatabaseConnection() {
         INDEX idx_student_read (student_id, is_read)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+    // Read state for synthesized teacher notes and published-activity notifications
+    $conn->query("CREATE TABLE IF NOT EXISTS student_notification_reads (
+        id         INT AUTO_INCREMENT PRIMARY KEY,
+        student_id INT NOT NULL,
+        notif_key  VARCHAR(100) NOT NULL,
+        read_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_student_notification (student_id, notif_key),
+        FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
     // Seed default teacher only when table is empty
     $t_seed_check = $conn->query("SELECT COUNT(*) AS cnt FROM teacher_accounts");
     if ($t_seed_check && $t_seed_check->fetch_assoc()['cnt'] == 0) {

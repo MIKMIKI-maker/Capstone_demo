@@ -716,7 +716,7 @@
 
   const $ = id => document.getElementById(id);
   var _stuMode = false, _stuPubId = '', _stuRetake = 0,
-      _stuLastScore = null, _stuLastTotal = null, _stuProg = [], _stuSlideScores = [], _stuSlideRetakes = {}, _stuSubmitDone = false,
+      _stuLastScore = null, _stuLastTotal = null, _stuProg = [], _stuSlideScores = [], _stuSlideRetakes = {}, _stuSubmitDone = false, _stuSubmissionPromise = null,
       _stuScaffoldLevel = {}, _stuLockedSteps = {}, _stuMissedLabels = {}, _stuMissedDetail = {}, _stuMissCountByIdx = {}, PASS_THRESHOLD = 0.8, _stuAlreadyPassed = false, _stuPubMeta = null;
 
   // Level 1 (after 3 failed attempts): anchor the 2 steps the student has
@@ -1826,6 +1826,12 @@
       document.body.appendChild(splash);
 
       function _stuGoBack() {
+        if (_stuSubmissionPromise) {
+          var pendingSubmission = _stuSubmissionPromise;
+          _stuSubmissionPromise = null;
+          pendingSubmission.then(function() { _stuGoBack(); }, function() { _stuGoBack(); });
+          return;
+        }
         _stuMode = false;
         if (document.fullscreenElement) document.exitFullscreen();
         var ret = sessionStorage.getItem('stu_return_url');
@@ -1900,9 +1906,12 @@
             var _stuId = sessionStorage.getItem('student_record_id');
             var _ansJson = JSON.stringify((function(){var all=[];_stuSlideScores.forEach(function(s,si){if(_slideCount>1){var sr=_stuSlideRetakes[si]||0;all.push({isSlideHeader:true,label:'Slide '+(si+1)+(sr>0?' ('+sr+' retake'+(sr>1?'s':'')+')':''),slideRetakes:sr,studentAnswer:'',correctAnswer:'',correct:null});}s.ansItems.forEach(function(item){all.push(Object.assign({},item));});});return all;})());
             if (pub.db_activity_id && pub.teacherId && _stuId) {
-              fetch('../TEACHER_BACKEND/teacher_complete_activity.php', {
-                method: 'POST', keepalive: true,
+              _stuSubmissionPromise = fetch('../TEACHER_BACKEND/teacher_complete_activity.php', {
+                method: 'POST',
                 body: new URLSearchParams({ teacher_id: pub.teacherId, student_id: _stuId, activity_id: pub.db_activity_id, score: pct, total_items: _totItems, pub_id: _stuPubId||'', answers_json: _ansJson, retake_count: _stuRetake||0, scaffold_used: _scaffoldUsed, struggled_items_json: JSON.stringify(_struggledItems) })
+              }).then(function(response) {
+                if (!response.ok) throw new Error('Submission failed');
+                return response;
               });
             }
           }

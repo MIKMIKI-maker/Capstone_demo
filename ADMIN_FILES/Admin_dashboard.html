@@ -3,6 +3,7 @@
 <html lang="en">
 
 <head>
+  <script src="../ASSETS/portal_guard.js" data-portal-role="admin" data-status-path="ADMIN_BACKEND/session_status.php" data-login-path="login_screen.html?session=expired"></script>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
   <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
@@ -91,7 +92,7 @@
     <header class="admin-topbar">
       <div class="admin-topbar-left">
         <h1 class="admin-greeting">Good morning, Admin! 👋</h1>
-        <p class="admin-greeting-sub">Monday, May 25, 2026 · Mamatid Elementary School · Cabuyao, Laguna</p>
+        <p class="admin-greeting-sub" id="admin-greeting-sub"></p>
       </div>
       <div class="admin-topbar-right">
         
@@ -177,6 +178,18 @@
   <!-- Help button -->
   <script>
     document.addEventListener("DOMContentLoaded", function () {
+      var greetingSub = document.getElementById('admin-greeting-sub');
+      if (greetingSub) {
+        var now = new Date();
+        var currentDate = now.toLocaleDateString('en-US', {
+          weekday: 'long',
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric'
+        });
+        greetingSub.textContent = currentDate + ' · Mamatid Elementary School · Cabuyao, Laguna';
+      }
+
       /* Ripple effect on buttons only */
       document.querySelectorAll(".admin-btn-signin, .admin-modal-got-it, .admin-signout-btn").forEach(function (btn) {
         btn.addEventListener("click", function (e) {

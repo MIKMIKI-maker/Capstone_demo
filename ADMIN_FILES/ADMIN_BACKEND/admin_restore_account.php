@@ -31,13 +31,32 @@ $types        = str_repeat('i', count($ids));
 // ── RESTORE ──────────────────────────────────────────────────────────────────
 if ($action === 'restore') {
     $stmt = $conn->prepare(
-        "UPDATE admin_accounts SET is_deleted = 0, deleted_at = NULL
+        "UPDATE admin_accounts SET is_deleted = 0, deleted_at = NULL, status = 'active'
          WHERE id IN ($placeholders) AND is_deleted = 1"
     );
     if (!$stmt) { echo json_encode(['success' => false, 'message' => 'Prepare failed']); $conn->close(); exit; }
     $stmt->bind_param($types, ...$ids);
     $ok = $stmt->execute();
     $stmt->close();
+
+    // Match the learner status to the restored account's current status.
+    $teacherConn = getTeacherDatabaseConnection();
+    if ($teacherConn) {
+        $studentStmt = $teacherConn->prepare(
+            "UPDATE students s
+             INNER JOIN admin_accounts a ON a.id = s.admin_account_id
+             SET s.status = CASE WHEN a.status = 'active' AND a.is_deleted = 0
+                                 THEN 'active' ELSE 'inactive' END
+             WHERE s.admin_account_id IN ($placeholders)"
+        );
+        if ($studentStmt) {
+            $studentStmt->bind_param($types, ...$ids);
+            $studentStmt->execute();
+            $studentStmt->close();
+        }
+        $teacherConn->close();
+    }
+
     $conn->close();
     echo json_encode(['success' => (bool)$ok]);
     exit;

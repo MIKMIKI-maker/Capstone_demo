@@ -112,16 +112,13 @@ if ($stmt->execute()) {
     }
 
     // Insert activity_assignments for each selected student.
-    // teacher_id is required here — the live table has it as NOT NULL with
-    // a foreign key to teacher_accounts, so leaving it out makes every
-    // INSERT IGNORE fail silently and the activity ends up assigned to no one.
     if (!empty($assigned_student_ids)) {
-        $asStmt = $teacher_conn->prepare("INSERT IGNORE INTO activity_assignments (teacher_id, activity_id, student_id) VALUES (?, ?, ?)");
+        $asStmt = $teacher_conn->prepare("INSERT IGNORE INTO activity_assignments (activity_id, student_id) VALUES (?, ?)");
         if ($asStmt) {
             foreach ($assigned_student_ids as $sid) {
                 $sid = intval($sid);
                 if ($sid > 0) {
-                    $asStmt->bind_param("iii", $teacher_id, $activity_id, $sid);
+                    $asStmt->bind_param("ii", $activity_id, $sid);
                     $asStmt->execute();
                 }
             }

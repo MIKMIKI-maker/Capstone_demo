@@ -93,6 +93,7 @@ $stmt2 = $conn->prepare("
     SELECT a.id AS activity_id, a.activity_title, a.activity_type, a.created_at,
            r.id AS read_id
     FROM teacher_activities a
+        INNER JOIN activity_assignments aa ON aa.activity_id = a.id AND aa.student_id = ?
     LEFT JOIN learner_progress lp ON lp.activity_id = a.id AND lp.student_id = ?
     LEFT JOIN student_notification_reads r ON r.student_id = ? AND r.notif_key = CONCAT('activity_', a.id)
     WHERE a.teacher_id = ? AND a.status = 'published' AND lp.id IS NULL
@@ -100,7 +101,7 @@ $stmt2 = $conn->prepare("
     LIMIT 10
 ");
 if ($stmt2) {
-    $stmt2->bind_param("iii", $student_record_id, $student_record_id, $teacher_id);
+    $stmt2->bind_param("iiii", $student_record_id, $student_record_id, $student_record_id, $teacher_id);
     $stmt2->execute();
     $acts = $stmt2->get_result();
     if ($acts) {

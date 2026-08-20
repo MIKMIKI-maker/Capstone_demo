@@ -51,13 +51,14 @@ if ($notif_key === 'all') {
     $actStmt = $conn->prepare("
         SELECT a.id
         FROM teacher_activities a
+        INNER JOIN activity_assignments aa ON aa.activity_id = a.id AND aa.student_id = ?
         LEFT JOIN learner_progress lp ON lp.activity_id = a.id AND lp.student_id = ?
         WHERE a.teacher_id = ? AND a.status = 'published' AND lp.id IS NULL
         ORDER BY a.created_at DESC
         LIMIT 10
     ");
     if ($actStmt) {
-        $actStmt->bind_param("ii", $student_id, $teacher_id);
+        $actStmt->bind_param("iii", $student_id, $student_id, $teacher_id);
         $actStmt->execute();
         $res = $actStmt->get_result();
         while ($row = $res->fetch_assoc()) {

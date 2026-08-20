@@ -10,7 +10,8 @@ function requireAdminSession() {
     if (session_status() !== PHP_SESSION_ACTIVE) {
         session_start();
     }
-    if (empty($_SESSION['admin_id']) || ($_SESSION['admin_role'] ?? '') !== 'admin') {
+    $adminRole = strtolower(trim((string)($_SESSION['admin_role'] ?? '')));
+    if (empty($_SESSION['admin_id']) || $adminRole !== 'admin') {
         http_response_code(403);
         header('Content-Type: application/json');
         echo json_encode(['success' => false, 'message' => 'Unauthorized. Please log in as an admin.']);
@@ -70,6 +71,20 @@ function getDatabaseConnection() {
         user_email  VARCHAR(255),
         action_detail TEXT,
         created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    // Admin notifications used by the list, badge, read, clear, and delete endpoints
+    $conn->query("CREATE TABLE IF NOT EXISTS admin_notifications (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        notification_type VARCHAR(50) NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        message TEXT,
+        related_id INT,
+        is_read TINYINT(1) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX (is_read),
+        INDEX (created_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
     // Login rate-limiting table

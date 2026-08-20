@@ -62,6 +62,7 @@ $stmt3 = $conn->prepare("
     SELECT COUNT(*) FROM (
         SELECT a.id
         FROM teacher_activities a
+        INNER JOIN activity_assignments aa ON aa.activity_id = a.id AND aa.student_id = ?
         LEFT JOIN learner_progress lp ON lp.activity_id = a.id AND lp.student_id = ?
         LEFT JOIN student_notification_reads r ON r.student_id = ? AND r.notif_key = CONCAT('activity_', a.id)
         WHERE a.teacher_id = ? AND a.status = 'published' AND lp.id IS NULL AND r.id IS NULL
@@ -70,7 +71,7 @@ $stmt3 = $conn->prepare("
     ) t
 ");
 if ($stmt3) {
-    $stmt3->bind_param("iii", $student_id, $student_id, $teacher_id);
+    $stmt3->bind_param("iiii", $student_id, $student_id, $student_id, $teacher_id);
     $stmt3->execute();
     $stmt3->bind_result($cnt3);
     $stmt3->fetch();

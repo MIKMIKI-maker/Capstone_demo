@@ -3,6 +3,7 @@ error_reporting(0);
 ini_set('display_errors', 0);
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/admin_push_notification.php';
+require_once __DIR__ . '/../../TEACHER_FILES/TEACHER_BACKEND/db.php';
 requireAdminSession();
 
 header('Content-Type: application/json');
@@ -55,13 +56,34 @@ $stmt = $conn->prepare(
      WHERE id IN ($placeholders) AND is_deleted = 0"
 );
 if (!$stmt) {
-    echo json_encode(['success' => false, 'message' => 'Prepare failed']);
+    echo json_encode(['success' => false, 'message' => 'Delete query failed: ' . $conn->error]);
     $conn->close();
     exit;
 }
 $stmt->bind_param($types, ...$ids);
 $ok = $stmt->execute();
+$error = $stmt->error;
 $stmt->close();
+
+if (!$ok) {
+    echo json_encode(['success' => false, 'message' => 'Delete failed: ' . $error]);
+    $conn->close();
+    exit;
+}
+
+// Keep the teacher-facing learner inactive while the student account is deleted.
+$teacherConn = getTeacherDatabaseConnection();
+if ($teacherConn) {
+    $studentStmt = $teacherConn->prepare(
+        "UPDATE students SET status = 'inactive' WHERE admin_account_id IN ($placeholders)"
+    );
+    if ($studentStmt) {
+        $studentStmt->bind_param($types, ...$ids);
+        $studentStmt->execute();
+        $studentStmt->close();
+    }
+    $teacherConn->close();
+}
 
 if ($ok && !empty($deletedNames)) {
     $count = count($deletedNames);
@@ -72,5 +94,5 @@ if ($ok && !empty($deletedNames)) {
 
 $conn->close();
 
-echo json_encode(['success' => (bool)$ok]);
+echo json_encode(['success' => true]);
 ?>

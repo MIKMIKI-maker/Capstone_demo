@@ -20,6 +20,7 @@ $full_name = isset($_POST['full_name']) ? trim($_POST['full_name']) : '';
 $email_address = isset($_POST['email_address']) ? trim($_POST['email_address']) : '';
 $phone_number = isset($_POST['phone_number']) ? trim($_POST['phone_number']) : '';
 $status = isset($_POST['admin_status_input']) ? trim($_POST['admin_status_input']) : 'active';
+$grade_level = isset($_POST['grade_level']) ? trim($_POST['grade_level']) : '';
 $condition_info = isset($_POST['admin_edit_cond_select']) ? trim($_POST['admin_edit_cond_select']) : '';
 // For teachers, section name comes from the grade_level dropdown (not the condition dropdown)
 if ($condition_info === '' && isset($_POST['grade_level']) && trim($_POST['grade_level']) !== '') {
@@ -64,7 +65,7 @@ if ($stmt->execute()) {
     if ($user_role === 'teacher') {
         syncTeacherAccount($email_address, $first_name, $last_name);
     } elseif ($user_role === 'student') {
-        syncStudentRecord($user_id, trim($full_name), $parent_name_val);
+        syncStudentRecord($user_id, trim($full_name), $parent_name_val, $status, $condition_info, $grade_level, $assigned_teacher_id);
     }
     echo json_encode(['success' => true, 'message' => 'User updated successfully']);
 } else {
@@ -110,7 +111,7 @@ function syncTeacherAccount($email, $firstName, $lastName) {
 }
 
 // Function to sync a student's corrected name/parent name into the teacher-facing students table
-function syncStudentRecord($adminAccountId, $studentName, $parentName) {
+function syncStudentRecord($adminAccountId, $studentName, $parentName, $accountStatus, $condition, $gradeLevel, $assignedTeacherAdminId) {
     require_once __DIR__ . '/../../TEACHER_FILES/TEACHER_BACKEND/db.php';
     $teacher_conn = getTeacherDatabaseConnection();
 
@@ -118,8 +119,41 @@ function syncStudentRecord($adminAccountId, $studentName, $parentName) {
         return false;
     }
 
-    $stmt = $teacher_conn->prepare("UPDATE students SET student_name = ?, parent_name = ? WHERE admin_account_id = ?");
-    $stmt->bind_param("ssi", $studentName, $parentName, $adminAccountId);
+    $studentStatus = strtolower($accountStatus) === 'active' ? 'active' : 'inactive';
+    $teacherId = 0;
+    if ($assignedTeacherAdminId > 0) {
+        $teacherLookup = $teacher_conn->prepare(
+            "SELECT t.id
+             FROM teacher_accounts t
+             INNER JOIN admin_accounts a ON a.admin_email = t.teacher_email
+             WHERE a.id = ? AND a.role = 'teacher'
+             LIMIT 1"
+        );
+        if ($teacherLookup) {
+            $teacherLookup->bind_param("i", $assignedTeacherAdminId);
+            $teacherLookup->execute();
+            if ($teacherRow = $teacherLookup->get_result()->fetch_assoc()) {
+                $teacherId = (int)$teacherRow['id'];
+            }
+            $teacherLookup->close();
+        }
+    }
+
+    if ($teacherId > 0) {
+        $stmt = $teacher_conn->prepare(
+            "UPDATE students
+             SET student_name = ?, parent_name = ?, disability_type = ?, grade_level = ?, status = ?, teacher_id = ?
+             WHERE admin_account_id = ?"
+        );
+        $stmt->bind_param("sssssii", $studentName, $parentName, $condition, $gradeLevel, $studentStatus, $teacherId, $adminAccountId);
+    } else {
+        $stmt = $teacher_conn->prepare(
+            "UPDATE students
+             SET student_name = ?, parent_name = ?, disability_type = ?, grade_level = ?, status = ?
+             WHERE admin_account_id = ?"
+        );
+        $stmt->bind_param("sssssi", $studentName, $parentName, $condition, $gradeLevel, $studentStatus, $adminAccountId);
+    }
     $stmt->execute();
     $stmt->close();
     $teacher_conn->close();
