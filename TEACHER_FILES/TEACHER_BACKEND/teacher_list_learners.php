@@ -3,6 +3,7 @@ error_reporting(0);
 ini_set('display_errors', 0);
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/db.php';
+require_once __DIR__ . '/teacher_auth.php';
 
 header('Content-Type: application/json');
 
@@ -15,9 +16,7 @@ if (!$conn) {
 // Ensure admin DB is initialised (same spedalm_db, but tables must exist)
 getDatabaseConnection();
 
-session_start();
-$teacher_id = isset($_REQUEST['teacher_id']) ? intval($_REQUEST['teacher_id'])
-            : (isset($_SESSION['admin_id']) ? intval($_SESSION['admin_id']) : 1);
+$teacher_id = requireTeacherId();
 
 // Auto-purge orphaned students: linked accounts that admin has since deleted
 $conn->query("DELETE FROM students

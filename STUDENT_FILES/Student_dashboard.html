@@ -166,9 +166,6 @@
           <span class="student-progress-text">—/100</span>
         </div>
         <div class="student-progress-stars">
-          <span>⭐</span>
-          <span>⭐</span>
-          <span>⭐</span>
         </div>
       </div>
       <div class="student-progress-right">
@@ -245,9 +242,31 @@
         if (todayPanel) todayPanel.innerHTML = msg;
         if (allPanel)   allPanel.innerHTML   = msg;
         document.getElementById('student-act-done-count').textContent = '0/0 done';
+        updateProgressBanner(0, 0);
         // Teacher card shows no teacher
         var teacherEl = document.getElementById('dash-teacher-name');
         if (teacherEl) teacherEl.textContent = 'No teacher assigned';
+      }
+
+      function updateProgressBanner(completed, total) {
+        var percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+        var fill = document.querySelector('.student-progress-fill');
+        var text = document.querySelector('.student-progress-text');
+        var message = document.querySelector('.student-progress-msg');
+        var stars = document.querySelector('.student-progress-stars');
+
+        if (fill) fill.style.width = percent + '%';
+        if (text) text.textContent = total > 0 ? percent + '/100' : '—/100';
+        if (message) message.textContent = completed > 0
+          ? completed + ' learning activit' + (completed === 1 ? 'y' : 'ies') + ' completed'
+          : 'No data yet';
+        if (stars) {
+          var starCount = completed * 3;
+          stars.innerHTML = Array.from({ length: starCount }, function() {
+            return '<span aria-hidden="true">⭐</span>';
+          }).join('');
+          stars.setAttribute('aria-label', starCount + ' stars earned');
+        }
       }
 
       function renderActivities(rawMaterials) {
@@ -292,6 +311,7 @@
 
         var doneCount = materials.filter(function(a){ return a.progress_status === 'completed'; }).length;
         document.getElementById('student-act-done-count').textContent = doneCount + '/' + materials.length + ' done';
+        updateProgressBanner(doneCount, materials.length);
       }
 
       function loadDashboard() {

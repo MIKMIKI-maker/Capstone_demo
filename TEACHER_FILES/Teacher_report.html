@@ -98,8 +98,8 @@
                     <p class="teacher-page-sub">Track learner progress and generate grading reports</p>
                 </div>
                 <div class="teacher-topbar-actions">
-                    <button class="btn-action outline" type="button"><i class="fa-solid fa-file-pdf"></i> PDF</button>
-                    <button class="btn-action outline" type="button"><i class="fa-solid fa-print"></i> Print</button>
+                    <button class="btn-action outline" id="reportPdfBtn" type="button"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                    <button class="btn-action outline" id="reportPrintBtn" type="button"><i class="fa-solid fa-print"></i> Print</button>
                     <button class="btn-action outline" type="button"><i class="fa-solid fa-file-excel"></i>
                         Export</button>
                     <a class="teacher-notif-btn" href="Teacher_notif.html">
@@ -174,13 +174,69 @@
                             <th title="Average score across all of this learner's completed activities, not a single activity's score">Average <i class="fa-regular fa-circle-question" style="font-size:11px;color:#94a3b8;"></i></th>
                             <th>Status</th>
                             <th>Remarks</th>
+                            <th>Report</th>
                         </tr>
                     </thead>
                     <tbody id="report-learner-tbody">
-                        <tr><td colspan="5" style="text-align:center;padding:20px;color:#94a3b8;">Loading...</td></tr>
+                        <tr><td colspan="6" style="text-align:center;padding:20px;color:#94a3b8;">Loading...</td></tr>
                     </tbody>
                 </table>
             </div>
+            <!-- INDIVIDUAL GRADING REPORT GENERATOR -->
+            <section class="teacher-grading-generator" id="gradingGenerator">
+                <div class="teacher-generator-header">
+                    <div>
+                        <h2>Generate Student Grading Report</h2>
+                        <p>Document the learner, grading evidence, mastery level, and teacher comments.</p>
+                    </div>
+                    <span class="teacher-generator-status" id="gradingSaveStatus" role="status"></span>
+                </div>
+                <div class="teacher-generator-form">
+                    <label>Student<select id="gradingStudent"><option value="">Select a student</option></select></label>
+                    <label>Grading system<select id="gradingSystem">
+                        <option value="Average of completed activities">Average of completed activities</option>
+                        <option value="Most recent completed activity">Most recent completed activity</option>
+                        <option value="Highest completed activity">Highest completed activity</option>
+                    </select></label>
+                    <label>Mastery level<select id="gradingMastery">
+                        <option value="Beginning">Beginning: 0-59%</option>
+                        <option value="Developing">Developing: 60-79%</option>
+                        <option value="Mastered">Mastered: 80-100%</option>
+                    </select></label>
+                </div>
+                <div class="teacher-grading-identity" id="gradingIdentity">Select a student to load their grading evidence.</div>
+                <div class="teacher-grading-evidence" id="gradingEvidence"></div>
+                <label class="teacher-comment-field">Teacher comments<textarea id="gradingComments" rows="4" placeholder="Describe strengths, support provided, and the next learning goal."></textarea></label>
+                <div class="teacher-generator-actions">
+                    <button class="btn-action" id="saveGradingReport" type="button"><i class="fa-solid fa-floppy-disk"></i> Save Report</button>
+                    <button class="btn-action outline" id="printGradingReport" type="button"><i class="fa-solid fa-file-pdf"></i> Generate PDF</button>
+                </div>
+                <article class="teacher-print-report" id="teacherPrintReport">
+                    <header class="teacher-print-school-header">
+                        <img src="../ASSETS/School_logo.png" alt="School logo">
+                        <div><h1>Mamatid Elementary School</h1><p>Special Education Program &middot; SPED ALM</p><p>Individualized Learning Progress and Grading Report</p></div>
+                    </header>
+                    <div class="teacher-print-report-meta"><span>Reporting period: ____________________</span><span>Date prepared: <strong id="printDate"></strong></span></div>
+                    <table class="teacher-print-learner-table">
+                        <tr><th>Learner name</th><td id="printStudentName"></td><th>Grade level</th><td id="printGrade"></td></tr>
+                        <tr><th>Learning profile</th><td id="printCondition"></td><th>Teacher</th><td id="printTeacher"></td></tr>
+                    </table>
+                    <h2 class="teacher-print-section-title">A. Grading Basis and Evidence</h2>
+                    <p class="teacher-print-explanation">This report is based on documented performance in assigned learning activities. The final rating uses the selected grading method and is interpreted with the learner's individual goals, supports, and demonstrated mastery in mind.</p>
+                    <div class="teacher-print-summary-grid">
+                        <div><span>Grading system</span><strong id="printGradingSystem"></strong></div>
+                        <div><span>Overall evidence score</span><strong id="printAverage"></strong></div>
+                        <div><span>Activities completed</span><strong id="printCompleted"></strong></div>
+                        <div><span>Activities meeting standard</span><strong id="printPassed"></strong></div>
+                    </div>
+                    <h2 class="teacher-print-section-title">B. Mastery Determination</h2>
+                    <div class="teacher-print-mastery"><span>Current mastery level</span><strong id="printMastery"></strong><span class="teacher-print-mastery-note">Based on the learner's current evidence and classroom performance.</span></div>
+                    <h2 class="teacher-print-section-title">C. Teacher Narrative</h2>
+                    <div class="teacher-print-comments" id="printComments">No teacher comments recorded.</div>
+                    <div class="teacher-print-support"><strong>Recommended support / next learning goal:</strong><span>Continue individualized instruction, guided practice, and progress monitoring aligned with the learner's IEP goals.</span></div>
+                    <footer class="teacher-print-signatures"><div>____________________________<br><strong>SPED Teacher</strong></div><div>____________________________<br><strong>Parent / Guardian</strong></div><div>____________________________<br><strong>School Coordinator</strong></div></footer>
+                </article>
+            </section>
         </main>
     </div>
 
@@ -198,6 +254,8 @@
     <script>
         var TEACHER_ID = parseInt(sessionStorage.getItem('teacher_id') || '1');
         var _reportActivities = [];
+        var _reportStudents = [];
+        var _selectedGradingStudent = null;
 
         function openActivitySubmissions(idx) {
             var a = _reportActivities[idx];
@@ -302,8 +360,10 @@
 
                     // Learner performance table
                     var tbody = document.getElementById('report-learner-tbody');
+                    _reportStudents = d.students || [];
+                    populateGradingStudents(_reportStudents);
                     if (!d.students || !d.students.length) {
-                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:#94a3b8;">No learner data yet</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#94a3b8;">No learner data yet</td></tr>';
                     } else {
                         var statusCls = {'Passing':'sb-green','Needs Support':'sb-orange','At Risk':'sb-red','No Activity':'sb-gray'};
                         tbody.innerHTML = d.students.map(function(s) {
@@ -318,6 +378,7 @@
                                 + '<td>' + (s.avg_score > 0 ? s.avg_score + '%' : '—') + '</td>'
                                 + '<td><span class="teacher-status-badge ' + cls + '">' + s.status + '</span></td>'
                                 + '<td>' + remark + '</td>'
+                                + '<td><button class="teacher-report-row-btn" type="button" onclick="openGradingReport(' + s.student_id + ')">Create</button></td>'
                                 + '</tr>';
                         }).join('');
                     }
@@ -347,17 +408,124 @@
                     }
                 }).catch(function() {
                     document.getElementById('report-learner-tbody').innerHTML =
-                        '<tr><td colspan="5" style="text-align:center;padding:20px;color:#ef4444;">Failed to load data</td></tr>';
+                        '<tr><td colspan="6" style="text-align:center;padding:20px;color:#ef4444;">Failed to load data</td></tr>';
                 });
+        }
+
+        function masteryForScore(score) {
+            return score >= 80 ? 'Mastered' : score >= 60 ? 'Developing' : 'Beginning';
+        }
+
+        function populateGradingStudents(students) {
+            var select = document.getElementById('gradingStudent');
+            select.innerHTML = '<option value="">Select a student</option>' + students.map(function(s) {
+                return '<option value="' + s.student_id + '">' + escHtml(s.student_name) + '</option>';
+            }).join('');
+        }
+
+        function openGradingReport(studentId) {
+            var student = _reportStudents.find(function(s) { return String(s.student_id) === String(studentId); });
+            if (!student) return;
+            _selectedGradingStudent = student;
+            document.getElementById('gradingStudent').value = String(student.student_id);
+            document.getElementById('gradingMastery').value = masteryForScore(Number(student.avg_score) || 0);
+            renderGradingEvidence(student);
+            document.getElementById('gradingGenerator').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function renderGradingEvidence(student) {
+            document.getElementById('gradingIdentity').innerHTML = '<strong>' + escHtml(student.student_name) + '</strong>'
+                + ' &middot; ' + escHtml(student.grade_level || 'Grade not recorded')
+                + ' &middot; ' + escHtml(student.disability_type || 'Condition not recorded');
+            document.getElementById('gradingEvidence').innerHTML = '<div><span>Average score</span><strong>' + (student.avg_score > 0 ? student.avg_score + '%' : 'No score') + '</strong></div>'
+                + '<div><span>Completed activities</span><strong>' + (student.total_attempts || 0) + '</strong></div>'
+                + '<div><span>Passed activities</span><strong>' + (student.passed_count || 0) + '</strong></div>'
+                + '<div><span>Evidence status</span><strong>' + escHtml(student.status) + '</strong></div>';
+            document.getElementById('gradingSaveStatus').textContent = '';
+            populatePrintReport(student);
+        }
+
+        function populatePrintReport(student) {
+            var score = Number(student.avg_score) || 0;
+            document.getElementById('printDate').textContent = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+            document.getElementById('printStudentName').textContent = student.student_name || 'Not recorded';
+            document.getElementById('printGrade').textContent = student.grade_level || 'Not recorded';
+            document.getElementById('printCondition').textContent = student.disability_type || 'Not recorded';
+            document.getElementById('printTeacher').textContent = sessionStorage.getItem('teacher_name') || 'SPED Teacher';
+            document.getElementById('printGradingSystem').textContent = document.getElementById('gradingSystem').value;
+            document.getElementById('printAverage').textContent = score > 0 ? score + '%' : 'No score yet';
+            document.getElementById('printCompleted').textContent = String(student.total_attempts || 0);
+            document.getElementById('printPassed').textContent = String(student.passed_count || 0);
+            document.getElementById('printMastery').textContent = document.getElementById('gradingMastery').value;
+            document.getElementById('printComments').textContent = document.getElementById('gradingComments').value.trim() || 'No teacher comments recorded.';
+        }
+
+        function saveGradingReport() {
+            if (!_selectedGradingStudent) { alert('Select a student first.'); return; }
+            var student = _selectedGradingStudent;
+            var content = {
+                student_name: student.student_name,
+                grade_level: student.grade_level || '',
+                disability_type: student.disability_type || '',
+                grading_system: document.getElementById('gradingSystem').value,
+                mastery_level: document.getElementById('gradingMastery').value,
+                average_score: student.avg_score || 0,
+                completed_activities: student.total_attempts || 0,
+                passed_activities: student.passed_count || 0,
+                evidence_status: student.status,
+                teacher_comments: document.getElementById('gradingComments').value.trim()
+            };
+            var status = document.getElementById('gradingSaveStatus');
+            status.textContent = 'Saving...';
+            var body = new URLSearchParams({
+                action: 'save_report', teacher_id: String(TEACHER_ID), student_id: String(student.student_id),
+                report_title: 'Student Grading Report - ' + student.student_name,
+                report_content: JSON.stringify(content), report_type: 'grading'
+            });
+            fetch('TEACHER_BACKEND/teacher_reports_management.php', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString() })
+                .then(function(r) { return r.json(); })
+                .then(function(d) { status.textContent = d.success ? 'Report saved.' : (d.message || 'Unable to save report.'); })
+                .catch(function() { status.textContent = 'Unable to reach the report server.'; });
+        }
+
+        function printGradingReport() {
+            if (!_selectedGradingStudent) { alert('Select a student first.'); return; }
+            var previousTitle = document.title;
+            populatePrintReport(_selectedGradingStudent);
+            document.body.classList.add('grading-print-mode');
+            document.title = 'Grading Report - ' + _selectedGradingStudent.student_name + ' - ' + new Date().toISOString().slice(0, 10);
+            var restoreTitle = function() {
+                document.title = previousTitle;
+                document.body.classList.remove('grading-print-mode');
+                window.removeEventListener('afterprint', restoreTitle);
+            };
+            window.addEventListener('afterprint', restoreTitle);
+            window.print();
         }
 
         function escHtml(str) {
             return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
         }
 
+        function printClassReport() {
+            var previousTitle = document.title;
+            document.title = 'Class Report - ' + new Date().toISOString().slice(0, 10);
+            var restoreTitle = function() {
+                document.title = previousTitle;
+                window.removeEventListener('afterprint', restoreTitle);
+            };
+            window.addEventListener('afterprint', restoreTitle);
+            window.print();
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             loadSidebar();
             loadReports();
+            document.getElementById('reportPdfBtn').addEventListener('click', printClassReport);
+            document.getElementById('reportPrintBtn').addEventListener('click', printClassReport);
+            document.getElementById('gradingStudent').addEventListener('change', function() { if (this.value) openGradingReport(this.value); });
+            document.getElementById('saveGradingReport').addEventListener('click', saveGradingReport);
+            document.getElementById('printGradingReport').addEventListener('click', printGradingReport);
         });
     </script>
 <script>(function(){var _id=sessionStorage.getItem('admin_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>

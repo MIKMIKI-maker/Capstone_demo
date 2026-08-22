@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db.php';
+requireAdminSession();
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -7,11 +8,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$admin_account_id = isset($_POST['admin_account_id']) ? intval($_POST['admin_account_id']) : 0;
+$admin_account_id = (int)$_SESSION['admin_id'];
 $photo            = isset($_POST['photo']) ? $_POST['photo'] : '';
 
 if (!$admin_account_id) {
-    echo json_encode(['success' => false, 'message' => 'Missing admin_account_id']);
+    echo json_encode(['success' => false, 'message' => 'Missing authenticated admin']);
     exit;
 }
 

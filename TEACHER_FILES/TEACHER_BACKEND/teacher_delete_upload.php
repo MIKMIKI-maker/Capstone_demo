@@ -1,9 +1,10 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/teacher_auth.php';
 header('Content-Type: application/json');
 
 $upload_id  = isset($_POST['upload_id'])  ? intval($_POST['upload_id'])  : 0;
-$teacher_id = isset($_POST['teacher_id']) ? intval($_POST['teacher_id']) : 0;
+$teacher_id = requireTeacherId();
 
 if (!$upload_id || !$teacher_id) {
     echo json_encode(['success' => false, 'message' => 'Missing params']);

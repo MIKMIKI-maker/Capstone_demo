@@ -2,6 +2,9 @@
 error_reporting(0);
 ini_set('display_errors', '0');
 
+ini_set('session.cookie_httponly', '1');
+ini_set('session.cookie_samesite', 'Lax');
+if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ini_set('session.cookie_secure', '1');
 session_start();
 require_once __DIR__ . '/db.php';
 
@@ -12,10 +15,7 @@ set_error_handler(function($severity, $message, $file, $line) {
     http_response_code(500);
     echo json_encode([
         'status' => 'error',
-        'message' => $message,
-        'severity' => $severity,
-        'file' => $file,
-        'line' => $line
+        'message' => 'A server error occurred. Please try again.'
     ]);
     exit;
 });
@@ -26,10 +26,7 @@ register_shutdown_function(function() {
         http_response_code(500);
         echo json_encode([
             'status' => 'error',
-            'message' => 'Fatal error',
-            'details' => $err['message'],
-            'file' => $err['file'],
-            'line' => $err['line']
+            'message' => 'A server error occurred. Please try again.'
         ]);
     }
 });
@@ -207,6 +204,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
 
         if ($auth_ok) {
+            session_regenerate_id(true);
             // Clear failed attempts for this IP on success
             $clr = $conn->prepare("DELETE FROM login_attempts WHERE ip_address = ?");
             if ($clr) { $clr->bind_param("s", $ip); $clr->execute(); $clr->close(); }

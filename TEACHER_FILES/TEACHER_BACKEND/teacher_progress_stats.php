@@ -35,6 +35,8 @@ function safeQuery($conn, $sql, $types, ...$params) {
 $progress = [
     'success'              => true,
     'student_name'         => '',
+    'grade_level'          => '',
+    'disability_type'      => '',
     'overall_progress'     => 0,
     'average_score'        => 0,
     'activities_completed' => 0,
@@ -54,7 +56,7 @@ $progress = [
 
 // ── Student info ─────────────────────────────────────────────────────────────
 $stmt = safeQuery($conn,
-    "SELECT student_name FROM students WHERE id = ? AND teacher_id = ?",
+    "SELECT student_name, grade_level, disability_type FROM students WHERE id = ? AND teacher_id = ?",
     "ii", $student_id, $teacher_id
 );
 if (!$stmt) {
@@ -66,7 +68,10 @@ if (!$res || $res->num_rows === 0) {
     echo json_encode(['success' => false, 'message' => 'Student not found (id=' . $student_id . ', teacher=' . $teacher_id . ')']);
     exit;
 }
-$progress['student_name'] = $res->fetch_assoc()['student_name'];
+$studentInfo = $res->fetch_assoc();
+$progress['student_name'] = $studentInfo['student_name'];
+$progress['grade_level'] = $studentInfo['grade_level'] ?? '';
+$progress['disability_type'] = $studentInfo['disability_type'] ?? '';
 $stmt->close();
 
 // ── Total activities assigned to this student ─────────────────────────────────

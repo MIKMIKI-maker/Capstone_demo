@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/teacher_auth.php';
 
 header('Content-Type: application/json');
 
@@ -15,7 +16,7 @@ if (!$conn) {
 }
 
 $submission_id    = intval($_POST['submission_id']    ?? 0);
-$teacher_id       = intval($_POST['teacher_id']       ?? 0);
+$teacher_id       = requireTeacherId();
 $assistance_level = trim($_POST['assistance_level']   ?? '');
 $teacher_note     = trim($_POST['teacher_note']       ?? '');
 $finalized_score  = isset($_POST['finalized_score']) && $_POST['finalized_score'] !== ''

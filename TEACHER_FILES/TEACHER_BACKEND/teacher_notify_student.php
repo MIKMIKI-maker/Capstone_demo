@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/teacher_auth.php';
 
 header('Content-Type: application/json');
 header('Cache-Control: no-cache');
@@ -16,7 +17,7 @@ if (!$conn) {
 }
 
 $action     = isset($_POST['action'])     ? trim($_POST['action'])     : 'send';
-$teacher_id = isset($_POST['teacher_id']) ? intval($_POST['teacher_id']) : 0;
+$teacher_id = requireTeacherId();
 
 if (!$teacher_id) {
     echo json_encode(['success' => false, 'message' => 'Teacher ID required']);

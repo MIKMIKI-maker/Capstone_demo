@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/teacher_auth.php';
 
 header('Content-Type: application/json');
 
@@ -9,9 +10,7 @@ if (!$conn) {
     exit;
 }
 
-session_start();
-$teacher_id = isset($_REQUEST['teacher_id']) ? intval($_REQUEST['teacher_id'])
-            : (isset($_SESSION['admin_id']) ? intval($_SESSION['admin_id']) : 1);
+$teacher_id = requireTeacherId();
 
 $stmt = $conn->prepare("SELECT id, student_id, iep_goal, learning_objective, strategies, status, created_at
                         FROM iep_materials

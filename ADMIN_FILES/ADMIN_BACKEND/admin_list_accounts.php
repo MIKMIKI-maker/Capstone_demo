@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db.php';
+requireAdminSession();
 
 header('Content-Type: application/json');
 

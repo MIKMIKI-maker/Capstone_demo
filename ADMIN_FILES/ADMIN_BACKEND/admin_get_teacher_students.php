@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db.php';
+requireAdminSession();
 header('Content-Type: application/json');
 
 $teacher_id = isset($_GET['teacher_id']) ? intval($_GET['teacher_id']) : 0;

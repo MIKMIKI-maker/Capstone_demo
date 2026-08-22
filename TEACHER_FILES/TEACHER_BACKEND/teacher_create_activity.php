@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/db.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/admin_push_notification.php';
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/teacher_auth.php';
 
 header('Content-Type: application/json');
 
@@ -16,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$teacher_id = isset($_POST['teacher_id']) ? intval($_POST['teacher_id']) : 0;
+$teacher_id = requireTeacherId();
 $activity_title = isset($_POST['activity_title']) ? trim($_POST['activity_title']) : '';
 $activity_description = isset($_POST['activity_description']) ? trim($_POST['activity_description']) : '';
 $activity_type = isset($_POST['activity_type']) ? trim($_POST['activity_type']) : '';

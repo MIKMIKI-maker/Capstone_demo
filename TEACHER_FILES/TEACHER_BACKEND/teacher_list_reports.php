@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/teacher_auth.php';
 
 header('Content-Type: application/json');
 
@@ -9,9 +10,7 @@ if (!$conn) {
     exit;
 }
 
-session_start();
-$teacher_id = isset($_REQUEST['teacher_id']) ? intval($_REQUEST['teacher_id'])
-            : (isset($_SESSION['admin_id']) ? intval($_SESSION['admin_id']) : 1);
+$teacher_id = requireTeacherId();
 
 $stmt = $conn->prepare("SELECT id, student_id, report_title, report_type, report_date, created_at
                         FROM teacher_reports

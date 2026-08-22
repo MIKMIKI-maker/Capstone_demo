@@ -1,8 +1,9 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/teacher_auth.php';
 header('Content-Type: application/json');
 
-$teacher_id     = isset($_POST['teacher_id'])     ? intval($_POST['teacher_id'])     : 0;
+$teacher_id     = requireTeacherId();
 $student_id     = isset($_POST['student_id'])     ? intval($_POST['student_id'])     : 0;
 $grading_period = isset($_POST['grading_period']) ? trim($_POST['grading_period'])   : 'First';
 $title          = isset($_POST['title'])          ? trim($_POST['title'])            : '';

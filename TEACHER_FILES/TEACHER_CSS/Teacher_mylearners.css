@@ -239,4 +239,41 @@ body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-s
 .sm-struggle-text { min-width: 0; flex: 1; }
 .sm-struggle-main { display: block; font-size: 12.5px; color: #7f1d1d; line-height: 1.4; }
 .sm-struggle-main b { color: #b91c1c; }
+
+/* ── FORMAL LEARNER GRADING REPORT ── */
+.teacher-learner-print-report { display: none; color: #172554; font-family: Georgia, 'Times New Roman', serif; }
+.learner-print-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 3px solid #1E3A8A; }
+.learner-print-header img { width: 64px; height: 64px; object-fit: contain; }
+.learner-print-header h1 { font-size: 22px; color: #1E3A8A; }
+.learner-print-header p { margin-top: 3px; font-size: 11px; color: #475569; }
+.learner-print-meta { display: flex; justify-content: space-between; padding: 12px 0; font-size: 11px; color: #475569; }
+.learner-print-identity, .learner-print-activities { width: 100%; border-collapse: collapse; }
+.learner-print-identity { margin-bottom: 18px; }
+.learner-print-identity th, .learner-print-identity td, .learner-print-activities th, .learner-print-activities td { border: 1px solid #CBD5E1; padding: 8px 10px; text-align: left; font-size: 11px; }
+.learner-print-identity th, .learner-print-activities th { background: #EFF6FF; color: #1E3A8A; font-size: 9px; text-transform: uppercase; }
+.teacher-learner-print-report h2 { margin: 15px 0 7px; padding-bottom: 4px; border-bottom: 1px solid #93C5FD; color: #1E3A8A; font-size: 13px; }
+.learner-print-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.learner-print-summary > div { border: 1px solid #CBD5E1; padding: 9px; }
+.learner-print-summary span, .learner-print-summary strong { display: block; }
+.learner-print-summary span { color: #64748B; font-size: 9px; text-transform: uppercase; }
+.learner-print-summary strong { margin-top: 4px; font-size: 14px; }
+.learner-print-basis { padding: 9px 10px; background: #F8FAFC; font-size: 11px; line-height: 1.5; }
+.learner-print-notes { min-height: 58px; border: 1px solid #CBD5E1; padding: 10px; font-size: 11px; line-height: 1.5; white-space: pre-wrap; }
+.learner-print-support { margin-top: 10px; padding: 9px 10px; border-left: 3px solid #10B981; background: #F8FAFC; font-size: 11px; line-height: 1.5; }
+.learner-print-signatures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 36px; text-align: center; font-size: 10px; }
+
+/* ── PRINT / PDF ── */
+@media print {
+    *, *::before, *::after { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    html, body { height: auto; overflow: visible; background: #fff; }
+    .teacher-app-wrapper, .teacher-main-content { display: block; height: auto; overflow: visible; }
+    .teacher-sidebar, .teacher-progress-topbar, .note-modal-overlay, .sm-overlay { display: none !important; }
+    .teacher-progress-body { overflow: visible; padding: 0; }
+    .teacher-ring-card, .teacher-chart-card, .teacher-history-card,
+    .teacher-skills-card, .teacher-notes-card { box-shadow: none; break-inside: avoid; page-break-inside: avoid; }
+    .teacher-progress-grid { grid-template-columns: 1fr 320px; }
+    body.learner-report-print .teacher-main-content > *:not(#learnerPrintReport) { display: none !important; }
+    body.learner-report-print .teacher-learner-print-report { display: block !important; }
+    @page { margin: 12mm; size: auto; }
+}
 .sm-struggle-correct { display: inline-block; margin-top: 4px; font-size: 11px; font-weight: 700; color: #15803d; background: #dcfce7; padding: 2px 9px; border-radius: 10px; }

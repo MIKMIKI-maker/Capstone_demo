@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/teacher_auth.php';
 require_once __DIR__ . '/teacher_activity_lock_helpers.php';
 require_once __DIR__ . '/teacher_push_notification.php';
 
@@ -10,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$teacher_id     = isset($_POST['teacher_id'])     ? intval($_POST['teacher_id'])     : 0;
+$teacher_id     = requireTeacherId();
 $activity_id    = isset($_POST['activity_id'])    ? intval($_POST['activity_id'])    : 0;
 $activity_title = isset($_POST['activity_title']) ? trim($_POST['activity_title'])   : '';
 $subject        = isset($_POST['subject'])        ? trim($_POST['subject'])          : '';

@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/db.php';
+require_once __DIR__ . '/teacher_auth.php';
 
 header('Content-Type: application/json');
 
@@ -16,9 +17,7 @@ if (!$conn) {
     exit;
 }
 
-session_start();
-$teacher_id = isset($_POST['teacher_id']) ? intval($_POST['teacher_id'])
-            : (isset($_SESSION['admin_id']) ? intval($_SESSION['admin_id']) : 1);
+$teacher_id = requireTeacherId();
 
 $student_name    = isset($_POST['student_name'])    ? trim($_POST['student_name'])    : '';
 $parent_name     = isset($_POST['parent_name'])     ? trim($_POST['parent_name'])     : '';

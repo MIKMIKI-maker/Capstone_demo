@@ -218,11 +218,10 @@
 
       /* Auto-fill saved credentials */
       var savedEmail = localStorage.getItem('sped_remember_email');
-      var savedPass  = localStorage.getItem('sped_remember_pass');
       if (savedEmail) {
         document.getElementById('admin-email').value    = savedEmail;
-        document.getElementById('admin-password').value = savedPass || '';
       }
+      localStorage.removeItem('sped_remember_pass');
       
       /* Ripple effect on buttons only */
       document.querySelectorAll(".admin-btn-signin, .admin-modal-got-it, .admin-signout-btn").forEach(function (btn) {
@@ -278,9 +277,9 @@
               var jsonData = JSON.parse(data);
               
               if (jsonData.status === "success") {
-                /* Always save credentials for auto-fill next visit */
+                /* Remember only the email; never store plaintext passwords. */
                 localStorage.setItem('sped_remember_email', email);
-                localStorage.setItem('sped_remember_pass',  password);
+                localStorage.removeItem('sped_remember_pass');
 
                 /* Clear all old session data */
                 sessionStorage.clear();
@@ -339,7 +338,12 @@
           })
           .catch(function(error) {
             var errEl = document.getElementById('login-error-msg');
-            if (errEl) { errEl.textContent = 'An error occurred. Please try again.'; errEl.style.display = 'block'; }
+            if (errEl) {
+              errEl.textContent = window.location.protocol === 'file:'
+                ? 'Please open this page through a PHP server, not directly as a file. Start Apache/PHP, then open the site using an http://localhost URL.'
+                : 'Unable to reach the login server. Please make sure Apache/PHP and MySQL are running, then try again.';
+              errEl.style.display = 'block';
+            }
             console.error("Error:", error);
           });
         });

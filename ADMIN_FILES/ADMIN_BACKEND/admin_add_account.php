@@ -14,6 +14,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $lastName  = isset($_POST['enter_last_name'])  ? trim($_POST['enter_last_name'])  : '';
     $email = isset($_POST['enter_email_address']) ? trim($_POST['enter_email_address']) : '';
     $role = isset($_POST['enter_role']) ? trim($_POST['enter_role']) : 'teacher';
+    if (!in_array($role, ['admin', 'teacher', 'student'], true)) {
+        echo json_encode(['success' => false, 'message' => 'Invalid account role']);
+        $conn->close();
+        exit;
+    }
     $condition = '';
     if (isset($_POST['admin_add_cond_select'])) {
         $condition = trim($_POST['admin_add_cond_select']);
@@ -32,6 +37,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     if ($firstName === '' || $email === '') {
         echo json_encode(['success' => false, 'message' => 'First name and email are required']);
+        $conn->close();
+        exit;
+    }
+
+    if (mb_strlen($firstName) > 100 || mb_strlen($lastName) > 100 || mb_strlen($email) > 255) {
+        echo json_encode(['success' => false, 'message' => 'Name or email is too long']);
         $conn->close();
         exit;
     }

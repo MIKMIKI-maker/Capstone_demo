@@ -272,6 +272,23 @@
                     </div>
                 </div><!-- /teacher-progress-grid -->
             </div><!-- /teacher-progress-body -->
+            <article class="teacher-learner-print-report" id="learnerPrintReport">
+                <header class="learner-print-header">
+                    <img src="../ASSETS/School_logo.png" alt="School logo">
+                    <div><h1>Mamatid Elementary School</h1><p>Special Education Program &middot; SPED ALM</p><p>Individual Learner Grading Report</p></div>
+                </header>
+                <div class="learner-print-meta"><span>Grading period: ____________________</span><span>Date: <strong id="learnerPrintDate"></strong></span></div>
+                <table class="learner-print-identity"><tr><th>Learner</th><td id="learnerPrintName"></td><th>Teacher</th><td id="learnerPrintTeacher"></td></tr><tr><th>Grade level</th><td id="learnerPrintGrade"></td><th>Learning profile</th><td id="learnerPrintCondition">Not recorded</td></tr></table>
+                <h2>1. Grading Summary</h2>
+                <div class="learner-print-summary"><div><span>Overall progress</span><strong id="learnerPrintProgress"></strong></div><div><span>Average score</span><strong id="learnerPrintAverage"></strong></div><div><span>Activities completed</span><strong id="learnerPrintCompleted"></strong></div><div><span>Current mastery</span><strong id="learnerPrintMastery"></strong></div></div>
+                <p class="learner-print-basis"><strong>Basis of grading:</strong> Average of recorded activity scores, completion evidence, teacher observations, and the learner's response to individualized support.</p>
+                <h2>2. Performance Evidence</h2>
+                <table class="learner-print-activities"><thead><tr><th>Learning activity</th><th>Learning area</th><th>Date</th><th>Score</th><th>Result</th></tr></thead><tbody id="learnerPrintActivities"></tbody></table>
+                <h2>3. Teacher Comments and Support Plan</h2>
+                <div class="learner-print-notes" id="learnerPrintNotes">No teacher notes recorded.</div>
+                <div class="learner-print-support"><strong>Recommended support:</strong> Continue explicit instruction, visual supports, guided practice, and regular progress monitoring aligned with the learner's IEP goals.</div>
+                <footer class="learner-print-signatures"><div>____________________________<br><strong>SPED Teacher</strong></div><div>____________________________<br><strong>Parent / Guardian</strong></div><div>____________________________<br><strong>School Coordinator</strong></div></footer>
+            </article>
         </div><!-- /teacher-main-content -->
     </div>
 
@@ -304,6 +321,7 @@
         const TEACHER_ID     = parseInt(sessionStorage.getItem('teacher_id') || '1');
         let   currentStudentId = null;
         let   refreshTimer     = null;
+        let   currentLearnerData = null;
         const CIRC             = 238.76; // 2π × r(38)
 
         // ── Sidebar ───────────────────────────────────────────────
@@ -349,8 +367,8 @@
                 refreshTimer = setInterval(loadLearnerProgress, 30000);
             }
 
-            // PDF button
-            document.querySelector('.btn-pdf')?.addEventListener('click', () => window.print());
+            // PDF button uses the browser's print-to-PDF dialog.
+            document.querySelector('.btn-pdf')?.addEventListener('click', printLearnerProgress);
 
             // Note modal wiring
             document.querySelector('.btn-add-note')?.addEventListener('click', openNoteModal);
@@ -361,6 +379,49 @@
                 if (e.target === this) closeNoteModal();
             });
         });
+
+        function printLearnerProgress() {
+            if (!currentLearnerData) { alert('Please wait for the learner report to finish loading.'); return; }
+            const previousTitle = document.title;
+            const studentName = (document.getElementById('student-name-display')?.textContent || 'Learner').trim();
+            populateLearnerPrintReport(currentLearnerData);
+            document.body.classList.add('learner-report-print');
+            document.title = studentName + ' - Learner Progress - ' + new Date().toISOString().slice(0, 10);
+            const restoreTitle = function () {
+                document.title = previousTitle;
+                document.body.classList.remove('learner-report-print');
+                window.removeEventListener('afterprint', restoreTitle);
+            };
+            window.addEventListener('afterprint', restoreTitle);
+            window.print();
+        }
+
+        function populateLearnerPrintReport(data) {
+            const average = Number(data.average_score) || 0;
+            const completed = Number(data.activities_completed) || 0;
+            const total = Number(data.total_activities) || 0;
+            const mastery = average >= 80 ? 'Mastered' : average >= 60 ? 'Developing' : 'Beginning';
+            document.getElementById('learnerPrintDate').textContent = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+            document.getElementById('learnerPrintName').textContent = data.student_name || 'Not recorded';
+            document.getElementById('learnerPrintTeacher').textContent = sessionStorage.getItem('teacher_name') || 'SPED Teacher';
+            document.getElementById('learnerPrintGrade').textContent = data.grade_level || 'Not recorded';
+            document.getElementById('learnerPrintCondition').textContent = data.disability_type || 'Not recorded';
+            document.getElementById('learnerPrintProgress').textContent = (data.overall_progress || 0) + '%';
+            document.getElementById('learnerPrintAverage').textContent = average ? average + '%' : 'No score yet';
+            document.getElementById('learnerPrintCompleted').textContent = completed + ' of ' + total;
+            document.getElementById('learnerPrintMastery').textContent = mastery;
+            document.getElementById('learnerPrintActivities').innerHTML = (data.activities || []).map(function(activity) {
+                const score = activity.is_finalized && activity.finalized_score !== null ? activity.finalized_score : activity.score;
+                const result = activity.status === 'completed' ? (score >= 80 ? 'Meets standard' : 'Needs support') : 'Not completed';
+                return '<tr><td>' + escHtml(activity.name) + '</td><td>' + escHtml(activity.subject || 'Learning activity') + '</td><td>' + escHtml(activity.date || '—') + '</td><td>' + (score === null || score === undefined ? '—' : score + '%') + '</td><td>' + result + '</td></tr>';
+            }).join('') || '<tr><td colspan="5">No activity evidence recorded.</td></tr>';
+            const notes = (data.notes || []).map(function(note) { return note.note || ''; }).filter(Boolean);
+            document.getElementById('learnerPrintNotes').textContent = notes.length ? notes.join('\n\n') : 'No teacher notes recorded.';
+        }
+
+        function escHtml(value) {
+            return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
 
         // ── Fetch & render ────────────────────────────────────────
         function loadLearnerProgress() {
@@ -383,6 +444,7 @@
                         return;
                     }
                     clearLoadError();
+                    currentLearnerData = data;
                     if (data.student_name) {
                         document.getElementById('student-name-display').textContent = data.student_name;
                     }

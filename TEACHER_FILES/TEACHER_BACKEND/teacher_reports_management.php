@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/teacher_auth.php';
 
 header('Content-Type: application/json');
 
@@ -15,7 +16,7 @@ if (!in_array($_SERVER['REQUEST_METHOD'], ['POST', 'GET'])) {
 }
 
 $action = isset($_REQUEST['action']) ? trim($_REQUEST['action']) : '';
-$teacher_id = isset($_REQUEST['teacher_id']) ? intval($_REQUEST['teacher_id']) : 1;
+$teacher_id = requireTeacherId();
 
 switch($action) {
     case 'generate_report':

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/teacher_auth.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/db.php';
 header('Content-Type: application/json');
 
@@ -8,7 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$teacher_id = isset($_POST['teacher_id']) ? intval($_POST['teacher_id']) : 0;
+$teacher_id = requireTeacherId();
 $photo      = isset($_POST['photo']) ? $_POST['photo'] : '';
 
 if (!$teacher_id) {

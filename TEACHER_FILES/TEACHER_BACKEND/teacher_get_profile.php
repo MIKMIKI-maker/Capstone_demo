@@ -5,12 +5,12 @@ session_start();
 
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/db.php';
+require_once __DIR__ . '/teacher_auth.php';
 
 header('Content-Type: application/json');
 
 // Get teacher_id from POST or SESSION
-$teacher_id = isset($_POST['teacher_id']) ? intval($_POST['teacher_id']) : 
-              (isset($_SESSION['teacher_id']) ? intval($_SESSION['teacher_id']) : 1);
+$teacher_id = requireTeacherId();
 
 $conn = getTeacherDatabaseConnection();
 $admin_conn = getDatabaseConnection();
