@@ -98,10 +98,6 @@
                     <p class="teacher-page-sub">Track learner progress and generate grading reports</p>
                 </div>
                 <div class="teacher-topbar-actions">
-                    <button class="btn-action outline" id="reportPdfBtn" type="button"><i class="fa-solid fa-file-pdf"></i> PDF</button>
-                    <button class="btn-action outline" id="reportPrintBtn" type="button"><i class="fa-solid fa-print"></i> Print</button>
-                    <button class="btn-action outline" type="button"><i class="fa-solid fa-file-excel"></i>
-                        Export</button>
                     <a class="teacher-notif-btn" href="Teacher_notif.html">
                         <i class="fa-regular fa-bell"></i>
                         <span class="teacher-notif-badge"></span>
@@ -521,8 +517,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadSidebar();
             loadReports();
-            document.getElementById('reportPdfBtn').addEventListener('click', printClassReport);
-            document.getElementById('reportPrintBtn').addEventListener('click', printClassReport);
             document.getElementById('gradingStudent').addEventListener('change', function() { if (this.value) openGradingReport(this.value); });
             document.getElementById('saveGradingReport').addEventListener('click', saveGradingReport);
             document.getElementById('printGradingReport').addEventListener('click', printGradingReport);

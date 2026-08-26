@@ -51,7 +51,16 @@ if ($single_id) {
     $stmt = $conn->prepare(
         "SELECT ta.id, ta.activity_title, ta.activity_description,
                 ta.activity_type, ta.subject, ta.grade_level,
-                ta.difficulty, ta.status, ta.created_at
+                ta.difficulty, ta.status, ta.created_at,
+                (
+                    SELECT GROUP_CONCAT(
+                        CONCAT(s.student_name, '|', COALESCE(NULLIF(s.disability_type, ''), 'General'))
+                        ORDER BY s.student_name SEPARATOR ', '
+                    )
+                    FROM activity_assignments aa
+                    INNER JOIN students s ON s.id = aa.student_id
+                    WHERE aa.activity_id = ta.id
+                ) AS learner
          FROM teacher_activities ta
          WHERE ta.teacher_id = ?
            AND ta.id IN (
@@ -81,6 +90,7 @@ if ($single_id) {
             'difficulty'    => $row['difficulty'],
             'status'        => $row['status'],
             'created_at'    => $row['created_at']
+            ,'learner'      => $row['learner'] ?: 'ALL'
         ];
     }
     $stmt->close();

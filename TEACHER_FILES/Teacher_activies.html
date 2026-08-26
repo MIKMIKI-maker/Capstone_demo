@@ -241,6 +241,7 @@
 
             var rawDrafts    = getLocalDrafts();
             var rawPublished = getLocalPublished();
+            var _tid = String(sessionStorage.getItem('teacher_id') || '');
 
             var localDrafts = rawDrafts.map(function(d) {
                 return {
@@ -267,11 +268,14 @@
                     status:         'published',
                     grading:        p.grading       || '',
                     deadline:       p.deadline      || '',
+                    teacherId:      String(p.teacherId || ''),
                     templateFile:   '',
                     db_activity_id: p.db_activity_id || null,
                     thumbnail:      p.thumbnail      || null,
                     _isLocal:       true
                 };
+            }).filter(function(p) {
+                return p.teacherId === _tid;
             });
 
             // DB integer IDs already represented by local items
@@ -289,11 +293,31 @@
                         id:       a.id,
                         title:    a.title         || 'Untitled',
                         type:     a.activity_type || a.subject || '—',
-                        learner:  '—',
+                        learner:  a.learner || 'ALL',
                         savedAt:  a.created_at    || '',
                         status:   (a.status || '').toLowerCase() === 'draft' ? 'draft' : 'published',
                         _isLocal: false
                     };
+                });
+
+                // Published activities are server-owned. Drop legacy local copies
+                // that have no matching activity in the current teacher's backend list.
+                localPublished = localPublished.filter(function(localItem) {
+                    return backend.some(function(row) {
+                        return String(row.id) === String(localItem.db_activity_id);
+                    });
+                });
+
+                // Replace legacy local-storage labels such as student1|ID with
+                // the current learner names resolved by the backend.
+                localPublished.forEach(function(localItem) {
+                    var matchingRow = backend.find(function(row) {
+                        return String(row.id) === String(localItem.db_activity_id)
+                            || (!localItem.db_activity_id && row.title.trim().toLowerCase() === localItem.title.trim().toLowerCase());
+                    });
+                    if (matchingRow && matchingRow.learner) {
+                        localItem.learner = matchingRow.learner;
+                    }
                 });
 
                 // Exclude backend rows:
@@ -313,7 +337,6 @@
                 loadUploads();
             }
 
-            var _tid = sessionStorage.getItem('teacher_id') || '';
             fetch('TEACHER_BACKEND/teacher_list_activities.php?teacher_id=' + encodeURIComponent(_tid))
                 .then(function(r) { return r.json(); })
                 .then(_merge)
