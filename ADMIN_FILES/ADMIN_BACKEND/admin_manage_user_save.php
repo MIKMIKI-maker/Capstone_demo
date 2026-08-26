@@ -40,13 +40,15 @@ if (!$user_id) {
 }
 
 // Get the user's role before updating
-$role_check = $conn->prepare("SELECT role FROM admin_accounts WHERE id = ?");
+$role_check = $conn->prepare("SELECT role, assigned_teacher_id FROM admin_accounts WHERE id = ?");
 $role_check->bind_param("i", $user_id);
 $role_check->execute();
 $role_result = $role_check->get_result();
 $user_role = '';
+$previous_assigned_teacher_id = 0;
 if ($role_row = $role_result->fetch_assoc()) {
     $user_role = $role_row['role'];
+    $previous_assigned_teacher_id = (int)($role_row['assigned_teacher_id'] ?? 0);
 }
 $role_check->close();
 
@@ -65,7 +67,12 @@ if ($stmt->execute()) {
     if ($user_role === 'teacher') {
         syncTeacherAccount($email_address, $first_name, $last_name);
     } elseif ($user_role === 'student') {
-        syncStudentRecord($user_id, trim($full_name), $parent_name_val, $status, $condition_info, $grade_level, $assigned_teacher_id);
+        if (!syncStudentRecord($user_id, trim($full_name), $parent_name_val, $status, $condition_info, $grade_level, $assigned_teacher_id, $previous_assigned_teacher_id)) {
+            echo json_encode(['success' => false, 'message' => 'Student assignment could not be synchronized']);
+            $stmt->close();
+            $conn->close();
+            exit;
+        }
     }
     echo json_encode(['success' => true, 'message' => 'User updated successfully']);
 } else {
@@ -111,7 +118,7 @@ function syncTeacherAccount($email, $firstName, $lastName) {
 }
 
 // Function to sync a student's corrected name/parent name into the teacher-facing students table
-function syncStudentRecord($adminAccountId, $studentName, $parentName, $accountStatus, $condition, $gradeLevel, $assignedTeacherAdminId) {
+function syncStudentRecord($adminAccountId, $studentName, $parentName, $accountStatus, $condition, $gradeLevel, $assignedTeacherAdminId, $previousAssignedTeacherAdminId) {
     require_once __DIR__ . '/../../TEACHER_FILES/TEACHER_BACKEND/db.php';
     $teacher_conn = getTeacherDatabaseConnection();
 
@@ -120,6 +127,25 @@ function syncStudentRecord($adminAccountId, $studentName, $parentName, $accountS
     }
 
     $studentStatus = strtolower($accountStatus) === 'active' ? 'active' : 'inactive';
+
+    // Assignment changes require a fresh enrollment by the newly assigned teacher.
+    if ($assignedTeacherAdminId !== $previousAssignedTeacherAdminId) {
+        $removeStmt = $teacher_conn->prepare("DELETE FROM students WHERE admin_account_id = ?");
+        if (!$removeStmt) {
+            $teacher_conn->close();
+            return false;
+        }
+        $removeStmt->bind_param("i", $adminAccountId);
+        if (!$removeStmt->execute()) {
+            $removeStmt->close();
+            $teacher_conn->close();
+            return false;
+        }
+        $removeStmt->close();
+        $teacher_conn->close();
+        return true;
+    }
+
     $teacherId = 0;
     if ($assignedTeacherAdminId > 0) {
         $teacherLookup = $teacher_conn->prepare(
@@ -139,6 +165,11 @@ function syncStudentRecord($adminAccountId, $studentName, $parentName, $accountS
         }
     }
 
+    if ($assignedTeacherAdminId > 0 && $teacherId <= 0) {
+        $teacher_conn->close();
+        return false;
+    }
+
     if ($teacherId > 0) {
         $stmt = $teacher_conn->prepare(
             "UPDATE students
@@ -154,8 +185,13 @@ function syncStudentRecord($adminAccountId, $studentName, $parentName, $accountS
         );
         $stmt->bind_param("sssssi", $studentName, $parentName, $condition, $gradeLevel, $studentStatus, $adminAccountId);
     }
-    $stmt->execute();
+    if (!$stmt || !$stmt->execute()) {
+        if ($stmt) $stmt->close();
+        $teacher_conn->close();
+        return false;
+    }
+    $updated = $stmt->affected_rows >= 0;
     $stmt->close();
     $teacher_conn->close();
-    return true;
+    return $updated;
 }
