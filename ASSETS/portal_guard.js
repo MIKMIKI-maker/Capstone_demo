@@ -21,13 +21,15 @@
       cache: 'no-store',
       headers: { 'Cache-Control': 'no-cache' }
     }).then(function (response) {
-      if (!response.ok) throw new Error('Session check failed');
-      return response.json();
-    }).then(function (result) {
-      if (!result.authenticated || result.role !== role) goToLogin();
-      return result;
+      return response.json().then(function (result) {
+        if (response.status === 401 || result.authenticated === false) goToLogin();
+        if (!response.ok) throw new Error('Session check temporarily unavailable');
+        if (result.role !== role) goToLogin();
+        return result;
+      });
     }).catch(function () {
-      goToLogin();
+      // A temporary server/network error must not log out an active user.
+      setTimeout(checkSession, 5000);
     });
   }
 

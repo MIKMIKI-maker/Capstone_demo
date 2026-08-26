@@ -411,19 +411,12 @@
 
                 // Teacher name + photo
                 if (tid) {
-                  var _fd = new FormData(); _fd.append('teacher_id', tid);
-                  fetch('../TEACHER_FILES/TEACHER_BACKEND/teacher_get_profile.php', { method:'POST', body:_fd })
+                  fetch('STUDENT_BACKEND/student_get_profile.php?admin_account_id=' + encodeURIComponent(_sid))
                     .then(function(r){ return r.json(); })
                     .then(function(td){
-                      if (td.success && td.teacher) {
+                      if (td.success && td.teacher_name) {
                         var el = document.getElementById('dash-teacher-name');
-                        if (el && td.teacher.name) el.textContent = td.teacher.name;
-                        if (td.teacher.profilePhoto) {
-                          var tPhoto = document.getElementById('dash-teacher-photo');
-                          var tAvatar = document.getElementById('dash-teacher-avatar');
-                          if (tPhoto) { tPhoto.src = td.teacher.profilePhoto; tPhoto.style.display = 'block'; }
-                          if (tAvatar) tAvatar.style.display = 'none';
-                        }
+                        if (el) el.textContent = td.teacher_name;
                       }
                     }).catch(function(){});
                 }
@@ -485,6 +478,8 @@
 
       document.addEventListener('visibilitychange', function(){ if (!document.hidden) loadDashboard(); });
       loadDashboard();
+      // Recheck enrollment while the dashboard remains open so assignments appear without relogin.
+      setInterval(function(){ if (!document.hidden) loadDashboard(); }, 10000);
 
     </script>
   </main>

@@ -46,10 +46,19 @@ function getDatabaseConnection() {
     // Safe migrations for existing installs
     $conn->query("ALTER TABLE admin_accounts ADD COLUMN IF NOT EXISTS condition_info VARCHAR(255) AFTER role");
     $conn->query("ALTER TABLE admin_accounts ADD COLUMN IF NOT EXISTS last_login TIMESTAMP NULL DEFAULT NULL AFTER status");
-    $conn->query("ALTER TABLE admin_accounts ADD COLUMN IF NOT EXISTS last_seen TIMESTAMP NULL DEFAULT NULL");
     $conn->query("ALTER TABLE admin_accounts DROP CONSTRAINT IF EXISTS chk_admin_email_domain");
-    $conn->query("ALTER TABLE admin_accounts ADD COLUMN IF NOT EXISTS assigned_teacher_id INT DEFAULT NULL AFTER condition_info");
-    $conn->query("ALTER TABLE admin_accounts ADD COLUMN IF NOT EXISTS parent_name VARCHAR(255) DEFAULT NULL AFTER assigned_teacher_id");
+    $last_seen_col = $conn->query("SHOW COLUMNS FROM admin_accounts LIKE 'last_seen'");
+    if ($last_seen_col && $last_seen_col->num_rows == 0) {
+        $conn->query("ALTER TABLE admin_accounts ADD COLUMN last_seen TIMESTAMP NULL DEFAULT NULL");
+    }
+    $assigned_teacher_col = $conn->query("SHOW COLUMNS FROM admin_accounts LIKE 'assigned_teacher_id'");
+    if ($assigned_teacher_col && $assigned_teacher_col->num_rows == 0) {
+        $conn->query("ALTER TABLE admin_accounts ADD COLUMN assigned_teacher_id INT DEFAULT NULL AFTER condition_info");
+    }
+    $parent_name_col = $conn->query("SHOW COLUMNS FROM admin_accounts LIKE 'parent_name'");
+    if ($parent_name_col && $parent_name_col->num_rows == 0) {
+        $conn->query("ALTER TABLE admin_accounts ADD COLUMN parent_name VARCHAR(255) DEFAULT NULL AFTER assigned_teacher_id");
+    }
     // profile_photo — MySQL 5.7 compatible migration (IF NOT EXISTS not supported before MySQL 8)
     $pp_col = $conn->query("SHOW COLUMNS FROM admin_accounts LIKE 'profile_photo'");
     if ($pp_col && $pp_col->num_rows == 0) {

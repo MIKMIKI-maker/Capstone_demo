@@ -13,20 +13,23 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 $adminId = (int)($_SESSION['admin_id'] ?? 0);
 $sessionRole = strtolower(trim((string)($_SESSION['admin_role'] ?? '')));
 if (!$adminId || !$sessionRole) {
+    http_response_code(401);
     echo json_encode(['authenticated' => false]);
     exit;
 }
 
 $conn = getDatabaseConnection();
 if (!$conn) {
-    echo json_encode(['authenticated' => false]);
+    http_response_code(503);
+    echo json_encode(['authenticated' => null, 'message' => 'Database temporarily unavailable']);
     exit;
 }
 
 $stmt = $conn->prepare('SELECT role, status, COALESCE(is_deleted, 0) AS is_deleted FROM admin_accounts WHERE id = ? LIMIT 1');
 if (!$stmt) {
     $conn->close();
-    echo json_encode(['authenticated' => false]);
+    http_response_code(503);
+    echo json_encode(['authenticated' => null, 'message' => 'Session check temporarily unavailable']);
     exit;
 }
 $stmt->bind_param('i', $adminId);
@@ -40,6 +43,10 @@ $authenticated = $row
     && $accountRole === $sessionRole
     && (int)$row['is_deleted'] === 0
     && strtolower((string)$row['status']) === 'active';
+
+if (!$authenticated) {
+    http_response_code(401);
+}
 
 echo json_encode([
     'authenticated' => $authenticated,
