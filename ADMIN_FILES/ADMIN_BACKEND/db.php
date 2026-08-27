@@ -83,6 +83,18 @@ function getDatabaseConnection() {
         }
     }
 
+    // Remote (Clever Cloud etc.) connections are high-latency, so once the schema
+    // has been bootstrapped once, skip re-running ~20 CREATE/ALTER/SHOW COLUMNS
+    // queries on every single request. Local XAMPP is fast enough that this
+    // check isn't worth the complexity, so it always re-verifies the schema.
+    $needsSetup = true;
+    if ($envHost !== false && $envHost !== '') {
+        $tblCheck = $conn->query("SHOW TABLES LIKE 'admin_accounts'");
+        $needsSetup = !($tblCheck && $tblCheck->num_rows > 0);
+    }
+
+    if ($needsSetup) {
+
     // admin_accounts table
     $conn->query("CREATE TABLE IF NOT EXISTS admin_accounts (
         id            INT AUTO_INCREMENT PRIMARY KEY,
@@ -179,6 +191,8 @@ function getDatabaseConnection() {
             VALUES ('teacher@spedalm.edu.ph', '$h_teacher', 'Demo', 'Teacher', 'Mamatid Elementary School', 'teacher', 'active')");
         $conn->query("INSERT IGNORE INTO admin_accounts (admin_email, admin_password, first_name, last_name, school_name, role, status, condition_info)
             VALUES ('student@spedalm.edu.ph', '$h_student', 'Demo', 'Student', 'Mamatid Elementary School', 'student', 'active', 'ADHD')");
+    }
+
     }
 
     return $conn;
