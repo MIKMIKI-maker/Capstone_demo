@@ -21,6 +21,7 @@ function requireAdminSession() {
 
 function getDatabaseConnection() {
     $conn = null;
+    $last_error = '';
 
     // Listahan ng mga posibleng connection paths sa Linux/Docker containers
     $attempts = [
@@ -40,11 +41,21 @@ function getDatabaseConnection() {
         if (!$test_conn->connect_error) {
             $conn = $test_conn;
             break;
+        } else {
+            $last_error = $test_conn->connect_error;
         }
     }
 
     if (!$conn) {
-        return null;
+        // I-catch at ipakita sa JSON response ang eksaktong error kung bakit ayaw kumonekta
+        if (!headers_sent()) {
+            header('Content-Type: application/json');
+        }
+        echo json_encode([
+            'status' => 'error', 
+            'message' => 'Database connection failed: ' . ($last_error ?: 'Unable to reach MySQL server.')
+        ]);
+        exit;
     }
 
     // 2. I-create ang database kung wala pa
@@ -52,8 +63,15 @@ function getDatabaseConnection() {
     
     // 3. I-select ang database matapos itong magawa
     if (!$conn->select_db("spedalm_db")) { 
+        if (!headers_sent()) {
+            header('Content-Type: application/json');
+        }
+        echo json_encode([
+            'status' => 'error', 
+            'message' => 'Select DB failed: ' . $conn->error
+        ]);
         $conn->close(); 
-        return null; 
+        exit; 
     }
 
     // admin_accounts table
