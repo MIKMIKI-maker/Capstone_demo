@@ -1,44 +1,17 @@
 <?php
 ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
-/* 
-set_error_handler(function($severity, $message, $file, $line) {
-    ...
-});
-
-register_shutdown_function(function() {
-    ...
-});
-*/
 
 ini_set('session.cookie_httponly', '1');
 ini_set('session.cookie_samesite', 'Lax');
 if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ini_set('session.cookie_secure', '1');
 session_start();
+
 require_once __DIR__ . '/db.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
-
-set_error_handler(function($severity, $message, $file, $line) {
-    http_response_code(500);
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'A server error occurred. Please try again.'
-    ]);
-    exit;
-});
-
-register_shutdown_function(function() {
-    $err = error_get_last();
-    if ($err && in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
-        http_response_code(500);
-        echo json_encode([
-            'status' => 'error',
-            'message' => 'A server error occurred. Please try again.'
-        ]);
-    }
-});
 
 // Function to sync teacher account to teacher_accounts table
 function syncTeacherAccount($admin_id, $email, $first_name, $last_name) {
