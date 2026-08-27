@@ -608,6 +608,46 @@ body {
   }
 }
 
+@media (max-width: 480px) {
+  .student-greeting {
+    font-size: 22px;
+  }
+
+  .student-greeting-star {
+    font-size: 32px;
+  }
+
+  .student-notif-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+
+  .student-topbar {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .student-stories-row {
+    overflow-x: auto;
+    padding-bottom: 6px;
+  }
+
+  .student-story-bubble {
+    flex-shrink: 0;
+  }
+
+  .student-pcard-avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 16px;
+  }
+
+  .student-progress-score {
+    font-size: 26px;
+  }
+}
+
 
 /* ============================================================
    ACCESSIBILITY (ASD-friendly)

@@ -522,3 +522,30 @@ body {
     font-size: 20px;
   }
 }
+
+@media (max-width: 480px) {
+  .admin-stat-card {
+    padding: 20px 16px;
+    gap: 14px;
+  }
+
+  .admin-stat-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+  }
+
+  .admin-stat-number {
+    font-size: 26px;
+  }
+
+  .admin-panel {
+    padding: 18px 16px;
+  }
+
+  .admin-nav-item {
+    min-width: 80px;
+    font-size: 11px;
+    padding: 7px 8px;
+  }
+}
