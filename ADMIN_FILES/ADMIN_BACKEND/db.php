@@ -20,7 +20,7 @@ function requireAdminSession() {
 }
 
 function getDatabaseConnection() {
-    $conn = new mysqli("127.0.0.1", "root", "", "", 3306);
+    $conn = new mysqli("127.0.0.1", "root", "", "spedalm_db", 3306);
     if ($conn->connect_error) { return null; }
 
     $conn->query("CREATE DATABASE IF NOT EXISTS `spedalm_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
