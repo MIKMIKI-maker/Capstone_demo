@@ -592,7 +592,20 @@ body {
     min-height: 100vh;
   }
 
+  /* Keep just the logo/brand as a compact blue header strip instead of
+     hiding the whole left panel — the hero text, feature cards, children
+     illustration, and footer don't fit on a phone so those stay hidden. */
   .admin-left-panel {
+    height: auto;
+    width: 100%;
+    padding: 20px 24px;
+  }
+
+  .admin-hero-text,
+  .admin-features,
+  .admin-children-img,
+  .admin-left-bottom,
+  .admin-deco-circle {
     display: none;
   }
 
