@@ -13,38 +13,52 @@ require_once __DIR__ . '/db.php';
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
 
-// Function to sync teacher account to teacher_accounts table
-function syncTeacherAccount($admin_id, $email, $first_name, $last_name) {
+// Function to sync teacher account to teacher_accounts table.
+// Returns the teacher_accounts.id (0 on failure) so the caller doesn't need
+// a second, separate lookup connection to find it (that separate lookup was
+// unreliable and left $_SESSION['teacher_id'] unset after login).
+function syncTeacherAccount($email, $first_name, $last_name) {
     $teacher_db_path = __DIR__ . '/../../TEACHER_FILES/TEACHER_BACKEND/db.php';
-    if (!file_exists($teacher_db_path)) return false;
-    
+    if (!file_exists($teacher_db_path)) return 0;
+
     require_once $teacher_db_path;
-    if (!function_exists('getTeacherDatabaseConnection')) return false;
+    if (!function_exists('getTeacherDatabaseConnection')) return 0;
 
     $teacher_conn = getTeacherDatabaseConnection();
-    if (!$teacher_conn) return false;
-    
+    if (!$teacher_conn) return 0;
+
+    $teacher_id = 0;
     $check_stmt = $teacher_conn->prepare("SELECT id FROM teacher_accounts WHERE teacher_email = ?");
-    $check_stmt->bind_param("s", $email);
-    $check_stmt->execute();
-    $check_result = $check_stmt->get_result();
-    
-    if ($check_result->num_rows == 0) {
-        $insert_stmt = $teacher_conn->prepare("INSERT INTO teacher_accounts (teacher_email, teacher_password, first_name, last_name, school_name, status) VALUES (?, ?, ?, ?, 'Mamatid Elementary School', 'active')");
-        $password = password_hash('Teacher@123', PASSWORD_DEFAULT);
-        $insert_stmt->bind_param("ssss", $email, $password, $first_name, $last_name);
-        $insert_stmt->execute();
-        $insert_stmt->close();
-    } else {
-        $update_stmt = $teacher_conn->prepare("UPDATE teacher_accounts SET first_name = ?, last_name = ? WHERE teacher_email = ?");
-        $update_stmt->bind_param("sss", $first_name, $last_name, $email);
-        $update_stmt->execute();
-        $update_stmt->close();
+    if ($check_stmt) {
+        $check_stmt->bind_param("s", $email);
+        $check_stmt->execute();
+        if ($row = $check_stmt->get_result()->fetch_assoc()) {
+            $teacher_id = (int)$row['id'];
+        }
+        $check_stmt->close();
     }
-    
-    $check_stmt->close();
+
+    if ($teacher_id > 0) {
+        $update_stmt = $teacher_conn->prepare("UPDATE teacher_accounts SET first_name = ?, last_name = ? WHERE id = ?");
+        if ($update_stmt) {
+            $update_stmt->bind_param("ssi", $first_name, $last_name, $teacher_id);
+            $update_stmt->execute();
+            $update_stmt->close();
+        }
+    } else {
+        $insert_stmt = $teacher_conn->prepare("INSERT INTO teacher_accounts (teacher_email, teacher_password, first_name, last_name, school_name, status) VALUES (?, ?, ?, ?, 'Mamatid Elementary School', 'active')");
+        if ($insert_stmt) {
+            $password = password_hash('Teacher@123', PASSWORD_DEFAULT);
+            $insert_stmt->bind_param("ssss", $email, $password, $first_name, $last_name);
+            if ($insert_stmt->execute()) {
+                $teacher_id = (int)$teacher_conn->insert_id;
+            }
+            $insert_stmt->close();
+        }
+    }
+
     $teacher_conn->close();
-    return true;
+    return $teacher_id;
 }
 
 // Function to get student record from teacher DB
@@ -86,32 +100,6 @@ function getStudentRecord($admin_account_id, $full_name = '') {
 
     $conn->close();
     return $row ?: null;
-}
-
-// Function to get teacher_id from teacher_accounts
-function getTeacherIdByEmail($email) {
-    $teacher_db_path = __DIR__ . '/../../TEACHER_FILES/TEACHER_BACKEND/db.php';
-    if (!file_exists($teacher_db_path)) return null;
-
-    require_once $teacher_db_path;
-    if (!function_exists('getTeacherDatabaseConnection')) return null;
-
-    $teacher_conn = getTeacherDatabaseConnection();
-    if (!$teacher_conn) return null;
-    
-    $stmt = $teacher_conn->prepare("SELECT id FROM teacher_accounts WHERE teacher_email = ?");
-    $stmt->bind_param("s", $email);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    $teacher_id = null;
-    if ($row = $result->fetch_assoc()) {
-        $teacher_id = $row['id'];
-    }
-    
-    $stmt->close();
-    $teacher_conn->close();
-    return $teacher_id;
 }
 
 $conn = getDatabaseConnection();
@@ -200,8 +188,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             $teacher_section = '';
             if ($row['role'] === 'teacher') {
-                syncTeacherAccount($row['id'], $email, $row['first_name'], $row['last_name']);
-                $teacher_id = getTeacherIdByEmail($email);
+                $teacher_id = syncTeacherAccount($email, $row['first_name'], $row['last_name']);
                 $_SESSION['teacher_id'] = $teacher_id;
                 $cstmt = $conn->prepare("SELECT condition_info FROM admin_accounts WHERE id = ?");
                 if ($cstmt) { $cstmt->bind_param("i", $row['id']); $cstmt->execute(); $crow = $cstmt->get_result()->fetch_assoc(); $cstmt->close(); $teacher_section = $crow['condition_info'] ?? ''; }
