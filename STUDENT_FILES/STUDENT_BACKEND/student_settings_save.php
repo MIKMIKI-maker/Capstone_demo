@@ -10,25 +10,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$admin_account_id = requireStudentSession();
-$first_name = isset($_POST['first_name']) ? trim($_POST['first_name']) : '';
-$last_name = isset($_POST['last_name']) ? trim($_POST['last_name']) : '';
-
-$conn = getDatabaseConnection();
-if (!$conn) {
-    echo json_encode(['success' => false, 'message' => 'Database connection failed']);
-    exit;
-}
-
-$stmt = $conn->prepare("UPDATE admin_accounts SET first_name = ?, last_name = ? WHERE id = ? AND role = 'student'");
-$stmt->bind_param("ssi", $first_name, $last_name, $admin_account_id);
-
-if ($stmt->execute()) {
-    echo json_encode(['success' => true, 'message' => 'Profile updated successfully']);
-} else {
-    echo json_encode(['success' => false, 'message' => 'Failed to update profile: ' . $stmt->error]);
-}
-
-$stmt->close();
-$conn->close();
+// First/last name are admin/teacher-assigned and locked on the student side
+// (Student_settings.html shows them read-only) — this endpoint no longer
+// accepts changes to them, so a direct POST can't bypass that lock.
+requireStudentSession();
+echo json_encode(['success' => true, 'message' => 'No editable profile fields to update']);
 ?>

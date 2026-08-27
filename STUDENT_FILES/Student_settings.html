@@ -121,16 +121,14 @@
         <div class="student-card-title">My Profile</div>
         <div class="student-form-grid">
           <div class="student-form-group">
-            <label>First Name</label>
-            <input name="first_name" placeholder="First name" type="text" />
+            <label>First Name <span style="font-size:11px;color:#94a3b8;font-weight:400;">(Set by your teacher/admin)</span></label>
+            <input name="first_name" placeholder="—" type="text"
+              readonly style="pointer-events:none;background:#f1f5f9;color:#64748b;cursor:default;border-color:#e2e8f0;" />
           </div>
           <div class="student-form-group">
-            <label>Last Name</label>
-            <input name="last_name" placeholder="Last name" type="text" />
-          </div>
-          <div class="student-form-group student-full">
-            <label>Nickname</label>
-            <input name="nickname" placeholder="Nickname" type="text" />
+            <label>Last Name <span style="font-size:11px;color:#94a3b8;font-weight:400;">(Set by your teacher/admin)</span></label>
+            <input name="last_name" placeholder="—" type="text"
+              readonly style="pointer-events:none;background:#f1f5f9;color:#64748b;cursor:default;border-color:#e2e8f0;" />
           </div>
           <div class="student-form-group student-full">
             <label>Parent/Guardian Full Name <span style="font-size:11px;color:#94a3b8;font-weight:400;">(Set by your teacher)</span></label>
@@ -300,7 +298,6 @@
 
       if (p.firstName) document.querySelector('[name="first_name"]').value = p.firstName;
       if (p.lastName)  document.querySelector('[name="last_name"]').value  = p.lastName;
-      if (p.nickname)  document.querySelector('[name="nickname"]').value   = p.nickname;
       if (p.parentName) { var _pf = document.getElementById('field-parent-name'); if (_pf) _pf.value = p.parentName; }
       if (p.notifNewActivity !== undefined) document.querySelector('[name="checkbox_input"]').checked   = p.notifNewActivity;
       if (p.notifProgress    !== undefined) document.querySelector('[name="checkbox_input_2"]').checked = p.notifProgress;
@@ -314,11 +311,11 @@
           .then(function(r){ return r.json(); })
           .then(function(d){
             if (!d.success) return;
-            // Pre-fill name fields from DB if localStorage is empty
+            // Name is admin/teacher-set and read-only here — always reflect the DB value.
             var fn = document.querySelector('[name="first_name"]');
             var ln = document.querySelector('[name="last_name"]');
-            if (fn && !fn.value && d.first_name) fn.value = d.first_name;
-            if (ln && !ln.value && d.last_name)  ln.value = d.last_name;
+            if (fn) fn.value = d.first_name || '';
+            if (ln) ln.value = d.last_name || '';
             // Always fill parent name / assigned teacher from DB (admin/teacher-set, read-only)
             var pf = document.getElementById('field-parent-name');
             if (pf && d.parent_name) pf.value = d.parent_name;
@@ -358,7 +355,6 @@
 
       p.firstName        = document.querySelector('[name="first_name"]').value.trim();
       p.lastName         = document.querySelector('[name="last_name"]').value.trim();
-      p.nickname         = document.querySelector('[name="nickname"]').value.trim();
       p.notifNewActivity = document.querySelector('[name="checkbox_input"]').checked;
       p.notifProgress    = document.querySelector('[name="checkbox_input_2"]').checked;
       var photoToSave = _pendingPhoto || null;
@@ -377,22 +373,9 @@
         }
       }
 
-      // Persist name to the database so teacher/admin views stay accurate
-      var _nsid = sessionStorage.getItem('student_id') || '';
-      if (_nsid) {
-        var nameFd = new FormData();
-        nameFd.append('admin_account_id', _nsid);
-        nameFd.append('first_name', p.firstName || '');
-        nameFd.append('last_name', p.lastName || '');
-        fetch('STUDENT_BACKEND/student_settings_save.php', { method: 'POST', body: nameFd })
-          .then(function (r) { return r.json(); })
-          .then(function (d) {
-            showToast(d && d.success ? '✅ Changes saved!' : '⚠️ Saved locally, but failed to sync to server');
-          })
-          .catch(function () { showToast('⚠️ Saved locally, but failed to sync to server'); });
-      } else {
-        showToast('✅ Changes saved!');
-      }
+      // Name is admin/teacher-locked (not student-editable), so there's nothing
+      // left here that needs syncing to the server beyond the photo above.
+      showToast('✅ Changes saved!');
 
       applyProfileDisplay(p);
       // Update sidebar name live

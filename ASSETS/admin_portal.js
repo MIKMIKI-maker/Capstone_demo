@@ -38,8 +38,74 @@
       });
   }
 
+  // Every ADMIN_FILES page defines its own .admin-sidebar mobile CSS (the
+  // sidebar collapses into a wrapped horizontal nav bar and hides
+  // .admin-sidebar-footer — which hides the Sign Out button). Overriding it
+  // here, once, turns the sidebar into a proper off-canvas hamburger menu on
+  // every admin page instead of duplicating this in 5 separate CSS files.
+  function applySidebarToggleStyle() {
+    if (document.getElementById('admin-sidebar-toggle-style')) return;
+    var style = document.createElement('style');
+    style.id = 'admin-sidebar-toggle-style';
+    style.textContent =
+      '.admin-hamburger-btn{display:none;position:fixed;top:16px;left:16px;z-index:1002;width:44px;height:44px;border-radius:12px;background:#1E3A8A;color:#fff;border:none;align-items:center;justify-content:center;font-size:18px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2)}' +
+      '.admin-sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:1000}' +
+      '.admin-sidebar-overlay.show{display:block}' +
+      '@media (max-width:768px){' +
+      '.admin-hamburger-btn{display:flex !important}' +
+      '.admin-sidebar{position:fixed !important;top:0 !important;left:0 !important;transform:translateX(-100%) !important;width:260px !important;min-width:260px !important;height:100vh !important;flex-direction:column !important;flex-wrap:nowrap !important;padding:0 !important;z-index:1001 !important;transition:transform .25s ease !important;overflow-y:auto !important}' +
+      '.admin-sidebar.admin-sidebar-open{transform:translateX(0) !important}' +
+      '.admin-sidebar-logo{padding:26px 20px 22px !important;margin-bottom:0 !important}' +
+      '.admin-sidebar-nav{flex-direction:column !important;flex-wrap:nowrap !important;padding:20px 12px !important;width:auto !important;flex:1 !important}' +
+      '.admin-nav-item{flex:none !important;min-width:0 !important;justify-content:flex-start !important;font-size:14px !important;padding:13px 16px !important}' +
+      '.admin-nav-arrow{display:inline-block !important}' +
+      '.admin-sidebar-footer{display:flex !important}' +
+      '.admin-main{width:100% !important}' +
+      '}';
+    document.head.appendChild(style);
+  }
+
+  function setupSidebarToggle() {
+    var sidebar = document.querySelector('.admin-sidebar');
+    if (!sidebar) return;
+
+    var overlay = document.createElement('div');
+    overlay.className = 'admin-sidebar-overlay';
+    document.body.appendChild(overlay);
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'admin-hamburger-btn';
+    btn.setAttribute('aria-label', 'Toggle menu');
+    btn.innerHTML = '<i class="fa-solid fa-bars"></i>';
+    document.body.appendChild(btn);
+
+    function closeSidebar() {
+      sidebar.classList.remove('admin-sidebar-open');
+      overlay.classList.remove('show');
+    }
+    function openSidebar() {
+      sidebar.classList.add('admin-sidebar-open');
+      overlay.classList.add('show');
+    }
+
+    btn.addEventListener('click', function () {
+      if (sidebar.classList.contains('admin-sidebar-open')) closeSidebar();
+      else openSidebar();
+    });
+    overlay.addEventListener('click', closeSidebar);
+    sidebar.querySelectorAll('.admin-nav-item').forEach(function (item) {
+      item.addEventListener('click', closeSidebar);
+    });
+    window.addEventListener('resize', function () {
+      if (window.innerWidth > 768) closeSidebar();
+    });
+  }
+
   function start() {
     applyNotificationStyle();
+    applySidebarToggleStyle();
+    setupSidebarToggle();
     updateBadge();
     window.setInterval(updateBadge, 30000);
   }
