@@ -12,10 +12,13 @@ RUN apt-get update && apt-get install -y \
     supervisor \
     && a2enmod rewrite \
     && rm -rf /var/www/html/* \
-    && mkdir -p /var/www/html /var/run/mysqld \
+    && mkdir -p /var/run/mysqld \
     && chown -R mysql:mysql /var/run/mysqld /var/lib/mysql \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Kinokopya ang LAHAT ng project files diretso sa root ng Apache server
+COPY . /var/www/html/
 
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
