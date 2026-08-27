@@ -87,6 +87,8 @@ function getDatabaseConnection() {
     // Safe migrations for existing installs
     $conn->query("ALTER TABLE admin_accounts ADD COLUMN IF NOT EXISTS condition_info VARCHAR(255) AFTER role");
     $conn->query("ALTER TABLE admin_accounts ADD COLUMN IF NOT EXISTS last_login TIMESTAMP NULL DEFAULT NULL AFTER status");
+    // Tanggalin ang email domain check constraint
+    $conn->query("ALTER TABLE admin_accounts DROP CHECK chk_admin_email_domain");
     $conn->query("ALTER TABLE admin_accounts DROP CONSTRAINT IF EXISTS chk_admin_email_domain");
     
     $last_seen_col = $conn->query("SHOW COLUMNS FROM admin_accounts LIKE 'last_seen'");
