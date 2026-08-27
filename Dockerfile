@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
     supervisor \
     && a2enmod rewrite \
     && rm -rf /var/www/html/* \
-    && mkdir -p /var/www/html/Capstone_demo /var/run/mysqld \
+    && mkdir -p /var/www/html /var/run/mysqld \
     && chown -R mysql:mysql /var/run/mysqld /var/lib/mysql \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
@@ -21,6 +21,6 @@ COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-WORKDIR /var/www/html/Capstone_demo
+WORKDIR /var/www/html
 EXPOSE 80 3306
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
