@@ -17,7 +17,7 @@ if (!$admin_conn || !$teacher_conn) {
 }
 
 // Get student info from admin_accounts
-$stmt = $admin_conn->prepare("SELECT id, first_name, last_name, admin_email, assigned_teacher_id, COALESCE(profile_photo,'') AS profile_photo FROM admin_accounts WHERE id = ? AND role = 'student' AND status = 'active'");
+$stmt = $admin_conn->prepare("SELECT id, first_name, last_name, admin_email, assigned_teacher_id, COALESCE(phone_number,'') AS phone_number, COALESCE(profile_photo,'') AS profile_photo FROM admin_accounts WHERE id = ? AND role = 'student' AND status = 'active'");
 $stmt->bind_param("i", $admin_account_id);
 $stmt->execute();
 $admin_row = $stmt->get_result()->fetch_assoc();
@@ -69,6 +69,7 @@ $profile = [
     'last_name' => $admin_row['last_name'],
     'full_name' => trim($admin_row['first_name'] . ' ' . $admin_row['last_name']),
     'email' => $admin_row['admin_email'],
+    'phone_number' => $admin_row['phone_number'] ?? '',
     'profile_photo' => $admin_row['profile_photo'] ?? '',
     'student_record_id' => $student_row ? $student_row['id'] : null,
     'disability_type' => $student_row ? $student_row['disability_type'] : '',

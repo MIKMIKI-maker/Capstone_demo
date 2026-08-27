@@ -65,7 +65,7 @@ $stmt->bind_param("ssssssisi", $first_name, $last_name, $email_address, $phone_n
 
 if ($stmt->execute()) {
     if ($user_role === 'teacher') {
-        syncTeacherAccount($email_address, $first_name, $last_name);
+        syncTeacherAccount($email_address, $first_name, $last_name, $phone_number);
     } elseif ($user_role === 'student') {
         if (!syncStudentRecord($user_id, trim($full_name), $parent_name_val, $status, $condition_info, $grade_level, $assigned_teacher_id, $previous_assigned_teacher_id)) {
             echo json_encode(['success' => false, 'message' => 'Student assignment could not be synchronized']);
@@ -83,35 +83,35 @@ $stmt->close();
 $conn->close();
 
 // Function to sync teacher to teacher_accounts table
-function syncTeacherAccount($email, $firstName, $lastName) {
+function syncTeacherAccount($email, $firstName, $lastName, $phone = '') {
     require_once __DIR__ . '/../../TEACHER_FILES/TEACHER_BACKEND/db.php';
     $teacher_conn = getTeacherDatabaseConnection();
-    
+
     if (!$teacher_conn) {
         return false;
     }
-    
+
     // Check if teacher exists
     $check_stmt = $teacher_conn->prepare("SELECT id FROM teacher_accounts WHERE teacher_email = ?");
     $check_stmt->bind_param("s", $email);
     $check_stmt->execute();
     $check_result = $check_stmt->get_result();
-    
+
     if ($check_result->num_rows == 0) {
         // Create new teacher account
-        $insert_stmt = $teacher_conn->prepare("INSERT INTO teacher_accounts (teacher_email, teacher_password, first_name, last_name, school_name, status) VALUES (?, ?, ?, ?, 'Mamatid Elementary School', 'active')");
+        $insert_stmt = $teacher_conn->prepare("INSERT INTO teacher_accounts (teacher_email, teacher_password, first_name, last_name, phone_number, school_name, status) VALUES (?, ?, ?, ?, ?, 'Mamatid Elementary School', 'active')");
         $password = password_hash('Teacher@123', PASSWORD_DEFAULT);
-        $insert_stmt->bind_param("ssss", $email, $password, $firstName, $lastName);
+        $insert_stmt->bind_param("sssss", $email, $password, $firstName, $lastName, $phone);
         $insert_stmt->execute();
         $insert_stmt->close();
     } else {
-        // Update existing teacher account with latest name
-        $update_stmt = $teacher_conn->prepare("UPDATE teacher_accounts SET first_name = ?, last_name = ? WHERE teacher_email = ?");
-        $update_stmt->bind_param("sss", $firstName, $lastName, $email);
+        // Update existing teacher account with latest name/phone
+        $update_stmt = $teacher_conn->prepare("UPDATE teacher_accounts SET first_name = ?, last_name = ?, phone_number = ? WHERE teacher_email = ?");
+        $update_stmt->bind_param("ssss", $firstName, $lastName, $phone, $email);
         $update_stmt->execute();
         $update_stmt->close();
     }
-    
+
     $check_stmt->close();
     $teacher_conn->close();
     return true;

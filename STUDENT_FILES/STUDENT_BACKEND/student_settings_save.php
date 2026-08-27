@@ -13,6 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $admin_account_id = requireStudentSession();
 $first_name = isset($_POST['first_name']) ? trim($_POST['first_name']) : '';
 $last_name = isset($_POST['last_name']) ? trim($_POST['last_name']) : '';
+$phone_number = isset($_POST['phone_number']) ? trim($_POST['phone_number']) : '';
 
 $conn = getDatabaseConnection();
 if (!$conn) {
@@ -20,8 +21,8 @@ if (!$conn) {
     exit;
 }
 
-$stmt = $conn->prepare("UPDATE admin_accounts SET first_name = ?, last_name = ? WHERE id = ? AND role = 'student'");
-$stmt->bind_param("ssi", $first_name, $last_name, $admin_account_id);
+$stmt = $conn->prepare("UPDATE admin_accounts SET first_name = ?, last_name = ?, phone_number = ? WHERE id = ? AND role = 'student'");
+$stmt->bind_param("sssi", $first_name, $last_name, $phone_number, $admin_account_id);
 
 if ($stmt->execute()) {
     echo json_encode(['success' => true, 'message' => 'Profile updated successfully']);

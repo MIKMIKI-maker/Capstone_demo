@@ -96,9 +96,9 @@ function updateTeacherProfile($conn, $teacher_id) {
         require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/db.php';
         $admin_conn = getDatabaseConnection();
         if ($admin_conn) {
-            $upd = $admin_conn->prepare("UPDATE admin_accounts SET first_name=?, last_name=? WHERE admin_email=? AND role='teacher'");
+            $upd = $admin_conn->prepare("UPDATE admin_accounts SET first_name=?, last_name=?, phone_number=? WHERE admin_email=? AND role='teacher'");
             if ($upd) {
-                $upd->bind_param("sss", $first_name, $last_name, $email_row['teacher_email']);
+                $upd->bind_param("ssss", $first_name, $last_name, $phone, $email_row['teacher_email']);
                 $upd->execute();
                 $upd->close();
             }

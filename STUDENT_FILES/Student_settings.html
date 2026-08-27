@@ -133,6 +133,10 @@
             <input name="nickname" placeholder="Nickname" type="text" />
           </div>
           <div class="student-form-group student-full">
+            <label>Phone Number</label>
+            <input name="phone_number" placeholder="Phone number" type="text" />
+          </div>
+          <div class="student-form-group student-full">
             <label>Parent/Guardian Full Name <span style="font-size:11px;color:#94a3b8;font-weight:400;">(Set by your teacher)</span></label>
             <input type="text" id="field-parent-name" name="parent_name" placeholder="—"
               readonly style="pointer-events:none;background:#f1f5f9;color:#64748b;cursor:default;border-color:#e2e8f0;" />
@@ -296,6 +300,7 @@
       if (p.firstName) document.querySelector('[name="first_name"]').value = p.firstName;
       if (p.lastName)  document.querySelector('[name="last_name"]').value  = p.lastName;
       if (p.nickname)  document.querySelector('[name="nickname"]').value   = p.nickname;
+      if (p.phoneNumber) document.querySelector('[name="phone_number"]').value = p.phoneNumber;
       if (p.parentName) { var _pf = document.getElementById('field-parent-name'); if (_pf) _pf.value = p.parentName; }
       if (p.notifNewActivity !== undefined) document.querySelector('[name="checkbox_input"]').checked   = p.notifNewActivity;
       if (p.notifProgress    !== undefined) document.querySelector('[name="checkbox_input_2"]').checked = p.notifProgress;
@@ -312,8 +317,10 @@
             // Pre-fill name fields from DB if localStorage is empty
             var fn = document.querySelector('[name="first_name"]');
             var ln = document.querySelector('[name="last_name"]');
+            var ph = document.querySelector('[name="phone_number"]');
             if (fn && !fn.value && d.first_name) fn.value = d.first_name;
             if (ln && !ln.value && d.last_name)  ln.value = d.last_name;
+            if (ph && !ph.value && d.phone_number) ph.value = d.phone_number;
             // Always fill parent name from DB (teacher-set, read-only)
             var pf = document.getElementById('field-parent-name');
             if (pf && d.parent_name) pf.value = d.parent_name;
@@ -352,6 +359,7 @@
       p.firstName        = document.querySelector('[name="first_name"]').value.trim();
       p.lastName         = document.querySelector('[name="last_name"]').value.trim();
       p.nickname         = document.querySelector('[name="nickname"]').value.trim();
+      p.phoneNumber      = document.querySelector('[name="phone_number"]').value.trim();
       p.notifNewActivity = document.querySelector('[name="checkbox_input"]').checked;
       p.notifProgress    = document.querySelector('[name="checkbox_input_2"]').checked;
       var photoToSave = _pendingPhoto || null;
@@ -377,6 +385,7 @@
         nameFd.append('admin_account_id', _nsid);
         nameFd.append('first_name', p.firstName || '');
         nameFd.append('last_name', p.lastName || '');
+        nameFd.append('phone_number', p.phoneNumber || '');
         fetch('STUDENT_BACKEND/student_settings_save.php', { method: 'POST', body: nameFd })
           .then(function (r) { return r.json(); })
           .then(function (d) {
