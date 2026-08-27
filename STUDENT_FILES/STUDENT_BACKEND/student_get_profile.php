@@ -17,7 +17,7 @@ if (!$admin_conn || !$teacher_conn) {
 }
 
 // Get student info from admin_accounts
-$stmt = $admin_conn->prepare("SELECT id, first_name, last_name, admin_email, COALESCE(profile_photo,'') AS profile_photo FROM admin_accounts WHERE id = ? AND role = 'student' AND status = 'active'");
+$stmt = $admin_conn->prepare("SELECT id, first_name, last_name, admin_email, assigned_teacher_id, COALESCE(profile_photo,'') AS profile_photo FROM admin_accounts WHERE id = ? AND role = 'student' AND status = 'active'");
 $stmt->bind_param("i", $admin_account_id);
 $stmt->execute();
 $admin_row = $stmt->get_result()->fetch_assoc();
@@ -43,6 +43,25 @@ $stmt2->execute();
 $student_row = $stmt2->get_result()->fetch_assoc();
 $stmt2->close();
 
+$teacher_name = $student_row ? trim((string)($student_row['teacher_name'] ?? '')) : '';
+$teacher_specialization = $student_row ? ($student_row['specialization'] ?? '') : '';
+$teacher_id = $student_row ? $student_row['teacher_id'] : null;
+
+// A newly admin-assigned student has no `students` row yet (that only gets
+// created once a teacher enrolls them), so the join above finds nothing.
+// Fall back to admin_accounts.assigned_teacher_id so the name shows up right
+// away instead of waiting for enrollment.
+if ($teacher_name === '' && !empty($admin_row['assigned_teacher_id'])) {
+    $tStmt = $admin_conn->prepare("SELECT first_name, last_name FROM admin_accounts WHERE id = ? AND role = 'teacher'");
+    $tStmt->bind_param("i", $admin_row['assigned_teacher_id']);
+    $tStmt->execute();
+    $tRow = $tStmt->get_result()->fetch_assoc();
+    $tStmt->close();
+    if ($tRow) {
+        $teacher_name = trim($tRow['first_name'] . ' ' . $tRow['last_name']);
+    }
+}
+
 $profile = [
     'success' => true,
     'admin_id' => $admin_row['id'],
@@ -55,9 +74,9 @@ $profile = [
     'disability_type' => $student_row ? $student_row['disability_type'] : '',
     'grade_level' => $student_row ? $student_row['grade_level'] : '',
     'parent_name' => $student_row ? ($student_row['parent_name'] ?? '') : '',
-    'teacher_id' => $student_row ? $student_row['teacher_id'] : null,
-    'teacher_name' => $student_row ? $student_row['teacher_name'] : '',
-    'teacher_specialization' => $student_row ? $student_row['specialization'] : '',
+    'teacher_id' => $teacher_id,
+    'teacher_name' => $teacher_name,
+    'teacher_specialization' => $teacher_specialization,
 ];
 
 echo json_encode($profile);

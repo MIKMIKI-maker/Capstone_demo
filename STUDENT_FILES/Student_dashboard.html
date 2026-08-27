@@ -231,7 +231,7 @@
           '</div>';
       }
 
-      function showNotEnrolled() {
+      function showNotEnrolled(sid) {
         var todayPanel = document.getElementById('student-panel-today');
         var allPanel   = document.getElementById('student-panel-materials');
         var msg = '<div class="student-act-empty">' +
@@ -243,9 +243,19 @@
         if (allPanel)   allPanel.innerHTML   = msg;
         document.getElementById('student-act-done-count').textContent = '0/0 done';
         updateProgressBanner(0, 0);
-        // Teacher card shows no teacher
+        // Teacher card defaults to "no teacher", but an admin may have already
+        // assigned one even though the teacher hasn't enrolled the student into
+        // their class yet (that's what "not enrolled" above means) — check for
+        // that admin-side assignment so the name shows up right away.
         var teacherEl = document.getElementById('dash-teacher-name');
         if (teacherEl) teacherEl.textContent = 'No teacher assigned';
+        if (sid && teacherEl) {
+          fetch('STUDENT_BACKEND/student_get_profile.php?admin_account_id=' + encodeURIComponent(sid))
+            .then(function(r){ return r.json(); })
+            .then(function(td){
+              if (td.success && td.teacher_name) teacherEl.textContent = td.teacher_name;
+            }).catch(function(){});
+        }
       }
 
       function updateProgressBanner(completed, total) {
@@ -390,7 +400,7 @@
         fetch('STUDENT_BACKEND/student_check_enrollment.php?student_id=' + encodeURIComponent(_sid) + '&student_name=' + encodeURIComponent(_snam))
           .then(function(r){ return r.json(); })
           .then(function(d) {
-            if (!d.enrolled) { showNotEnrolled(); return; }
+            if (!d.enrolled) { showNotEnrolled(_sid); return; }
 
             var srid = String(d.student_record_id);
             var tid  = String(d.teacher_id);
@@ -404,7 +414,7 @@
               .then(function(r) { return r.json(); })
               .then(function(d) {
                 if (!d.enrolled || !d.success) {
-                  showNotEnrolled();
+                  showNotEnrolled(_sid);
                   return;
                 }
                 renderActivities(d.materials || []);
@@ -439,10 +449,10 @@
                   }).catch(function(){});
               })
               .catch(function() {
-                showNotEnrolled();
+                showNotEnrolled(_sid);
               });
           })
-          .catch(function(){ showNotEnrolled(); });
+          .catch(function(){ showNotEnrolled(_sid); });
 
       }
 

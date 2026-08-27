@@ -4,6 +4,7 @@ ini_set('display_errors', 0);
 
 header('Content-Type: application/json');
 
+require_once __DIR__ . '/../../TEACHER_FILES/TEACHER_BACKEND/db.php';
 require_once __DIR__ . '/student_auth.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -13,8 +14,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $student_admin_id = requireStudentSession();
 
-$conn = new mysqli('127.0.0.1', 'root', '', 'spedalm_db', 3306);
-if ($conn->connect_error) {
+$conn = getTeacherDatabaseConnection();
+if (!$conn) {
     echo json_encode(['success' => false]);
     exit;
 }

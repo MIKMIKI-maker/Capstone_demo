@@ -5,11 +5,12 @@ ini_set('display_errors', 0);
 header('Content-Type: application/json');
 header('Cache-Control: no-cache');
 
+require_once __DIR__ . '/../../TEACHER_FILES/TEACHER_BACKEND/db.php';
 require_once __DIR__ . '/student_auth.php';
 $student_admin_id = requireStudentSession();
 
-$conn = new mysqli('127.0.0.1', 'root', '', 'spedalm_db', 3306);
-if ($conn->connect_error) { echo json_encode(['enrolled' => false]); exit; }
+$conn = getTeacherDatabaseConnection();
+if (!$conn) { echo json_encode(['enrolled' => false]); exit; }
 $conn->set_charset('utf8mb4');
 
 $row = resolveStudentRecord($conn, $student_admin_id);
