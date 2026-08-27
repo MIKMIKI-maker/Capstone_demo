@@ -1152,3 +1152,16 @@ body { display: flex; }
   .al-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .al-table { min-width: 560px; }
 }
+
+@media (max-width: 480px) {
+  /* Search box (fixed 220px input) + Filters button don't fit phone
+     widths and were getting clipped with no way to reach the rest. */
+  .al-acts-controls { flex-wrap: wrap; flex-shrink: 1; width: 100%; }
+  .al-search-box { flex: 1 1 100%; }
+  .al-search-box input { width: 100%; }
+
+  /* Tabs (All/Drafts/Published/Upcoming) overflowed the same way — let
+     them scroll horizontally instead of being cut off. */
+  .al-tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+  .al-tab { flex-shrink: 0; padding: 8px 14px 12px; }
+}
