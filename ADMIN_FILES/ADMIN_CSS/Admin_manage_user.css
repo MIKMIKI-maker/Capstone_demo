@@ -233,8 +233,14 @@ body { display: flex; }
 
 /* Table */
 .admin-table-wrap { background: #fff; border-radius: 18px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; position: relative; border: 1px solid #f0f4fc; }
-.admin-user-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-.admin-user-table thead { display: table; width: 100%; table-layout: fixed; background: #f8faff; position: sticky; top: 0; z-index: 2; }
+/* flex column instead of a fixed calc(100vh - 390px) guess for tbody's
+   height — that magic number assumed exactly 390px of header/filters/
+   footer chrome, which doesn't hold on shorter windows or wrapped filter
+   rows, and pushed .admin-pagination-bar (margin-top:auto) past the
+   wrap's overflow:hidden bounds so it visually "disappeared". Letting
+   flex share the real available space keeps the footer always in view. */
+.admin-user-table { width: 100%; border-collapse: collapse; table-layout: fixed; display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.admin-user-table thead { display: table; width: 100%; table-layout: fixed; background: #f8faff; flex-shrink: 0; }
 .admin-user-table th { padding: 13px 20px; text-align: left; font-size: 10.5px; font-weight: 700; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid #eef2f8; }
 .admin-user-table th:nth-child(1) { width: 34%; }
 .admin-user-table th:nth-child(2) { width: 13%; }
@@ -242,7 +248,7 @@ body { display: flex; }
 .admin-user-table th:nth-child(4) { width: 11%; }
 .admin-user-table th:nth-child(5) { width: 13%; }
 .admin-user-table th:nth-child(6) { width: 13%; }
-.admin-user-table tbody { display: block; overflow-y: auto; overflow-x: hidden; max-height: calc(100vh - 390px); width: 100%; scrollbar-width: thin; scrollbar-color: #d1daf0 #f5f7ff; }
+.admin-user-table tbody { display: block; overflow-y: auto; overflow-x: hidden; flex: 1; min-height: 0; width: 100%; scrollbar-width: thin; scrollbar-color: #d1daf0 #f5f7ff; }
 .admin-user-table tbody::-webkit-scrollbar { width: 5px; }
 .admin-user-table tbody::-webkit-scrollbar-track { background: #f5f7ff; border-radius: 10px; }
 .admin-user-table tbody::-webkit-scrollbar-thumb { background: #c3cfe8; border-radius: 10px; }

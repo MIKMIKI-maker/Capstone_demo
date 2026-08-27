@@ -1160,10 +1160,11 @@ body { display: flex; }
   .al-search-box { flex: 1 1 100%; }
   .al-search-box input { width: 100%; }
 
-  /* Tabs (All/Drafts/Published/Upcoming) overflowed the same way — let
-     them scroll horizontally instead of being cut off. */
-  .al-tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
-  .al-tab { flex-shrink: 0; padding: 8px 14px 12px; }
+  /* Tabs (All/Drafts/Published/Upcoming) overflowed the same way. Wrap them
+     onto a second line instead of a horizontal scroll — swiping to see a
+     cut-off tab wasn't obvious, this keeps everything visible at once. */
+  .al-tabs { flex-wrap: wrap; row-gap: 6px; }
+  .al-tab { padding: 8px 12px 10px; }
 
   /* The filter panel was a 300px box anchored right:0 to a button sitting
      near the left edge of a narrow screen, so it spilled off-screen to the

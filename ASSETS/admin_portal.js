@@ -86,13 +86,19 @@
     var main = document.querySelector('.admin-main') || document.querySelector('main') || document.body;
     main.insertBefore(btn, main.firstChild);
 
+    // Without this, the page behind the overlay could still scroll while the
+    // sidebar was open — the fixed sidebar stayed put but the background
+    // content shifted underneath it, making its edge look like it was
+    // jittering/moving.
     function closeSidebar() {
       sidebar.classList.remove('admin-sidebar-open');
       overlay.classList.remove('show');
+      document.body.style.overflow = '';
     }
     function openSidebar() {
       sidebar.classList.add('admin-sidebar-open');
       overlay.classList.add('show');
+      document.body.style.overflow = 'hidden';
     }
 
     btn.addEventListener('click', function () {

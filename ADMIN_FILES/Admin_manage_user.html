@@ -823,6 +823,13 @@
       var emptyState = document.getElementById('admin-table-empty-state');
       if (!tbody) return;
 
+      // "Showing X of Y users" was hardcoded to 0/0 in the HTML and never
+      // updated — reflect the actual filtered count vs. total loaded here.
+      var paginationInfo = document.querySelector('.admin-pagination-info');
+      if (paginationInfo) {
+        paginationInfo.innerHTML = 'Showing <strong>' + accounts.length + '</strong> of <strong>' + accountList.length + '</strong> users';
+      }
+
       if (!accounts.length) {
         tbody.innerHTML = '';
         if (emptyState) emptyState.classList.add('admin-table-empty--visible');
