@@ -4,21 +4,33 @@ ini_set('display_errors', 0);
 mysqli_report(MYSQLI_REPORT_OFF);
 
 function getTeacherDatabaseConnection() {
-    $servername = "127.0.0.1";
-    $db_username = "root";
-    $db_password = "";
-    $database = "spedalm_db";
+    // DB_HOST etc. are set as environment variables on the hosting platform
+    // (e.g. Render) when pointing at a remote database like Clever Cloud MySQL.
+    // Local dev (XAMPP) leaves these unset and falls back to localhost below.
+    $envHost = getenv('DB_HOST');
+    if ($envHost !== false && $envHost !== '') {
+        $database = getenv('DB_NAME') ?: 'spedalm_db';
+        $conn = new mysqli($envHost, getenv('DB_USER') ?: '', getenv('DB_PASS') ?: '', $database, (int)(getenv('DB_PORT') ?: 3306));
+        if ($conn->connect_error) {
+            return null;
+        }
+    } else {
+        $servername = "127.0.0.1";
+        $db_username = "root";
+        $db_password = "";
+        $database = "spedalm_db";
 
-    $conn = new mysqli($servername, $db_username, $db_password, '', 3306);
-    if ($conn->connect_error) {
-        return null;
-    }
+        $conn = new mysqli($servername, $db_username, $db_password, '', 3306);
+        if ($conn->connect_error) {
+            return null;
+        }
 
-    $conn->query("CREATE DATABASE IF NOT EXISTS `$database` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        $conn->query("CREATE DATABASE IF NOT EXISTS `$database` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
 
-    if (!$conn->select_db($database)) {
-        $conn->close();
-        return null;
+        if (!$conn->select_db($database)) {
+            $conn->close();
+            return null;
+        }
     }
 
     // Create teacher_accounts table

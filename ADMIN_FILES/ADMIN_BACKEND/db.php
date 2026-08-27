@@ -22,21 +22,35 @@ function requireAdminSession() {
 function getDatabaseConnection() {
     $conn = null;
     $last_error = '';
+    $dbName = 'spedalm_db';
 
-    $attempts = [
-        ['host' => '127.0.0.1', 'user' => 'root', 'pass' => '', 'port' => 3306],
-        ['host' => '127.0.0.1', 'user' => 'root', 'pass' => 'root', 'port' => 3306],
-        ['host' => 'localhost', 'user' => 'root', 'pass' => '', 'port' => 3306],
-        ['host' => 'localhost', 'user' => 'root', 'pass' => 'root', 'port' => 3306],
-    ];
+    // DB_HOST etc. are set as environment variables on the hosting platform
+    // (e.g. Render) when pointing at a remote database like Clever Cloud MySQL.
+    // Local dev (XAMPP) leaves these unset and falls back to the attempts below.
+    $envHost = getenv('DB_HOST');
+    if ($envHost !== false && $envHost !== '') {
+        $dbName = getenv('DB_NAME') ?: $dbName;
+        $conn = @new mysqli($envHost, getenv('DB_USER') ?: '', getenv('DB_PASS') ?: '', $dbName, (int)(getenv('DB_PORT') ?: 3306));
+        if ($conn->connect_error) {
+            $last_error = $conn->connect_error;
+            $conn = null;
+        }
+    } else {
+        $attempts = [
+            ['host' => '127.0.0.1', 'user' => 'root', 'pass' => '', 'port' => 3306],
+            ['host' => '127.0.0.1', 'user' => 'root', 'pass' => 'root', 'port' => 3306],
+            ['host' => 'localhost', 'user' => 'root', 'pass' => '', 'port' => 3306],
+            ['host' => 'localhost', 'user' => 'root', 'pass' => 'root', 'port' => 3306],
+        ];
 
-    foreach ($attempts as $a) {
-        $test_conn = @new mysqli($a['host'], $a['user'], $a['pass'], "", $a['port']);
-        if (!$test_conn->connect_error) {
-            $conn = $test_conn;
-            break;
-        } else {
-            $last_error = $test_conn->connect_error;
+        foreach ($attempts as $a) {
+            $test_conn = @new mysqli($a['host'], $a['user'], $a['pass'], "", $a['port']);
+            if (!$test_conn->connect_error) {
+                $conn = $test_conn;
+                break;
+            } else {
+                $last_error = $test_conn->connect_error;
+            }
         }
     }
 
@@ -45,17 +59,18 @@ function getDatabaseConnection() {
             header('Content-Type: application/json');
         }
         echo json_encode([
-            'status' => 'error', 
+            'status' => 'error',
             'message' => 'Database connection failed: ' . ($last_error ?: 'Unable to authenticate MySQL user.')
         ]);
         exit;
     }
 
-    // Create database
-    $conn->query("CREATE DATABASE IF NOT EXISTS `spedalm_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-    
-    // Select database
-    if (!$conn->select_db("spedalm_db")) { 
+    // Local XAMPP connects without a database selected, so create/select it here.
+    // Remote connections (Clever Cloud etc.) already select their database via
+    // the mysqli constructor above and don't have CREATE DATABASE privileges.
+    if ($envHost === false || $envHost === '') {
+        $conn->query("CREATE DATABASE IF NOT EXISTS `$dbName` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        if (!$conn->select_db($dbName)) {
         if (!headers_sent()) {
             header('Content-Type: application/json');
         }
@@ -63,8 +78,9 @@ function getDatabaseConnection() {
             'status' => 'error', 
             'message' => 'Select DB failed: ' . $conn->error
         ]);
-        $conn->close(); 
-        exit; 
+        $conn->close();
+        exit;
+        }
     }
 
     // admin_accounts table
