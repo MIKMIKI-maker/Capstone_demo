@@ -1,37 +1,35 @@
 #!/bin/bash
 set -e
 
-# Fix MySQL directories and permissions
+# Fix MySQL directory setup
 mkdir -p /var/run/mysqld /var/lib/mysql
 chown -R mysql:mysql /var/run/mysqld /var/lib/mysql
 chmod 777 /var/run/mysqld
 
-# Initialize MySQL data directory if empty
+# Initialize MySQL data if empty
 if [ ! -d "/var/lib/mysql/mysql" ]; then
     mysqld --initialize-insecure --user=mysql
 fi
 
-# Start MySQL service
+# Start MySQL
 service mysql start
 
-# Wait for MySQL to fully accept connections
+# Wait for MySQL readiness
 until mysqladmin ping --silent; do
-    echo "Waiting for MySQL server..."
     sleep 1
 done
 
-# Import SQL files into spedalm_db
+# Import database
 if [ -d /var/www/html/DATABASE ]; then
     mysql -u root -e "CREATE DATABASE IF NOT EXISTS spedalm_db;" || true
     for f in /var/www/html/DATABASE/*.sql; do
         if [ -f "$f" ]; then
-            echo "Importing $f into spedalm_db..."
             mysql -u root spedalm_db < "$f" || true
         fi
     done
 fi
 
-# Set proper ownership for Web Server
+# Fix Web permissions
 chown -R www-data:www-data /var/www/html
 chmod -R 755 /var/www/html
 
