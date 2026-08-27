@@ -23,21 +23,14 @@ function getDatabaseConnection() {
     $conn = null;
     $last_error = '';
 
-    // Listahan ng mga posibleng connection paths sa Linux/Docker containers
+    // Force TCP/IP connections using 127.0.0.1 to avoid "No such file or directory" socket error
     $attempts = [
-        ['host' => '127.0.0.1', 'user' => 'root', 'pass' => '', 'port' => 3306, 'socket' => null],
-        ['host' => 'localhost', 'user' => 'root', 'pass' => '', 'port' => 3306, 'socket' => null],
-        ['host' => 'localhost', 'user' => 'root', 'pass' => '', 'port' => 3306, 'socket' => '/var/run/mysqld/mysqld.sock'],
-        ['host' => 'localhost', 'user' => 'root', 'pass' => '', 'port' => 3306, 'socket' => '/tmp/mysql.sock'],
+        ['host' => '127.0.0.1', 'user' => 'root', 'pass' => '', 'port' => 3306],
+        ['host' => '127.0.0.1', 'user' => 'root', 'pass' => 'root', 'port' => 3306]
     ];
 
     foreach ($attempts as $a) {
-        if ($a['socket']) {
-            $test_conn = @new mysqli($a['host'], $a['user'], $a['pass'], "", $a['port'], $a['socket']);
-        } else {
-            $test_conn = @new mysqli($a['host'], $a['user'], $a['pass'], "", $a['port']);
-        }
-
+        $test_conn = @new mysqli($a['host'], $a['user'], $a['pass'], "", $a['port']);
         if (!$test_conn->connect_error) {
             $conn = $test_conn;
             break;
@@ -47,21 +40,20 @@ function getDatabaseConnection() {
     }
 
     if (!$conn) {
-        // I-catch at ipakita sa JSON response ang eksaktong error kung bakit ayaw kumonekta
         if (!headers_sent()) {
             header('Content-Type: application/json');
         }
         echo json_encode([
             'status' => 'error', 
-            'message' => 'Database connection failed: ' . ($last_error ?: 'Unable to reach MySQL server.')
+            'message' => 'Database connection failed: ' . ($last_error ?: 'Unable to reach MySQL server via TCP 127.0.0.1.')
         ]);
         exit;
     }
 
-    // 2. I-create ang database kung wala pa
+    // Create database if not exists
     $conn->query("CREATE DATABASE IF NOT EXISTS `spedalm_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
     
-    // 3. I-select ang database matapos itong magawa
+    // Select database
     if (!$conn->select_db("spedalm_db")) { 
         if (!headers_sent()) {
             header('Content-Type: application/json');
