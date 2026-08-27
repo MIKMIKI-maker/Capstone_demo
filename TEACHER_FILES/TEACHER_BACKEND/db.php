@@ -38,6 +38,13 @@ function getTeacherDatabaseConnection() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
     $conn->query($createTeacherTableSql);
+    // DATABASE/database.sql (imported fresh on every container init) still defines
+    // chk_teacher_email_domain, restricting teacher_email to @spedalm.edu.ph and
+    // silently breaking every teacher_accounts insert/sync for any other domain
+    // (e.g. @alm.edu.ph). The equivalent admin_accounts constraint was already
+    // dropped in ADMIN_BACKEND/db.php; do the same here.
+    $conn->query("ALTER TABLE teacher_accounts DROP CHECK chk_teacher_email_domain");
+    $conn->query("ALTER TABLE teacher_accounts DROP CONSTRAINT IF EXISTS chk_teacher_email_domain");
     // Migration: old schema lacked bio/class_section columns
     $ta_col = $conn->query("SHOW COLUMNS FROM teacher_accounts LIKE 'bio'");
     if ($ta_col && $ta_col->num_rows == 0) {
