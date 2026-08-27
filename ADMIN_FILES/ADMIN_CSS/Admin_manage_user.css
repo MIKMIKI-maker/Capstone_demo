@@ -429,6 +429,24 @@ body { display: flex; }
   .admin-btn-add, .admin-btn-delete { flex: 1; justify-content: center; }
   .admin-table-wrap { overflow: hidden; }
   .admin-modal-box { max-width: 100%; }
+
+  /* Table gets too cramped at phone/tablet widths for 6 fixed-% columns —
+     drop the least essential column and shrink the rest instead of letting
+     text overlap. */
+  .admin-user-table th:nth-child(3), .admin-user-table td:nth-child(3) { display: none; }
+  .admin-user-table th:nth-child(1), .admin-user-table td:nth-child(1) { width: 48%; }
+  .admin-user-table th:nth-child(2), .admin-user-table td:nth-child(2) { width: 18%; }
+  .admin-user-table th:nth-child(4), .admin-user-table td:nth-child(4) { width: 16%; }
+  .admin-user-table th:nth-child(5), .admin-user-table td:nth-child(5) { width: 9%; }
+  .admin-user-table th:nth-child(6), .admin-user-table td:nth-child(6) { width: 9%; }
+  .admin-user-table th, .admin-user-table td { padding: 10px 8px; font-size: 12px; }
+  .admin-u-avatar { width: 34px; height: 34px; font-size: 11px; }
+  .admin-u-name { font-size: 12.5px; }
+  .admin-u-email { display: none; }
+  .admin-badge { font-size: 10px; padding: 3px 8px; }
+  /* Icon-only View/Edit buttons — hide the text label, keep the icon */
+  .admin-btn-view, .admin-btn-edit { font-size: 0; padding: 8px; width: 34px; height: 34px; justify-content: center; gap: 0; }
+  .admin-btn-view i, .admin-btn-edit i { font-size: 13px; }
 }
 
 /* ===== RESET PASSWORD MODAL (:target) ===== */

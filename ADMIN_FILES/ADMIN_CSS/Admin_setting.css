@@ -305,7 +305,13 @@ body { display: flex; }
   .admin-main { height: auto; overflow-y: unset; padding: 20px 16px; }
   .admin-settings-body { flex-direction: column; }
   .admin-settings-menu { width: 100%; }
-  .admin-uat-head, .admin-uat-row { grid-template-columns: 40px 1fr 90px 80px; }
+  .admin-uat-head, .admin-uat-row { grid-template-columns: 40px 1fr 84px 76px; gap: 8px; padding: 10px 12px; }
   .admin-uat-head span:nth-child(5), .admin-uat-row span:nth-child(5),
   .admin-uat-head span:nth-child(6), .admin-uat-row span:nth-child(6) { display: none; }
+  /* Grid children default to min-width:auto, so long badge/condition text
+     refused to shrink to its column and broke into the next one instead of
+     wrapping. Force them to respect the column width. */
+  .admin-uat-row > *, .admin-uat-head > * { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .admin-uat-name span, .admin-text-muted { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+  .admin-badge { padding: 3px 8px; font-size: 10.5px; }
 }

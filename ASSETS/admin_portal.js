@@ -48,7 +48,9 @@
     var style = document.createElement('style');
     style.id = 'admin-sidebar-toggle-style';
     style.textContent =
-      '.admin-hamburger-btn{display:none;position:fixed;top:16px;left:16px;z-index:1002;width:44px;height:44px;border-radius:12px;background:#1E3A8A;color:#fff;border:none;align-items:center;justify-content:center;font-size:18px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2)}' +
+      // In normal flow (not fixed) so it takes its own space at the top of the
+      // page instead of floating over the greeting/title text underneath it.
+      '.admin-hamburger-btn{display:none;width:40px;height:40px;margin-bottom:14px;border-radius:10px;background:#1E3A8A;color:#fff;border:none;align-items:center;justify-content:center;font-size:16px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2);flex-shrink:0}' +
       '.admin-sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:1000}' +
       '.admin-sidebar-overlay.show{display:block}' +
       '@media (max-width:768px){' +
@@ -78,7 +80,11 @@
     btn.className = 'admin-hamburger-btn';
     btn.setAttribute('aria-label', 'Toggle menu');
     btn.innerHTML = '<i class="fa-solid fa-bars"></i>';
-    document.body.appendChild(btn);
+    // Insert into the main content column (not fixed to the viewport) so it
+    // takes up its own space above the page's own heading instead of
+    // floating on top of it.
+    var main = document.querySelector('.admin-main') || document.querySelector('main') || document.body;
+    main.insertBefore(btn, main.firstChild);
 
     function closeSidebar() {
       sidebar.classList.remove('admin-sidebar-open');

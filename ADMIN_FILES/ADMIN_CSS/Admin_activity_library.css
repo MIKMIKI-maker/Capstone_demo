@@ -1145,4 +1145,10 @@ body { display: flex; }
   .al-table th:nth-child(5),
   .al-table td:nth-child(3),
   .al-table td:nth-child(5) { display: none; }
+
+  /* Remaining columns (Title, Type, Status, Actions) still don't fit a phone
+     width without cramping — let the table scroll horizontally instead of
+     getting clipped by the card's overflow:hidden. */
+  .al-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .al-table { min-width: 560px; }
 }
