@@ -20,12 +20,29 @@ function requireAdminSession() {
 }
 
 function getDatabaseConnection() {
-    $conn = new mysqli("127.0.0.1", "root", "", "spedalm_db", 3306);
-    if ($conn->connect_error) { return null; }
+    // 1. Kumonekta muna nang walang sinusulat na DB Name sa 4th parameter
+    $conn = @new mysqli("127.0.0.1", "root", "", "", 3306);
+    
+    // Fallback sa localhost kung sakaling naka-unix socket ang MySQL sa Linux
+    if ($conn->connect_error) {
+        $conn = @new mysqli("localhost", "root", "", "", 3306);
+    }
 
+    if ($conn->connect_error) {
+        return null;
+    }
+
+    // 2. I-create ang database kung wala pa
     $conn->query("CREATE DATABASE IF NOT EXISTS `spedalm_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-    if (!$conn->select_db("spedalm_db")) { $conn->close(); return null; }
+    
+    // 3. I-select ang database matapos itong magawa
+    if (!$conn->select_db("spedalm_db")) { 
+        $conn->close(); 
+        return null; 
+    }
 
+    // --- MANATILI LAHAT NG CREATION & MIGRATION QUERIES MO DITO ---
+    
     // admin_accounts table
     $conn->query("CREATE TABLE IF NOT EXISTS admin_accounts (
         id            INT AUTO_INCREMENT PRIMARY KEY,
@@ -47,24 +64,27 @@ function getDatabaseConnection() {
     $conn->query("ALTER TABLE admin_accounts ADD COLUMN IF NOT EXISTS condition_info VARCHAR(255) AFTER role");
     $conn->query("ALTER TABLE admin_accounts ADD COLUMN IF NOT EXISTS last_login TIMESTAMP NULL DEFAULT NULL AFTER status");
     $conn->query("ALTER TABLE admin_accounts DROP CONSTRAINT IF EXISTS chk_admin_email_domain");
+    
     $last_seen_col = $conn->query("SHOW COLUMNS FROM admin_accounts LIKE 'last_seen'");
     if ($last_seen_col && $last_seen_col->num_rows == 0) {
         $conn->query("ALTER TABLE admin_accounts ADD COLUMN last_seen TIMESTAMP NULL DEFAULT NULL");
     }
+    
     $assigned_teacher_col = $conn->query("SHOW COLUMNS FROM admin_accounts LIKE 'assigned_teacher_id'");
     if ($assigned_teacher_col && $assigned_teacher_col->num_rows == 0) {
         $conn->query("ALTER TABLE admin_accounts ADD COLUMN assigned_teacher_id INT DEFAULT NULL AFTER condition_info");
     }
+    
     $parent_name_col = $conn->query("SHOW COLUMNS FROM admin_accounts LIKE 'parent_name'");
     if ($parent_name_col && $parent_name_col->num_rows == 0) {
         $conn->query("ALTER TABLE admin_accounts ADD COLUMN parent_name VARCHAR(255) DEFAULT NULL AFTER assigned_teacher_id");
     }
-    // profile_photo — MySQL 5.7 compatible migration (IF NOT EXISTS not supported before MySQL 8)
+    
     $pp_col = $conn->query("SHOW COLUMNS FROM admin_accounts LIKE 'profile_photo'");
     if ($pp_col && $pp_col->num_rows == 0) {
         $conn->query("ALTER TABLE admin_accounts ADD COLUMN profile_photo LONGTEXT NULL DEFAULT NULL");
     }
-    // Soft-delete column
+    
     $sd_col = $conn->query("SHOW COLUMNS FROM admin_accounts LIKE 'is_deleted'");
     if ($sd_col && $sd_col->num_rows == 0) {
         $conn->query("ALTER TABLE admin_accounts ADD COLUMN is_deleted TINYINT(1) NOT NULL DEFAULT 0");
@@ -82,7 +102,7 @@ function getDatabaseConnection() {
         created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-    // Admin notifications used by the list, badge, read, clear, and delete endpoints
+    // Admin notifications
     $conn->query("CREATE TABLE IF NOT EXISTS admin_notifications (
         id INT AUTO_INCREMENT PRIMARY KEY,
         notification_type VARCHAR(50) NOT NULL,
@@ -105,7 +125,7 @@ function getDatabaseConnection() {
         INDEX idx_ip_time (ip_address, attempted_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-    // Seed default accounts only when table is empty (avoids running password_hash() on every request)
+    // Seed default accounts
     $seed_check = $conn->query("SELECT COUNT(*) AS cnt FROM admin_accounts");
     if ($seed_check && $seed_check->fetch_assoc()['cnt'] == 0) {
         $h_admin   = password_hash('Admin@123',   PASSWORD_DEFAULT);
