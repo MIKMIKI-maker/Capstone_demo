@@ -20,15 +20,30 @@ function requireAdminSession() {
 }
 
 function getDatabaseConnection() {
-    // 1. Kumonekta muna nang walang sinusulat na DB Name sa 4th parameter
-    $conn = @new mysqli("127.0.0.1", "root", "", "", 3306);
-    
-    // Fallback sa localhost kung sakaling naka-unix socket ang MySQL sa Linux
-    if ($conn->connect_error) {
-        $conn = @new mysqli("localhost", "root", "", "", 3306);
+    $conn = null;
+
+    // Listahan ng mga posibleng connection paths sa Linux/Docker containers
+    $attempts = [
+        ['host' => '127.0.0.1', 'user' => 'root', 'pass' => '', 'port' => 3306, 'socket' => null],
+        ['host' => 'localhost', 'user' => 'root', 'pass' => '', 'port' => 3306, 'socket' => null],
+        ['host' => 'localhost', 'user' => 'root', 'pass' => '', 'port' => 3306, 'socket' => '/var/run/mysqld/mysqld.sock'],
+        ['host' => 'localhost', 'user' => 'root', 'pass' => '', 'port' => 3306, 'socket' => '/tmp/mysql.sock'],
+    ];
+
+    foreach ($attempts as $a) {
+        if ($a['socket']) {
+            $test_conn = @new mysqli($a['host'], $a['user'], $a['pass'], "", $a['port'], $a['socket']);
+        } else {
+            $test_conn = @new mysqli($a['host'], $a['user'], $a['pass'], "", $a['port']);
+        }
+
+        if (!$test_conn->connect_error) {
+            $conn = $test_conn;
+            break;
+        }
     }
 
-    if ($conn->connect_error) {
+    if (!$conn) {
         return null;
     }
 
@@ -41,8 +56,6 @@ function getDatabaseConnection() {
         return null; 
     }
 
-    // --- MANATILI LAHAT NG CREATION & MIGRATION QUERIES MO DITO ---
-    
     // admin_accounts table
     $conn->query("CREATE TABLE IF NOT EXISTS admin_accounts (
         id            INT AUTO_INCREMENT PRIMARY KEY,
