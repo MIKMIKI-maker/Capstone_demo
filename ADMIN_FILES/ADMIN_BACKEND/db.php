@@ -23,10 +23,11 @@ function getDatabaseConnection() {
     $conn = null;
     $last_error = '';
 
-    // Force TCP/IP connections using 127.0.0.1 to avoid "No such file or directory" socket error
     $attempts = [
         ['host' => '127.0.0.1', 'user' => 'root', 'pass' => '', 'port' => 3306],
-        ['host' => '127.0.0.1', 'user' => 'root', 'pass' => 'root', 'port' => 3306]
+        ['host' => '127.0.0.1', 'user' => 'root', 'pass' => 'root', 'port' => 3306],
+        ['host' => 'localhost', 'user' => 'root', 'pass' => '', 'port' => 3306],
+        ['host' => 'localhost', 'user' => 'root', 'pass' => 'root', 'port' => 3306],
     ];
 
     foreach ($attempts as $a) {
@@ -45,12 +46,12 @@ function getDatabaseConnection() {
         }
         echo json_encode([
             'status' => 'error', 
-            'message' => 'Database connection failed: ' . ($last_error ?: 'Unable to reach MySQL server via TCP 127.0.0.1.')
+            'message' => 'Database connection failed: ' . ($last_error ?: 'Unable to authenticate MySQL user.')
         ]);
         exit;
     }
 
-    // Create database if not exists
+    // Create database
     $conn->query("CREATE DATABASE IF NOT EXISTS `spedalm_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
     
     // Select database
