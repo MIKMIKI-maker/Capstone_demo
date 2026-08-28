@@ -1146,6 +1146,7 @@ body { display: flex; }
   .admin-sidebar-nav { flex-direction: row; flex-wrap: wrap; }
   .admin-sidebar-footer { display: none; }
   .admin-main { height: auto; overflow-y: unset; padding: 16px; }
+  .admin-topbar-left { width: 100%; text-align: center; }
   .al-stats-row { grid-template-columns: 1fr 1fr; }
   .al-tpl-grid  { grid-template-columns: 1fr; }
 
