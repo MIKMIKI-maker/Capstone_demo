@@ -240,6 +240,10 @@ body { display: flex; }
 
 .al-tpl-view-btn:hover { background: #14307a; transform: translateY(-1px); }
 
+/* Hidden by default (desktop keeps the topbar button); shown only on
+   mobile via the media query below, which hides the topbar one instead. */
+.al-tpl-view-btn--mobile-clone { display: none; }
+
 .al-tpl-view-badge {
   background: rgba(255,255,255,.22);
   color: #fff;
@@ -319,7 +323,10 @@ body { display: flex; }
 .al-si-amber  { background: #FFFBEB; color: #F59E0B; }
 .al-si-teal   { background: #F0FDFA; color: #0D9488; }
 
-.al-stat-body { display: flex; flex-direction: column; gap: 2px; }
+/* min-width:0 is needed here (not just on the parent .al-stat-card) because
+   flex children default to min-width:auto, which let the label/sub text
+   refuse to shrink and ellipsize, bleeding past the card's rounded edge. */
+.al-stat-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 
 .al-stat-label {
   font-size: 11px;
@@ -1141,6 +1148,11 @@ body { display: flex; }
   .admin-main { height: auto; overflow-y: unset; padding: 16px; }
   .al-stats-row { grid-template-columns: 1fr 1fr; }
   .al-tpl-grid  { grid-template-columns: 1fr; }
+
+  /* Move "View Templates" below the stat cards instead of the topbar —
+     swap which of the two identical buttons is shown per breakpoint. */
+  .admin-topbar-right .al-tpl-view-btn:not(.al-tpl-view-btn--mobile-clone) { display: none; }
+  .al-tpl-view-btn--mobile-clone { display: inline-flex; width: 100%; justify-content: center; margin-top: -4px; }
   .al-table th:nth-child(3),
   .al-table th:nth-child(5),
   .al-table td:nth-child(3),

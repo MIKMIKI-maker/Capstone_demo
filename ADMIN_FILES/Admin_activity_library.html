@@ -169,6 +169,15 @@
       </div>
     </div>
 
+    <!-- Mobile-only: same "View Templates" action as the topbar button
+         above, just placed after the stat cards instead — CSS swaps which
+         one is visible per breakpoint (see al-tpl-view-btn--mobile-clone). -->
+    <button class="al-tpl-view-btn al-tpl-view-btn--mobile-clone" type="button" onclick="document.getElementById('al-tpl-modal').style.display='flex'">
+      <i class="fa-solid fa-layer-group"></i>
+      <span>View Templates</span>
+      <span class="al-tpl-view-badge" id="al-tpl-badge-mobile">0</span>
+    </button>
+
     <!-- ── TEACHER ACTIVITIES ── -->
     <div class="al-card al-acts-card">
 
@@ -329,9 +338,11 @@
     function initTemplates() {
       var count = TEMPLATE_DEFS.length;
       var badge = document.getElementById('al-tpl-badge');
+      var badgeMobile = document.getElementById('al-tpl-badge-mobile');
       var stat  = document.getElementById('stat-templates');
       var sub   = document.getElementById('al-tpl-modal-sub');
       if (badge) badge.textContent = count;
+      if (badgeMobile) badgeMobile.textContent = count;
       if (stat)  stat.textContent  = count;
       if (sub)   sub.textContent   = count + ' template type' + (count !== 1 ? 's' : '') + ' teachers can use to build activities.';
 
