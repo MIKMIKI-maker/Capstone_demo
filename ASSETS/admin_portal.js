@@ -62,7 +62,12 @@
       '.admin-nav-item{flex:none !important;min-width:0 !important;justify-content:flex-start !important;font-size:14px !important;padding:13px 16px !important}' +
       '.admin-nav-arrow{display:inline-block !important}' +
       '.admin-sidebar-footer{display:flex !important}' +
-      '.admin-main{width:100% !important}' +
+      // Put the hamburger and the page's notification bell on the same row
+      // — both pinned to the top corners of .admin-main — instead of the
+      // bell sitting in its own row further down the page.
+      '.admin-main{width:100% !important;position:relative !important;padding-top:76px !important}' +
+      '.admin-hamburger-btn{position:absolute !important;top:20px !important;left:16px !important;margin-bottom:0 !important}' +
+      '.admin-notif-btn{position:absolute !important;top:20px !important;right:16px !important}' +
       '}';
     document.head.appendChild(style);
   }

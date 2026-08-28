@@ -503,7 +503,12 @@ body {
 
   .admin-topbar {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+  }
+
+  .admin-topbar-left {
+    width: 100%;
+    text-align: center;
   }
 
   .admin-topbar-right {
