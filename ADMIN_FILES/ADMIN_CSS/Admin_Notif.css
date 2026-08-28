@@ -426,3 +426,13 @@ body {
   .admin-action-btn  { flex: 1; text-align: center; }
   .admin-main { padding: 20px 16px 40px; }
 }
+
+@media (max-width: 768px) {
+  .admin-page-header-left { width: 100%; text-align: center; }
+
+  /* The two-tab pill (inline-flex, shrink-to-content) left uneven space
+     around it at phone widths instead of filling the row cleanly — make
+     it full-width with each tab sharing it evenly. */
+  .admin-filter-tabs { width: 100%; }
+  .admin-ftab { flex: 1; text-align: center; }
+}
