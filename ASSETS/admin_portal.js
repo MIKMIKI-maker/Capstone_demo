@@ -55,7 +55,7 @@
       '.admin-sidebar-overlay.show{display:block}' +
       '@media (max-width:768px){' +
       '.admin-hamburger-btn{display:flex !important}' +
-      '.admin-sidebar{position:fixed !important;top:0 !important;left:0 !important;transform:translateX(-100%) !important;width:260px !important;min-width:260px !important;height:100vh !important;flex-direction:column !important;flex-wrap:nowrap !important;padding:0 !important;z-index:1001 !important;transition:transform .25s ease !important;overflow-y:auto !important}' +
+      '.admin-sidebar{position:fixed !important;top:0 !important;left:0 !important;transform:translateX(-100%) !important;width:260px !important;min-width:260px !important;height:100vh !important;flex-direction:column !important;flex-wrap:nowrap !important;padding:0 !important;z-index:1001 !important;transition:transform .25s ease !important;overflow-y:auto !important;box-shadow:4px 0 24px rgba(0,0,0,.25) !important}' +
       '.admin-sidebar.admin-sidebar-open{transform:translateX(0) !important}' +
       '.admin-sidebar-logo{padding:26px 20px 22px !important;margin-bottom:0 !important}' +
       '.admin-sidebar-nav{flex-direction:column !important;flex-wrap:nowrap !important;padding:20px 12px !important;width:auto !important;flex:1 !important}' +
