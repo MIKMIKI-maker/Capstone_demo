@@ -307,6 +307,12 @@
                 sessionStorage.setItem('selected_learner_id', '');
                 sessionStorage.setItem('selected_learner', '');
                 sessionStorage.setItem('selected_condition', '');
+                // Without this, an empty selection here left behind whatever
+                // student IDs a PREVIOUS activity had written to this same key —
+                // so publishing after "Clear all" silently assigned the new
+                // activity to stale/wrong students instead of nobody, and it
+                // never showed up for the students it was actually meant for.
+                sessionStorage.setItem('selected_learner_ids', '[]');
                 return;
             }
             var first = null;
