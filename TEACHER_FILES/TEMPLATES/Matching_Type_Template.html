@@ -1672,7 +1672,17 @@
         fdU.append('content_json', JSON.stringify(state));
         fdU.append('deadline', deadline);
         fetch('../TEACHER_BACKEND/teacher_update_activity.php', { method: 'POST', body: fdU })
-          .catch(function(){}).finally(_finishEdit);
+          .then(function(r){ return r.json(); })
+          .then(function(d){
+            if (d && d.success === false) {
+              alert('Save failed: ' + (d.message || 'Unknown error') + '\nPlease try again.');
+              return;
+            }
+            _finishEdit();
+          })
+          .catch(function(){
+            alert('Could not reach the server to save this activity. Please check your connection and try again.');
+          });
       } else {
         _finishEdit();
       }
@@ -1714,14 +1724,20 @@
     fdC.append('deadline', deadline);
     fetch('../TEACHER_BACKEND/teacher_create_activity.php', { method: 'POST', body: fdC })
     .then(function(r){ return r.json(); }).then(function(d){
+      // Previously this always navigated away regardless of the response, so a
+      // failed publish (session expired, DB error, etc.) looked identical to a
+      // successful one — the teacher had no idea it never actually saved.
       if (d.success && d.activity_id) {
         var acts = []; try { acts = JSON.parse(localStorage.getItem('published_activities')||'[]'); } catch(e){}
         var i = acts.findIndex(function(a){ return a.id === _pubRef.id; });
         if (i >= 0) { acts[i].db_activity_id = d.activity_id; try { localStorage.setItem('published_activities', JSON.stringify(acts)); } catch(e){} }
+        closePublishModal();
+        window.location.href = '../Teacher_activies.html';
+      } else {
+        alert('Publish failed: ' + (d.message || 'Unknown error') + '\nPlease try again.');
       }
-    }).catch(function(){}).finally(function(){
-      closePublishModal();
-      window.location.href = '../Teacher_activies.html';
+    }).catch(function(){
+      alert('Could not reach the server to publish this activity. Please check your connection and try again.');
     });
     }); // end compressThumb
   }
