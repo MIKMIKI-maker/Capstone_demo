@@ -477,9 +477,20 @@ body { display: flex; }
      styled display:table for the sticky-header trick, so their % column
      widths resolve against .admin-user-table's own width — giving it a
      min-width makes both scroll in sync instead of drifting apart. */
+  /* .admin-table-wrap keeps its 18px border-radius, and overflow-x:auto
+     still clips to that rounded shape — without a right-side buffer the
+     last column (Edit) sat flush against the curve and looked cut off. */
   .admin-table-wrap { overflow-x: auto; overflow-y: visible; -webkit-overflow-scrolling: touch; }
-  .admin-user-table { min-width: 640px; }
+  .admin-user-table { min-width: 700px; padding-right: 12px; }
   .admin-th-break { display: block; }
+
+  /* Section/Condition had more trailing space than it needed, leaving a
+     gap before Status — tighten that, and give View/Edit's buttons a
+     little more breathing room since they were the tightest columns. */
+  .admin-user-table th:nth-child(3), .admin-user-table td:nth-child(3) { padding-right: 8px; }
+  .admin-user-table th:nth-child(4), .admin-user-table td:nth-child(4) { padding-left: 8px; }
+  .admin-user-table th:nth-child(5), .admin-user-table td:nth-child(5),
+  .admin-user-table th:nth-child(6), .admin-user-table td:nth-child(6) { padding-left: 10px; padding-right: 10px; }
 }
 
 /* ===== RESET PASSWORD MODAL (:target) ===== */
