@@ -162,6 +162,8 @@
     <script>
         var allActivities = [];   // combined: backend + localStorage drafts
         var currentTab = 'all';
+        var _loadError = null;    // set when the backend list fetch failed/errored, so the
+                                   // empty state can say why instead of looking like zero activities
 
         /* ── Sidebar / profile pic ── */
         function _applyTeacherPhoto(pic) {
@@ -288,7 +290,17 @@
             var localPubTitles = new Set(localPublished.map(function(p) { return p.title.trim().toLowerCase(); }));
 
             function _merge(backendRows) {
-                var backend = (backendRows || []).map(function(a) {
+                // teacher_list_activities.php returns an error OBJECT (e.g.
+                // {success:false,...} on a session/auth failure), not an array.
+                // Previously that made .map throw, which the outer .catch()
+                // silently swallowed into _merge([]) — same as a real "zero
+                // activities" state, with no way to tell the two apart.
+                if (backendRows && !Array.isArray(backendRows)) {
+                    _loadError = backendRows.message || 'Could not load activities from the server.';
+                } else {
+                    _loadError = null;
+                }
+                var backend = (Array.isArray(backendRows) ? backendRows : []).map(function(a) {
                     return {
                         id:       a.id,
                         title:    a.title         || 'Untitled',
@@ -340,7 +352,13 @@
             fetch('TEACHER_BACKEND/teacher_list_activities.php?teacher_id=' + encodeURIComponent(_tid))
                 .then(function(r) { return r.json(); })
                 .then(_merge)
-                .catch(function() { _merge([]); });
+                .catch(function() {
+                    _merge([]);
+                    // _merge() resets _loadError whenever it's handed a real array, so this
+                    // has to be set after it runs, not before. _merge() itself triggers the
+                    // eventual re-render via loadUploads()'s own callback chain.
+                    _loadError = 'Could not reach the server to load activities. Check your connection and try again.';
+                });
         }
 
         /* ── Tab switching ── */
@@ -395,13 +413,15 @@
             var tbody = document.getElementById('activitiesTableBody');
 
             if (!activities || !activities.length) {
-                var msg = currentTab === 'draft'
-                    ? 'No drafts saved yet.'
-                    : currentTab === 'published'
-                        ? 'No published activities yet.'
-                        : currentTab === 'uploads'
-                            ? 'No uploaded files yet.'
-                            : 'No activities yet.';
+                var msg = _loadError ? ('⚠ ' + _loadError) : (
+                    currentTab === 'draft'
+                        ? 'No drafts saved yet.'
+                        : currentTab === 'published'
+                            ? 'No published activities yet.'
+                            : currentTab === 'uploads'
+                                ? 'No uploaded files yet.'
+                                : 'No activities yet.'
+                );
                 tbody.innerHTML = '<tr><td colspan="6" class="empty-row">' + esc(msg) + '</td></tr>';
                 document.getElementById('activity-count').textContent = '0';
                 document.getElementById('activity-total').textContent = '0';
