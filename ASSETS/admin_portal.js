@@ -55,7 +55,14 @@
       '.admin-sidebar-overlay.show{display:block}' +
       '@media (max-width:768px){' +
       '.admin-hamburger-btn{display:flex !important}' +
-      '.admin-sidebar{position:fixed !important;top:0 !important;left:0 !important;transform:translateX(-100%) !important;width:260px !important;min-width:260px !important;height:100vh !important;flex-direction:column !important;flex-wrap:nowrap !important;padding:0 !important;z-index:1001 !important;transition:transform .25s ease !important;overflow-y:auto !important;box-shadow:4px 0 24px rgba(0,0,0,.25) !important}' +
+      // Some pages (e.g. Admin_notif.html) set the sidebar's own bottom:0 +
+      // min-height:100vh alongside a fixed position for their desktop
+      // layout. Left un-reset, that combination could fight the top:0 +
+      // height:100vh below by a sub-pixel margin, just enough to trigger a
+      // visible scrollbar down the right edge that looked like a stray
+      // border. Explicitly reset every box-model property, not just size.
+      '.admin-sidebar{position:fixed !important;top:0 !important;left:0 !important;right:auto !important;bottom:auto !important;margin:0 !important;transform:translateX(-100%) !important;width:260px !important;min-width:260px !important;height:100vh !important;min-height:0 !important;max-height:100vh !important;flex-direction:column !important;flex-wrap:nowrap !important;padding:0 !important;border:none !important;border-radius:0 !important;z-index:1001 !important;transition:transform .25s ease !important;overflow-y:auto !important;box-shadow:4px 0 24px rgba(0,0,0,.25) !important;scrollbar-width:none !important}' +
+      '.admin-sidebar::-webkit-scrollbar{display:none !important}' +
       '.admin-sidebar.admin-sidebar-open{transform:translateX(0) !important}' +
       '.admin-sidebar-logo{padding:26px 20px 22px !important;margin-bottom:0 !important}' +
       '.admin-sidebar-nav{flex-direction:column !important;flex-wrap:nowrap !important;padding:20px 12px !important;width:auto !important;flex:1 !important}' +
