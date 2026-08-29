@@ -146,10 +146,7 @@ if ($stmt->execute()) {
 
     echo json_encode(['success' => true, 'activity_id' => $activity_id, 'message' => 'Activity created successfully']);
 } else {
-    // TEMP DIAGNOSTIC: mysqli_report(MYSQLI_REPORT_OFF) in db.php hides the real
-    // SQL error everywhere else, so surface it here specifically to find out why
-    // this INSERT is failing on the deployed DB. Remove once root-caused.
-    echo json_encode(['success' => false, 'message' => 'Failed to create activity: ' . $stmt->error]);
+    echo json_encode(['success' => false, 'message' => 'Failed to create activity']);
 }
 
 $stmt->close();

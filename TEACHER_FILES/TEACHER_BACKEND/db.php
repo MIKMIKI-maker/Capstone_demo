@@ -33,6 +33,15 @@ function getTeacherDatabaseConnection() {
         }
     }
 
+    // Without this, mysqli negotiates whatever charset the client library
+    // defaults to (not necessarily utf8mb4), and every bind_param() string
+    // parameter gets tagged with THAT charset/collation. On a MySQL 8 host
+    // (utf8mb4_0900_ai_ci columns, e.g. Clever Cloud) that mismatch makes
+    // prepared-statement INSERTs/UPDATEs fail outright with "Conversion from
+    // collation ... impossible for parameter" — silently, since
+    // mysqli_report(MYSQLI_REPORT_OFF) above suppresses the error.
+    $conn->set_charset('utf8mb4');
+
     // Remote (Clever Cloud etc.) connections are high-latency, so once the schema
     // has been bootstrapped once, skip re-running the ~40 CREATE/ALTER/SHOW COLUMNS
     // queries below on every single request. Local XAMPP is fast enough that this
