@@ -109,6 +109,12 @@ $stmt->bind_param("iissssssis",
 $stmt->execute();
 $newId = $conn->insert_id;
 $stmt->close();
+
+$notif_title = 'New material uploaded';
+$notif_msg   = 'Your teacher added "' . $title . '"' . ($description ? ': ' . $description : '') . ' to your materials.';
+$nstmt = $conn->prepare("INSERT INTO student_notifications (teacher_id, student_id, title, message, notification_type) VALUES (?, ?, ?, ?, 'new_material')");
+if ($nstmt) { $nstmt->bind_param("iiss", $teacher_id, $student_id, $notif_title, $notif_msg); $nstmt->execute(); $nstmt->close(); }
+
 $conn->close();
 
 echo json_encode(['success' => true, 'id' => $newId]);

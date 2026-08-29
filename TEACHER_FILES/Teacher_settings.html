@@ -156,19 +156,6 @@
                         <label>Phone Number</label>
                         <input id="field-phone" placeholder="Phone number" type="tel" />
                     </div>
-                    <div class="teacher-form-group teacher-full">
-                        <label>Subject / Specialization</label>
-                        <select id="field-spec">
-                            <option value="">Select specialization</option>
-                            <option value="Special Education">Special Education</option>
-                            <option value="Early Intervention">Early Intervention</option>
-                            <option value="Inclusive Education">Inclusive Education</option>
-                        </select>
-                    </div>
-                    <div class="teacher-form-group teacher-full">
-                        <label>Bio / About</label>
-                        <textarea id="field-bio" placeholder="Write a short bio..." rows="4"></textarea>
-                    </div>
                 </div>
                 <div id="save-message" style="display:none;margin-bottom:8px;padding:10px 14px;border-radius:8px;font-size:14px;font-weight:500;"></div>
                 <div class="teacher-pwd-card">
@@ -440,16 +427,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 setVal('field-last-name',  t.lastName  || '');
                 setVal('field-email',      t.email     || '');
                 setVal('field-phone',      t.phone     || '');
-                setVal('field-bio',        t.bio       || '');
-
-                var sel = document.getElementById('field-spec');
-                if (sel && t.specialization) {
-                    for (var i = 0; i < sel.options.length; i++) {
-                        if (sel.options[i].value === t.specialization) {
-                            sel.selectedIndex = i; break;
-                        }
-                    }
-                }
             })
             .catch(function (err) { console.error('Profile load error:', err); });
     }
@@ -469,8 +446,6 @@ document.addEventListener('DOMContentLoaded', function () {
         params.append('first_name',      (document.getElementById('field-first-name').value || '').trim());
         params.append('last_name',       (document.getElementById('field-last-name').value  || '').trim());
         params.append('phone_number',    (document.getElementById('field-phone').value       || '').trim());
-        params.append('specialization',   document.getElementById('field-spec').value        || '');
-        params.append('bio',             (document.getElementById('field-bio').value         || '').trim());
 
         fetch('TEACHER_BACKEND/teacher_settings_management.php', {
             method:  'POST',

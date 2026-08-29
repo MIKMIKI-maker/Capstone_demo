@@ -111,6 +111,18 @@
     <!-- NOTIFICATIONS LIST -->
     <div class="student-notif-list" id="student-notifList"></div>
   </main>
+
+  <!-- NOTIFICATION DETAIL MODAL -->
+  <div id="studentNotifModalOverlay" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;align-items:center;justify-content:center;padding:16px;">
+    <div style="background:#fff;border-radius:16px;max-width:420px;width:100%;padding:26px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.25);">
+      <button id="studentNotifModalClose" type="button" style="position:absolute;top:14px;right:14px;background:none;border:none;font-size:20px;cursor:pointer;color:#94a3b8;line-height:1;">✕</button>
+      <div id="studentNotifModalIcon" style="font-size:34px;margin-bottom:10px;"></div>
+      <div id="studentNotifModalType" style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#64748b;margin-bottom:6px;"></div>
+      <div id="studentNotifModalTitle" style="font-size:17px;font-weight:700;color:#1e293b;margin-bottom:10px;line-height:1.4;"></div>
+      <div id="studentNotifModalMsg" style="font-size:14px;color:#334155;line-height:1.6;white-space:pre-wrap;"></div>
+      <div id="studentNotifModalMeta" style="margin-top:16px;font-size:12px;color:#94a3b8;"></div>
+    </div>
+  </div>
   <script>
     // Init sidebar profile from localStorage/sessionStorage
     (function() {
@@ -180,6 +192,8 @@
 
     function notifIcon(type) {
       if (type === 'new_activity') return { icon: '📚', cls: 'student-notif-icon--blue'   };
+      if (type === 'new_material') return { icon: '📎', cls: 'student-notif-icon--blue'   };
+      if (type === 'graded')       return { icon: '✅', cls: 'student-notif-icon--gold'   };
       if (type === 'achievement')  return { icon: '⭐', cls: 'student-notif-icon--gold'   };
       if (type === 'reminder')     return { icon: '🔔', cls: 'student-notif-icon--blue'   };
       if (type === 'alert')        return { icon: '⚠️', cls: 'student-notif-icon--red'    };
@@ -196,8 +210,34 @@
       if (typeof n.id === 'string' && n.id.indexOf('note_') === 0) {
         return 'Student_progress.html';
       }
+      if (n.type === 'new_material') return 'Student_mymaterials.html';
+      if (n.type === 'graded')       return 'Student_progress.html';
       return null;
     }
+
+    function notifTypeLabel(type) {
+      var labels = { message: 'Message', reminder: 'Reminder', achievement: 'Achievement', alert: 'Alert', new_activity: 'New Activity', new_material: 'New Material', graded: 'Graded' };
+      return labels[type] || 'Message';
+    }
+
+    function openNotifDetailModal(n) {
+      var ic = notifIcon(n.type);
+      document.getElementById('studentNotifModalIcon').textContent = ic.icon;
+      document.getElementById('studentNotifModalType').textContent = notifTypeLabel(n.type);
+      document.getElementById('studentNotifModalTitle').textContent = n.title;
+      document.getElementById('studentNotifModalMsg').textContent = n.message;
+      document.getElementById('studentNotifModalMeta').textContent = (n.from ? 'From ' + n.from + ' · ' : '') + timeAgo(n.createdAt);
+      document.getElementById('studentNotifModalOverlay').style.display = 'flex';
+    }
+
+    function closeNotifDetailModal() {
+      document.getElementById('studentNotifModalOverlay').style.display = 'none';
+    }
+
+    document.getElementById('studentNotifModalClose').addEventListener('click', closeNotifDetailModal);
+    document.getElementById('studentNotifModalOverlay').addEventListener('click', function(e) {
+      if (e.target === this) closeNotifDetailModal();
+    });
 
     function openNotif(idx) {
       var notif = _cachedNotifs[idx];
@@ -208,6 +248,7 @@
       }
       var target = notifTargetUrl(notif);
       if (target) window.location.href = target;
+      else openNotifDetailModal(notif);
     }
 
     function renderNotifs(notifs) {
@@ -221,17 +262,15 @@
       var html = notifs.map(function(n, i) {
         var ic = notifIcon(n.type);
         var unreadCls = n.isRead ? '' : ' unread';
-        var clickable = !!notifTargetUrl(n);
-        var clickableCls = clickable ? ' notif-item--clickable' : '';
-        var rowClick = clickable ? ' onclick="openNotif(' + i + ')"' : '';
-        return '<div class="notif-item' + unreadCls + clickableCls + '" data-idx="' + i + '"' + rowClick + '>' +
+        var rowClick = ' onclick="openNotif(' + i + ')"';
+        return '<div class="notif-item' + unreadCls + ' notif-item--clickable" data-idx="' + i + '"' + rowClick + '>' +
           '<div class="student-notif-icon ' + ic.cls + '">' + ic.icon + '</div>' +
           '<div class="student-notif-body" style="flex:1;min-width:0;">' +
             '<div class="student-notif-row1">' +
               '<span class="student-notif-title">' + escapeHtml(n.title) + '</span>' +
             '</div>' +
             '<p class="student-notif-text">' + escapeHtml(n.message) + '</p>' +
-            '<span class="student-notif-time">' + timeAgo(n.createdAt) + '</span>' +
+            '<span class="student-notif-time">' + (n.from ? 'From ' + escapeHtml(n.from) + ' · ' : '') + timeAgo(n.createdAt) + '</span>' +
           '</div>' +
           '<div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;min-width:70px;margin-left:auto;">' +
           (n.isRead
@@ -286,7 +325,8 @@
           message:   n.text  || n.message || '',
           type:      n.type  || 'message',
           isRead:    !!n.read,
-          createdAt: n.time  || null
+          createdAt: n.time  || null,
+          from:      n.from  || null
         };
       });
       try { localStorage.setItem(_lsKey('cache'), JSON.stringify(_cachedNotifs)); } catch(e) {}

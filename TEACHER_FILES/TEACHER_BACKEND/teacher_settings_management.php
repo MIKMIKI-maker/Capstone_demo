@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/teacher_auth.php';
 
 header('Content-Type: application/json');
 
@@ -15,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $_SERVER['REQUEST_METHOD'] !== 'GET
 }
 
 $action = isset($_REQUEST['action']) ? trim($_REQUEST['action']) : '';
-$teacher_id = isset($_REQUEST['teacher_id']) ? intval($_REQUEST['teacher_id']) : 1;
+$teacher_id = requireTeacherId();
 
 switch($action) {
     case 'get_profile':
@@ -64,18 +65,16 @@ function updateTeacherProfile($conn, $teacher_id) {
     $first_name     = isset($_POST['first_name'])     ? trim($_POST['first_name'])     : '';
     $last_name      = isset($_POST['last_name'])      ? trim($_POST['last_name'])      : '';
     $phone          = isset($_POST['phone_number'])   ? trim($_POST['phone_number'])   : '';
-    $specialization = isset($_POST['specialization']) ? trim($_POST['specialization']) : '';
-    $bio            = isset($_POST['bio'])            ? trim($_POST['bio'])            : '';
 
     if (!$first_name) {
         echo json_encode(['success' => false, 'message' => 'First name is required']);
         return;
     }
 
-    // Update teacher_accounts with all profile fields including bio
-    $sql  = "UPDATE teacher_accounts SET first_name=?, last_name=?, phone_number=?, specialization=?, bio=? WHERE id=?";
+    // Update teacher_accounts profile fields (specialization/bio removed from the form — not touched here)
+    $sql  = "UPDATE teacher_accounts SET first_name=?, last_name=?, phone_number=? WHERE id=?";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("sssssi", $first_name, $last_name, $phone, $specialization, $bio, $teacher_id);
+    $stmt->bind_param("sssi", $first_name, $last_name, $phone, $teacher_id);
 
     if (!$stmt->execute()) {
         echo json_encode(['success' => false, 'message' => 'Failed to update: ' . $conn->error]);

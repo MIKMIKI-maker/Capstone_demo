@@ -46,10 +46,11 @@ if ($stmt0) {
             $notifications[] = [
                 'id'   => (int)$row['id'],
                 'type' => $row['notification_type'] ?: 'message',
-                'title'=> htmlspecialchars($row['title']),
-                'text' => htmlspecialchars($row['message']),
+                'title'=> $row['title'],
+                'text' => $row['message'],
                 'time' => $row['created_at'],
                 'read' => (bool)$row['is_read'],
+                'from' => $row['teacher_name'] ?: 'Your teacher',
             ];
         }
     }
@@ -74,12 +75,12 @@ if ($stmt) {
     $notes = $stmt->get_result();
     if ($notes) {
         while ($row = $notes->fetch_assoc()) {
-            $tname = htmlspecialchars($row['teacher_name'] ?: 'Your teacher');
+            $tname = $row['teacher_name'] ?: 'Your teacher';
             $notifications[] = [
                 'id'    => 'note_' . $row['id'],
                 'type'  => 'message',
                 'title' => 'Note from ' . $tname,
-                'text'  => htmlspecialchars($row['note']),
+                'text'  => $row['note'],
                 'time'  => $row['created_at'],
                 'read'  => $row['read_id'] !== null,
             ];
@@ -111,7 +112,7 @@ if ($stmt2) {
                 'id'    => 'activity_' . $row['activity_id'],
                 'type'  => 'new_activity',
                 'title' => 'New activity available',
-                'text'  => 'Your teacher added "' . htmlspecialchars($row['activity_title']) . '"' . $type_label . ' to your materials.',
+                'text'  => 'Your teacher added "' . $row['activity_title'] . '"' . $type_label . ' to your materials.',
                 'time'  => $row['created_at'],
                 'read'  => $row['read_id'] !== null,
             ];

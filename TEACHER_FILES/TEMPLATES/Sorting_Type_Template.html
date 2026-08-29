@@ -1673,7 +1673,7 @@
     // server instead, now that content_json is persisted there too.
     function fetchRemote() {
       var actId = _editingPub.db_activity_id || pubId;
-      fetch('../../STUDENT_FILES/STUDENT_BACKEND/student_get_activity_content.php?activity_id=' + encodeURIComponent(actId))
+      fetch('../TEACHER_BACKEND/teacher_get_activity_content.php?activity_id=' + encodeURIComponent(actId))
         .then(function(r){ return r.json(); })
         .then(function(d){
           if (!d.success || !d.content) { alert("Could not load this activity's saved content."); return; }
@@ -2105,11 +2105,30 @@
         .catch(function(){ applyStudentMode(null); });
     }
 
+    // Cached content can be stale on whether the teacher has since locked
+    // this activity for editing — always re-check the lock flag live before
+    // letting the student in, even when opening from cache.
+    function applyStudentModeFreshLock(cached) {
+      var pubs = [];
+      try { pubs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+      var pubEntry = pubs.find(function(r){ return r.id === _stuPubId; });
+      var dbActId = pubEntry && pubEntry.db_activity_id;
+      if (!dbActId) { applyStudentMode(cached); return; }
+      fetch('../../STUDENT_FILES/STUDENT_BACKEND/student_check_activity_lock.php?activity_id=' + encodeURIComponent(dbActId))
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          pubEntry.locked = !!(d.success && d.is_locked);
+          try { localStorage.setItem('published_activities', JSON.stringify(pubs)); } catch(e){}
+          applyStudentMode(cached);
+        })
+        .catch(function(){ applyStudentMode(cached); });
+    }
+
     _idb.load('pub_data_' + _stuPubId, function(err, saved) {
-      if (saved) { applyStudentMode(saved); return; }
+      if (saved) { applyStudentModeFreshLock(saved); return; }
       var ls = null;
       try { ls = JSON.parse(localStorage.getItem('pub_data_' + _stuPubId) || 'null'); } catch(e){}
-      if (ls) { applyStudentMode(ls); return; }
+      if (ls) { applyStudentModeFreshLock(ls); return; }
       fetchRemoteActivity();
     });
   })();

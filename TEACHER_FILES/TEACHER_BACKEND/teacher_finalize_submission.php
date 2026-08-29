@@ -46,19 +46,27 @@ if ($finalized_score !== null) {
 if ($stmt->execute() && $stmt->affected_rows > 0) {
     $stmt->close();
 
-    // If a final score was given, sync it to learner_progress so student portal reflects it
-    if ($finalized_score !== null) {
-        $look = $conn->prepare("SELECT student_id, activity_id FROM activity_submissions WHERE id = ?");
-        $look->bind_param("i", $submission_id);
-        $look->execute();
-        $row = $look->get_result()->fetch_assoc();
-        $look->close();
-        if ($row) {
+    // Look up the student/activity this submission belongs to, for the progress
+    // sync below and for the "your activity was graded" notification.
+    $look = $conn->prepare("SELECT sub.student_id, sub.activity_id, a.activity_title FROM activity_submissions sub JOIN teacher_activities a ON a.id = sub.activity_id WHERE sub.id = ?");
+    $look->bind_param("i", $submission_id);
+    $look->execute();
+    $row = $look->get_result()->fetch_assoc();
+    $look->close();
+
+    if ($row) {
+        // If a final score was given, sync it to learner_progress so student portal reflects it
+        if ($finalized_score !== null) {
             $upd = $conn->prepare("UPDATE learner_progress SET score = ? WHERE student_id = ? AND activity_id = ? AND teacher_id = ?");
             $upd->bind_param("iiii", $finalized_score, $row['student_id'], $row['activity_id'], $teacher_id);
             $upd->execute();
             $upd->close();
         }
+
+        $notif_title = 'Activity graded';
+        $notif_msg   = 'Your teacher graded "' . $row['activity_title'] . '"' . ($finalized_score !== null ? ' — score: ' . $finalized_score : '') . '.';
+        $nstmt = $conn->prepare("INSERT INTO student_notifications (teacher_id, student_id, title, message, notification_type) VALUES (?, ?, ?, ?, 'graded')");
+        if ($nstmt) { $nstmt->bind_param("iiss", $teacher_id, $row['student_id'], $notif_title, $notif_msg); $nstmt->execute(); $nstmt->close(); }
     }
 
     echo json_encode(['success' => true]);
