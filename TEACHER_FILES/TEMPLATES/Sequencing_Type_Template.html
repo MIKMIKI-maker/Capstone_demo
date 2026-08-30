@@ -1786,7 +1786,12 @@
     _stuPubId = p.get('pub_id') || '';
 
     try { _stuProg = JSON.parse(localStorage.getItem('student_progress') || '[]'); } catch(e){}
-    var prev = _stuProg.find(function(r){ return r.pubId === _stuPubId; });
+    // student_progress is a single localStorage key with no per-student scoping,
+    // so on a shared/reused browser, a DIFFERENT student's earlier pass here made
+    // this student's real attempts look like harmless "practice" and get silently
+    // dropped before ever reaching the submission fetch. Match on studentId too.
+    var _stuCurrentId = sessionStorage.getItem('student_record_id') || '';
+    var prev = _stuProg.find(function(r){ return r.pubId === _stuPubId && String(r.studentId||'') === _stuCurrentId; });
     if (prev) _stuRetake = prev.retakes || 0;
     // Already passed and submitted before — this session is just practice,
     // so nothing here should be recorded or re-sent to the teacher again.
@@ -1904,7 +1909,7 @@
                 _struggledItems.push({ label: label, correct: d.correct, thought: bestChoice });
               });
             });
-            var record = { pubId:_stuPubId, title:pub.title||'Activity', type:'Sequencing',
+            var record = { pubId:_stuPubId, studentId: sessionStorage.getItem('student_record_id')||'', title:pub.title||'Activity', type:'Sequencing',
               grading:pub.grading||'', deadline:pub.deadline||'',
               score:_totCorrect, total:_totItems, percent:pct, retakes:_stuRetake,
               submittedAt:new Date().toISOString() };
