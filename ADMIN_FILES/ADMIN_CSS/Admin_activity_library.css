@@ -1147,7 +1147,9 @@ body { display: flex; }
   .admin-sidebar-footer { display: none; }
   .admin-main { height: auto; overflow-y: unset; padding: 16px; }
   .admin-topbar-left { width: 100%; text-align: center; }
-  .al-stats-row { grid-template-columns: 1fr 1fr; }
+  /* Single full-width column, same as the Dashboard stat cards — 2 columns
+     left the 5th card (Uploaded Files) alone next to an empty gap. */
+  .al-stats-row { grid-template-columns: 1fr; min-width: 0; }
   .al-tpl-grid  { grid-template-columns: 1fr; }
 
   /* Move "View Templates" below the stat cards instead of the topbar —
@@ -1164,6 +1166,22 @@ body { display: flex; }
      getting clipped by the card's overflow:hidden. */
   .al-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .al-table { min-width: 560px; }
+
+  /* Actions (View/Open + ⋮) is the last column, so it used to scroll off
+     to the right along with the rest of the table — the exact "buttons
+     get covered" cutoff being reported. Pin it to the right edge of the
+     scroll container instead, with its own background so scrolled content
+     doesn't show through underneath it, so it's always visible and
+     tappable without having to swipe to find it. */
+  .al-table th:last-child,
+  .al-table td:last-child {
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    box-shadow: -6px 0 8px -6px rgba(0,0,0,.15);
+  }
+  .al-table th:last-child { background: #fafaf8; }
+  .al-table td:last-child { background: #fff; }
 }
 
 @media (max-width: 480px) {
