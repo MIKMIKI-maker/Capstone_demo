@@ -71,10 +71,12 @@
       '.admin-sidebar-footer{display:flex !important}' +
       // Put the hamburger and the page's notification bell on the same row
       // — both pinned to the top corners of .admin-main — instead of the
-      // bell sitting in its own row further down the page.
-      '.admin-main{width:100% !important;position:relative !important;padding-top:76px !important}' +
-      '.admin-hamburger-btn{position:absolute !important;top:20px !important;left:16px !important;margin-bottom:0 !important}' +
-      '.admin-notif-btn{position:absolute !important;top:20px !important;right:16px !important}' +
+      // bell sitting in its own row further down the page. Icons sit 24px
+      // from the top (not 20px) so they don't look glued to the very edge
+      // of the screen, with matching extra clearance in the main padding.
+      '.admin-main{width:100% !important;position:relative !important;padding-top:84px !important}' +
+      '.admin-hamburger-btn{position:absolute !important;top:24px !important;left:16px !important;margin-bottom:0 !important}' +
+      '.admin-notif-btn{position:absolute !important;top:24px !important;right:16px !important}' +
       '}';
     document.head.appendChild(style);
   }

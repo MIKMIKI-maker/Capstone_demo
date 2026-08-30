@@ -493,8 +493,11 @@ body {
     padding: 20px 16px;
   }
 
+  /* 2 columns instead of a single full-width stack — matches the Activity
+     Library stat-card mobile layout so cards sit side-by-side in pairs
+     instead of each looking like an isolated full-width row. */
   .admin-stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 12px;
   }
 
@@ -509,7 +512,15 @@ body {
      wrapping to a new line within it. This is why "View", status badges,
      etc. looked cut off: it wasn't those elements overflowing on their
      own, it was their grid-item ancestor refusing to shrink to the
-     viewport at all. */
+     viewport at all. The same default also applies one level up, on the
+     grid CONTAINERS themselves as flex children of .admin-main — without
+     resetting it there too, the grid could still refuse to shrink below
+     its content's min-content width and bleed past the screen edge. */
+  .admin-stats-grid,
+  .admin-panels-grid {
+    min-width: 0;
+  }
+
   .admin-panel,
   .admin-stat-card {
     min-width: 0;
@@ -525,6 +536,30 @@ body {
     flex: 1;
   }
 
+  .admin-stat-card {
+    padding: 16px 14px;
+    gap: 12px;
+  }
+
+  .admin-stat-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+    border-radius: 12px;
+  }
+
+  .admin-stat-number {
+    font-size: 24px;
+  }
+
+  .admin-stat-label {
+    font-size: 12px;
+  }
+
+  .admin-stat-sub {
+    font-size: 10px;
+  }
+
   .admin-panel-header {
     flex-wrap: wrap;
     gap: 8px;
@@ -536,6 +571,7 @@ body {
 
   .admin-stat-breakdown {
     flex-wrap: wrap;
+    gap: 10px;
   }
 
   .admin-topbar {
@@ -566,19 +602,29 @@ body {
 }
 
 @media (max-width: 480px) {
+  /* Keeps padding within the 12-16px range on the smallest phones so the
+     card grid below always has room to sit inside the viewport. */
+  .admin-main {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  /* Still 2 columns here (not collapsed back to 1) — sized to match, same
+     as Activity Library's stat cards stay 2-up all the way down to phone
+     widths instead of stacking. */
   .admin-stat-card {
-    padding: 20px 16px;
-    gap: 14px;
+    padding: 14px 12px;
+    gap: 10px;
   }
 
   .admin-stat-icon {
-    width: 44px;
-    height: 44px;
-    font-size: 18px;
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
   }
 
   .admin-stat-number {
-    font-size: 26px;
+    font-size: 22px;
   }
 
   .admin-panel {
