@@ -57,7 +57,7 @@
       // just pops on top. pointer-events keeps it non-interactive (and the
       // page behind it tappable) while hidden, since opacity alone would
       // still block clicks during the fade-out.
-      '.admin-sidebar-overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:1000;opacity:0;pointer-events:none;transition:opacity .25s ease}' +
+      '.admin-sidebar-overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:9000;opacity:0;pointer-events:none;transition:opacity .25s ease}' +
       '.admin-sidebar-overlay.show{opacity:1;pointer-events:auto}' +
       '@media (max-width:768px){' +
       '.admin-hamburger-btn{display:flex !important}' +
@@ -67,7 +67,7 @@
       // height:100vh below by a sub-pixel margin, just enough to trigger a
       // visible scrollbar down the right edge that looked like a stray
       // border. Explicitly reset every box-model property, not just size.
-      '.admin-sidebar{position:fixed !important;top:0 !important;left:0 !important;right:auto !important;bottom:auto !important;margin:0 !important;transform:translateX(-100%) !important;width:260px !important;min-width:260px !important;height:100vh !important;min-height:0 !important;max-height:100vh !important;flex-direction:column !important;flex-wrap:nowrap !important;padding:0 !important;border:none !important;border-radius:0 !important;z-index:1001 !important;transition:transform .25s ease !important;overflow-y:auto !important;box-shadow:4px 0 24px rgba(0,0,0,.25) !important;scrollbar-width:none !important}' +
+      '.admin-sidebar{position:fixed !important;top:0 !important;left:0 !important;right:auto !important;bottom:auto !important;margin:0 !important;transform:translateX(-100%) !important;width:260px !important;min-width:260px !important;height:100vh !important;min-height:0 !important;max-height:100vh !important;flex-direction:column !important;flex-wrap:nowrap !important;padding:0 !important;border:none !important;border-radius:0 !important;z-index:9001 !important;transition:transform .25s ease !important;overflow-y:auto !important;box-shadow:4px 0 24px rgba(0,0,0,.25) !important;scrollbar-width:none !important}' +
       '.admin-sidebar::-webkit-scrollbar{display:none !important}' +
       '.admin-sidebar.admin-sidebar-open{transform:translateX(0) !important}' +
       '.admin-sidebar-logo{padding:26px 20px 22px !important;margin-bottom:0 !important}' +
@@ -88,7 +88,15 @@
       // bell sitting in its own row further down the page. Icons sit 24px
       // from the top (not 20px) so they don't look glued to the very edge
       // of the screen, with matching extra clearance in the main padding.
-      '.admin-main{width:100% !important;position:relative !important;padding-top:84px !important}' +
+      // .admin-main previously had position:relative with no z-index (i.e.
+      // z-index:auto) — some pages give it a CSS animation on load, which
+      // by spec forces it into its own stacking context regardless of
+      // z-index, and an "auto" one can end up placed ambiguously depending
+      // on the browser. That let the notif bell and hamburger (both
+      // positioned inside .admin-main) render above the drawer/overlay
+      // instead of being covered by them. Giving .admin-main an explicit,
+      // low z-index removes that ambiguity outright.
+      '.admin-main{width:100% !important;position:relative !important;z-index:1 !important;padding-top:84px !important}' +
       '.admin-hamburger-btn{position:absolute !important;top:24px !important;left:16px !important;margin-bottom:0 !important}' +
       '.admin-notif-btn{position:absolute !important;top:24px !important;right:16px !important}' +
       '}';
