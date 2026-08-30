@@ -150,30 +150,6 @@
         </div>
         <button class="student-change-pw-btn" onclick="openModal()" type="button">Change Password</button>
       </div>
-      <!-- NOTIFICATIONS -->
-      <div class="student-notif-card">
-        <div class="student-card-title">Notifications</div>
-        <div class="student-notif-row">
-          <div class="student-notif-row-info">
-            <div class="student-notif-row-label">New Activity Available</div>
-            <div class="student-notif-row-desc">When your teacher adds a new activity for you</div>
-          </div>
-          <label class="student-toggle">
-            <input checked="" name="checkbox_input" type="checkbox" />
-            <span class="student-toggle-slider"></span>
-          </label>
-        </div>
-        <div class="student-notif-row">
-          <div class="student-notif-row-info">
-            <div class="student-notif-row-label">Progress Updates</div>
-            <div class="student-notif-row-desc">When your score or progress is updated</div>
-          </div>
-          <label class="student-toggle">
-            <input checked="" name="checkbox_input_2" type="checkbox" />
-            <span class="student-toggle-slider"></span>
-          </label>
-        </div>
-      </div>
       <!-- SAVE -->
       <div class="student-save-wrap">
         <button class="student-save-btn" type="submit">Save Changes</button>
@@ -299,8 +275,6 @@
       if (p.firstName) document.querySelector('[name="first_name"]').value = p.firstName;
       if (p.lastName)  document.querySelector('[name="last_name"]').value  = p.lastName;
       if (p.parentName) { var _pf = document.getElementById('field-parent-name'); if (_pf) _pf.value = p.parentName; }
-      if (p.notifNewActivity !== undefined) document.querySelector('[name="checkbox_input"]').checked   = p.notifNewActivity;
-      if (p.notifProgress    !== undefined) document.querySelector('[name="checkbox_input_2"]').checked = p.notifProgress;
 
       applyProfileDisplay(p);
 
@@ -355,8 +329,6 @@
 
       p.firstName        = document.querySelector('[name="first_name"]').value.trim();
       p.lastName         = document.querySelector('[name="last_name"]').value.trim();
-      p.notifNewActivity = document.querySelector('[name="checkbox_input"]').checked;
-      p.notifProgress    = document.querySelector('[name="checkbox_input_2"]').checked;
       var photoToSave = _pendingPhoto || null;
       if (_pendingPhoto) { p.photo = _pendingPhoto; _pendingPhoto = null; }
 
