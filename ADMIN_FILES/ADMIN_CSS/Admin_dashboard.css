@@ -498,7 +498,16 @@ body {
      instead of each looking like an isolated full-width row. */
   .admin-stats-grid {
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    gap: 14px;
+  }
+
+  /* Status Overview holds a lot more nested content (two breakdown rows
+     per role) than the other two cards, so as the 3rd item in a 2-column
+     grid it landed alone on its own row with an empty half beside it, and
+     its content had to squeeze into a half-width column. Spanning both
+     columns keeps the pair above balanced while giving this one room. */
+  .admin-stat-card--wide {
+    grid-column: 1 / -1;
   }
 
   .admin-panels-grid {
