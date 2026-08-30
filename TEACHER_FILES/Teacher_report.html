@@ -237,13 +237,18 @@
     </div>
 
     <!-- Activity submissions modal -->
-    <div id="activitySubModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:9999;align-items:center;justify-content:center;" onclick="if(event.target===this) closeActivitySubmissions();">
-        <div style="background:#fff;border-radius:16px;width:min(480px,92vw);max-height:80vh;overflow-y:auto;padding:22px 24px;box-shadow:0 20px 50px rgba(0,0,0,.25);">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-                <div id="activitySubTitle" style="font-weight:700;font-size:15px;color:#1e293b;font-family:'Poppins',sans-serif;">Activity</div>
-                <span onclick="closeActivitySubmissions()" style="cursor:pointer;color:#94a3b8;font-size:18px;line-height:1;">&times;</span>
+    <div id="activitySubModal" class="tr-modal-overlay" onclick="if(event.target===this) closeActivitySubmissions();">
+        <div class="tr-modal-box">
+            <div class="tr-modal-header">
+                <div class="tr-modal-icon"><i class="fa-solid fa-list-check"></i></div>
+                <div class="tr-modal-title-group">
+                    <div id="activitySubTitle" class="tr-modal-title">Activity</div>
+                    <div class="tr-modal-sub">Submission details</div>
+                </div>
+                <button class="tr-modal-close" onclick="closeActivitySubmissions()" type="button" title="Close"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div id="activitySubBody" style="font-size:13px;color:#64748b;font-family:'Poppins',sans-serif;">Loading...</div>
+            <div id="activitySubProgress" class="tr-modal-progress-wrap"></div>
+            <div id="activitySubBody" class="tr-modal-body">Loading...</div>
         </div>
     </div>
 
@@ -258,43 +263,50 @@
             if (!a) return;
             var modal = document.getElementById('activitySubModal');
             var titleEl = document.getElementById('activitySubTitle');
+            var progressEl = document.getElementById('activitySubProgress');
             var bodyEl = document.getElementById('activitySubBody');
             titleEl.textContent = a.activity_title;
+            progressEl.innerHTML = '';
             bodyEl.innerHTML = 'Loading...';
-            modal.style.display = 'flex';
+            modal.classList.add('show');
 
             fetch('TEACHER_BACKEND/teacher_list_submissions.php?teacher_id=' + TEACHER_ID + '&activity_id=' + a.activity_id)
                 .then(function(r) { return r.json(); })
                 .then(function(d) {
                     if (!d.success || !d.students || !d.students.length) {
-                        bodyEl.innerHTML = '<div style="text-align:center;padding:16px;color:#cbd5e1;">No learners assigned to this activity.</div>';
+                        bodyEl.innerHTML = '<div class="tr-modal-empty">No learners assigned to this activity.</div>';
                         return;
                     }
                     var submitted = d.students.filter(function(s){ return s.submitted; });
-                    var html = '<div style="margin-bottom:10px;font-size:12px;color:#94a3b8;">'
-                        + submitted.length + ' of ' + d.students.length + ' learners submitted</div>';
-                    html += d.students.map(function(s) {
+                    var pct = Math.round((submitted.length / d.students.length) * 100);
+                    progressEl.innerHTML = '<div class="tr-modal-progress-label"><span><strong>' + submitted.length + '</strong> of ' + d.students.length + ' learners submitted</span><span>' + pct + '%</span></div>'
+                        + '<div class="tr-modal-progress-bar"><div class="tr-modal-progress-fill" style="width:' + pct + '%;"></div></div>';
+                    bodyEl.innerHTML = d.students.map(function(s) {
+                        var initials = (s.student_name || '?').trim().split(/\s+/).map(function(w){ return w.charAt(0); }).slice(0, 2).join('').toUpperCase();
                         var scoreStr = s.submitted
                             ? ((s.is_finalized && s.finalized_score !== null ? s.finalized_score : s.score) + '%')
-                            : '';
+                            : 'Not yet submitted';
                         var retakeStr = s.submitted && s.retake_count > 0 ? (' · 🔁 ' + s.retake_count + ' retake(s)') : '';
                         var badge = s.submitted
-                            ? '<span style="font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;background:#D1FAE5;color:#065F46;white-space:nowrap;">✅ Submitted</span>'
-                            : '<span style="font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;background:#F1F5F9;color:#64748B;white-space:nowrap;">⭕ Not submitted</span>';
-                        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9;">'
-                            + '<div><div style="font-weight:600;color:#334155;font-size:13px;">' + escHtml(s.student_name) + '</div>'
-                            + (s.submitted ? '<div style="font-size:11px;color:#94a3b8;">' + scoreStr + retakeStr + '</div>' : '')
-                            + '</div>' + badge + '</div>';
+                            ? '<span class="tr-sub-badge done">✅ Submitted</span>'
+                            : '<span class="tr-sub-badge pending">⭕ Pending</span>';
+                        return '<div class="tr-sub-row">'
+                            + '<div class="tr-sub-avatar' + (s.submitted ? '' : ' pending') + '">' + escHtml(initials) + '</div>'
+                            + '<div class="tr-sub-info">'
+                            + '<div class="tr-sub-name">' + escHtml(s.student_name) + '</div>'
+                            + '<div class="tr-sub-meta">' + scoreStr + retakeStr + '</div>'
+                            + '</div>'
+                            + badge
+                            + '</div>';
                     }).join('');
-                    bodyEl.innerHTML = html;
                 })
                 .catch(function() {
-                    bodyEl.innerHTML = '<div style="text-align:center;padding:16px;color:#ef4444;">Failed to load submissions.</div>';
+                    bodyEl.innerHTML = '<div class="tr-modal-empty" style="color:#ef4444;">Failed to load submissions.</div>';
                 });
         }
 
         function closeActivitySubmissions() {
-            document.getElementById('activitySubModal').style.display = 'none';
+            document.getElementById('activitySubModal').classList.remove('show');
         }
 
         function _applyTeacherPhoto(pic) {
