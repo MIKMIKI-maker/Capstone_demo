@@ -432,8 +432,9 @@ body { display: flex; }
   .admin-nav-item { padding: 8px 12px; font-size: 12px; flex: 1; min-width: 80px; justify-content: center; }
   .admin-nav-arrow { display: none; }
   .admin-sidebar-footer { display: none; }
-  .admin-main { height: auto; overflow-y: unset; padding: 20px 16px; }
-  .admin-stat-cards { grid-template-columns: repeat(2,1fr); }
+  .admin-main { height: auto; overflow-y: unset; overflow-x: hidden; padding: 20px 16px; }
+  .admin-stat-cards { grid-template-columns: repeat(2,1fr); min-width: 0; }
+  .admin-stat-card { min-width: 0; }
   .admin-topbar { flex-direction: column; align-items: flex-start; }
   .admin-topbar-actions { width: 100%; }
   /* "Deleted Accounts" moves down near pagination on mobile (see the
@@ -489,8 +490,40 @@ body { display: flex; }
      little more breathing room since they were the tightest columns. */
   .admin-user-table th:nth-child(3), .admin-user-table td:nth-child(3) { padding-right: 8px; }
   .admin-user-table th:nth-child(4), .admin-user-table td:nth-child(4) { padding-left: 8px; }
+
+  /* View and Edit are the last two columns, so on a phone they scrolled
+     off past the right edge along with the rest of the table — the
+     reported "last columns covered" cutoff. Give them a fixed width and
+     pin both to the right edge of the scroll container (stacked side by
+     side) with their own background, so they're always visible and
+     tappable without swiping to find them. */
+  .admin-btn-view, .admin-btn-edit { padding: 6px 10px; font-size: 11.5px; gap: 4px; }
   .admin-user-table th:nth-child(5), .admin-user-table td:nth-child(5),
-  .admin-user-table th:nth-child(6), .admin-user-table td:nth-child(6) { padding-left: 10px; padding-right: 10px; }
+  .admin-user-table th:nth-child(6), .admin-user-table td:nth-child(6) {
+    width: 84px;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+  .admin-user-table th:nth-child(5), .admin-user-table td:nth-child(5) {
+    position: sticky;
+    right: 84px;
+    z-index: 2;
+  }
+  .admin-user-table th:nth-child(6), .admin-user-table td:nth-child(6) {
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    box-shadow: -6px 0 8px -6px rgba(0,0,0,.15);
+  }
+  .admin-user-table th:nth-child(5), .admin-user-table th:nth-child(6) { background: #f8faff; }
+  .admin-user-table td:nth-child(5), .admin-user-table td:nth-child(6) { background: #fff; }
+}
+
+/* Stack Add/Delete Account vertically on small phones instead of splitting
+   the row 50/50 — each button gets its own full-width, easy-to-tap row. */
+@media (max-width: 480px) {
+  .admin-action-btns { flex-direction: column; }
+  .admin-btn-add, .admin-btn-delete { width: 100%; }
 }
 
 /* ===== RESET PASSWORD MODAL (:target) ===== */
