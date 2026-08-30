@@ -493,21 +493,15 @@ body {
     padding: 20px 16px;
   }
 
-  /* 2 columns instead of a single full-width stack — matches the Activity
-     Library stat-card mobile layout so cards sit side-by-side in pairs
-     instead of each looking like an isolated full-width row. */
+  /* Single full-width column for every stat card. Status Overview holds a
+     lot more nested content (two breakdown rows per role) than the other
+     two cards, so a 2-column layout always left one row unbalanced —
+     either Status Overview alone next to an empty gap, or squeezed into
+     a half-width column. Stacking all three keeps every row the same
+     width and leaves clean, even gaps between them and the panels below. */
   .admin-stats-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-  }
-
-  /* Status Overview holds a lot more nested content (two breakdown rows
-     per role) than the other two cards, so as the 3rd item in a 2-column
-     grid it landed alone on its own row with an empty half beside it, and
-     its content had to squeeze into a half-width column. Spanning both
-     columns keeps the pair above balanced while giving this one room. */
-  .admin-stat-card--wide {
-    grid-column: 1 / -1;
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 
   .admin-panels-grid {
