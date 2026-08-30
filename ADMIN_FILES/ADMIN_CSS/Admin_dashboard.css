@@ -489,6 +489,7 @@ body {
   .admin-main {
     height: auto;
     overflow-y: unset;
+    overflow-x: hidden;
     padding: 20px 16px;
   }
 
@@ -499,6 +500,42 @@ body {
 
   .admin-panels-grid {
     grid-template-columns: 1fr;
+  }
+
+  /* Grid items (.admin-panel, .admin-stat-card) default to min-width:auto,
+     so a row inside with a non-shrinking badge/pill (flex-shrink:0) set its
+     own intrinsic minimum width — wider than the phone viewport — and
+     pushed the WHOLE panel past the screen edge instead of the badge just
+     wrapping to a new line within it. This is why "View", status badges,
+     etc. looked cut off: it wasn't those elements overflowing on their
+     own, it was their grid-item ancestor refusing to shrink to the
+     viewport at all. */
+  .admin-panel,
+  .admin-stat-card {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .admin-panel-body {
+    overflow-x: hidden;
+  }
+
+  .admin-stat-body {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .admin-panel-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .admin-panel-link {
+    flex-shrink: 0;
+  }
+
+  .admin-stat-breakdown {
+    flex-wrap: wrap;
   }
 
   .admin-topbar {
