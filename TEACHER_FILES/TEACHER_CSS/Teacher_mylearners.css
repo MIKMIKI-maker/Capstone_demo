@@ -126,8 +126,14 @@ body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-s
 .teacher-chart-title { font-size: 15px; font-weight: 700; color: var(--text); }
 .teacher-chart-period { font-size: 12px; color: var(--muted); }
 .teacher-bar-chart { display: flex; align-items: flex-end; gap: 18px; height: 160px; padding: 0 8px; border-bottom: 1.5px solid #E8EDF4; position: relative; }
-.teacher-bar-col { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
-.teacher-bar { background: #4A90E2; border-radius: 6px 6px 0 0; width: 100%; transition: height .4s ease; }
+/* .teacher-bar's JS-set height:NN% needs a parent with a DEFINITE height to
+   resolve against — .teacher-bar-col had none (height was auto/content-based),
+   so the percentage silently collapsed to nothing regardless of the value,
+   even with correct data coming from the backend. height:100% here (of the
+   160px .teacher-bar-chart) plus justify-content:flex-end keeps the bar+label
+   bottom-anchored, matching the original visual intent. */
+.teacher-bar-col { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; flex: 1; height: 100%; }
+.teacher-bar { background: #4A90E2; border-radius: 6px 6px 0 0; width: 100%; min-height: 2px; transition: height .4s ease; }
 .teacher-bar-label { font-size: 11px; color: var(--muted); margin-top: 8px; }
 .teacher-y-labels { position: absolute; left: 0; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 0 0 2px; }
 .teacher-y-label { font-size: 10px; color: #CBD5E1; }
