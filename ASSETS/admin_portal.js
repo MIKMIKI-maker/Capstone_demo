@@ -51,8 +51,14 @@
       // In normal flow (not fixed) so it takes its own space at the top of the
       // page instead of floating over the greeting/title text underneath it.
       '.admin-hamburger-btn{display:none;width:40px;height:40px;margin-bottom:14px;border-radius:10px;background:#1E3A8A;color:#fff;border:none;align-items:center;justify-content:center;font-size:16px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2);flex-shrink:0}' +
-      '.admin-sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:1000}' +
-      '.admin-sidebar-overlay.show{display:block}' +
+      // Fades in/out instead of an abrupt display:none/block toggle, so the
+      // dim overlay and the sidebar's own slide happen in sync as one
+      // motion instead of the overlay looking like a separate layer that
+      // just pops on top. pointer-events keeps it non-interactive (and the
+      // page behind it tappable) while hidden, since opacity alone would
+      // still block clicks during the fade-out.
+      '.admin-sidebar-overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:1000;opacity:0;pointer-events:none;transition:opacity .25s ease}' +
+      '.admin-sidebar-overlay.show{opacity:1;pointer-events:auto}' +
       '@media (max-width:768px){' +
       '.admin-hamburger-btn{display:flex !important}' +
       // Some pages (e.g. Admin_notif.html) set the sidebar's own bottom:0 +
@@ -69,6 +75,14 @@
       '.admin-nav-item{flex:none !important;min-width:0 !important;justify-content:flex-start !important;font-size:14px !important;padding:13px 16px !important}' +
       '.admin-nav-arrow{display:inline-block !important}' +
       '.admin-sidebar-footer{display:flex !important}' +
+      // .admin-user-info (name + role) defaults to min-width:auto as a flex
+      // child of .admin-sidebar-user, so a longer name refused to shrink
+      // and pushed the profile card past the fixed 260px panel width —
+      // the "sagging"/misaligned card at the bottom. Let it shrink and
+      // ellipsize instead of overflowing.
+      '.admin-sidebar-user{min-width:0 !important}' +
+      '.admin-user-info{min-width:0 !important;flex:1 !important}' +
+      '.admin-user-name,.admin-user-role{overflow:hidden !important;text-overflow:ellipsis !important;white-space:nowrap !important}' +
       // Put the hamburger and the page's notification bell on the same row
       // — both pinned to the top corners of .admin-main — instead of the
       // bell sitting in its own row further down the page. Icons sit 24px
