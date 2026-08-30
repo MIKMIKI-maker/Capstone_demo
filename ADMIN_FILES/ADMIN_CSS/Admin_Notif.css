@@ -12,16 +12,15 @@ body {
 /* ===== SIDEBAR ===== */
 .admin-sidebar {
   width: 260px;
-  min-height: 100vh;
+  min-width: 260px;
   background: #1E3A8A;
   display: flex;
   flex-direction: column;
-  position: fixed;
-  left: 0;
+  position: sticky;
   top: 0;
-  bottom: 0;
-  z-index: 100;
-  box-shadow: 4px 0 24px rgba(30,58,138,.20);
+  height: 100vh;
+  overflow-y: auto;
+  flex-shrink: 0;
 }
 
 .admin-sidebar-logo {
@@ -177,7 +176,6 @@ body {
 
 /* ===== MAIN ===== */
 .admin-main {
-  margin-left: 260px;
   flex: 1;
   min-height: 100vh;
   padding: 36px 40px 60px;
