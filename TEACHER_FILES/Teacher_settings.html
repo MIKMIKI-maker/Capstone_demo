@@ -85,7 +85,7 @@
         <div class="teacher-topbar">
             <div>
                 <h1>Settings</h1>
-                <p>Manage your profile, academic calendar, and notification preferences</p>
+                <p>Manage your profile and academic calendar</p>
             </div>
             <a class="teacher-notif-btn" href="Teacher_notif.html">
                 <i class="fa-regular fa-bell"></i>
@@ -110,11 +110,6 @@
                         <i class="fa-solid fa-user" style="width:16px;"></i>
                         My Profile
                         <span class="teacher-menu-dot"></span>
-                    </button>
-                    <button class="teacher-menu-item" id="btn-tab-notifications" type="button">
-                        <i class="fa-solid fa-bell" style="width:16px;"></i>
-                        Notifications
-                        <span class="teacher-menu-dot" style="background:#f5a623;"></span>
                     </button>
                 </div>
             </div>
@@ -173,46 +168,6 @@
                 </button>
                 <div style="clear:both;"></div>
             </div>
-
-            <!-- NOTIFICATIONS PANEL -->
-            <div class="teacher-content-panel" id="teacher-panel-notifications">
-                <div class="teacher-panel-heading">
-                    <span class="teacher-panel-heading-dot"></span>
-                    <h2>Notification Preferences</h2>
-                </div>
-                <p class="teacher-notif-desc">Control which notifications you receive and how they are delivered.</p>
-                <div class="teacher-toggle-row">
-                    <div class="teacher-toggle-info">
-                        <h3>Student Progress Updates</h3>
-                        <p>Daily summary of learner scores and activity completion</p>
-                    </div>
-                    <label class="teacher-switch">
-                        <input checked type="checkbox" /><span class="teacher-switch-slider"></span>
-                    </label>
-                </div>
-                <div class="teacher-toggle-row">
-                    <div class="teacher-toggle-info">
-                        <h3>IEP Deadline Reminders</h3>
-                        <p>Reminders for upcoming IEP submission deadlines</p>
-                    </div>
-                    <label class="teacher-switch">
-                        <input checked type="checkbox" /><span class="teacher-switch-slider"></span>
-                    </label>
-                </div>
-                <div class="teacher-toggle-row">
-                    <div class="teacher-toggle-info">
-                        <h3>System &amp; App Updates</h3>
-                        <p>Updates about new features and maintenance windows</p>
-                    </div>
-                    <label class="teacher-switch">
-                        <input type="checkbox" /><span class="teacher-switch-slider"></span>
-                    </label>
-                </div>
-                <div class="teacher-notif-save-row">
-                    <button class="teacher-btn-save" style="float:none;" type="button">Save Preferences</button>
-                </div>
-            </div>
-
         </div>
     </div>
 </div>
@@ -375,9 +330,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.getElementById('btn-tab-profile').addEventListener('click', function () {
         showPanel('teacher-panel-profile', 'btn-tab-profile');
-    });
-    document.getElementById('btn-tab-notifications').addEventListener('click', function () {
-        showPanel('teacher-panel-notifications', 'btn-tab-notifications');
     });
 
     /* ── Password modal ── */

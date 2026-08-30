@@ -101,7 +101,7 @@
     <header class="admin-topbar">
       <div class="admin-topbar-left">
         <h1 class="admin-page-title">Settings</h1>
-        <p class="admin-page-sub">Manage notification preferences, user access, activities, and reports</p>
+        <p class="admin-page-sub">Manage user access, activities, and reports</p>
       </div>
       <div class="admin-topbar-right">
         
@@ -117,69 +117,14 @@
       <!-- LEFT: Settings Menu -->
       <div class="admin-settings-menu">
         <p class="admin-settings-menu-label">SETTINGS</p>
-        <button class="admin-settings-tab active" onclick="switchTab('notification', this)" type="button">
-          <span class="admin-tab-icon"><i class="fa-solid fa-bell"></i></span> Notification
-          <span class="admin-tab-dot"></span>
-        </button>
-        <button class="admin-settings-tab" onclick="switchTab('useraccess', this)" type="button">
+        <button class="admin-settings-tab active" onclick="switchTab('useraccess', this)" type="button">
           <span class="admin-tab-icon"><i class="fa-solid fa-user-shield"></i></span> User &amp; Access
         </button>
       </div>
       <!-- RIGHT: Settings Panel -->
       <div class="admin-settings-panel">
-        <!-- NOTIFICATION -->
-        <form action="ADMIN_BACKEND/admin_setting_save.php" id="admin_setting_form_1" method="post"
-          style="display: contents;">
-          <div class="admin-settings-section" id="admin-section-notification">
-            <div class="admin-section-header">
-              <span class="admin-section-dot"></span>
-              <h2 class="admin-section-title">Notification Preferences</h2>
-            </div>
-            <div class="admin-section-content">
-              <p class="admin-notification-desc">Control which admin notifications you receive and how they are
-                delivered.
-              </p>
-              <div class="admin-notification-list">
-                <div class="admin-notification-row">
-                  <div class="admin-notification-info">
-                    <h3>Student Attendance Alerts</h3>
-                    <p>Receive alerts for absences, tardiness, and attendance updates.</p>
-                  </div>
-                  <label class="admin-switch">
-                    <input checked="" name="checkbox_input" type="checkbox" />
-                    <span class="admin-slider"></span>
-                  </label>
-                </div>
-                <div class="admin-notification-row">
-                  <div class="admin-notification-info">
-                    <h3>Teacher Activity Updates</h3>
-                    <p>Get notified when teachers add, update, or complete activity records.</p>
-                  </div>
-                  <label class="admin-switch">
-                    <input checked="" name="checkbox_input_2" type="checkbox" />
-                    <span class="admin-slider"></span>
-                  </label>
-                </div>
-                <div class="admin-notification-row">
-                  <div class="admin-notification-info">
-                    <h3>System &amp; User Updates</h3>
-                    <p>Updates about user accounts, system changes, and maintenance reminders.</p>
-                  </div>
-                  <label class="admin-switch">
-                    <input name="checkbox_input_3" type="checkbox" />
-                    <span class="admin-slider"></span>
-                  </label>
-                </div>
-              </div>
-              <div class="admin-section-footer">
-                <button class="admin-btn-save" type="submit"><i class="fa-solid fa-floppy-disk"></i> Save
-                  Preferences</button>
-              </div>
-            </div>
-          </div>
-        </form>
         <!-- USER & ACCESS -->
-        <div class="admin-settings-section" id="admin-section-useraccess" style="display:none">
+        <div class="admin-settings-section" id="admin-section-useraccess">
           <div class="admin-section-header">
             <span class="admin-section-dot"></span>
             <h2 class="admin-section-title">User &amp; Access Settings</h2>
@@ -245,7 +190,6 @@
     function switchTab(tab, el) {
       document.querySelectorAll('.admin-settings-tab').forEach(t => t.classList.remove('active'));
       el.classList.add('active');
-      document.getElementById('admin-section-notification').style.display = tab === 'notification' ? 'flex' : 'none';
       document.getElementById('admin-section-useraccess').style.display = tab === 'useraccess' ? 'flex' : 'none';
     }
 
@@ -331,38 +275,6 @@
         });
       });
       loadUserAccessTables();
-      loadAdminNotificationSettings();
-    });
-
-    function getAdminId() {
-      return sessionStorage.getItem('admin_id') || sessionStorage.getItem('admin_account_id') || '';
-    }
-
-    function loadAdminNotificationSettings() {
-      var adminId = getAdminId();
-      if (!adminId) return;
-      fetch('ADMIN_BACKEND/admin_setting_save.php?admin_id=' + encodeURIComponent(adminId))
-        .then(function (r) { return r.json(); })
-        .then(function (d) {
-          if (!d || !d.success || !d.settings) return;
-          var s = d.settings;
-          if ('notification_attendance' in s) document.querySelector('[name="checkbox_input"]').checked = s.notification_attendance === '1';
-          if ('notification_activity' in s) document.querySelector('[name="checkbox_input_2"]').checked = s.notification_activity === '1';
-          if ('notification_system' in s) document.querySelector('[name="checkbox_input_3"]').checked = s.notification_system === '1';
-        })
-        .catch(function () {});
-    }
-
-    document.getElementById('admin_setting_form_1').addEventListener('submit', function (e) {
-      e.preventDefault();
-      var adminId = getAdminId();
-      if (!adminId) { alert('Session expired, please log in again'); return; }
-      var fd = new FormData(this);
-      fd.append('admin_id', adminId);
-      fetch('ADMIN_BACKEND/admin_setting_save.php', { method: 'POST', body: fd })
-        .then(function (r) { return r.json(); })
-        .then(function (d) { alert(d && d.message ? d.message : (d && d.success ? 'Settings saved successfully' : 'Failed to save settings')); })
-        .catch(function () { alert('Failed to save settings'); });
     });
   </script>
 <script>(function(){var _s=document.createElement('style');_s.textContent='.admin-notif-badge{display:none}';document.head.appendChild(_s);fetch('ADMIN_BACKEND/admin_notif_count.php').then(function(r){return r.json();}).then(function(d){if(d&&d.unread>0){var _b=document.querySelector('.admin-notif-badge');if(_b)_b.style.display='block';}}).catch(function(){});})();</script>
