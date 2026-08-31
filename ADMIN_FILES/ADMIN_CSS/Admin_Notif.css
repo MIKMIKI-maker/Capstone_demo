@@ -125,6 +125,7 @@ body {
   border-radius: 50%;
   background: #f59e0b;
   color: #fff;
+  object-fit: cover;
   font-size: 14px;
   font-weight: 700;
   font-family: 'Poppins', sans-serif;

@@ -111,6 +111,7 @@ body { display: flex; }
     background: #F59E0B;
     color: #fff;
     border-radius: 50%;
+    object-fit: cover;
     display: flex;
     align-items: center;
     justify-content: center;
