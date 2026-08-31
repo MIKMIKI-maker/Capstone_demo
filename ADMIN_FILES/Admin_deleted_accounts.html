@@ -59,29 +59,51 @@
 
     /* ===== RESPONSIVE ===== */
     @media (max-width: 768px) {
-      /* Same approach as Manage Users/Activity Library's tables: let the
-         whole table scroll horizontally as one unit (a real <table>, so
-         thead/tbody columns stay naturally aligned) instead of clipping
-         the trailing columns via .da-table-wrap's overflow:hidden. */
-      .da-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-      .da-table { min-width: 700px; }
-      .da-user-name, .da-user-email { white-space: nowrap; }
-
-      /* Actions (Restore / Delete Permanently) is the last column, so it
-         scrolled off past the right edge along with the rest of the
-         table. Pin it to the right edge of the scroll container with its
-         own background, so it's always visible and tappable. */
-      .da-table th:last-child, .da-table td:last-child {
-        position: sticky;
-        right: 0;
-        z-index: 2;
-        box-shadow: -6px 0 8px -6px rgba(0,0,0,.15);
+      /* A horizontal-scrolling <table> still crammed Account/Actions
+         together at phone widths. Turn each row into its own card
+         instead: hide the header labels (the card layout below makes
+         each field self-evident) and lay out the 6 cells as a 2-column
+         grid — checkbox top-right, Account full-width up top, Role +
+         Status side by side, then Deleted On and Actions each full-width
+         at the bottom, Restore/Delete stacked as one row of two buttons. */
+      .da-table-wrap { overflow-x: visible; background: transparent; box-shadow: none; border-radius: 0; }
+      .da-table, .da-table tbody { display: block; width: 100%; }
+      .da-table thead { display: none; }
+      .da-table tbody tr {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px 12px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        box-shadow: 0 2px 8px rgba(0,0,0,.05);
+        padding: 16px;
+        margin-bottom: 12px;
       }
-      .da-table th:last-child { background: #f8fafc; }
-      .da-table td:last-child { background: #fff; }
-      .da-table tbody tr:hover td:last-child { background: #f8fafc; }
-      .da-actions { flex-wrap: nowrap; }
-      .da-btn-restore, .da-btn-perm { white-space: nowrap; }
+      .da-table td {
+        display: block;
+        padding: 0;
+        border: none;
+      }
+      .da-table td:first-child { grid-column: 1 / -1; justify-self: end; order: -1; }
+      .da-table td:nth-child(2) { grid-column: 1 / -1; }
+      .da-table td:nth-child(3) { grid-column: 1; }
+      .da-table td:nth-child(4) { grid-column: 2; justify-self: end; }
+      .da-table td:nth-child(5) { grid-column: 1 / -1; }
+      .da-table td:nth-child(6) { grid-column: 1 / -1; }
+      /* The loading/error/empty row is a single td[colspan="6"] — it's
+         also :first-child, so without this it would inherit the
+         checkbox's right-aligned/reordered placement instead of sitting
+         as a normal centered full-width message. */
+      .da-table td:has(.da-empty), .da-table td.da-empty {
+        grid-column: 1 / -1;
+        justify-self: stretch;
+        order: 0;
+      }
+      .da-user-name, .da-user-email { white-space: normal; }
+      .da-deleted-date::before { content: 'Deleted: '; color: #cbd5e1; }
+      .da-actions { width: 100%; }
+      .da-btn-restore, .da-btn-perm { flex: 1; justify-content: center; }
     }
   </style>
 </head>
