@@ -255,6 +255,11 @@ body { display: flex; }
 
 /* User Access Table */
 .admin-user-access-table { border: 1px solid #f0ebe1; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; flex: 1; min-height: 0; }
+/* Transparent pass-through flex container (head + rows-wrapper) so the
+   .admin-user-access-table -> .admin-uat-rows-wrapper flex chain still
+   reaches through it unchanged at desktop; only gets overflow-x:auto at
+   the mobile breakpoint below. */
+.admin-uat-scroll { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .admin-uat-head { display: grid; grid-template-columns: 60px 1fr 120px 120px 140px 110px; gap: 12px; padding: 12px 20px; background: #faf8f4; font-size: 11px; font-weight: 700; color: #aaa; letter-spacing: .8px; text-transform: uppercase; flex-shrink: 0; }
 .admin-uat-rows-wrapper { overflow-y: scroll; overflow-x: hidden; flex: 1; min-height: 0; scrollbar-width: thin; scrollbar-color: #c8c0b8 #f5f0e8; }
 .admin-uat-rows-wrapper::-webkit-scrollbar { width: 6px; }
@@ -312,7 +317,19 @@ body { display: flex; }
      Only .admin-uat-scroll (head+rows) scrolls — .admin-uat-footer sits
      outside it so the "Showing X of Y" summary stays put, full-width. */
   .admin-uat-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .admin-uat-rows-wrapper { overflow-x: visible; }
+  /* .admin-uat-rows-wrapper already has overflow-y:scroll (many rows) —
+     mixing that with overflow-x:visible doesn't work: per spec, a
+     "visible" x-axis next to a scrolling y-axis silently computes to
+     auto instead, turning this into a SECOND, independent horizontal
+     scrollbox that scrolled out of sync with the head above it (the
+     head/row misalignment). Give it (and the JS-populated rows
+     container inside it) the same min-width as the head/rows instead,
+     so nothing overflows at this level — the single scroll that matters
+     is the outer .admin-uat-scroll. */
+  .admin-uat-rows-wrapper,
+  .admin-uat-rows-wrapper > div {
+    min-width: 620px;
+  }
   .admin-uat-head, .admin-uat-row {
     grid-template-columns: 46px 150px 90px 90px 110px 90px;
     min-width: 620px;
