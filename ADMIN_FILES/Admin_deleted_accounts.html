@@ -334,7 +334,7 @@
 
   /* ── Sidebar name ── */
   (function(){
-    var n = sessionStorage.getItem('admin_name') || 'Admin';
+    var n = (sessionStorage.getItem('admin_name') || 'Admin').split(' ')[0];
     var el = document.getElementById('da-sidebar-name');
     if (el) el.textContent = n;
     var av = document.getElementById('da-sidebar-avatar');

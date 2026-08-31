@@ -98,7 +98,7 @@
 <script>
   /* ── Sidebar profile ── */
   (function() {
-    var name = sessionStorage.getItem('admin_name') || sessionStorage.getItem('admin_first_name') || 'Admin';
+    var name = (sessionStorage.getItem('admin_first_name') || sessionStorage.getItem('admin_name') || 'Admin').split(' ')[0];
     var el = document.getElementById('adminSideName');
     if (el) el.textContent = name;
     var av = document.getElementById('adminSideAvatar');
@@ -258,9 +258,8 @@
         .then(function(r) { return r.json(); })
         .then(function(d) {
           if (d && d.first_name) {
-            var fullName = (d.first_name + ' ' + (d.last_name || '')).trim();
             var el = document.getElementById('adminSideName');
-            if (el) el.textContent = fullName;
+            if (el) el.textContent = d.first_name;
             var av = document.getElementById('adminSideAvatar');
             if (av) av.textContent = (d.first_name.charAt(0) + (d.last_name ? d.last_name.charAt(0) : '')).toUpperCase();
           }
