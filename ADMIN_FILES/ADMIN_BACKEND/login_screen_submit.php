@@ -121,11 +121,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
 
+    // Locked out per-account (by email), not per-IP — otherwise one
+    // person's failed attempts on a shared network (e.g. school WiFi)
+    // would also block every other account trying to log in from there.
     $MAX_ATTEMPTS = 5;
     $LOCKOUT_MINUTES = 15;
-    $chk = $conn->prepare("SELECT COUNT(*) AS cnt FROM login_attempts WHERE ip_address = ? AND attempted_at > DATE_SUB(NOW(), INTERVAL ? MINUTE)");
+    $chk = $conn->prepare("SELECT COUNT(*) AS cnt FROM login_attempts WHERE email = ? AND attempted_at > DATE_SUB(NOW(), INTERVAL ? MINUTE)");
     if ($chk) {
-        $chk->bind_param("si", $ip, $LOCKOUT_MINUTES);
+        $chk->bind_param("si", $email, $LOCKOUT_MINUTES);
         $chk->execute();
         $chkRow = $chk->get_result()->fetch_assoc();
         $chk->close();
@@ -171,8 +174,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         if ($auth_ok) {
             session_regenerate_id(true);
-            $clr = $conn->prepare("DELETE FROM login_attempts WHERE ip_address = ?");
-            if ($clr) { $clr->bind_param("s", $ip); $clr->execute(); $clr->close(); }
+            $clr = $conn->prepare("DELETE FROM login_attempts WHERE email = ?");
+            if ($clr) { $clr->bind_param("s", $email); $clr->execute(); $clr->close(); }
 
             $_SESSION['admin_id']    = $row['id'];
             $_SESSION['admin_email'] = $email;
