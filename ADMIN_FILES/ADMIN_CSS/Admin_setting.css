@@ -305,9 +305,19 @@ body { display: flex; }
   .admin-main { height: auto; overflow-y: unset; padding: 20px 16px; }
   .admin-settings-body { flex-direction: column; }
   .admin-settings-menu { width: 100%; }
-  .admin-uat-head, .admin-uat-row { grid-template-columns: 40px 1fr 84px 76px; gap: 8px; padding: 10px 12px; }
-  .admin-uat-head span:nth-child(5), .admin-uat-row span:nth-child(5),
-  .admin-uat-head span:nth-child(6), .admin-uat-row span:nth-child(6) { display: none; }
+  /* Same approach as Manage Users/Activity Library's tables: instead of
+     hiding Last Active/Status on phones, let the head+rows scroll
+     horizontally together as one unit so every column stays reachable.
+     Only .admin-uat-scroll (head+rows) scrolls — .admin-uat-footer sits
+     outside it so the "Showing X of Y" summary stays put, full-width. */
+  .admin-uat-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .admin-uat-rows-wrapper { overflow-x: visible; }
+  .admin-uat-head, .admin-uat-row {
+    grid-template-columns: 46px 150px 90px 90px 110px 90px;
+    min-width: 620px;
+    gap: 8px;
+    padding: 10px 12px;
+  }
   /* Grid children default to min-width:auto, so long badge/condition text
      refused to shrink to its column and broke into the next one instead of
      wrapping. Force them to respect the column width. */
