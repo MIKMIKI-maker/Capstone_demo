@@ -56,6 +56,33 @@
     .da-sel-info strong{color:#1e293b;}
     .back-link{display:inline-flex;align-items:center;gap:8px;color:#3b82f6;font-family:'Poppins',sans-serif;font-size:13.5px;font-weight:500;text-decoration:none;margin-bottom:8px;transition:color .2s;}
     .back-link:hover{color:#2563eb;}
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      /* Same approach as Manage Users/Activity Library's tables: let the
+         whole table scroll horizontally as one unit (a real <table>, so
+         thead/tbody columns stay naturally aligned) instead of clipping
+         the trailing columns via .da-table-wrap's overflow:hidden. */
+      .da-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .da-table { min-width: 700px; }
+      .da-user-name, .da-user-email { white-space: nowrap; }
+
+      /* Actions (Restore / Delete Permanently) is the last column, so it
+         scrolled off past the right edge along with the rest of the
+         table. Pin it to the right edge of the scroll container with its
+         own background, so it's always visible and tappable. */
+      .da-table th:last-child, .da-table td:last-child {
+        position: sticky;
+        right: 0;
+        z-index: 2;
+        box-shadow: -6px 0 8px -6px rgba(0,0,0,.15);
+      }
+      .da-table th:last-child { background: #f8fafc; }
+      .da-table td:last-child { background: #fff; }
+      .da-table tbody tr:hover td:last-child { background: #f8fafc; }
+      .da-actions { flex-wrap: nowrap; }
+      .da-btn-restore, .da-btn-perm { white-space: nowrap; }
+    }
   </style>
 </head>
 <body>
