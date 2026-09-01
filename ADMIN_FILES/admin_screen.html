@@ -1,11 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
   <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
-  <title>SPED ALM - Login</title>
-  <link href="ADMIN_LOGIN_CSS/login_screen.css" rel="stylesheet" />
+  <title>SPED ALM - Admin Login</title>
+  <link href="ADMIN_LOGIN_CSS/admin_screen.css" rel="stylesheet" />
   <link href="ADMIN_LOGIN_CSS/animations.css" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
@@ -59,42 +59,42 @@
     </div>
 
     <div class="admin-hero-text anim-fade-up anim-d2">
-      <h1>Learning materials<br /><span class="admin-highlight">crafted for every</span><br />learner.</h1>
-      <p class="admin-hero-desc">Generate, manage, and deliver personalized Alternative Learning Materials for students with special educational needs.</p>
+      <h1>Empowering inclusion<br />through quality<br /><span class="admin-highlight">learning materials.</span></h1>
+      <p class="admin-hero-desc">Manage users, monitor activities, and ensure quality learning materials for every learner with special educational needs.</p>
     </div>
 
     <div class="admin-features anim-fade-up anim-d3">
       <div class="admin-feature-card anim-fade-up anim-d1">
-        <span class="admin-feature-icon">📖</span>
+        <div class="admin-feature-icon-circle icon-blue"><i class="fa-solid fa-users"></i></div>
         <div>
-          <div class="admin-feature-title">Smart Materials</div>
-          <div class="admin-feature-sub">Custom learning materials</div>
+          <div class="admin-feature-title">User Management</div>
+          <div class="admin-feature-sub">Manage teachers, students, and system accounts.</div>
         </div>
       </div>
       <div class="admin-feature-card anim-fade-up anim-d2">
-        <span class="admin-feature-icon">👥</span>
+        <div class="admin-feature-icon-circle icon-teal"><i class="fa-solid fa-chart-simple"></i></div>
         <div>
-          <div class="admin-feature-title">Inclusive Design</div>
-          <div class="admin-feature-sub">Every learner counts</div>
+          <div class="admin-feature-title">Activity Monitoring</div>
+          <div class="admin-feature-sub">Track system activities, materials, and learner progress.</div>
         </div>
       </div>
       <div class="admin-feature-card anim-fade-up anim-d3">
-        <span class="admin-feature-icon">⚙️</span>
+        <div class="admin-feature-icon-circle icon-orange"><i class="fa-solid fa-shield-halved"></i></div>
         <div>
-          <div class="admin-feature-title">Adaptive Content</div>
-          <div class="admin-feature-sub">Tailored to each need</div>
+          <div class="admin-feature-title">Data Security</div>
+          <div class="admin-feature-sub">Ensure the safety and integrity of all data and information.</div>
         </div>
       </div>
       <div class="admin-feature-card anim-fade-up anim-d4">
-        <span class="admin-feature-icon">✦</span>
+        <div class="admin-feature-icon-circle icon-purple"><i class="fa-solid fa-file-lines"></i></div>
         <div>
-          <div class="admin-feature-title">SPED Aligned</div>
-          <div class="admin-feature-sub">DepEd compliant</div>
+          <div class="admin-feature-title">Reports &amp; Insights</div>
+          <div class="admin-feature-sub">Generate reports and make data-driven decisions.</div>
         </div>
       </div>
     </div>
 
-    <img alt="Children" class="admin-children-img" src="../ASSETS/children.png" />
+    <img alt="Admin" class="admin-children-img" src="../ASSETS/adminback.png" onerror="this.style.display='none'" />
 
     <div class="admin-left-bottom">
       <div class="admin-left-footer">Mamatid Elementary School · SPED Program · Cabuyao, Laguna</div>
@@ -107,27 +107,26 @@
 
   <!-- RIGHT PANEL -->
   <div class="admin-right-panel">
-    <form action="ADMIN_BACKEND/login_screen_submit.php" id="login_screen_form_1" method="post" style="display: contents;">
+    <form action="ADMIN_BACKEND/login_screen_submit.php" id="admin_screen_form_1" method="post" style="display: contents;">
       <div class="admin-login-box anim-scale-in">
         <div class="login-brand">
           <img alt="SPED ALM Logo" class="login-brand-logo" src="../ASSETS/logo.png" />
           <span class="login-brand-title">SPED ALM</span>
           <span class="login-brand-sub">ALTERNATIVE LEARNING MATERIAL GENERATOR</span>
-          <span class="login-brand-tagline">Sign in to your SPED ALM account</span>
+          <span class="login-brand-tagline">Sign in to your SPED ALM administrator account</span>
         </div>
 
         <div class="login-portal-badge">
-          <i class="fa-solid fa-graduation-cap login-portal-badge-icon"></i>
+          <div class="login-portal-badge-icon-circle"><i class="fa-solid fa-shield-halved"></i></div>
           <div class="login-portal-badge-text">
-            <span class="login-portal-badge-title">One account. Two portals.</span>
-            <span class="login-portal-badge-sub">For Teacher and Student</span>
+            <span class="login-portal-badge-title">Admin access only</span>
+            <span class="login-portal-badge-sub">Authorized personnel only.</span>
           </div>
-          <i class="fa-solid fa-users login-portal-badge-icon"></i>
         </div>
 
         <div class="admin-form-group">
-          <label for="admin-email">School Email / Learner ID</label>
-          <input id="admin-email" name="admin_email" placeholder="Enter your school email or learner ID" type="text" />
+          <label for="admin-email">Admin Email</label>
+          <input id="admin-email" name="admin_email" placeholder="Enter admin email" type="email" />
         </div>
 
         <div class="admin-form-group">
@@ -138,71 +137,20 @@
           </div>
         </div>
 
-        <div class="admin-remember-row" style="display:flex;align-items:center;justify-content:space-between;">
+        <div class="admin-remember-row" style="display:flex;align-items:center;">
           <label class="admin-remember-label" for="remember-me">
             <input type="checkbox" class="admin-remember-check" id="remember-me" />
             Remember me
           </label>
-          <a class="admin-forgot" href="#admin-coordinator-modal">Forgot password?</a>
         </div>
 
         <div id="login-error-msg" style="display:none;background:#fff5f5;border:1.5px solid #fca5a5;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-family:'Poppins',sans-serif;font-size:13px;color:#991b1b;line-height:1.6;"></div>
         <button class="admin-btn-signin" type="submit">Sign In <i class="fa-solid fa-arrow-right" style="font-size:14px;margin-left:4px;"></i></button>
 
-        <div class="login-info-box">
-          <i class="fa-solid fa-circle-info"></i>
-          <div>
-            <strong>Teacher or Student?</strong>
-            <p>Your account will automatically open the appropriate portal.</p>
-          </div>
-        </div>
-
         <hr class="admin-divider" />
         <p class="admin-footer-note">Republic of the Philippines · Department of Education</p>
       </div>
     </form>
-  </div>
-
-  <!-- Modal placed outside panels so position:fixed covers full viewport correctly -->
-  <div class="admin-modal-overlay" id="admin-coordinator-modal">
-    <div class="admin-modal-box">
-      <a class="admin-modal-close" href="#">×</a>
-      <div class="admin-modal-icon-wrap">
-        <span class="admin-modal-icon">📞</span>
-      </div>
-      <h3 class="admin-modal-title">Contact Your SPED Coordinator</h3>
-      <hr class="admin-modal-divider" />
-      <div class="admin-modal-school-card">
-        <img alt="School Logo" class="admin-modal-school-logo" src="../ASSETS/School_logo.png" />
-        <div>
-          <div class="admin-modal-school-name">Mamatid Elementary School</div>
-          <div class="admin-modal-school-loc">Cabuyao, Laguna</div>
-        </div>
-      </div>
-      <div class="admin-modal-info-list">
-        <div class="admin-modal-info-item">
-          <span class="admin-modal-info-icon">👤</span>
-          <span><strong>Admin:</strong> Juan Dela Cruz</span>
-        </div>
-        <div class="admin-modal-info-item">
-          <span class="admin-modal-info-icon">📧</span>
-          <span><strong>Email:</strong> admin@mamatid.edu.ph</span>
-        </div>
-        <div class="admin-modal-info-item">
-          <span class="admin-modal-info-icon">📞</span>
-          <span><strong>Phone:</strong> +63 912 345 6789</span>
-        </div>
-        <div class="admin-modal-info-item">
-          <span class="admin-modal-info-icon">🕐</span>
-          <span><strong>Office Hours:</strong> Monday–Friday, 7:00 AM – 5:00 PM</span>
-        </div>
-      </div>
-      <div class="admin-modal-note">
-        <span>💡</span>
-        <p>Forgot your password? Please contact your school administrator for assistance in resetting your account.</p>
-      </div>
-      <a class="admin-modal-got-it" href="#">Got it</a>
-    </div>
   </div>
 
   <script>
@@ -235,13 +183,13 @@
         }
       }
 
-      /* Auto-fill saved credentials */
-      var savedEmail = localStorage.getItem('sped_remember_email');
+      /* Auto-fill saved admin email (kept separate from the teacher/student portal's remembered email) */
+      var savedEmail = localStorage.getItem('sped_admin_remember_email');
       if (savedEmail) {
-        document.getElementById('admin-email').value    = savedEmail;
+        document.getElementById('admin-email').value = savedEmail;
+        document.getElementById('remember-me').checked = true;
       }
-      localStorage.removeItem('sped_remember_pass');
-      
+
       /* Ripple effect on buttons only */
       document.querySelectorAll(".admin-btn-signin, .admin-modal-got-it, .admin-signout-btn").forEach(function (btn) {
         btn.addEventListener("click", function (e) {
@@ -260,19 +208,19 @@
       });
 
       /* Handle login form submission */
-      var loginForm = document.getElementById("login_screen_form_1");
+      var loginForm = document.getElementById("admin_screen_form_1");
       if (loginForm) {
         loginForm.addEventListener("submit", function (e) {
           e.preventDefault();
-          
+
           var email = document.getElementById("admin-email").value;
           var password = document.getElementById("admin-password").value;
-          
+
           /* Hide any previous error */
           var _errEl = document.getElementById('login-error-msg');
           if (_errEl) { _errEl.style.display = 'none'; _errEl.innerHTML = ''; }
 
-          /* Send login request to backend */
+          /* Send login request to the shared backend */
           fetch("ADMIN_BACKEND/login_screen_submit.php", {
             method: "POST",
             headers: {
@@ -294,52 +242,32 @@
 
             try {
               var jsonData = JSON.parse(data);
-              
+
               if (jsonData.status === "success") {
-                /* Remember only the email; never store plaintext passwords. */
-                localStorage.setItem('sped_remember_email', email);
-                localStorage.removeItem('sped_remember_pass');
-
-                /* Clear all old session data */
-                sessionStorage.clear();
-
-                if (jsonData.role === "student") {
-                  /* Clear previous student's localStorage data so a new student
-                     starts clean and never sees another user's activity records. */
-                  localStorage.removeItem('student_progress');
-                  localStorage.removeItem('student_profile');
-                  localStorage.removeItem('student_notifications');
-                  /* Student login — store student-specific keys */
-                  sessionStorage.setItem('student_id', jsonData.admin_id);
-                  sessionStorage.setItem('student_name', jsonData.admin_name);
-                  sessionStorage.setItem('student_record_id', jsonData.student_record_id || '');
-                  sessionStorage.setItem('teacher_id', jsonData.teacher_id || '');
-                  sessionStorage.setItem('student_condition', jsonData.student_condition || '');
-                  sessionStorage.setItem('student_grade', jsonData.student_grade || '');
-                  /* Seed profile photo so all student pages show it immediately */
-                  if (jsonData.profile_photo) {
-                    try { localStorage.setItem('student_profile', JSON.stringify({ photo: jsonData.profile_photo })); } catch(e) {}
+                if (jsonData.role !== "admin") {
+                  var wrongPortalEl = document.getElementById('login-error-msg');
+                  if (wrongPortalEl) {
+                    wrongPortalEl.textContent = 'This portal is for admin accounts only. Please use the teacher/student login page.';
+                    wrongPortalEl.style.display = 'block';
                   }
-                  window.location.href = "../STUDENT_FILES/Student_dashboard.html";
-                } else if (jsonData.role === "teacher") {
-                  /* Teacher login */
-                  sessionStorage.setItem('admin_id', jsonData.admin_id);
-                  sessionStorage.setItem('teacher_name', jsonData.admin_name);
-                  sessionStorage.setItem('teacher_id', jsonData.teacher_id || '1');
-                  sessionStorage.setItem('teacher_section', jsonData.teacher_section || '');
-                  /* Seed profile photo so teacher portal shows it immediately */
-                  if (jsonData.profile_photo) {
-                    sessionStorage.setItem('teacher_profile_pic', jsonData.profile_photo);
-                  }
-                  window.location.href = "../TEACHER_FILES/Teacher_dashboard.html";
-                } else {
-                  /* This portal only serves teacher and student accounts. */
-                  var portalErrEl = document.getElementById('login-error-msg');
-                  if (portalErrEl) {
-                    portalErrEl.textContent = 'This portal is for teacher and student accounts. Please use the admin login page.';
-                    portalErrEl.style.display = 'block';
-                  }
+                  return;
                 }
+
+                /* Remember only the email, and only when the user opted in; never store plaintext passwords. */
+                if (document.getElementById('remember-me').checked) {
+                  localStorage.setItem('sped_admin_remember_email', email);
+                } else {
+                  localStorage.removeItem('sped_admin_remember_email');
+                }
+
+                sessionStorage.clear();
+                sessionStorage.setItem('admin_id', jsonData.admin_id);
+                sessionStorage.setItem('teacher_name', jsonData.admin_name);
+                if (jsonData.profile_photo) {
+                  sessionStorage.setItem('teacher_profile_pic', jsonData.profile_photo);
+                }
+
+                window.location.href = "Admin_dashboard.html";
               } else {
                 var errEl = document.getElementById('login-error-msg');
                 if (errEl) {

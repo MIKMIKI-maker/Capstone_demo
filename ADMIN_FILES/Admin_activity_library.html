@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-  <script src="../ASSETS/portal_guard.js" data-portal-role="admin" data-status-path="ADMIN_BACKEND/session_status.php" data-login-path="login_screen.html?session=expired"></script>
+  <script src="../ASSETS/portal_guard.js" data-portal-role="admin" data-status-path="ADMIN_BACKEND/session_status.php" data-login-path="admin_screen.html?session=expired"></script>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
   <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
@@ -82,7 +82,7 @@
         </div>
       </div>
       <a class="admin-signout-btn" href="#"
-        onclick="var _id=sessionStorage.getItem('admin_id');fetch('ADMIN_BACKEND/logout.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'admin_id='+encodeURIComponent(_id||'')}).finally(function(){sessionStorage.clear();window.location.href='login_screen.html';});return false;">
+        onclick="var _id=sessionStorage.getItem('admin_id');fetch('ADMIN_BACKEND/logout.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'admin_id='+encodeURIComponent(_id||'')}).finally(function(){sessionStorage.clear();window.location.href='admin_screen.html';});return false;">
         <i class="fa-solid fa-right-from-bracket"></i>
         <span>Sign Out</span>
       </a>

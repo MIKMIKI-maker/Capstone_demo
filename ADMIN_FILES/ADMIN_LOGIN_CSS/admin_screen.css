@@ -148,6 +148,24 @@ body {
   flex-shrink: 0;
 }
 
+/* Circular colored icon used on the admin feature cards */
+.admin-feature-icon-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.icon-blue   { background: #2563eb; }
+.icon-teal   { background: #14b8a6; }
+.icon-orange { background: #F5A623; }
+.icon-purple { background: #8b5cf6; }
+
 .admin-feature-title {
   font-family: 'Nunito', sans-serif;
   font-weight: 700;
@@ -175,7 +193,7 @@ body {
   color: rgba(255, 255, 255, 0.45);
 }
 
-/* Children image */
+/* Background illustration */
 .admin-children-img {
   position: absolute;
   bottom: 0;
@@ -183,7 +201,7 @@ body {
   width: 790px;
   object-fit: contain;
   display: block;
-  opacity: 0.25;
+  opacity: 0.12;
   z-index: 0;
   pointer-events: none;
 }
@@ -206,42 +224,7 @@ body {
   max-width: 400px;
 }
 
-/* School header */
-.admin-school-header {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 36px;
-}
-
-.admin-school-logo {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-.admin-school-info {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.admin-school-name {
-  font-family: 'Nunito', sans-serif;
-  font-size: 22px;
-  font-weight: 900;
-  color: #1a1a2e;
-  line-height: 1.2;
-}
-
-.admin-school-sub {
-  font-size: 13px;
-  color: #888;
-}
-
-/* Centered brand header (student/teacher login) */
+/* Centered brand header */
 .login-brand {
   display: flex;
   flex-direction: column;
@@ -280,7 +263,7 @@ body {
   margin-top: 6px;
 }
 
-/* Two-portal badge */
+/* Portal badge */
 .login-portal-badge {
   display: flex;
   align-items: center;
@@ -291,9 +274,16 @@ body {
   margin-bottom: 16px;
 }
 
-.login-portal-badge-icon {
-  font-size: 18px;
-  color: #1a3a8f;
+.login-portal-badge-icon-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #1a3a8f;
+  color: #ffffff;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
 }
 
@@ -301,7 +291,6 @@ body {
   display: flex;
   flex-direction: column;
   flex: 1;
-  text-align: center;
 }
 
 .login-portal-badge-title {
@@ -344,6 +333,16 @@ body {
   font-family: 'Nunito', sans-serif;
   font-size: 13px;
   margin-bottom: 2px;
+}
+
+.login-info-link {
+  color: #1a3a8f;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.login-info-link:hover {
+  text-decoration: underline;
 }
 
 /* Form */
@@ -451,31 +450,6 @@ body {
 
 .admin-btn-signin:active {
   transform: scale(0.98);
-}
-
-/* Contact note */
-.admin-contact-note {
-  text-align: center;
-  font-size: 13px;
-  color: #888;
-  margin-top: 24px;
-  line-height: 1.7;
-}
-
-.admin-coordinator-link {
-  background: none;
-  border: none;
-  padding: 0;
-  color: #1a3a8f;
-  font-weight: 700;
-  font-size: 13px;
-  font-family: 'Inter', sans-serif;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.admin-coordinator-link:hover {
-  text-decoration: underline;
 }
 
 /* Divider */
@@ -698,9 +672,6 @@ body {
     min-height: 100vh;
   }
 
-  /* Keep just the logo/brand as a compact blue header strip instead of
-     hiding the whole left panel — the hero text, feature cards, children
-     illustration, and footer don't fit on a phone so those stay hidden. */
   .admin-left-panel {
     height: auto;
     width: 100%;
@@ -728,19 +699,6 @@ body {
   .admin-login-box {
     max-width: 100%;
     padding-top: 20px;
-  }
-
-  .admin-school-header {
-    margin-bottom: 28px;
-  }
-
-  .admin-school-name {
-    font-size: 18px;
-  }
-
-  .admin-school-logo {
-    width: 48px;
-    height: 48px;
   }
 
   .admin-btn-signin {
@@ -776,12 +734,7 @@ body {
   .admin-right-panel {
     padding: 32px 18px;
   }
-
-  .admin-school-name {
-    font-size: 16px;
-  }
 }
-
 
 /* Remember Me row */
 .admin-remember-row {
