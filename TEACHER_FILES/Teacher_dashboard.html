@@ -263,15 +263,25 @@
             }
         }
 
-        function initDefaults() {
+        function updateTeacherDateTime() {
             var name = sessionStorage.getItem('teacher_name') || 'Teacher';
+            var school = sessionStorage.getItem('teacher_school') || '';
             var now = new Date();
-            var opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            var opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Singapore' };
             var dateStr = now.toLocaleDateString('en-US', opts);
-            var hour = now.getHours();
+            var timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Singapore' });
+            var hour = parseInt(now.toLocaleString('en-US', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Asia/Singapore' }), 10);
             var tod = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
             document.getElementById('teacher-greeting').textContent = 'Good ' + tod + ', ' + name + ' 👋';
-            document.getElementById('teacher-greeting-sub').textContent = dateStr;
+            document.getElementById('teacher-greeting-sub').textContent = school
+                ? dateStr + ' · ' + timeStr + ' · ' + school
+                : dateStr + ' · ' + timeStr;
+        }
+
+        function initDefaults() {
+            var name = sessionStorage.getItem('teacher_name') || 'Teacher';
+            updateTeacherDateTime();
+            setInterval(updateTeacherDateTime, 30000);
             document.getElementById('dashboard-teacher-name').textContent = name;
             document.getElementById('teacher-name-sidebar').textContent = name;
             document.getElementById('teacher-avatar-letter').textContent = name.trim().charAt(0).toUpperCase();
@@ -304,14 +314,17 @@
                     if (t.profilePhoto) sessionStorage.setItem('teacher_profile_pic', t.profilePhoto);
 
                     var now = new Date();
-                    var hour = now.getHours();
+                    var hour = parseInt(now.toLocaleString('en-US', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Asia/Singapore' }), 10);
                     var tod = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
                     var firstName = t.firstName || t.name.split(' ')[0];
                     document.getElementById('teacher-greeting').textContent = 'Good ' + tod + ', ' + firstName + ' 👋';
 
-                    var opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                    var opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Singapore' };
                     var dateStr = now.toLocaleDateString('en-US', opts);
-                    document.getElementById('teacher-greeting-sub').textContent = t.schoolName ? dateStr + ' · ' + t.schoolName : dateStr;
+                    var timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Singapore' });
+                    document.getElementById('teacher-greeting-sub').textContent = t.schoolName
+                        ? dateStr + ' · ' + timeStr + ' · ' + t.schoolName
+                        : dateStr + ' · ' + timeStr;
 
                     applyProfilePic();
                 })

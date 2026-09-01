@@ -137,9 +137,12 @@
       var spFull  = [spFirst, spLast].filter(Boolean).join(' ') || 'Student';
       var spInit  = ((spFirst[0]||'S') + (spLast[0]||'')).toUpperCase().trim() || 'S';
       var av = document.getElementById('notifSideAvatar');
-      if (av) av.innerHTML = sp.photo
-        ? '<img src="' + sp.photo + '" style="width:100%;height:100%;object-fit:cover;display:block;" />'
-        : spInit;
+      if (av) {
+        av.innerHTML = sp.photo
+          ? '<img src="' + sp.photo + '" style="width:100%;height:100%;object-fit:cover;display:block;" />'
+          : spInit;
+        av.classList.toggle('has-photo', !!sp.photo);
+      }
       if (!sp.photo) {
         var _nSid = sessionStorage.getItem('student_id') || '';
         if (_nSid) {
@@ -150,7 +153,10 @@
                 sp.photo = pd.profile_photo;
                 try { localStorage.setItem('student_profile', JSON.stringify(sp)); } catch(e){}
                 var _av2 = document.getElementById('notifSideAvatar');
-                if (_av2) _av2.innerHTML = '<img src="' + pd.profile_photo + '" style="width:100%;height:100%;object-fit:cover;display:block;" />';
+                if (_av2) {
+                  _av2.innerHTML = '<img src="' + pd.profile_photo + '" style="width:100%;height:100%;object-fit:cover;display:block;" />';
+                  _av2.classList.add('has-photo');
+                }
               }
             }).catch(function(){});
         }

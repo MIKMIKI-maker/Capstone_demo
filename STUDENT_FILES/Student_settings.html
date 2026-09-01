@@ -109,6 +109,9 @@
             <i class="fa-solid fa-camera student-edit-photo-icon"></i>
           </label>
           <input accept="image/*" hidden="" id="student-profileUpload" name="student_profileupload" type="file" />
+          <button class="student-remove-photo-btn" id="student-removePhotoBtn" type="button" title="Remove photo" style="display:none;">
+            <i class="fa-solid fa-trash"></i>
+          </button>
         </div>
         <div class="student-profile-name" id="student-profile-name-display">Student</div>
         <div class="student-profile-grade" id="student-profile-grade-display">Student</div>
@@ -213,6 +216,9 @@
     </form>
   </div>
   <script>
+    // null = no staged photo change; '' = staged removal; data URI = staged
+    // new photo. Nothing is sent to the server until "Save Changes" is
+    // clicked — see the submit handler below.
     var _pendingPhoto = null;
 
     /* ── compress profile photo to ~200×200 JPEG before storing ── */
@@ -248,22 +254,28 @@
       document.querySelector('.student-sidebar .student-user-name').textContent = fullName;
       document.querySelector('.student-sidebar .student-user-role').textContent = gradeRole;
       var _settAv = document.getElementById('settSideAvatar');
-      var _settPhoto = _pendingPhoto || p.photo || '';
-      if (_settAv) _settAv.innerHTML = _settPhoto
-        ? '<img src="' + _settPhoto + '" style="width:100%;height:100%;object-fit:cover;display:block;" />'
-        : initials;
+      var _settPhoto = p.photo || '';
+      if (_settAv) {
+        _settAv.innerHTML = _settPhoto
+          ? '<img src="' + _settPhoto + '" style="width:100%;height:100%;object-fit:cover;display:block;" />'
+          : initials;
+        _settAv.classList.toggle('has-photo', !!_settPhoto);
+      }
 
       document.querySelector('.student-modal-user-name').textContent   = fullName;
       document.querySelector('.student-modal-user-avatar').textContent = initials;
       document.querySelector('.student-modal-user-meta').textContent   = gradeRole;
 
-      var photo = _pendingPhoto || p.photo || '';
+      var photo = p.photo || '';
       var imgEl = document.getElementById('student-profileImg');
       var fallEl = document.getElementById('student-avatarFallback');
+      var removeBtn = document.getElementById('student-removePhotoBtn');
       if (photo) {
         imgEl.src = photo; imgEl.style.display = 'block'; fallEl.style.display = 'none';
+        if (removeBtn) removeBtn.style.display = 'flex';
       } else {
         imgEl.style.display = 'none'; fallEl.style.display = 'flex'; fallEl.textContent = initials;
+        if (removeBtn) removeBtn.style.display = 'none';
       }
     }
 
@@ -305,7 +317,15 @@
       }
     }
 
-    /* ── photo upload – keep as base64 so it survives page reloads ── */
+    /* ── preview a staged photo change without touching localStorage/DB yet
+       (applyProfileDisplay only renders, it never persists) ── */
+    function previewPhoto(photoValue) {
+      var p = {};
+      try { p = JSON.parse(localStorage.getItem('student_profile') || '{}'); } catch (e) {}
+      p.photo = photoValue;
+      applyProfileDisplay(p);
+    }
+
     document.getElementById('student-profileUpload').addEventListener('change', function () {
       var file = this.files[0];
       if (!file) return;
@@ -313,12 +333,16 @@
       reader.onload = function (e) {
         compressPhoto(e.target.result, function (compressed) {
           _pendingPhoto = compressed;
-          var imgEl = document.getElementById('student-profileImg');
-          imgEl.src = compressed; imgEl.style.display = 'block';
-          document.getElementById('student-avatarFallback').style.display = 'none';
+          previewPhoto(compressed);
         });
       };
       reader.readAsDataURL(file);
+      this.value = '';
+    });
+
+    document.getElementById('student-removePhotoBtn').addEventListener('click', function () {
+      _pendingPhoto = '';
+      previewPhoto('');
     });
 
     /* ── save changes ── */
@@ -329,24 +353,32 @@
 
       p.firstName        = document.querySelector('[name="first_name"]').value.trim();
       p.lastName         = document.querySelector('[name="last_name"]').value.trim();
-      var photoToSave = _pendingPhoto || null;
-      if (_pendingPhoto) { p.photo = _pendingPhoto; _pendingPhoto = null; }
+
+      var photoToSave = _pendingPhoto; // null = no change, '' = removed, data URI = new photo
+      if (_pendingPhoto !== null) {
+        p.photo = _pendingPhoto;
+        _pendingPhoto = null;
+      }
 
       try { localStorage.setItem('student_profile', JSON.stringify(p)); } catch (err) {}
 
-      // Persist photo to database so it shows across all portals
-      if (photoToSave) {
-        var sid = sessionStorage.getItem('student_id') || '';
-        if (sid) {
-          var fd = new FormData();
-          fd.append('admin_account_id', sid);
-          fd.append('photo', photoToSave);
-          fetch('../ADMIN_FILES/ADMIN_BACKEND/admin_save_profile_photo.php', { method: 'POST', body: fd }).catch(function(){});
-        }
+      // Name is admin/teacher-locked (not student-editable), so the photo is
+      // the only thing that still needs to reach the server here.
+      if (photoToSave !== null) {
+        var fd = new FormData();
+        fd.append('photo', photoToSave);
+        fetch('STUDENT_BACKEND/student_save_photo.php', { method: 'POST', body: fd })
+          .then(function (r) { return r.json(); })
+          .then(function (result) {
+            if (!result || !result.success) {
+              showToast('⚠️ Photo could not be saved. Please try again.');
+            }
+          })
+          .catch(function () {
+            showToast('⚠️ Photo could not be saved. Please try again.');
+          });
       }
 
-      // Name is admin/teacher-locked (not student-editable), so there's nothing
-      // left here that needs syncing to the server beyond the photo above.
       showToast('✅ Changes saved!');
 
       applyProfileDisplay(p);

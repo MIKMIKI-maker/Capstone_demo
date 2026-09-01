@@ -126,6 +126,9 @@
                         <button class="teacher-edit-avatar-btn" id="btn-edit-avatar" type="button" title="Upload profile picture">
                             <i class="fa-solid fa-camera" style="font-size:10px;"></i>
                         </button>
+                        <button class="teacher-remove-avatar-btn" id="btn-remove-avatar" type="button" title="Remove photo" style="display:none;">
+                            <i class="fa-solid fa-trash" style="font-size:10px;"></i>
+                        </button>
                         <input type="file" id="avatar-upload" accept="image/*" aria-label="Upload profile picture" />
                     </div>
                     <div class="teacher-profile-header-info">
@@ -243,18 +246,64 @@ document.addEventListener('DOMContentLoaded', function () {
         applyProfilePic();
     }
 
-    /* ── Apply stored profile picture to all avatar elements ── */
+    // null = no staged photo change; '' = staged removal; data URI = staged
+    // new photo. Nothing is sent to the server until "Save Changes" is
+    // clicked — see btn-save-profile below.
+    var _pendingTeacherPhoto = null;
+
+    /* ── Render the avatar (staged pic, saved pic, or initials fallback) ── */
+    function renderAvatarPreview(pic) {
+        var removeBtn = document.getElementById('btn-remove-avatar');
+        if (pic) {
+            ['sidebar-avatar', 'panel-avatar', 'header-avatar'].forEach(function (id) {
+                var el = document.getElementById(id);
+                if (!el) return;
+                el.textContent = '';
+                el.style.background = 'transparent';
+                el.style.padding = '0';
+                el.innerHTML = '<img src="' + pic + '" alt="Profile" class="avatar-uploaded-img" />';
+            });
+            if (removeBtn) removeBtn.style.display = 'flex';
+        } else {
+            var name = sessionStorage.getItem('teacher_name') || 'Teacher';
+            var initial = name.trim().charAt(0).toUpperCase();
+            ['sidebar-avatar', 'panel-avatar', 'header-avatar'].forEach(function (id) {
+                var el = document.getElementById(id);
+                if (!el) return;
+                el.innerHTML = '';
+                el.textContent = initial;
+                el.style.background = '';
+                el.style.padding = '';
+            });
+            if (removeBtn) removeBtn.style.display = 'none';
+        }
+    }
+
+    /* ── Apply the currently-saved profile picture to all avatar elements ── */
     function applyProfilePic() {
-        var pic = sessionStorage.getItem('teacher_profile_pic');
-        if (!pic) return;
-        ['sidebar-avatar', 'panel-avatar', 'header-avatar'].forEach(function (id) {
-            var el = document.getElementById(id);
-            if (!el) return;
-            el.textContent = '';
-            el.style.background = 'transparent';
-            el.style.padding = '0';
-            el.innerHTML = '<img src="' + pic + '" alt="Profile" class="avatar-uploaded-img" />';
-        });
+        renderAvatarPreview(sessionStorage.getItem('teacher_profile_pic') || '');
+    }
+
+    /* ── Sends the staged photo change to the server. Resolves true/false;
+       never rejects, so it's safe to combine with the profile-fields save. ── */
+    function persistTeacherPhoto(photoValue) {
+        var tid = sessionStorage.getItem('teacher_id') || '';
+        if (!tid) return Promise.resolve(false);
+        var fd = new FormData();
+        fd.append('teacher_id', tid);
+        fd.append('photo', photoValue);
+        return fetch('TEACHER_BACKEND/teacher_save_photo.php', { method: 'POST', body: fd })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (d && d.success) {
+                    if (photoValue) { sessionStorage.setItem('teacher_profile_pic', photoValue); }
+                    else { sessionStorage.removeItem('teacher_profile_pic'); }
+                    _pendingTeacherPhoto = null;
+                    return true;
+                }
+                return false;
+            })
+            .catch(function () { return false; });
     }
 
     /* ── Profile picture upload ── */
@@ -282,23 +331,17 @@ document.addEventListener('DOMContentLoaded', function () {
         var reader = new FileReader();
         reader.onload = function (e) {
             _compressTeacherPhoto(e.target.result, function (pic) {
-                sessionStorage.setItem('teacher_profile_pic', pic);
-                applyProfilePic();
-                // Persist to database so it shows across all portals
-                var tid = sessionStorage.getItem('teacher_id') || '';
-                if (tid) {
-                    var fd = new FormData();
-                    fd.append('teacher_id', tid);
-                    fd.append('photo', pic);
-                    fetch('TEACHER_BACKEND/teacher_save_photo.php', { method: 'POST', body: fd })
-                        .then(function(r){ return r.json(); })
-                        .then(function(d){ if (!d.success) console.warn('Photo save failed:', d); })
-                        .catch(function(err){ console.warn('Photo save error:', err); });
-                }
+                _pendingTeacherPhoto = pic;
+                renderAvatarPreview(pic);
             });
         };
         reader.readAsDataURL(file);
         this.value = '';
+    });
+
+    document.getElementById('btn-remove-avatar').addEventListener('click', function () {
+        _pendingTeacherPhoto = '';
+        renderAvatarPreview('');
     });
 
     initDefaults();
@@ -399,15 +442,22 @@ document.addEventListener('DOMContentLoaded', function () {
         params.append('last_name',       (document.getElementById('field-last-name').value  || '').trim());
         params.append('phone_number',    (document.getElementById('field-phone').value       || '').trim());
 
-        fetch('TEACHER_BACKEND/teacher_settings_management.php', {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body:    params.toString()
-        })
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
+        var photoSave = _pendingTeacherPhoto !== null
+            ? persistTeacherPhoto(_pendingTeacherPhoto)
+            : Promise.resolve(true);
+
+        Promise.all([
+            fetch('TEACHER_BACKEND/teacher_settings_management.php', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body:    params.toString()
+            }).then(function (r) { return r.json(); }),
+            photoSave
+        ])
+        .then(function (results) {
+            var data = results[0], photoOk = results[1];
             if (data.success) {
-                showMsg('save-message', '✓ Profile saved successfully!', true);
+                showMsg('save-message', photoOk ? '✓ Profile saved successfully!' : '✓ Profile saved, but photo could not be saved.', photoOk);
                 loadProfile();
             } else {
                 showMsg('save-message', '✗ ' + (data.message || 'Could not save.'), false);

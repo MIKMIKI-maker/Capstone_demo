@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/teacher_auth.php';
+require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/db.php';
 session_start();
 $_SESSION['teacher_id'] = requireTeacherId();
 
@@ -26,6 +27,21 @@ if (!$teacher_id || !$activity_id) {
     exit;
 }
 
+// Look up title + status before deleting, so we know whether this was an
+// unpublish (was 'published') or a draft cleanup (was 'draft') for logging.
+$activity_title = '';
+$activity_status = '';
+$infoStmt = $teacher_conn->prepare("SELECT activity_title, status FROM teacher_activities WHERE id = ? AND teacher_id = ?");
+if ($infoStmt) {
+    $infoStmt->bind_param("ii", $activity_id, $teacher_id);
+    $infoStmt->execute();
+    if ($inforow = $infoStmt->get_result()->fetch_assoc()) {
+        $activity_title = $inforow['activity_title'];
+        $activity_status = $inforow['status'];
+    }
+    $infoStmt->close();
+}
+
 // Remove student assignments for this activity row first
 $del_assign = $teacher_conn->prepare("DELETE FROM activity_assignments WHERE activity_id = ?");
 if ($del_assign) {
@@ -46,6 +62,48 @@ $del->execute();
 $affected = $del->affected_rows;
 $del->close();
 $teacher_conn->close();
+
+// Log to admin_activities so it shows up on the admin dashboard's Recent Activities feed
+if ($affected > 0 && $activity_title) {
+    $teacher_email_for_log = '';
+    $teq = getTeacherDatabaseConnection();
+    if ($teq) {
+        $tstmt = $teq->prepare("SELECT teacher_email FROM teacher_accounts WHERE id = ?");
+        if ($tstmt) {
+            $tstmt->bind_param("i", $teacher_id);
+            $tstmt->execute();
+            if ($terow = $tstmt->get_result()->fetch_assoc()) {
+                $teacher_email_for_log = $terow['teacher_email'];
+            }
+            $tstmt->close();
+        }
+        $teq->close();
+    }
+    $teacher_name_for_log = 'Unknown Teacher';
+    if ($teacher_email_for_log) {
+        $adminConn = getDatabaseConnection();
+        if ($adminConn) {
+            $nq = $adminConn->prepare("SELECT first_name, last_name FROM admin_accounts WHERE admin_email = ?");
+            if ($nq) {
+                $nq->bind_param("s", $teacher_email_for_log);
+                $nq->execute();
+                if ($nrow = $nq->get_result()->fetch_assoc()) {
+                    $teacher_name_for_log = trim($nrow['first_name'] . ' ' . $nrow['last_name']);
+                }
+                $nq->close();
+            }
+            $logType = ($activity_status === 'published') ? 'Unpublish Activity' : 'Delete Draft';
+            $logStmt = $adminConn->prepare("INSERT INTO admin_activities (activity_type, user_type, user_name, user_email, action_detail) VALUES (?, 'teacher', ?, ?, ?)");
+            if ($logStmt) {
+                $actionDetail = 'Activity: ' . substr($activity_title, 0, 50);
+                $logStmt->bind_param("ssss", $logType, $teacher_name_for_log, $teacher_email_for_log, $actionDetail);
+                $logStmt->execute();
+                $logStmt->close();
+            }
+            $adminConn->close();
+        }
+    }
+}
 
 echo json_encode(['success' => $affected > 0]);
 ?>

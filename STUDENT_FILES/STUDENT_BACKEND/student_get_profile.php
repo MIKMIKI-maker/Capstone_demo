@@ -33,7 +33,7 @@ if (!$admin_row) {
 // Get student record from students table (teacher DB)
 $stmt2 = $teacher_conn->prepare("SELECT s.id, s.student_name, s.disability_type, s.grade_level, s.teacher_id,
     COALESCE(s.parent_name,'') AS parent_name,
-    CONCAT(t.first_name, ' ', t.last_name) AS teacher_name, t.specialization
+    CONCAT(t.first_name, ' ', t.last_name) AS teacher_name, t.specialization, t.teacher_email
     FROM students s
     LEFT JOIN teacher_accounts t ON t.id = s.teacher_id
     WHERE s.admin_account_id = ? AND s.status = 'active'
@@ -46,19 +46,33 @@ $stmt2->close();
 $teacher_name = $student_row ? trim((string)($student_row['teacher_name'] ?? '')) : '';
 $teacher_specialization = $student_row ? ($student_row['specialization'] ?? '') : '';
 $teacher_id = $student_row ? $student_row['teacher_id'] : null;
+$teacher_email = $student_row ? ($student_row['teacher_email'] ?? '') : '';
+$teacher_photo = '';
 
 // A newly admin-assigned student has no `students` row yet (that only gets
 // created once a teacher enrolls them), so the join above finds nothing.
 // Fall back to admin_accounts.assigned_teacher_id so the name shows up right
 // away instead of waiting for enrollment.
 if ($teacher_name === '' && !empty($admin_row['assigned_teacher_id'])) {
-    $tStmt = $admin_conn->prepare("SELECT first_name, last_name FROM admin_accounts WHERE id = ? AND role = 'teacher'");
+    $tStmt = $admin_conn->prepare("SELECT first_name, last_name, COALESCE(profile_photo,'') AS profile_photo FROM admin_accounts WHERE id = ? AND role = 'teacher'");
     $tStmt->bind_param("i", $admin_row['assigned_teacher_id']);
     $tStmt->execute();
     $tRow = $tStmt->get_result()->fetch_assoc();
     $tStmt->close();
     if ($tRow) {
         $teacher_name = trim($tRow['first_name'] . ' ' . $tRow['last_name']);
+        $teacher_photo = $tRow['profile_photo'] ?? '';
+    }
+} elseif ($teacher_email !== '') {
+    // Teacher profile photos live in admin_accounts (see teacher_save_photo.php),
+    // keyed by email since teacher_accounts and admin_accounts are separate tables.
+    $photoStmt = $admin_conn->prepare("SELECT COALESCE(profile_photo,'') AS profile_photo FROM admin_accounts WHERE admin_email = ? AND role = 'teacher'");
+    if ($photoStmt) {
+        $photoStmt->bind_param("s", $teacher_email);
+        $photoStmt->execute();
+        $photoRow = $photoStmt->get_result()->fetch_assoc();
+        $photoStmt->close();
+        $teacher_photo = $photoRow['profile_photo'] ?? '';
     }
 }
 
@@ -77,6 +91,7 @@ $profile = [
     'teacher_id' => $teacher_id,
     'teacher_name' => $teacher_name,
     'teacher_specialization' => $teacher_specialization,
+    'teacher_photo' => $teacher_photo,
 ];
 
 echo json_encode($profile);

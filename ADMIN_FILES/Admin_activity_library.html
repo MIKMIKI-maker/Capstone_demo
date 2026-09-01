@@ -408,6 +408,7 @@
               category:    a.category    || '—',
               status:      (a.status || '').toLowerCase() === 'draft' ? 'Draft' : 'Published',
               savedAt:     a.created_at  || '',
+              deadline:    a.deadline    || '',
               _isLocal:    false
             };
           });
@@ -657,7 +658,9 @@
             : mime.indexOf('video') >= 0           ? 'fa-file-video'
             : mime.indexOf('audio') >= 0           ? 'fa-file-audio'
             : 'fa-file';
-          var fileUrl = '../TEACHER_FILES/uploads/materials/' + esc(a.file_name);
+          // Files uploaded after the Cloudinary migration store a full URL in
+          // file_name; older entries are still a bare local filename.
+          var fileUrl = esc(a.file_name.indexOf('http') === 0 ? a.file_name : '../TEACHER_FILES/uploads/materials/' + a.file_name);
           return '<tr>'
             + '<td>'
             +   '<div class="al-td-title">'
@@ -793,6 +796,9 @@
         + mRow('Learner',       esc(a.focus))
         + mRow('Condition',     esc(a.category))
         + mRow('Date Saved',    dt.date + (dt.time ? ' · ' + dt.time : ''))
+        + mRow('Deadline',      a.deadline
+            ? new Date(a.deadline + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+            : '<span style="color:#94a3b8;">No deadline set</span>')
         + mRow('Status',        isDraft
             ? '<span class="al-status al-status-draft"><span class="al-dot al-dot-amber"></span>Draft</span>'
             : '<span class="al-status al-status-pub"><span class="al-dot al-dot-green"></span>Published</span>')

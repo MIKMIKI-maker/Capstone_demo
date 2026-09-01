@@ -92,7 +92,7 @@
     <!-- TOP BAR -->
     <header class="admin-topbar">
       <div class="admin-topbar-left">
-        <h1 class="admin-greeting">Good morning, Admin! 👋</h1>
+        <h1 class="admin-greeting" id="admin-greeting">Good morning, Admin! 👋</h1>
         <p class="admin-greeting-sub" id="admin-greeting-sub"></p>
       </div>
       <div class="admin-topbar-right">
@@ -179,16 +179,30 @@
   <!-- Help button -->
   <script>
     document.addEventListener("DOMContentLoaded", function () {
+      var greetingEl = document.getElementById('admin-greeting');
+      if (greetingEl) {
+        var _name = (sessionStorage.getItem('admin_name') || 'Admin').split(' ')[0];
+        var _hour = parseInt(new Date().toLocaleString('en-US', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Asia/Singapore' }), 10);
+        var _tod = _hour < 12 ? 'morning' : _hour < 17 ? 'afternoon' : 'evening';
+        greetingEl.textContent = 'Good ' + _tod + ', ' + _name + '! 👋';
+      }
+
       var greetingSub = document.getElementById('admin-greeting-sub');
       if (greetingSub) {
-        var now = new Date();
-        var currentDate = now.toLocaleDateString('en-US', {
-          weekday: 'long',
-          month: 'long',
-          day: 'numeric',
-          year: 'numeric'
-        });
-        greetingSub.textContent = currentDate + ' · Mamatid Elementary School · Cabuyao, Laguna';
+        function updateDateTime() {
+          var now = new Date();
+          var currentDate = now.toLocaleDateString('en-US', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric',
+            timeZone: 'Asia/Singapore'
+          });
+          var currentTime = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Singapore' });
+          greetingSub.textContent = currentDate + ' · ' + currentTime + ' · Mamatid Elementary School · Cabuyao, Laguna';
+        }
+        updateDateTime();
+        setInterval(updateDateTime, 30000);
       }
 
       /* Ripple effect on buttons only */
@@ -383,6 +397,30 @@
           statusBgColor = '#fef3c7';
           statusTextColor = '#d97706';
           statusBadge = 'Draft Saved';
+        } else if (activity.type === 'Material Uploaded') {
+          icon = '📎';
+          bgColor = '#f0fdfa';
+          statusBgColor = '#ccfbf1';
+          statusTextColor = '#0f766e';
+          statusBadge = 'Material Uploaded';
+        } else if (activity.type === 'Material Deleted') {
+          icon = '🗑️';
+          bgColor = '#fef2f2';
+          statusBgColor = '#fee2e2';
+          statusTextColor = '#b91c1c';
+          statusBadge = 'Material Deleted';
+        } else if (activity.type === 'Unpublish Activity') {
+          icon = '📤';
+          bgColor = '#fff7ed';
+          statusBgColor = '#ffedd5';
+          statusTextColor = '#c2410c';
+          statusBadge = 'Unpublished';
+        } else if (activity.type === 'Delete Draft') {
+          icon = '🗑️';
+          bgColor = '#fef2f2';
+          statusBgColor = '#fee2e2';
+          statusTextColor = '#b91c1c';
+          statusBadge = 'Draft Deleted';
         } else {
           icon = '📌';
           bgColor = '#f3f4f6';

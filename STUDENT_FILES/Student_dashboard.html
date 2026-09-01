@@ -254,6 +254,14 @@
             .then(function(r){ return r.json(); })
             .then(function(td){
               if (td.success && td.teacher_name) teacherEl.textContent = td.teacher_name;
+              if (td.success && td.teacher_photo) {
+                var tp = document.getElementById('dash-teacher-photo');
+                if (tp) {
+                  tp.src = td.teacher_photo; tp.style.display = 'block';
+                  var tSample = document.getElementById('dash-teacher-avatar');
+                  if (tSample) tSample.style.display = 'none';
+                }
+              }
             }).catch(function(){});
         }
       }
@@ -295,7 +303,6 @@
         });
 
         var todayPanel = document.getElementById('student-panel-today');
-        var allPanel   = document.getElementById('student-panel-materials');
 
         // "Recent" = published within the last 7 days (use created_at from DB)
         var cutoff = Date.now() - 7 * 86400000;
@@ -311,17 +318,54 @@
           todayPanel.innerHTML = recent.map(renderActRow).join('');
         }
 
-        if (materials.length === 0) {
-          allPanel.innerHTML = '<div class="student-act-empty"><div class="student-act-empty-icon">📚</div>' +
-            '<p class="student-act-empty-title">No materials yet</p>' +
-            '<p class="student-act-empty-desc">Learning materials assigned by your teacher will appear here.</p></div>';
-        } else {
-          allPanel.innerHTML = materials.map(renderActRow).join('');
-        }
-
         var doneCount = materials.filter(function(a){ return a.progress_status === 'completed'; }).length;
         document.getElementById('student-act-done-count').textContent = doneCount + '/' + materials.length + ' done';
         updateProgressBanner(doneCount, materials.length);
+      }
+
+      /* ── "All Materials" tab: files the teacher has actually uploaded
+         (PDF/Word/PPT/video/audio/links) — a different data source and
+         shape from the game-type activities above, so it gets its own
+         row renderer instead of reusing renderActRow. ── */
+      function getFileEmoji(mime, isLink) {
+        if (isLink) return '🔗';
+        mime = mime || '';
+        if (mime.indexOf('pdf') >= 0) return '📕';
+        if (mime.indexOf('image') >= 0) return '🖼️';
+        if (mime.indexOf('word') >= 0 || mime.indexOf('document') >= 0) return '📝';
+        if (mime.indexOf('presentation') >= 0 || mime.indexOf('powerpoint') >= 0) return '📊';
+        if (mime.indexOf('video') >= 0) return '🎬';
+        if (mime.indexOf('audio') >= 0) return '🎵';
+        return '📄';
+      }
+
+      function renderMaterialRow(file, idx) {
+        var color = COLOR_CYCLE[idx % COLOR_CYCLE.length];
+        var isLink = !!(file.link_url && file.link_url.length);
+        var url = isLink ? file.link_url
+          : (file.file_name && file.file_name.indexOf('http') === 0 ? file.file_name : '../TEACHER_FILES/uploads/materials/' + file.file_name);
+        var sizeKB = file.file_size ? Math.round(file.file_size / 1024) : 0;
+        var sizeText = sizeKB > 1024 ? (sizeKB / 1024).toFixed(1) + ' MB' : (sizeKB ? sizeKB + ' KB' : '');
+        var sub = isLink ? 'Link' : [file.file_type || 'File', sizeText].filter(Boolean).join(' · ');
+        return '<div class="student-act-row student-act-row--' + color + '">' +
+          '<div class="student-act-row-thumb"><span style="font-size:30px;line-height:1;">' + getFileEmoji(file.file_type, isLink) + '</span></div>' +
+          '<div class="student-act-row-info">' +
+            '<div class="student-act-row-title">' + escD(file.title) + '</div>' +
+            '<div class="student-act-row-sub">' + escD(sub) + '</div>' +
+          '</div>' +
+          '<a class="student-act-row-btn" href="' + escD(url) + '" target="_blank" rel="noopener">▶ Open</a>' +
+          '</div>';
+      }
+
+      function renderUploadedMaterials(files) {
+        var allPanel = document.getElementById('student-panel-materials');
+        if (!files || !files.length) {
+          allPanel.innerHTML = '<div class="student-act-empty"><div class="student-act-empty-icon">📚</div>' +
+            '<p class="student-act-empty-title">No materials yet</p>' +
+            '<p class="student-act-empty-desc">Learning materials uploaded by your teacher will appear here.</p></div>';
+        } else {
+          allPanel.innerHTML = files.map(renderMaterialRow).join('');
+        }
       }
 
       function loadDashboard() {
@@ -348,7 +392,10 @@
                   sp.photo = pd.profile_photo;
                   try { localStorage.setItem('student_profile', JSON.stringify(sp)); } catch(e){}
                   var _el = document.getElementById('dashSideAvatar');
-                  if (_el) _el.innerHTML = '<img src="' + pd.profile_photo + '" style="width:100%;height:100%;object-fit:cover;display:block;" />';
+                  if (_el) {
+                    _el.innerHTML = '<img src="' + pd.profile_photo + '" style="width:100%;height:100%;object-fit:cover;display:block;" />';
+                    _el.classList.add('has-photo');
+                  }
                   var _dp = document.getElementById('student-dashPhoto');
                   if (_dp) { _dp.src = pd.profile_photo; _dp.style.display = 'block'; }
                 }
@@ -362,6 +409,7 @@
           el.innerHTML = photo
             ? '<img src="' + photo + '" style="width:100%;height:100%;object-fit:cover;display:block;" />'
             : init;
+          el.classList.toggle('has-photo', !!photo);
         })(document.getElementById('dashSideAvatar'), sp.photo, spInit);
         document.querySelector('.student-sidebar .student-user-name').textContent = spFull;
         document.querySelector('.student-sidebar .student-user-role').textContent = [spGrade, spCond].filter(Boolean).join(' — ') || 'Student';
@@ -409,6 +457,13 @@
             if (d.condition) sessionStorage.setItem('student_condition', d.condition);
             if (d.grade)     sessionStorage.setItem('student_grade', d.grade);
 
+            // Fetch teacher-uploaded materials (files/links) for the "All Materials" tab —
+            // a separate data source from the game-type activities below.
+            fetch('STUDENT_BACKEND/student_get_uploaded_materials.php')
+              .then(function(r) { return r.json(); })
+              .then(function(md) { renderUploadedMaterials(md.files || []); })
+              .catch(function() { renderUploadedMaterials([]); });
+
             // Fetch assigned activities from DB
             fetch('STUDENT_BACKEND/student_get_materials.php?student_record_id=' + encodeURIComponent(srid) + '&teacher_id=' + encodeURIComponent(tid))
               .then(function(r) { return r.json(); })
@@ -427,6 +482,14 @@
                       if (td.success && td.teacher_name) {
                         var el = document.getElementById('dash-teacher-name');
                         if (el) el.textContent = td.teacher_name;
+                      }
+                      if (td.success && td.teacher_photo) {
+                        var tp = document.getElementById('dash-teacher-photo');
+                        if (tp) {
+                          tp.src = td.teacher_photo; tp.style.display = 'block';
+                          var tSample = document.getElementById('dash-teacher-avatar');
+                          if (tSample) tSample.style.display = 'none';
+                        }
                       }
                     }).catch(function(){});
                 }

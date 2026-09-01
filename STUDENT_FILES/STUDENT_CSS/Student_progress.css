@@ -79,6 +79,7 @@ body {
   font-family: var(--font-head); font-weight: 800; box-shadow: 0 5px 0 var(--gold-dark);
   overflow: hidden;
 }
+.student-user-avatar.has-photo { box-shadow: none; }
 .student-user-info { display: flex; flex-direction: column; line-height: 1.2; }
 .student-user-name { color: #fff; font-weight: 700; font-size: 14px; }
 .student-user-role { color: #bdd4ff; font-weight: 600; font-size: 12px; }

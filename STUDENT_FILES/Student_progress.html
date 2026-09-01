@@ -390,6 +390,7 @@
             if (!el) return;
             if (photo) { el.innerHTML = '<img src="' + photo + '" style="width:100%;height:100%;object-fit:cover;display:block;" />'; }
             else { el.textContent = initials; }
+            el.classList.toggle('has-photo', !!photo);
         }
         setAvatar(document.getElementById('progSideAvatar'), sp.photo, spInit);
         document.querySelector('.student-sidebar .student-user-name').textContent = spFull;

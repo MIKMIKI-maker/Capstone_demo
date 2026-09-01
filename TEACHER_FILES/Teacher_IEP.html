@@ -205,8 +205,8 @@
 
           <!-- File input -->
           <div id="uploadFileWrap">
-            <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:5px;">File <span style="color:#ef4444">*</span> <span style="color:#94a3b8;font-weight:400;">(PDF, image, Word, video — max 20 MB)</span></label>
-            <input id="uploadFile" type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.mp4,.mp3,.wav"
+            <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:5px;">File <span style="color:#ef4444">*</span> <span style="color:#94a3b8;font-weight:400;">(PDF, image, Word, PowerPoint, video — max 20 MB)</span></label>
+            <input id="uploadFile" type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.ppt,.pptx,.mp4,.mp3,.wav"
               style="width:100%;padding:8px;border:1.5px dashed #cbd5e1;border-radius:9px;font-family:'Poppins',sans-serif;font-size:13px;background:#f8fafc;box-sizing:border-box;cursor:pointer;" />
           </div>
 
@@ -357,12 +357,28 @@
             sessionStorage.setItem('selected_learner_id', '');
         }
 
+        function showIepToast(message, type) {
+            var old = document.querySelector('.iep-toast');
+            if (old) old.remove();
+            var t = document.createElement('div');
+            t.className = 'iep-toast iep-toast--' + (type || 'warning');
+            var icon = type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation';
+            t.innerHTML = '<i class="fa-solid ' + icon + '"></i><span></span>';
+            t.querySelector('span').textContent = message;
+            document.body.appendChild(t);
+            requestAnimationFrame(function () { t.classList.add('show'); });
+            setTimeout(function () {
+                t.classList.remove('show');
+                setTimeout(function () { t.remove(); }, 300);
+            }, 3000);
+        }
+
         function goGenerate() {
             if (!selectedLearnerIds.length) {
                 var card = document.getElementById('iepStudentCard');
                 card.style.outline = '2px solid #ef4444';
                 setTimeout(function(){ card.style.outline = ''; }, 2500);
-                alert('Please select a learner before generating materials.');
+                showIepToast('Please select a learner before generating materials.', 'warning');
                 return;
             }
             var first = null;
@@ -392,7 +408,7 @@
 
         function openUploadModal() {
             if (!selectedLearnerIds.length) {
-                alert('Please select at least one learner from the table first.');
+                showIepToast('Please select at least one learner from the table first.', 'warning');
                 return;
             }
             var modal = document.getElementById('iepUploadModal');
@@ -469,7 +485,7 @@
                     var failed = results.filter(function(d) { return !d.success; });
                     if (!failed.length) {
                         closeUploadModal();
-                        alert('✅ Material uploaded successfully' + (selectedLearnerIds.length > 1 ? ' to ' + selectedLearnerIds.length + ' students!' : '!'));
+                        showIepToast('Material uploaded successfully' + (selectedLearnerIds.length > 1 ? ' to ' + selectedLearnerIds.length + ' students!' : '!'), 'success');
                     } else {
                         msg.textContent = 'Upload failed: ' + (failed[0].message || 'Unknown error');
                         msg.style.display = 'block';

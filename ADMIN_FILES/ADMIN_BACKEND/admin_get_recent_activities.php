@@ -23,11 +23,11 @@ $createTableSql = "CREATE TABLE IF NOT EXISTS admin_activities (
 )";
 $conn->query($createTableSql);
 
-// Get recent activities from admin_activities table (last 15) - only show Create Activity and Complete Activity
-$result = $conn->query("SELECT id, activity_type, user_type, user_name, user_email, action_detail, created_at 
-                        FROM admin_activities 
-                        WHERE activity_type IN ('Create Activity', 'Complete Activity', 'Save Draft')
-                        ORDER BY created_at DESC 
+// Get recent activities from admin_activities table (last 15) - only show teaching-related activity, not account/admin housekeeping
+$result = $conn->query("SELECT id, activity_type, user_type, user_name, user_email, action_detail, created_at
+                        FROM admin_activities
+                        WHERE activity_type IN ('Create Activity', 'Complete Activity', 'Save Draft', 'Material Uploaded', 'Material Deleted', 'Unpublish Activity', 'Delete Draft')
+                        ORDER BY created_at DESC
                         LIMIT 15");
 
 $activities = [];

@@ -55,7 +55,8 @@ body {
 .student-nav-item.student-active { background:#fff; color:var(--blue); box-shadow:0 6px 0 #cdd9ef; }
 .student-sidebar-footer { margin-top:auto; display:flex; flex-direction:column; gap:10px; padding-top:18px; border-top:1px solid rgba(255,255,255,.2); }
 .student-sidebar-user { display:flex; align-items:center; gap:11px; padding:12px; border-radius:20px; background:rgba(255,255,255,.14); }
-.student-user-avatar { width:42px; height:42px; flex:none; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--gold); color:#5c3d00; font-family:var(--font-head); font-weight:800; box-shadow:0 5px 0 var(--gold-dark); }
+.student-user-avatar { width:42px; height:42px; flex:none; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--gold); color:#5c3d00; font-family:var(--font-head); font-weight:800; box-shadow:0 5px 0 var(--gold-dark); overflow:hidden; }
+.student-user-avatar.has-photo { box-shadow: none; }
 .student-user-info { display:flex; flex-direction:column; line-height:1.2; }
 .student-user-name { color:#fff; font-weight:700; font-size:14px; }
 .student-user-role { color:#bdd4ff; font-weight:600; font-size:12px; }

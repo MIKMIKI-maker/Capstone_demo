@@ -1359,3 +1359,21 @@ body { display: flex; }
   color: #aaa;
   cursor: not-allowed;
 }
+
+/* ── Save/action toast (replaces silent saves and native alert() popups) ── */
+.admin-mu-toast {
+  position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px);
+  display: flex; align-items: center; gap: 10px;
+  background: #fff; color: #1e2a3a;
+  padding: 14px 22px; border-radius: 14px;
+  font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.15);
+  border-left: 4px solid #16a34a;
+  opacity: 0; transition: opacity .25s ease, transform .25s ease;
+  z-index: 99999; pointer-events: none;
+  max-width: 90vw;
+}
+.admin-mu-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.admin-mu-toast--error { border-left-color: #ef4444; }
+.admin-mu-toast i { font-size: 16px; color: #16a34a; }
+.admin-mu-toast--error i { color: #ef4444; }

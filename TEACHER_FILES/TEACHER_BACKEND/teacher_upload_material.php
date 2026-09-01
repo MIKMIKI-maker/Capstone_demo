@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/teacher_auth.php';
+require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/cloudinary_upload.php';
+require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/db.php';
 header('Content-Type: application/json');
 
 $teacher_id     = requireTeacherId();
@@ -44,28 +46,29 @@ if ($hasFile) {
         'image/jpeg', 'image/png', 'image/gif', 'image/webp',
         'application/msword',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
         'video/mp4', 'video/mpeg', 'video/quicktime',
         'audio/mpeg', 'audio/wav', 'audio/ogg'
     ];
 
+    // The real file content decides the type here, never the client-supplied
+    // filename extension — that mismatch (upload a real image, keep a .php
+    // name) was previously an RCE risk when files lived under the webroot.
+    // Uploading to Cloudinary instead of local disk removes that risk
+    // entirely: nothing under this app's own webroot ever executes what's
+    // stored here.
     $fileMime = mime_content_type($_FILES['file']['tmp_name']);
     if (!in_array($fileMime, $allowedMimes)) {
         echo json_encode(['success' => false, 'message' => 'File type not allowed']);
         exit;
     }
 
-    $uploadDir = __DIR__ . '/../uploads/materials/';
-    if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0755, true);
-    }
-
     $origName = basename($_FILES['file']['name']);
-    $ext      = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
-    $safeName = uniqid('mat_', true) . '.' . $ext;
-    $destPath = $uploadDir . $safeName;
-
-    if (!move_uploaded_file($_FILES['file']['tmp_name'], $destPath)) {
-        echo json_encode(['success' => false, 'message' => 'Failed to save file']);
+    $curlFile = new CURLFile($_FILES['file']['tmp_name'], $fileMime, $origName);
+    $safeName = cloudinaryUpload($curlFile, 'auto', 'materials');
+    if ($safeName === null) {
+        echo json_encode(['success' => false, 'message' => 'Failed to save file. Please try again.']);
         exit;
     }
 
@@ -74,7 +77,6 @@ if ($hasFile) {
 
 $conn = getTeacherDatabaseConnection();
 if (!$conn) {
-    if ($safeName) @unlink($uploadDir . $safeName);
     echo json_encode(['success' => false, 'message' => 'DB connection failed']);
     exit;
 }
@@ -109,6 +111,41 @@ $stmt->bind_param("iissssssis",
 $stmt->execute();
 $newId = $conn->insert_id;
 $stmt->close();
+
+// Log to admin_activities so it shows up on the admin dashboard's Recent Activities feed
+$teacher_email_for_log = '';
+$teq = $conn->prepare("SELECT teacher_email FROM teacher_accounts WHERE id = ?");
+if ($teq) {
+    $teq->bind_param("i", $teacher_id);
+    $teq->execute();
+    if ($terow = $teq->get_result()->fetch_assoc()) {
+        $teacher_email_for_log = $terow['teacher_email'];
+    }
+    $teq->close();
+}
+$teacher_name_for_log = 'Unknown Teacher';
+if ($teacher_email_for_log) {
+    $adminConn = getDatabaseConnection();
+    if ($adminConn) {
+        $tq = $adminConn->prepare("SELECT first_name, last_name FROM admin_accounts WHERE admin_email = ?");
+        if ($tq) {
+            $tq->bind_param("s", $teacher_email_for_log);
+            $tq->execute();
+            if ($trow = $tq->get_result()->fetch_assoc()) {
+                $teacher_name_for_log = trim($trow['first_name'] . ' ' . $trow['last_name']);
+            }
+            $tq->close();
+        }
+        $logStmt = $adminConn->prepare("INSERT INTO admin_activities (activity_type, user_type, user_name, user_email, action_detail) VALUES ('Material Uploaded', 'teacher', ?, ?, ?)");
+        if ($logStmt) {
+            $actionDetail = 'Material: ' . substr($title, 0, 50);
+            $logStmt->bind_param("sss", $teacher_name_for_log, $teacher_email_for_log, $actionDetail);
+            $logStmt->execute();
+            $logStmt->close();
+        }
+        $adminConn->close();
+    }
+}
 
 $notif_title = 'New material uploaded';
 $notif_msg   = 'Your teacher added "' . $title . '"' . ($description ? ': ' . $description : '') . ' to your materials.';

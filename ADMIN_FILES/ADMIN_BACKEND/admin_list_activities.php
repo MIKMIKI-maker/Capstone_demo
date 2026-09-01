@@ -22,6 +22,7 @@ $sql = "SELECT
     ta.difficulty,
     ta.status,
     ta.created_at,
+    ta.deadline,
     tc.first_name,
     tc.last_name
 FROM teacher_activities ta
@@ -47,7 +48,8 @@ if ($result) {
             'status'     => ucfirst($row['status'] ?: 'draft'),
             'creator'    => $created_by,
             'created_by' => $created_by,
-            'created_at' => $row['created_at']
+            'created_at' => $row['created_at'],
+            'deadline'   => $row['deadline']
         ];
     }
 }

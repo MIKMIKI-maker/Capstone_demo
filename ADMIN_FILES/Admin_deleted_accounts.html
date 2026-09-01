@@ -220,9 +220,59 @@
   </div>
 </main>
 
+<!-- ===== MODAL: GENERIC CONFIRM (replaces native confirm() popups) ===== -->
+<div class="admin-modal-overlay" id="admin-modal-confirm" style="display:none">
+  <div class="admin-modal-box admin-modal-box--narrow">
+    <div class="admin-modal-header">
+      <h3 class="admin-modal-title" id="admin-confirm-title">Please confirm</h3>
+      <button class="admin-modal-close" onclick="_adminConfirmResolve(false)" type="button">✕</button>
+    </div>
+    <div class="admin-modal-body">
+      <p id="admin-confirm-msg" style="font-size:14px;color:#334155;line-height:1.6;"></p>
+    </div>
+    <div class="admin-modal-footer-row">
+      <button class="admin-btn-cancel" onclick="_adminConfirmResolve(false)" type="button">Cancel</button>
+      <button class="admin-btn-danger-solid" id="admin-confirm-ok-btn" onclick="_adminConfirmResolve(true)" type="button">Confirm</button>
+    </div>
+  </div>
+</div>
+
 <script>
   var deletedList  = [];
   var selectedIds  = new Set();
+  var _adminConfirmResolver = null;
+
+  function showModal(id) { document.getElementById(id).style.display = 'flex'; }
+  function hideModal(id) { document.getElementById(id).style.display = 'none'; }
+
+  function showConfirmModal(message, okLabel, title) {
+    document.getElementById('admin-confirm-title').textContent = title || 'Please confirm';
+    document.getElementById('admin-confirm-msg').textContent = message;
+    document.getElementById('admin-confirm-ok-btn').textContent = okLabel || 'Confirm';
+    showModal('admin-modal-confirm');
+    return new Promise(function (resolve) { _adminConfirmResolver = resolve; });
+  }
+
+  function _adminConfirmResolve(result) {
+    hideModal('admin-modal-confirm');
+    if (_adminConfirmResolver) { _adminConfirmResolver(result); _adminConfirmResolver = null; }
+  }
+
+  function showMuToast(message, isError, durationMs) {
+    var old = document.querySelector('.admin-mu-toast');
+    if (old) old.remove();
+    var t = document.createElement('div');
+    t.className = 'admin-mu-toast' + (isError ? ' admin-mu-toast--error' : '');
+    var icon = isError ? 'fa-circle-exclamation' : 'fa-circle-check';
+    t.innerHTML = '<i class="fa-solid ' + icon + '"></i><span></span>';
+    t.querySelector('span').textContent = message;
+    document.body.appendChild(t);
+    requestAnimationFrame(function () { t.classList.add('show'); });
+    setTimeout(function () {
+      t.classList.remove('show');
+      setTimeout(function () { t.remove(); }, 300);
+    }, durationMs || 3000);
+  }
 
   /* ── Avatar colour by role ── */
   var roleColors = { admin:'#7c3aed', teacher:'#d97706', student:'#16a34a' };
@@ -333,30 +383,36 @@
 
   /* ── Single actions ── */
   function restoreOne(id) {
-    if (!confirm('Restore this account? The user will be able to log in again.')) return;
-    callBackend('restore', [id]);
+    showConfirmModal('Restore this account? The user will be able to log in again.', 'Restore', 'Restore account?').then(function (ok) {
+      if (ok) callBackend('restore', [id], 'Account restored.');
+    });
   }
 
   function permanentDeleteOne(id) {
-    if (!confirm('Permanently delete this account? This cannot be undone.')) return;
-    callBackend('permanent', [id]);
+    showConfirmModal('Permanently delete this account? This cannot be undone.', 'Delete', 'Delete permanently?').then(function (ok) {
+      if (ok) callBackend('permanent', [id], 'Account permanently deleted.');
+    });
   }
 
   /* ── Bulk actions ── */
   function bulkRestore() {
     if (!selectedIds.size) return;
-    if (!confirm('Restore ' + selectedIds.size + ' account(s)? They will be able to log in again.')) return;
-    callBackend('restore', Array.from(selectedIds));
+    var n = selectedIds.size;
+    showConfirmModal('Restore ' + n + ' account(s)? They will be able to log in again.', 'Restore', 'Restore accounts?').then(function (ok) {
+      if (ok) callBackend('restore', Array.from(selectedIds), n + ' account(s) restored.');
+    });
   }
 
   function bulkPermanentDelete() {
     if (!selectedIds.size) return;
-    if (!confirm('Permanently delete ' + selectedIds.size + ' account(s)? This CANNOT be undone.')) return;
-    callBackend('permanent', Array.from(selectedIds));
+    var n = selectedIds.size;
+    showConfirmModal('Permanently delete ' + n + ' account(s)? This CANNOT be undone.', 'Delete', 'Delete permanently?').then(function (ok) {
+      if (ok) callBackend('permanent', Array.from(selectedIds), n + ' account(s) permanently deleted.');
+    });
   }
 
   /* ── Backend call ── */
-  function callBackend(action, ids) {
+  function callBackend(action, ids, successMsg) {
     fetch('ADMIN_BACKEND/admin_restore_account.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -369,11 +425,12 @@
         updateBulkButtons();
         document.getElementById('da-cb-all').checked = false;
         loadDeletedAccounts();
+        showMuToast(successMsg || 'Done.');
       } else {
-        alert('Action failed. Please try again.');
+        showMuToast(res.message || 'Action failed. Please try again.', true);
       }
     })
-    .catch(function(){ alert('Request failed. Please try again.'); });
+    .catch(function(){ showMuToast('Request failed. Please try again.', true); });
   }
 
   /* ── Helpers ── */

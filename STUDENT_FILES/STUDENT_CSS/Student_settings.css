@@ -75,6 +75,10 @@ body {
   font-family: var(--font-head); font-weight: 800; box-shadow: 0 5px 0 var(--gold-dark);
   overflow: hidden;
 }
+/* A real photo fills the circle edge-to-edge — the chunky "3D button"
+   shadow used for the initials fallback would just look like a stray
+   edge/band peeking out from under it, so drop it once a photo is set. */
+.student-user-avatar.has-photo { box-shadow: none; }
 .student-user-info { display: flex; flex-direction: column; line-height: 1.2; }
 .student-user-name { color: #fff; font-weight: 700; font-size: 14px; }
 .student-user-role { color: #bdd4ff; font-weight: 600; font-size: 12px; }
@@ -144,6 +148,15 @@ body {
   transition: background .15s, transform .15s;
 }
 .student-edit-photo-btn:hover { background: #e0911a; transform: scale(1.15); }
+.student-remove-photo-btn {
+  position: absolute; bottom: 0; left: 0;
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: #ef4444; border: 2px solid #fff;
+  cursor: pointer; font-size: 11px; color: #fff; padding: 0;
+  transition: background .15s, transform .15s;
+}
+.student-remove-photo-btn:hover { background: #dc2626; transform: scale(1.15); }
 .student-profile-name { font-family: var(--font-head); font-weight: 700; font-size: 14.5px; color: var(--ink); }
 .student-profile-grade { color: #6b7a99; font-weight: 500; font-size: 12.5px; margin-top: 3px; }
 .student-status-badge {

@@ -14,12 +14,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Get user_id from POST (should be passed via JavaScript)
     // For now, we'll extract it from a hidden input or from the session
     $user_id = isset($_POST['user_id']) ? intval($_POST['user_id']) : 0;
-    $temp_password = isset($_POST['enter_temporary_password']) && trim($_POST['enter_temporary_password']) !== ''
-        ? trim($_POST['enter_temporary_password'])
-        : 'Temp@1234';
+    $temp_password = isset($_POST['enter_temporary_password']) ? trim($_POST['enter_temporary_password']) : '';
 
     if (!$user_id) {
         echo json_encode(['success' => false, 'message' => 'User ID is required']);
+        exit;
+    }
+
+    // No predictable default (e.g. "Temp@1234") — the admin must always
+    // choose the temporary password themselves.
+    if (strlen($temp_password) < 8) {
+        echo json_encode(['success' => false, 'message' => 'Temporary password must be at least 8 characters.']);
         exit;
     }
 

@@ -438,7 +438,10 @@
 
                 var actions;
                 if (a._isUpload) {
-                    actions = '<a class="btn-edit" href="uploads/materials/' + esc(a.file_name) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open</a>'
+                    // Files uploaded after the Cloudinary migration store a full
+                    // URL in file_name; older entries are still a bare local filename.
+                    var _uploadUrl = a.file_name.indexOf('http') === 0 ? a.file_name : 'uploads/materials/' + a.file_name;
+                    actions = '<a class="btn-edit" href="' + esc(_uploadUrl) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open</a>'
                             + '<button class="btn-delete" onclick="deleteUpload(' + a.upload_id + ')" type="button"><i class="fa-solid fa-trash"></i> Delete</button>';
                 } else if (a.status === 'draft' && a._isLocal) {
                     actions = '<button class="btn-edit" onclick="editDraft(\'' + esc(a.id) + '\',\'' + esc(a.templateFile) + '\')" type="button">'
@@ -548,19 +551,21 @@
         }
 
         function deleteDraft(id) {
-            if (!confirm('Delete this draft? This cannot be undone.')) return;
-            var allDrafts = getLocalDrafts();
-            var target    = allDrafts.find(function(d) { return d.id === id; });
-            var dbId      = target && target.db_draft_id ? target.db_draft_id : null;
-            localStorage.setItem('teacher_drafts', JSON.stringify(allDrafts.filter(function(d) { return d.id !== id; })));
-            if (dbId) {
-                var _tid = sessionStorage.getItem('teacher_id') || '';
-                fetch('TEACHER_BACKEND/teacher_delete_activity.php', {
-                    method: 'POST',
-                    body: new URLSearchParams({ teacher_id: _tid, activity_id: dbId })
-                }).catch(function(){});
-            }
-            loadActivities();
+            showConfirmModal('Delete this draft? This cannot be undone.').then(function (ok) {
+                if (!ok) return;
+                var allDrafts = getLocalDrafts();
+                var target    = allDrafts.find(function(d) { return d.id === id; });
+                var dbId      = target && target.db_draft_id ? target.db_draft_id : null;
+                localStorage.setItem('teacher_drafts', JSON.stringify(allDrafts.filter(function(d) { return d.id !== id; })));
+                if (dbId) {
+                    var _tid = sessionStorage.getItem('teacher_id') || '';
+                    fetch('TEACHER_BACKEND/teacher_delete_activity.php', {
+                        method: 'POST',
+                        body: new URLSearchParams({ teacher_id: _tid, activity_id: dbId })
+                    }).catch(function(){});
+                }
+                loadActivities();
+            });
         }
 
         /* shared IDB helper for deleting pub_data_ entries */
@@ -571,51 +576,57 @@
         })();
 
         function deletePublished(id) {
-            if (!confirm('Unpublish this activity? It will be removed from the student portal.')) return;
-            var allPubs = getLocalPublished();
-            var target  = allPubs.find(function(p) { return p.id === id; });
-            var dbId    = target && target.db_activity_id ? target.db_activity_id : null;
-            // Remove from localStorage + IndexedDB immediately
-            localStorage.setItem('published_activities', JSON.stringify(allPubs.filter(function(p) { return p.id !== id; })));
-            _idb.del('pub_data_' + id, null);
-            try { localStorage.removeItem('pub_data_' + id); } catch(e){}
-            // Remove related notifications
-            var notifs = [];
-            try { notifs = JSON.parse(localStorage.getItem('student_notifications') || '[]'); } catch(e){}
-            notifs = notifs.filter(function(n){ return n.activityId !== id; });
-            try { localStorage.setItem('student_notifications', JSON.stringify(notifs)); } catch(e){}
-            // Wait for DB delete to finish before reloading — prevents the activity from
-            // reappearing as a backend-only row while the delete is still in flight
-            if (dbId) {
-                var _tid = sessionStorage.getItem('teacher_id') || '';
-                fetch('TEACHER_BACKEND/teacher_delete_activity.php', {
-                    method: 'POST',
-                    body: new URLSearchParams({ teacher_id: _tid, activity_id: dbId })
-                }).finally(function(){ loadActivities(); });
-            } else {
-                loadActivities();
-            }
+            showConfirmModal('Unpublish this activity? It will be removed from the student portal.', 'Unpublish').then(function (ok) {
+                if (!ok) return;
+                var allPubs = getLocalPublished();
+                var target  = allPubs.find(function(p) { return p.id === id; });
+                var dbId    = target && target.db_activity_id ? target.db_activity_id : null;
+                // Remove from localStorage + IndexedDB immediately
+                localStorage.setItem('published_activities', JSON.stringify(allPubs.filter(function(p) { return p.id !== id; })));
+                _idb.del('pub_data_' + id, null);
+                try { localStorage.removeItem('pub_data_' + id); } catch(e){}
+                // Remove related notifications
+                var notifs = [];
+                try { notifs = JSON.parse(localStorage.getItem('student_notifications') || '[]'); } catch(e){}
+                notifs = notifs.filter(function(n){ return n.activityId !== id; });
+                try { localStorage.setItem('student_notifications', JSON.stringify(notifs)); } catch(e){}
+                // Wait for DB delete to finish before reloading — prevents the activity from
+                // reappearing as a backend-only row while the delete is still in flight
+                if (dbId) {
+                    var _tid = sessionStorage.getItem('teacher_id') || '';
+                    fetch('TEACHER_BACKEND/teacher_delete_activity.php', {
+                        method: 'POST',
+                        body: new URLSearchParams({ teacher_id: _tid, activity_id: dbId })
+                    }).finally(function(){ loadActivities(); });
+                } else {
+                    loadActivities();
+                }
+            });
         }
 
         /* ── Unpublish a backend-only published activity (no localStorage entry) ── */
         function deleteBackendPublished(dbId) {
-            if (!confirm('Unpublish this activity? It will be removed from the student portal.')) return;
-            var _tid = sessionStorage.getItem('teacher_id') || '';
-            fetch('TEACHER_BACKEND/teacher_delete_activity.php', {
-                method: 'POST',
-                body: new URLSearchParams({ teacher_id: _tid, activity_id: dbId })
-            }).then(function() { loadActivities(); })
-              .catch(function() { loadActivities(); });
+            showConfirmModal('Unpublish this activity? It will be removed from the student portal.', 'Unpublish').then(function (ok) {
+                if (!ok) return;
+                var _tid = sessionStorage.getItem('teacher_id') || '';
+                fetch('TEACHER_BACKEND/teacher_delete_activity.php', {
+                    method: 'POST',
+                    body: new URLSearchParams({ teacher_id: _tid, activity_id: dbId })
+                }).then(function() { loadActivities(); })
+                  .catch(function() { loadActivities(); });
+            });
         }
 
         function deleteBackendDraft(dbId) {
-            if (!confirm('Delete this draft? This cannot be undone.')) return;
-            var _tid = sessionStorage.getItem('teacher_id') || '';
-            fetch('TEACHER_BACKEND/teacher_delete_activity.php', {
-                method: 'POST',
-                body: new URLSearchParams({ teacher_id: _tid, activity_id: dbId })
-            }).then(function() { loadActivities(); })
-              .catch(function() { loadActivities(); });
+            showConfirmModal('Delete this draft? This cannot be undone.').then(function (ok) {
+                if (!ok) return;
+                var _tid = sessionStorage.getItem('teacher_id') || '';
+                fetch('TEACHER_BACKEND/teacher_delete_activity.php', {
+                    method: 'POST',
+                    body: new URLSearchParams({ teacher_id: _tid, activity_id: dbId })
+                }).then(function() { loadActivities(); })
+                  .catch(function() { loadActivities(); });
+            });
         }
 
         function editBackendDraft(dbId, templateFile) {
@@ -651,14 +662,16 @@
         }
 
         function deleteUpload(uploadId) {
-            if (!confirm('Delete this uploaded file? It will no longer be visible to the student.')) return;
-            var _tid = sessionStorage.getItem('teacher_id') || '';
-            var fd = new FormData();
-            fd.append('upload_id', uploadId);
-            fd.append('teacher_id', _tid);
-            fetch('TEACHER_BACKEND/teacher_delete_upload.php', { method: 'POST', body: fd })
-                .then(function() { loadActivities(); })
-                .catch(function() { loadActivities(); });
+            showConfirmModal('Delete this uploaded file? It will no longer be visible to the student.').then(function (ok) {
+                if (!ok) return;
+                var _tid = sessionStorage.getItem('teacher_id') || '';
+                var fd = new FormData();
+                fd.append('upload_id', uploadId);
+                fd.append('teacher_id', _tid);
+                fetch('TEACHER_BACKEND/teacher_delete_upload.php', { method: 'POST', body: fd })
+                    .then(function() { loadActivities(); })
+                    .catch(function() { loadActivities(); });
+            });
         }
 
         function viewActivity(id) { window.location.href = 'Teacher_reviewact.html?id=' + id; }
@@ -683,9 +696,47 @@
             loadActivities();
             document.getElementById('teacher-searchInput').addEventListener('input', filterTable);
         });
+
+        /* ── Styled confirm dialog (replaces native confirm() popups). Returns
+           a Promise<boolean> — resolves true only when "Delete"/"Unpublish" is clicked. ── */
+        function showConfirmModal(message, okLabel) {
+            return new Promise(function (resolve) {
+                var overlay = document.getElementById('confirmModalOverlay');
+                document.getElementById('confirmModalMsg').textContent = message;
+                document.getElementById('confirmModalOkBtn').textContent = okLabel || 'Delete';
+                overlay.classList.add('show');
+
+                function cleanup(result) {
+                    overlay.classList.remove('show');
+                    okBtn.removeEventListener('click', onOk);
+                    cancelBtn.removeEventListener('click', onCancel);
+                    overlay.removeEventListener('click', onOverlay);
+                    resolve(result);
+                }
+                var okBtn = document.getElementById('confirmModalOkBtn');
+                var cancelBtn = document.getElementById('confirmModalCancelBtn');
+                function onOk() { cleanup(true); }
+                function onCancel() { cleanup(false); }
+                function onOverlay(e) { if (e.target === overlay) cleanup(false); }
+                okBtn.addEventListener('click', onOk);
+                cancelBtn.addEventListener('click', onCancel);
+                overlay.addEventListener('click', onOverlay);
+            });
+        }
     </script>
 <script>(function(){var _id=sessionStorage.getItem('admin_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>
 <script>(function(){var _s=document.createElement('style');_s.textContent='.teacher-notif-badge{display:none!important}.teacher-notif-badge.has-notifs{position:absolute;top:4px;right:4px;min-width:16px;height:16px;border-radius:50%;background:#ef4444;color:#fff;font-size:9px;font-weight:700;display:flex!important;align-items:center;justify-content:center;padding:0 2px;border:2px solid #fff}';document.head.appendChild(_s);var tid=sessionStorage.getItem('teacher_id')||'';if(!tid)return;fetch('TEACHER_BACKEND/teacher_manage_notifications.php?action=get_unread_count&teacher_id='+encodeURIComponent(tid)).then(function(r){return r.json();}).then(function(d){var cnt=d&&d.unread_count>0?d.unread_count:0;if(cnt>0){var b=document.querySelector('.teacher-notif-badge');if(b){b.textContent=cnt>9?'9+':cnt;b.classList.add('has-notifs');}}}).catch(function(){});})();</script>
+
+<div class="confirm-modal-overlay" id="confirmModalOverlay">
+    <div class="confirm-modal-box">
+        <div class="confirm-modal-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <div class="confirm-modal-msg" id="confirmModalMsg"></div>
+        <div class="confirm-modal-actions">
+            <button class="confirm-modal-cancel" id="confirmModalCancelBtn" type="button">Cancel</button>
+            <button class="confirm-modal-ok" id="confirmModalOkBtn" type="button">Delete</button>
+        </div>
+    </div>
+</div>
 </body>
 
 </html>

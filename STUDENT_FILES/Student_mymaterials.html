@@ -267,7 +267,10 @@
         else if (mime.indexOf('video') >= 0) icon = '🎬';
         else if (mime.indexOf('audio') >= 0) icon = '🎵';
       }
-      var url = isLink ? file.link_url : '../TEACHER_FILES/uploads/materials/' + esc(file.file_name);
+      // Files uploaded after the Cloudinary migration store a full URL in
+      // file_name; older entries are still a bare local filename.
+      var url = esc(isLink ? file.link_url
+        : (file.file_name.indexOf('http') === 0 ? file.file_name : '../TEACHER_FILES/uploads/materials/' + file.file_name));
       var subText = isLink
         ? '<span style="background:#dcfce7;color:#15803d;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;">LINK</span>'
         : (function(){
@@ -352,9 +355,12 @@
       document.getElementById('sidebarName').textContent = [spFirst, spLast].filter(Boolean).join(' ') || 'Student';
       document.getElementById('sidebarRole').textContent = [spGrade, spCond].filter(Boolean).join(' — ') || 'Student';
       var matAv = document.getElementById('sidebarInitials');
-      if (matAv) matAv.innerHTML = sp.photo
-        ? '<img src="' + sp.photo + '" style="width:100%;height:100%;object-fit:cover;display:block;" />'
-        : ((spFirst[0]||'S') + (spLast[0]||'')).toUpperCase().trim() || 'S';
+      if (matAv) {
+        matAv.innerHTML = sp.photo
+          ? '<img src="' + sp.photo + '" style="width:100%;height:100%;object-fit:cover;display:block;" />'
+          : ((spFirst[0]||'S') + (spLast[0]||'')).toUpperCase().trim() || 'S';
+        matAv.classList.toggle('has-photo', !!sp.photo);
+      }
       if (!sp.photo) {
         var _matSid = sessionStorage.getItem('student_id') || '';
         if (_matSid) {
@@ -365,7 +371,10 @@
                 sp.photo = pd.profile_photo;
                 try { localStorage.setItem('student_profile', JSON.stringify(sp)); } catch(e){}
                 var _matAv2 = document.getElementById('sidebarInitials');
-                if (_matAv2) _matAv2.innerHTML = '<img src="' + pd.profile_photo + '" style="width:100%;height:100%;object-fit:cover;display:block;" />';
+                if (_matAv2) {
+                  _matAv2.innerHTML = '<img src="' + pd.profile_photo + '" style="width:100%;height:100%;object-fit:cover;display:block;" />';
+                  _matAv2.classList.add('has-photo');
+                }
               }
             }).catch(function(){});
         }

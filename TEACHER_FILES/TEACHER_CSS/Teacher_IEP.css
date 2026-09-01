@@ -757,3 +757,36 @@ body {
     color: #64748B;
     margin-top: 1px;
 }
+
+/* =====================
+   TOAST (replaces native alert() popups)
+===================== */
+.iep-toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--white);
+    color: var(--text);
+    padding: 14px 22px;
+    border-radius: 14px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    box-shadow: var(--shadow-md);
+    border-left: 4px solid var(--orange);
+    opacity: 0;
+    transition: opacity .25s ease, transform .25s ease;
+    z-index: 99999;
+    pointer-events: none;
+    max-width: 90vw;
+}
+.iep-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.iep-toast--success { border-left-color: var(--green); }
+.iep-toast--warning  { border-left-color: var(--orange); }
+.iep-toast i { font-size: 16px; }
+.iep-toast--success i { color: var(--green); }
+.iep-toast--warning i  { color: var(--orange); }

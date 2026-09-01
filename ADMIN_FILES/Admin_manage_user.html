@@ -676,11 +676,10 @@
             <label>Temporary Password</label>
             <div class="admin-temp-pass-wrap">
               <input class="admin-temp-pass-input" name="enter_temporary_password"
-                placeholder="Enter temporary password..." type="text" value="Temp@1234" />
+                placeholder="Enter temporary password..." type="text" required minlength="8" />
               <span class="admin-copy-icon">⧉</span>
             </div>
           </div>
-          <p class="admin-gen-new-label">Generate New</p>
           <p class="admin-pass-note">The user will be required to change this password upon their next login.</p>
         </div>
         <hr class="admin-reset-divider" />
@@ -691,9 +690,39 @@
       </div>
     </form>
   </div>
+  <!-- ===== MODAL: GENERIC CONFIRM (replaces native confirm() popups) ===== -->
+  <div class="admin-modal-overlay" id="admin-modal-confirm" style="display:none">
+    <div class="admin-modal-box admin-modal-box--narrow">
+      <div class="admin-modal-header">
+        <h3 class="admin-modal-title" id="admin-confirm-title">Please confirm</h3>
+        <button class="admin-modal-close" onclick="_adminConfirmResolve(false)" type="button">✕</button>
+      </div>
+      <div class="admin-modal-body">
+        <p id="admin-confirm-msg" style="font-size:14px;color:#334155;line-height:1.6;"></p>
+      </div>
+      <div class="admin-modal-footer-row">
+        <button class="admin-btn-cancel" onclick="_adminConfirmResolve(false)" type="button">Cancel</button>
+        <button class="admin-btn-danger-solid" id="admin-confirm-ok-btn" onclick="_adminConfirmResolve(true)" type="button">Confirm</button>
+      </div>
+    </div>
+  </div>
   <script>
     var accountList = [];
     var deleteSelection = new Set();
+    var _adminConfirmResolver = null;
+
+    function showConfirmModal(message, okLabel, title) {
+      document.getElementById('admin-confirm-title').textContent = title || 'Please confirm';
+      document.getElementById('admin-confirm-msg').textContent = message;
+      document.getElementById('admin-confirm-ok-btn').textContent = okLabel || 'Confirm';
+      showModal('admin-modal-confirm');
+      return new Promise(function (resolve) { _adminConfirmResolver = resolve; });
+    }
+
+    function _adminConfirmResolve(result) {
+      hideModal('admin-modal-confirm');
+      if (_adminConfirmResolver) { _adminConfirmResolver(result); _adminConfirmResolver = null; }
+    }
 
     function showModal(id) { 
       document.getElementById(id).style.display = 'flex'; 
@@ -1177,13 +1206,29 @@
       renderAccountTable(filtered);
     }
 
+    function showMuToast(message, isError, durationMs) {
+      var old = document.querySelector('.admin-mu-toast');
+      if (old) old.remove();
+      var t = document.createElement('div');
+      t.className = 'admin-mu-toast' + (isError ? ' admin-mu-toast--error' : '');
+      var icon = isError ? 'fa-circle-exclamation' : 'fa-circle-check';
+      t.innerHTML = '<i class="fa-solid ' + icon + '"></i><span></span>';
+      t.querySelector('span').textContent = message;
+      document.body.appendChild(t);
+      requestAnimationFrame(function () { t.classList.add('show'); });
+      setTimeout(function () {
+        t.classList.remove('show');
+        setTimeout(function () { t.remove(); }, 300);
+      }, durationMs || 3000);
+    }
+
     function saveEditUser() {
       var editForm = document.getElementById('admin_manage_user_form_1');
       var formData = new FormData(editForm);
 
       // Close modal immediately
       hideModal('admin-modal-edit');
-      
+
       // Send data to backend
       fetch('ADMIN_BACKEND/admin_manage_user_save.php', {
         method: 'POST',
@@ -1191,11 +1236,18 @@
       })
       .then(function(response) { return response.json(); })
       .then(function(result) {
+        if (result && result.success === false) {
+          showMuToast(result.message || 'Could not save changes.', true);
+        } else {
+          showMuToast('User updated successfully!');
+        }
         // Reload data in background
         loadAccounts();
         updateStats();
       })
-      .catch(function(error) {});
+      .catch(function(error) {
+        showMuToast('Network error. Could not save changes.', true);
+      });
     }
 
     function saveAddAccount() {
@@ -1218,16 +1270,17 @@
           // Reload data after successful addition
           loadAccounts();
           updateStats();
+          showMuToast('Account added successfully!');
         } else {
           // Show error message and reopen modal
-          alert('Error: ' + result.message);
           showModal('admin-modal-add');
+          showMuToast(result.message || 'Could not add account.', true);
         }
       })
       .catch(function(error) {
         // Reopen modal to show error
         showModal('admin-modal-add');
-        alert('Failed to add account. Please try again.');
+        showMuToast('Failed to add account. Please try again.', true);
       });
     }
 
@@ -1253,35 +1306,38 @@
 
     function deleteSelectedAccounts() {
       if (!deleteSelection.size) return;
-      if (!confirm('Move selected account(s) to Deleted Accounts? You can restore them later.')) {
-        return;
-      }
+      showConfirmModal(
+        'Move selected account(s) to Deleted Accounts? You can restore them later.',
+        'Delete', 'Delete accounts?'
+      ).then(function (ok) {
+        if (!ok) return;
 
-      fetch('ADMIN_BACKEND/admin_delete_account.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids: Array.from(deleteSelection) })
-      })
-      .then(function (response) {
-        return response.json().then(function (result) {
-          if (!response.ok && !result.message) {
-            result.message = 'Your admin session has expired. Please log in again.';
+        fetch('ADMIN_BACKEND/admin_delete_account.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: Array.from(deleteSelection) })
+        })
+        .then(function (response) {
+          return response.json().then(function (result) {
+            if (!response.ok && !result.message) {
+              result.message = 'Your admin session has expired. Please log in again.';
+            }
+            return result;
+          });
+        })
+        .then(function (result) {
+          if (result.success) {
+            loadAccounts();
+            updateDeleteCount();
+            updateStats();
+            showMuToast('Account(s) moved to Deleted Accounts.');
+          } else {
+            showMuToast(result.message || 'Delete failed.', true);
           }
-          return result;
+        })
+        .catch(function () {
+          showMuToast('Delete request failed.', true);
         });
-      })
-      .then(function (result) {
-        if (result.success) {
-          loadAccounts();
-          updateDeleteCount();
-          updateStats();
-          alert('Account(s) moved to Deleted Accounts.');
-        } else {
-          alert(result.message || 'Delete failed.');
-        }
-      })
-      .catch(function () {
-        alert('Delete request failed.');
       });
     }
 
@@ -1311,7 +1367,7 @@
 
     function showResetPasswordModal() {
       if (!selectedAccount) {
-        alert('No user selected');
+        showMuToast('No user selected.', true);
         return;
       }
 
@@ -1342,6 +1398,11 @@
 
     function saveResetPassword() {
       var resetForm = document.getElementById('admin_manage_user_form_3');
+      var pwInput = resetForm.querySelector('[name="enter_temporary_password"]');
+      if (!pwInput.value.trim() || pwInput.value.trim().length < 8) {
+        showMuToast('Please enter a temporary password (at least 8 characters).', true);
+        return;
+      }
       var formData = new FormData(resetForm);
 
       // Close modal immediately
@@ -1357,14 +1418,14 @@
         if (result.success) {
           // Reload data after successful reset
           loadAccounts();
-          alert('Password reset successfully. Temporary password: ' + result.temp_password);
+          showMuToast('Password reset! Temporary password: ' + result.temp_password, false, 6000);
         } else {
-          alert('Error: ' + result.message);
+          showMuToast(result.message || 'Could not reset password.', true);
           showModal('admin-modal-reset');
         }
       })
       .catch(function(error) {
-        alert('Failed to reset password. Please try again.');
+        showMuToast('Failed to reset password. Please try again.', true);
         showModal('admin-modal-reset');
       });
     }

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/photo_validation.php';
 requireAdminSession();
 header('Content-Type: application/json');
 
@@ -9,10 +10,20 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $admin_account_id = (int)$_SESSION['admin_id'];
-$photo            = isset($_POST['photo']) ? $_POST['photo'] : '';
+$photoInput       = isset($_POST['photo']) ? $_POST['photo'] : '';
 
 if (!$admin_account_id) {
     echo json_encode(['success' => false, 'message' => 'Missing authenticated admin']);
+    exit;
+}
+
+// Empty input clears the photo. Anything else must be a genuine small
+// base64 image — the raw client-supplied string is never trusted as-is
+// (that was an XSS vector: a crafted "photo" value rendered unescaped
+// elsewhere could run script in an admin's browser).
+$photo = sanitizeProfilePhotoDataUri($photoInput);
+if ($photo === null) {
+    echo json_encode(['success' => false, 'message' => 'Invalid image. Please try a different photo.']);
     exit;
 }
 
