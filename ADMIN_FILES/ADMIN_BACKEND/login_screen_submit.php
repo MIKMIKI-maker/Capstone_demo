@@ -125,7 +125,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     // person's failed attempts on a shared network (e.g. school WiFi)
     // would also block every other account trying to log in from there.
     $MAX_ATTEMPTS = 5;
-    $LOCKOUT_MINUTES = 15;
+    $LOCKOUT_MINUTES = 5;
     $chk = $conn->prepare("SELECT COUNT(*) AS cnt FROM login_attempts WHERE email = ? AND attempted_at > DATE_SUB(NOW(), INTERVAL ? MINUTE)");
     if ($chk) {
         $chk->bind_param("si", $email, $LOCKOUT_MINUTES);
