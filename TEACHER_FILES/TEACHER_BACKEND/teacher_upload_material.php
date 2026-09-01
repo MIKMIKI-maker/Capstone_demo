@@ -36,8 +36,11 @@ $fileMime = '';
 $fileSize = 0;
 
 if ($hasFile) {
-    if ($_FILES['file']['size'] > 20 * 1024 * 1024) {
-        echo json_encode(['success' => false, 'message' => 'File too large (max 20 MB)']);
+    // Cloudinary's free plan caps uploads at 10MB — confirmed directly
+    // against their API (they reject anything larger with a 400), so this
+    // stays in sync with that rather than the file input's old 20MB label.
+    if ($_FILES['file']['size'] > 10 * 1024 * 1024) {
+        echo json_encode(['success' => false, 'message' => 'File too large (max 10 MB)']);
         exit;
     }
 

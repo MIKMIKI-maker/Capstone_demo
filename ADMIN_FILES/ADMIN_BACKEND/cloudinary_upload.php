@@ -43,8 +43,8 @@ function cloudinaryUpload($fileParam, $resourceType = 'image', $folder = null) {
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    // Materials can be up to 20MB — generous timeout so a slow connection
-    // doesn't abort a large file mid-upload.
+    // Generous timeout so a slow connection doesn't abort a large file
+    // mid-upload (materials go up to Cloudinary's free-plan 10MB cap).
     curl_setopt($ch, CURLOPT_TIMEOUT, 180);
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);

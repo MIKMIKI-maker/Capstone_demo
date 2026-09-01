@@ -205,7 +205,7 @@
 
           <!-- File input -->
           <div id="uploadFileWrap">
-            <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:5px;">File <span style="color:#ef4444">*</span> <span style="color:#94a3b8;font-weight:400;">(PDF, image, Word, PowerPoint, video — max 20 MB)</span></label>
+            <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:5px;">File <span style="color:#ef4444">*</span> <span style="color:#94a3b8;font-weight:400;">(PDF, image, Word, PowerPoint, video — max 10 MB)</span></label>
             <input id="uploadFile" type="file" accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.ppt,.pptx,.mp4,.mp3,.wav"
               style="width:100%;padding:8px;border:1.5px dashed #cbd5e1;border-radius:9px;font-family:'Poppins',sans-serif;font-size:13px;background:#f8fafc;box-sizing:border-box;cursor:pointer;" />
           </div>
@@ -451,8 +451,8 @@
                 if (!fileInput.files || !fileInput.files[0]) {
                     msg.textContent = 'Please select a file.'; msg.style.display = 'block'; return;
                 }
-                if (fileInput.files[0].size > 20 * 1024 * 1024) {
-                    msg.textContent = 'File is too large (max 20 MB).'; msg.style.display = 'block'; return;
+                if (fileInput.files[0].size > 10 * 1024 * 1024) {
+                    msg.textContent = 'File is too large (max 10 MB).'; msg.style.display = 'block'; return;
                 }
             } else {
                 linkUrl = document.getElementById('uploadLinkUrl').value.trim();
