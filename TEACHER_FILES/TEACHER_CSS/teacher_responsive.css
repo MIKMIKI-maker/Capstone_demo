@@ -57,7 +57,11 @@ table { display: block; max-width: 100%; overflow-x: auto; }
 /* ---------- Tablet + phone: sidebar becomes a hidden off-canvas
    drawer instead of an always-visible icon-only rail. ---------- */
 @media (max-width: 1024px) {
-  html, body { overflow: auto; height: auto; }
+  /* overflow:auto on both axes let any element that was even slightly
+     too wide (a table, a row of stat cards) turn into real page-level
+     horizontal scroll instead of just being contained — explicit
+     per-axis avoids that. */
+  html, body { overflow-y: auto; overflow-x: hidden; height: auto; }
   .teacher-app-wrapper { height: auto; overflow: visible; }
 
   .teacher-mobile-topbar { display: flex; }
@@ -160,6 +164,28 @@ table { display: block; max-width: 100%; overflow-x: auto; }
 
   .teacher-history-card { overflow-x: auto; }
   .teacher-history-row, .teacher-history-header { min-width: 560px; }
+
+  /* ---------- My Learners: stat cards + data table ---------- */
+  /* .teacher-stat-card had min-width:130px with no wrap, so 3 cards
+     (Students / Active Learners / My Section) side by side overflowed
+     a phone width and got their text cut off. Wrapping lets them
+     settle onto 2 rows instead of forcing a scroll for 3 small cards. */
+  .teacher-stats-container { flex-wrap: wrap; }
+  .teacher-stat-card { flex: 1 1 140px; }
+
+  /* table{display:block;overflow-x:auto} above lets the table scroll,
+     but with no minimum width the browser squeezed columns (email,
+     action buttons) down to unreadable/clipped instead of scrolling.
+     A min-width forces a real horizontal scroll with intact columns,
+     same pattern as .teacher-history-row above. */
+  #teacher-learnersTable, #teacher-activitiesTable { min-width: 700px; }
+
+  /* ---------- Settings: split profile-menu / form layout ---------- */
+  /* .teacher-settings-container was a fixed side-by-side flex row
+     (240px menu + form), squeezing the form fields on a phone. Stack
+     them vertically instead. */
+  .teacher-settings-container { flex-direction: column; }
+  .teacher-left-panel { width: 100%; }
 }
 
 /* ---------- Phone ---------- */
