@@ -491,6 +491,11 @@ function initActivityTheme(){
        deeper, so the fix above wasn't enough on its own — this
        lets every descendant shrink too instead of overflowing. */
     .wrt-left-col *, .wrt-preview-col *, .wrt-right-col *{ min-width:0; }
+    /* .wrt-stage has overflow:hidden by design (clips the decorative
+       background art to the card's rounded corners), but that also
+       clips real content if the stage is ever taller than its box —
+       let it grow with the page instead of hard-cutting the preview. */
+    .wrt-stage{ overflow-y:visible; overflow-x:hidden; }
   }
 
   @media (max-width:640px){

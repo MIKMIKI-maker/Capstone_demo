@@ -495,6 +495,11 @@ body.lbl-preview-only .lbl-exit-float{display:flex;}
        deeper, so the fix above wasn't enough on its own — this
        lets every descendant shrink too instead of overflowing. */
     .lbl-left-col *, .lbl-preview-col *, .lbl-right-col *{ min-width:0; }
+    /* .lbl-stage has overflow:hidden by design (clips the decorative
+       background art to the card's rounded corners), but that also
+       clips real content if the stage is ever taller than its box —
+       let it grow with the page instead of hard-cutting the preview. */
+    .lbl-stage{ overflow-y:visible; overflow-x:hidden; }
 }
 @media(max-width:640px){
   .lbl-top{padding:12px 14px;gap:10px;}
