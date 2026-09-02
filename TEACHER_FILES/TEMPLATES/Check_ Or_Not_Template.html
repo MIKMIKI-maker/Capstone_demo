@@ -8,6 +8,177 @@
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script>
+/* Happy activity sound effects (synthesized — no external audio files needed) */
+var _actAudioCtx = null;
+function _actGetAudioCtx(){
+  if (!_actAudioCtx) { try { _actAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ return null; } }
+  if (_actAudioCtx.state === 'suspended') { _actAudioCtx.resume(); }
+  return _actAudioCtx;
+}
+function _actTone(ctx, freq, startTime, duration, peakGain){
+  var osc = ctx.createOscillator(), gain = ctx.createGain();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(freq, startTime);
+  gain.gain.setValueAtTime(0, startTime);
+  gain.gain.linearRampToValueAtTime(peakGain, startTime + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(startTime); osc.stop(startTime + duration + 0.02);
+}
+// Cheerful, child-friendly chimes. tier: "perfect" | "good" | "tryagain"
+function playActivitySound(tier){
+  var ctx = _actGetAudioCtx();
+  if (!ctx) return;
+  _duckThemeForCelebration();
+  var now = ctx.currentTime;
+  if (tier === 'perfect') {
+    [523.25, 659.25, 783.99, 1046.50, 1318.51].forEach(function(f, i){ _actTone(ctx, f, now + i*0.09, 0.35, 0.22); });
+  } else if (tier === 'good') {
+    _actTone(ctx, 659.25, now, 0.22, 0.22);
+    _actTone(ctx, 880.00, now + 0.12, 0.32, 0.22);
+  } else {
+    _actTone(ctx, 392.00, now, 0.18, 0.18);
+    _actTone(ctx, 440.00, now + 0.15, 0.24, 0.18);
+  }
+}
+// Light tap/selection feedback — a quick tick when picking an answer, a
+// snap chime when it locks in.
+function playPickupSound(){
+  var ctx = _actGetAudioCtx();
+  if (!ctx) return;
+  _actTone(ctx, 720, ctx.currentTime, 0.05, 0.12);
+}
+function playDropSound(success){
+  var ctx = _actGetAudioCtx();
+  if (!ctx) return;
+  var now = ctx.currentTime;
+  if (success) {
+    _actTone(ctx, 660, now, 0.06, 0.16);
+    _actTone(ctx, 990, now + 0.05, 0.09, 0.16);
+  } else {
+    _actTone(ctx, 300, now, 0.09, 0.10);
+  }
+}
+
+/* Soft looping background theme (happy, low-volume) while a student works
+   through the activity. Starts on first interaction (browsers block audio
+   until a real user gesture), ducks under the score chime, and stays off
+   if the student muted it before (remembered per-browser). */
+var _themeGain = null, _themeLoopTimer = null, _themeLoopActive = false, _themeMuted = false;
+// Real background track, routed through _themeGain so mute + the celebration
+// "duck" still work the same way. Falls back to a short synthesized riff if
+// the file is ever missing or the browser can't decode it.
+var THEME_AUDIO_SRC = 'audio/theme.mp3';
+var THEME_VOLUME = 0.15;
+var _themeAudioEl = null, _themeMediaSrc = null, _themeUsingFallback = false;
+// Fallback riff only — used if THEME_AUDIO_SRC fails to load.
+var THEME_PATTERN = [
+  { f: 523.25, d: 0.16 }, // C5
+  { f: 659.25, d: 0.16 }, // E5
+  { f: 783.99, d: 0.16 }, // G5
+  { f: 1046.50, d: 0.34 } // C6 — landing note
+];
+var THEME_GAP = 0.05;
+function _actGetThemeGain(ctx){
+  if (!_themeGain) { _themeGain = ctx.createGain(); _themeGain.gain.value = _themeMuted ? 0 : THEME_VOLUME; _themeGain.connect(ctx.destination); }
+  return _themeGain;
+}
+function _scheduleThemeLoop(){
+  if (!_themeLoopActive) return;
+  var ctx = _actGetAudioCtx();
+  if (!ctx) { _themeLoopTimer = setTimeout(_scheduleThemeLoop, 400); return; }
+  var gain = _actGetThemeGain(ctx), now = ctx.currentTime, t = now;
+  THEME_PATTERN.forEach(function(note){
+    var osc = ctx.createOscillator(), g = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(note.f, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(1, t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.001, t + note.d);
+    osc.connect(g); g.connect(gain);
+    osc.start(t); osc.stop(t + note.d + 0.03);
+    t += note.d + THEME_GAP;
+  });
+  _themeLoopTimer = setTimeout(_scheduleThemeLoop, (t - now) * 1000);
+}
+function startThemeMusic(){
+  if (_themeLoopActive) return;
+  var ctx = _actGetAudioCtx();
+  if (!ctx) return;
+  _themeLoopActive = true;
+  if (_themeUsingFallback) { _scheduleThemeLoop(); return; }
+  if (!_themeAudioEl) {
+    _themeAudioEl = new Audio(THEME_AUDIO_SRC);
+    _themeAudioEl.loop = true;
+    _themeAudioEl.preload = 'auto';
+    _themeAudioEl.addEventListener('error', function(){
+      _themeUsingFallback = true;
+      if (_themeLoopActive) _scheduleThemeLoop();
+    });
+    try {
+      _themeMediaSrc = ctx.createMediaElementSource(_themeAudioEl);
+      _themeMediaSrc.connect(_actGetThemeGain(ctx));
+    } catch (e) {
+      _themeUsingFallback = true;
+      _scheduleThemeLoop();
+      return;
+    }
+  }
+  _themeAudioEl.play().catch(function(){
+    // Autoplay was blocked (e.g. no genuine gesture yet) rather than the file
+    // being broken — don't give up on the real track permanently, just play
+    // the fallback riff for now so there's still something audible.
+    if (_themeLoopActive && !_themeUsingFallback) _scheduleThemeLoop();
+  });
+}
+function stopThemeMusic(){
+  _themeLoopActive = false;
+  if (_themeLoopTimer) { clearTimeout(_themeLoopTimer); _themeLoopTimer = null; }
+  if (_themeAudioEl) { try { _themeAudioEl.pause(); } catch(e){} }
+}
+function _duckThemeForCelebration(){
+  if (!_themeGain || !_themeLoopActive || _themeMuted) return;
+  var ctx = _actGetAudioCtx();
+  if (!ctx) return;
+  var now = ctx.currentTime;
+  _themeGain.gain.cancelScheduledValues(now);
+  _themeGain.gain.setValueAtTime(_themeGain.gain.value, now);
+  _themeGain.gain.linearRampToValueAtTime(THEME_VOLUME * 0.2, now + 0.15);
+  _themeGain.gain.linearRampToValueAtTime(THEME_VOLUME, now + 1.8);
+}
+function setThemeMuted(muted){
+  _themeMuted = muted;
+  try { localStorage.setItem('spedalm_theme_muted', muted ? '1' : '0'); } catch(e){}
+  var btn = document.getElementById('_actThemeToggleBtn');
+  if (btn) btn.textContent = muted ? '🔇' : '🔊';
+  if (_themeGain) {
+    var ctx = _actGetAudioCtx();
+    if (ctx) {
+      _themeGain.gain.cancelScheduledValues(ctx.currentTime);
+      _themeGain.gain.linearRampToValueAtTime(muted ? 0 : THEME_VOLUME, ctx.currentTime + 0.25);
+    }
+  }
+}
+// Call only from inside a real click/keydown handler (e.g. the student's
+// "Start Activity" button) — browsers require a genuine user gesture before
+// audio is allowed to play, and this both starts it and installs the mute toggle.
+function initActivityTheme(){
+  try { _themeMuted = localStorage.getItem('spedalm_theme_muted') === '1'; } catch(e){}
+  if (!document.getElementById('_actThemeToggleBtn')) {
+    var btn = document.createElement('button');
+    btn.id = '_actThemeToggleBtn';
+    btn.type = 'button';
+    btn.textContent = _themeMuted ? '🔇' : '🔊';
+    btn.title = 'Turn activity music on/off';
+    btn.setAttribute('aria-label', 'Turn activity music on or off');
+    btn.style.cssText = 'position:fixed;bottom:18px;right:18px;z-index:99999;width:46px;height:46px;border-radius:50%;border:none;background:#fff;box-shadow:0 4px 14px rgba(0,0,0,.18);font-size:20px;cursor:pointer;';
+    btn.onclick = function(){ setThemeMuted(!_themeMuted); };
+    document.body.appendChild(btn);
+  }
+  startThemeMusic();
+}
+</script>
 <style>
   :root{
     --blue:#2f6fed; --blue-dark:#1b4fb8;
@@ -958,6 +1129,7 @@
 
   function selectMark(itemIndex, mark){
     if (isLocked(itemIndex)) return; // anchored hint — student can't change this one
+    playDropSound(true);
     studentMarks[itemIndex] = mark;
     const card = grid.querySelector('[data-i="'+itemIndex+'"]');
     card.querySelectorAll(".chk-mopt").forEach(b=> b.classList.remove("sel"));
@@ -1062,6 +1234,7 @@
     if (percent === 1){
       image = "images/perfect.png";
       message = "Perfect! You got them all correct! 🎊";
+      playActivitySound('perfect');
       if (typeof confetti === "function"){
         confetti({ particleCount:200, spread:120, startVelocity:40, origin:{ y:0.6 } });
         setTimeout(()=>{
@@ -1070,8 +1243,8 @@
         }, 300);
       }
     }
-    else if (percent >= PASS_THRESHOLD){ image = "images/goodjob.png"; message = "Good job! You passed! ⭐"; }
-    else { image = "images/tryagain.png"; message = "Let's try again! You need " + Math.round(PASS_THRESHOLD*100) + "% to pass. 💪"; }
+    else if (percent >= PASS_THRESHOLD){ image = "images/goodjob.png"; message = "Good job! You passed! ⭐"; playActivitySound('good'); }
+    else { image = "images/tryagain.png"; message = "Let's try again! You need " + Math.round(PASS_THRESHOLD*100) + "% to pass. 💪"; playActivitySound('tryagain'); }
 
     $("chkModalEmoji").src = image;
     $("chkModalEmoji").onerror = function(){ this.onerror=null; this.src="images/placeholder.png"; };
@@ -1451,10 +1624,19 @@
     stageScale = 1;
     const sp = window.getComputedStyle(stage);
     const padV = (parseFloat(sp.paddingTop)||0) + (parseFloat(sp.paddingBottom)||0);
-    const available = window.innerHeight - padV;
+    const padH = (parseFloat(sp.paddingLeft)||0) + (parseFloat(sp.paddingRight)||0);
+    const availableH = window.innerHeight - padV;
+    const availableW = stage.clientWidth - padH;
     const naturalH = stageInner.scrollHeight;
-    if (naturalH > available) {
-      stageScale = available / naturalH;
+    const naturalW = stageInner.scrollWidth;
+    // Fit BOTH dimensions, not just height — a phone-width viewport is often
+    // narrower than the stage's fixed-gap content before it's ever too tall,
+    // and scaling for height alone left the extra width silently clipped by
+    // the stage's overflow:hidden (looked like a blank colored rectangle).
+    const scaleH = naturalH > availableH ? availableH / naturalH : 1;
+    const scaleW = naturalW > availableW ? availableW / naturalW : 1;
+    stageScale = Math.min(scaleH, scaleW, 1);
+    if (stageScale < 1) {
       stageInner.style.transform = `scale(${stageScale})`;
       stageInner.style.marginBottom = `-${naturalH * (1 - stageScale)}px`;
     }
@@ -1734,6 +1916,7 @@
         if (fs.requestFullscreen) fs.requestFullscreen().catch(function(){});
         else if (fs.webkitRequestFullscreen) fs.webkitRequestFullscreen();
         splash.remove();
+        initActivityTheme();
 
         renderItems(); renderSwatches(); syncDesignControls(); applyAppearance(); renderActivity(); renderSlideNav();
         document.body.classList.add('chk-preview-only');
