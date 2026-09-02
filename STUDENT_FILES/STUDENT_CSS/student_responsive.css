@@ -3,9 +3,12 @@
    Loaded after each page's own stylesheet (same specificity, later
    source order wins) so one file fixes phone/iPad layout across every
    Student_*.html page instead of duplicating these rules five times.
-   Every student page already collapses .student-sidebar into a
-   horizontal strip at 900px — this file just makes that consistent
-   everywhere and fills in the missing phone-tier polish + content grids.
+
+   .student-sidebar's own mobile behavior (off-canvas hamburger drawer,
+   not an always-visible stacked card) is handled separately by
+   ASSETS/student_portal.js, which injects its own !important-scoped
+   <style> at the same 900px breakpoint — intentionally not duplicated
+   here. Everything below is the non-sidebar mobile/phone-tier polish.
    ============================================================ */
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -17,15 +20,9 @@ table { display: block; max-width: 100%; overflow-x: auto; }
   .student-main { padding: 22px; }
 }
 
-/* ---------- Sidebar becomes a horizontal strip (matches the pattern
-   already used on Student_dashboard/Student_notif/etc.) ---------- */
 @media (max-width: 900px) {
   body { flex-direction: column; height: auto; overflow-y: auto; }
-  .student-sidebar {
-    width: 100%; flex-direction: row; flex-wrap: wrap; align-items: center;
-    border-radius: 0 0 28px 28px; position: static; height: auto;
-  }
-  .student-sidebar-footer { flex-wrap: wrap; }
+
   .student-main { height: auto; overflow-y: visible; padding: 20px; }
 
   .student-content-grid,
@@ -53,7 +50,6 @@ table { display: block; max-width: 100%; overflow-x: auto; }
   .student-greeting { font-size: 22px; }
   .student-page-title { font-size: 22px; }
   .student-main { padding: 14px; }
-  .student-signout-btn span { display: none; }
 
   .student-stat-cards,
   .student-content-grid,

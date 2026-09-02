@@ -207,6 +207,7 @@ function initActivityTheme(){
   .wrt-btn:active{ transform:translateY(2px); }
   .wrt-btn--ghost{ background:#fff; color:var(--ink); border:1.5px solid var(--field-border); }
   .wrt-btn--ghost:hover{ background:#f7f9fd; }
+  .wrt-back-btn{ text-decoration:none; flex:none; }
   .wrt-btn--print{ background:var(--gold); color:#5c4400; box-shadow:0 4px 0 #d9a416; }
   .wrt-btn--pub{ background:var(--green); color:#fff; box-shadow:0 4px 0 var(--green-dark); }
 
@@ -311,7 +312,13 @@ function initActivityTheme(){
   .wrt-deco .d-flower1{ position:absolute; bottom:8px; left:18px; font-size:24px; }
   .wrt-deco .d-flower2{ position:absolute; bottom:6px; right:26px; font-size:22px; }
 
-  .wrt-stage-inner{ position:relative; z-index:2; transform-origin:top center; }
+  .wrt-stage-inner{ position:relative; z-index:2; transform-origin:top center;
+    /* Hidden (opacity:0) by JS the instant fullscreen/preview mode is
+       entered, then faded back in once fitStageToScreen() has computed
+       the correct scale — without this, the learner briefly saw the
+       activity at full size and then watched it visibly jump/shrink
+       into place a beat later. */
+    transition: opacity .18s ease; }
   .wrt-title{ text-align:center; font-weight:700; font-size:1.25em; color:var(--wrt-text); }
   .wrt-instr{ text-align:center; font-size:.5em; font-weight:500; color:var(--wrt-text); opacity:.85; margin:6px 0 18px; }
 
@@ -471,7 +478,44 @@ function initActivityTheme(){
   .wrt-domain-opt:has(input:checked){ border-color:#0891b2; background:#ecfeff; color:#0891b2; }
   .wrt-domain-opt input[type="radio"]{ accent-color:#0891b2; cursor:pointer; }
 
-  @media (max-width:1100px){ .wrt-body{ grid-template-columns:1fr; } }
+  @media (max-width:1100px){
+    html, body{ height:auto; overflow-y:auto; overflow-x:hidden; }
+    .wrt-body{ grid-template-columns:1fr; height:auto; overflow:visible; }
+    /* Grid items default to min-width:auto, so any fixed/non-shrinking
+       content inside forced the WHOLE column wider than the phone
+       instead of shrinking to fit it. This one rule is what actually
+       makes each panel fluid/flexible. */
+    .wrt-left-col, .wrt-preview-col, .wrt-right-col{
+      overflow-y:visible;
+      overflow-x:hidden;
+      height:auto;
+      min-width:0;
+      max-width:100%;
+    }
+    /* Nested flex/grid rows (item pairs, button rows, sliders,
+       swatches) have the SAME min-width:auto default one level
+       deeper, so the fix above wasn't enough on its own — this
+       lets every descendant shrink too instead of overflowing. */
+    .wrt-left-col *, .wrt-preview-col *, .wrt-right-col *{ min-width:0; }
+    /* .wrt-stage has overflow:hidden by design (clips the decorative
+       background art to the card's rounded corners), but that also
+       clips real content if the stage is ever taller than its box —
+       let it grow with the page instead of hard-cutting the preview. */
+    .wrt-stage{ overflow-y:visible; overflow-x:hidden; }
+  }
+
+  @media (max-width:640px){
+    /* .wrt-grid was a fixed 2-column layout, so each item's num+image+
+       answer-input row had barely any width left for the input on a
+       phone — it rendered as an almost invisible sliver. Stacking to
+       1 column gives each item its full row width to write an answer in. */
+    .wrt-grid{ grid-template-columns:1fr; }
+    .wrt-top{ padding:12px 14px; gap:10px; }
+    .wrt-top h1{ font-size:17px; }
+    .wrt-back-btn{ order:-1; flex-basis:100%; justify-content:center; }
+    .wrt-top-actions{ width:100%; margin-left:0; justify-content:center; }
+    .wrt-btn{ flex:1 1 auto; justify-content:center; font-size:12.5px; padding:9px 10px; }
+  }
 
   /* ===== PRINTABLE WORKSHEET (Generate Printable button / PDF via browser print) ===== */
   .wrt-print-area{ display:none; }
@@ -524,6 +568,7 @@ function initActivityTheme(){
   <button class="wrt-exit-float" id="wrtExitFloatBtn" type="button">✖ Exit</button>
 
   <div class="wrt-top">
+    <a class="wrt-btn wrt-btn--ghost wrt-back-btn" href="../Teacher_generate.html" title="Back to Generate Materials">← Back</a>
     <div class="wrt-logo">✏️</div>
     <div>
       <h1>Written Response Template Generator</h1>
@@ -1559,6 +1604,7 @@ function initActivityTheme(){
 
   function enterPreview(){
     document.body.classList.add("wrt-preview-only");
+    stageInner.style.opacity = "0";
     requestFullscreen(document.documentElement);
     setTimeout(fitStageToScreen, 120);
   }
@@ -1568,6 +1614,7 @@ function initActivityTheme(){
     stageScale = 1;
     stageInner.style.transform = "";
     stageInner.style.marginBottom = "";
+    stageInner.style.opacity = "1";
   }
   $("wrtPreviewBtn").addEventListener("click", enterPreview);
   $("wrtExitFloatBtn").addEventListener("click", exitPreview);
@@ -1753,6 +1800,7 @@ function initActivityTheme(){
       stageInner.style.transform = `scale(${stageScale})`;
       stageInner.style.marginBottom = `-${naturalH * (1 - stageScale)}px`;
     }
+    stageInner.style.opacity = "1";
 
     // Extra safety pass: the 2-col item grid can still be wider than what's
     // left after the uniform stage scale accounts for the title/instructions
@@ -2044,6 +2092,7 @@ function initActivityTheme(){
 
         syncModeSeg(); renderExampleEditor(); renderItems(); renderSwatches(); syncDesignControls(); applyAppearance(); renderActivity(); renderSlideNav();
         document.body.classList.add('wrt-preview-only');
+        stageInner.style.opacity = "0";
         setTimeout(fitStageToScreen, 50);
 
         document.addEventListener('fullscreenchange', function() {

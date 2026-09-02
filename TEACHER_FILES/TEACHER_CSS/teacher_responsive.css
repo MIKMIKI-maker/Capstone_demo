@@ -5,36 +5,180 @@
    Teacher_*.html page instead of duplicating these rules ten times.
    Targets the class names that are identical on every teacher page:
    .teacher-sidebar, .teacher-main-content, .teacher-topbar, --sidebar-w.
+
+   At <=1024px, .teacher-sidebar becomes a hidden off-canvas drawer
+   toggled by a hamburger button (see ASSETS/teacher_portal.js), same
+   pattern as the Admin portal's mobile nav — instead of the old
+   icon-only collapsed rail that stayed permanently on screen.
    ============================================================ */
 
 *, *::before, *::after { box-sizing: border-box; }
 img, video, canvas { max-width: 100%; height: auto; }
 table { display: block; max-width: 100%; overflow-x: auto; }
 
-/* ---------- Tablet (iPad portrait/landscape, small laptop) ---------- */
+/* ---------- Off-canvas hamburger drawer, added/created by
+   ASSETS/teacher_portal.js on every Teacher_*.html page. Defined
+   unconditionally (not inside the media query) since the drawer can
+   only ever be opened via the hamburger button, which is itself
+   display:none outside <=1024px — so .show/.teacher-sidebar-open never
+   get applied at desktop widths regardless. ---------- */
+.teacher-mobile-topbar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.teacher-hamburger-btn {
+  display: flex;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: #1E3A8A;
+  color: #fff;
+  border: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .2);
+}
+.teacher-sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, .45);
+  z-index: 9000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s ease;
+}
+.teacher-sidebar-overlay.show { opacity: 1; pointer-events: auto; }
+
+/* ---------- Tablet + phone: sidebar becomes a hidden off-canvas
+   drawer instead of an always-visible icon-only rail. ---------- */
 @media (max-width: 1024px) {
-  :root { --sidebar-w: 84px; }
+  /* overflow:auto on both axes let any element that was even slightly
+     too wide (a table, a row of stat cards) turn into real page-level
+     horizontal scroll instead of just being contained — explicit
+     per-axis avoids that. */
+  html, body { overflow-y: auto; overflow-x: hidden; height: auto; }
+  /* .teacher-container is Teacher_settings.html's own name for the
+     same outer flex wrapper every other Teacher_*.html page calls
+     .teacher-app-wrapper — cover both so Settings actually gets this
+     shared mobile layer instead of staying locked to its desktop
+     fixed-height/overflow:hidden flex row. */
+  .teacher-app-wrapper, .teacher-container { height: auto; overflow: visible; }
 
-  .teacher-sidebar-logo-text,
-  .teacher-sidebar-title,
-  .teacher-sidebar-sub,
-  .teacher-nav-item span,
-  .teacher-nav-arrow,
+  .teacher-mobile-topbar { display: flex; }
+  .teacher-mobile-topbar .teacher-notif-btn { flex-shrink: 0; }
+
+  .teacher-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: auto;
+    margin: 0;
+    width: 260px;
+    min-width: 260px;
+    height: 100vh;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    padding: 0;
+    border-radius: 0;
+    transform: translateX(-100%);
+    transition: transform .25s ease;
+    z-index: 9001;
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, .25);
+    scrollbar-width: none;
+  }
+  .teacher-sidebar::-webkit-scrollbar { display: none; }
+  .teacher-sidebar.teacher-sidebar-open { transform: translateX(0); }
+
+  /* The drawer has its full 260px width to work with, so labels/text
+     stay visible — no icon-only collapsing like the old rail did.
+     Several pages' OWN stylesheets (Teacher_dashboard.css,
+     Teacher_notif.css, Teacher_IEP.css — predating this shared file)
+     still carry their own leftover icon-rail media query that sets
+     display:none on these same elements at a narrower breakpoint of
+     their own (780px). Since that's a different rule this file never
+     otherwise touches, it stays in full effect unless explicitly
+     undone here — !important guarantees it's undone regardless of
+     which of those legacy rules happen to apply on a given page. */
+  .teacher-sidebar-logo { justify-content: flex-start; padding: 26px 20px 22px; }
+  .teacher-sidebar-logo-text { display: flex !important; }
+  .teacher-nav-item { justify-content: flex-start; padding: 13px 16px; }
+  .teacher-nav-item span { display: inline !important; }
+  .teacher-nav-arrow { display: inline-block !important; }
+  .teacher-profile { justify-content: flex-start; padding: 10px 14px; }
+
+  /* The name/role block next to the avatar isn't always given the
+     .teacher-info class (some pages leave it a bare div) but it's
+     always the avatar's sibling — cover both. It defaults to
+     min-width:auto as a flex child, so a long teacher name could push
+     the sign-out button past the drawer's edge — same fix already
+     applied to the Admin/Student sidebars. */
+  .teacher-profile { min-width: 0; }
   .teacher-info,
-  .teacher-signout-btn span { display: none; }
+  .teacher-profile > div:not(.teacher-avatar) {
+    display: block !important;
+    min-width: 0;
+    flex: 1;
+  }
+  .teacher-name,
+  .teacher-role {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .teacher-signout-btn { min-width: 0; }
+  .teacher-signout-btn span {
+    display: inline !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
-  /* The name/role block next to the sidebar-footer avatar isn't always
-     given the .teacher-info class, but it's always the avatar's sibling. */
-  .teacher-profile > div:not(.teacher-avatar) { display: none; }
-
-  .teacher-sidebar-logo { justify-content: center; padding: 20px 0; }
-  .teacher-nav-item { justify-content: center; padding: 14px; }
-  .teacher-profile { justify-content: center; padding: 10px; }
-  .teacher-main-content { padding: 20px; }
+  /* z-index:1 (not auto) so .teacher-main-content and everything in
+     normal flow inside it can't end up ambiguously stacked relative to
+     the drawer/overlay above (z-index 9000/9001) — the same stacking
+     bug found and fixed on the Admin portal earlier.
+     .teacher-main is Settings' own name for this same element — cover
+     both, same reasoning as .teacher-container above. Without this,
+     .teacher-main stayed at height:100vh;overflow-y:auto from its own
+     stylesheet, and teacher_portal.js's hamburger/bell row (which only
+     ever looks for .teacher-main-content, then <main>, then <body> —
+     Settings has neither of the first two) landed as the very first
+     child of <body> instead, completely outside this flex layout: an
+     extra row sitting above a still-100vh-tall container, clipping its
+     own bottom content and throwing off the whole page's spacing. */
+  .teacher-main-content, .teacher-main {
+    width: 100%;
+    height: auto;
+    overflow-y: visible;
+    padding: 20px;
+    position: relative;
+    z-index: 1;
+  }
 
   .teacher-dashboard-grid,
   .teacher-report-grid,
   .teacher-progress-grid { grid-template-columns: 1fr; }
+
+  /* .teacher-progress-grid collapsing to 1fr above isn't enough on its
+     own — .teacher-left-col/.teacher-right-col are still grid items,
+     which default to min-width:auto, so fixed-ish content inside them
+     (the 6-column bar chart, the history table) kept forcing the whole
+     column — and with it the whole page — wider than the phone instead
+     of shrinking to fit. Same bug, same fix as everywhere else this
+     pass: let the columns actually shrink, and let the two pieces of
+     genuinely wide content (chart, history table) scroll horizontally
+     within their own card instead. */
+  .teacher-left-col, .teacher-right-col { min-width: 0; }
+  .teacher-progress-body { padding: 16px; }
+  .teacher-chart-card { overflow-x: auto; }
+  .teacher-bar-chart { flex-shrink: 0; min-width: 260px; }
 
   .teacher-plan-grid,
   .teacher-ring-stats,
@@ -48,19 +192,67 @@ table { display: block; max-width: 100%; overflow-x: auto; }
 
   .teacher-history-card { overflow-x: auto; }
   .teacher-history-row, .teacher-history-header { min-width: 560px; }
+
+  /* ---------- My Learners: stat cards + data table ---------- */
+  /* .teacher-stat-card had min-width:130px with no wrap, so 3 cards
+     (Students / Active Learners / My Section) side by side overflowed
+     a phone width and got their text cut off. Wrapping lets them
+     settle onto 2 rows instead of forcing a scroll for 3 small cards. */
+  .teacher-stats-container { flex-wrap: wrap; }
+  .teacher-stat-card { flex: 1 1 140px; }
+
+  /* table{display:block;overflow-x:auto} (unconditional rule above)
+     breaks a real multi-column data table's layout algorithm — thead/
+     tbody keep their table-specific display, so the browser can no
+     longer line up columns correctly, and the actual scroll clipping
+     was happening on .teacher-table-container/.teacher-table-card
+     (overflow:hidden), which the table's own overflow-x:auto can't
+     override. Force the table back to real table layout and let its
+     container do the horizontal scrolling instead — the min-width
+     forces a real scroll with intact columns, same pattern as
+     .teacher-history-row above. */
+  #teacher-learnersTable, #teacher-activitiesTable {
+    display: table;
+    min-width: 700px;
+  }
+  .teacher-table-container, .teacher-table-card { overflow-x: auto; }
+
+  /* ---------- Settings: split profile-menu / form layout ---------- */
+  /* .teacher-settings-container was a fixed side-by-side flex row
+     (240px menu + form), squeezing the form fields on a phone. Stack
+     them vertically instead. */
+  .teacher-settings-container { flex-direction: column; }
+  .teacher-left-panel { width: 100%; }
 }
 
 /* ---------- Phone ---------- */
 @media (max-width: 640px) {
-  :root { --sidebar-w: 60px; }
-
   .teacher-topbar { flex-wrap: wrap; gap: 12px; }
   .teacher-topbar-right,
   .teacher-topbar-actions,
   .teacher-topbar-title-group { width: 100%; }
-  .teacher-main-content { padding: 14px; }
+  .teacher-main-content, .teacher-main { padding: 14px; }
   .teacher-greeting { font-size: 17px; }
   .teacher-welcome-banner { flex-direction: column; align-items: flex-start; gap: 14px; }
+
+  /* Once .teacher-topbar wraps at this breakpoint, .teacher-topbar-left
+     (the "Good morning, X" greeting) is left on its own row but stayed
+     shrink-wrapped/left-aligned — give it the same full-width treatment
+     as .teacher-topbar-right above and center its text. */
+  .teacher-topbar-left { width: 100%; }
+  .teacher-greeting,
+  .teacher-greeting-sub { text-align: center; }
+
+  /* My Learners toolbar (status filter + search + buttons) all fought
+     for space in one row — the search input shrank so much its own
+     placeholder text got truncated mid-word. Stack each control full
+     width instead. */
+  .teacher-toolbar { flex-direction: column; align-items: stretch; }
+  .teacher-toolbar .teacher-status-dropdown,
+  .teacher-toolbar .teacher-status-select,
+  .teacher-toolbar .teacher-search-wrap,
+  .teacher-toolbar .btn-search,
+  .teacher-toolbar .btn-add { width: 100%; max-width: none; margin-left: 0; }
 
   .teacher-plan-grid,
   .teacher-ring-stats,

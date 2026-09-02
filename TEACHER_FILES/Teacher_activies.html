@@ -4,6 +4,7 @@
 
 <head>
     <script src="../ASSETS/portal_guard.js" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
+    <script src="../ASSETS/teacher_portal.js?v=2"></script>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
@@ -12,7 +13,7 @@
         rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
     <link href="TEACHER_CSS/Teacher_activies.css" rel="stylesheet" />
-    <link href="TEACHER_CSS/teacher_responsive.css" rel="stylesheet" />
+    <link href="TEACHER_CSS/teacher_responsive.css?v=8" rel="stylesheet" />
 </head>
 
 <body>
@@ -148,10 +149,6 @@
                     <tbody id="activitiesTableBody">
                     </tbody>
                 </table>
-                <!-- TABLE FOOTER -->
-                <div class="teacher-table-footer">
-                    <span class="teacher-table-footer-info">Showing <span id="pagination-info">0</span> activities</span>
-                </div>
             </div>
             <!-- BACK BUTTON -->
             <button class="btn-back-iep" onclick="window.location.href='Teacher_IEP.html'" type="button">
@@ -426,7 +423,6 @@
                 tbody.innerHTML = '<tr><td colspan="6" class="empty-row">' + esc(msg) + '</td></tr>';
                 document.getElementById('activity-count').textContent = '0';
                 document.getElementById('activity-total').textContent = '0';
-                document.getElementById('pagination-info').textContent = '0';
                 return;
             }
 
@@ -491,7 +487,6 @@
 
             document.getElementById('activity-count').textContent = activities.length;
             document.getElementById('activity-total').textContent = allActivities.length;
-            document.getElementById('pagination-info').textContent = activities.length;
         }
 
         /* ── Draft actions ── */

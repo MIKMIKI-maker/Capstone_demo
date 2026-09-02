@@ -654,13 +654,62 @@ body {
     font-size: 10.5px;
   }
 
+  /* align-items:center is the base (row-layout) rule, meant to vertically
+     center .student-progress-left/-right as row siblings on desktop —
+     harmless there since align-items only affects the CROSS axis (height)
+     in a row. But flex-direction:column below flips the cross axis to
+     WIDTH, so that same center inherited unintentionally shrink-wrapped
+     both children to their own content width instead of the full banner
+     — the progress bar was never actually filling/scaling with the
+     available width, just sized to whatever the label text needed.
+     stretch here (mobile-only) is what makes the bar genuinely fluid. */
   .student-progress-banner {
     flex-direction: column;
+    align-items: stretch;
     text-align: center;
+  }
+  /* Just the left half (where the bar lives) — .student-progress-right
+     (the trophy badge) stays shrink-wrapped/centered as it already was. */
+  .student-progress-left {
+    width: 100%;
+  }
+
+  /* Bar + "x/100" text stay inline as long as there's room, but wrap the
+     text onto its own line instead of squeezing the bar past a readable
+     width once the row gets too tight for both. */
+  .student-progress-bar-wrap {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 6px;
+  }
+  .student-progress-bar {
+    min-width: 60px;
   }
 
   .student-main {
     padding: 20px;
+  }
+
+  /* With just one story bubble, the row's default left alignment made it
+     look stuck to the side instead of a centered feature. */
+  .student-stories-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* ASSETS/student_notif_position.js moves the notif bell out of this row
+     at this same breakpoint, so .student-topbar-left (star + greeting) is
+     effectively the only thing left in .student-topbar — center it as a
+     unit, then center the star+text within it, then center the greeting/
+     date text itself so it stays centered even when it wraps. */
+  .student-topbar {
+    justify-content: center;
+    text-align: center;
+  }
+  .student-topbar-left {
+    justify-content: center;
   }
 }
 

@@ -255,6 +255,26 @@ body {
   .student-overview-card { justify-content: center; text-align: center; }
   .student-ov-divider { display: none; }
   .student-main { padding: 20px; }
+
+  /* .student-history-card already has overflow-x:auto, but the table
+     itself had no min-width — with none of its own, the browser's table
+     auto-layout just crushed all 7 columns (badges included) to fit the
+     phone width instead of actually overflowing into that scrollbar.
+     Force a min-width so the badges/text get their own room and the
+     existing scroll wrapper kicks in as intended. */
+  .student-history-table { min-width: 760px; }
+
+  /* "Activity History" + the "x records" count default to
+     justify-content:space-between with no wrap/shrink protection, so a
+     long-ish count could get squeezed against the title on a narrow
+     phone. Let the count keep its own line if there's ever not enough
+     room, and never truncate/wrap mid-word. */
+  .student-history-header {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+  .student-history-title { min-width: 0; }
+  .student-history-count { flex-shrink: 0; white-space: nowrap; }
 }
 
 
@@ -271,6 +291,17 @@ body {
     break-inside: avoid; box-shadow: none; border: 1px solid #e2e8f0;
   }
   .student-content-grid { grid-template-columns: 1fr 1fr; }
+
+  /* A printed page can't be scrolled, so the mobile min-width:760px
+     scroll-wrapper trick (which a portrait page's CSS width can fall
+     under, same as a phone) just cut the last columns off entirely
+     instead of making them reachable. Undo it here and let the table
+     shrink-to-fit the page width instead — smaller text, but every
+     column stays visible on paper. */
+  .student-history-card { overflow-x: visible; }
+  .student-history-table { min-width: 0; font-size: 11px; }
+  .student-history-table th,
+  .student-history-table td { padding: 6px 8px; }
 }
 
 
