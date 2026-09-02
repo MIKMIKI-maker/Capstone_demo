@@ -499,6 +499,11 @@ function initActivityTheme(){
   }
 
   @media (max-width:640px){
+    /* .wrt-grid was a fixed 2-column layout, so each item's num+image+
+       answer-input row had barely any width left for the input on a
+       phone — it rendered as an almost invisible sliver. Stacking to
+       1 column gives each item its full row width to write an answer in. */
+    .wrt-grid{ grid-template-columns:1fr; }
     .wrt-top{ padding:12px 14px; gap:10px; }
     .wrt-top h1{ font-size:17px; }
     .wrt-back-btn{ order:-1; flex-basis:100%; justify-content:center; }
