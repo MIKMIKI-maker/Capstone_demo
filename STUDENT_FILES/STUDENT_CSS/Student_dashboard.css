@@ -644,6 +644,19 @@ body {
     justify-content: center;
     text-align: center;
   }
+
+  /* ASSETS/student_notif_position.js moves the notif bell out of this row
+     at this same breakpoint, so .student-topbar-left (star + greeting) is
+     effectively the only thing left in .student-topbar — center it as a
+     unit, then center the star+text within it, then center the greeting/
+     date text itself so it stays centered even when it wraps. */
+  .student-topbar {
+    justify-content: center;
+    text-align: center;
+  }
+  .student-topbar-left {
+    justify-content: center;
+  }
 }
 
 @media (max-width: 480px) {

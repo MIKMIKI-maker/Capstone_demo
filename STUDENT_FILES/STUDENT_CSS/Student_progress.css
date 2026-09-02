@@ -263,6 +263,18 @@ body {
      Force a min-width so the badges/text get their own room and the
      existing scroll wrapper kicks in as intended. */
   .student-history-table { min-width: 760px; }
+
+  /* "Activity History" + the "x records" count default to
+     justify-content:space-between with no wrap/shrink protection, so a
+     long-ish count could get squeezed against the title on a narrow
+     phone. Let the count keep its own line if there's ever not enough
+     room, and never truncate/wrap mid-word. */
+  .student-history-header {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+  .student-history-title { min-width: 0; }
+  .student-history-count { flex-shrink: 0; white-space: nowrap; }
 }
 
 
