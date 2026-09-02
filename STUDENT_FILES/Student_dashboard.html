@@ -236,26 +236,40 @@
       function showNotEnrolled(sid) {
         var todayPanel = document.getElementById('student-panel-today');
         var allPanel   = document.getElementById('student-panel-materials');
-        var msg = '<div class="student-act-empty">' +
-          '<div class="student-act-empty-icon">🏫</div>' +
-          '<p class="student-act-empty-title">Not yet enrolled</p>' +
-          '<p class="student-act-empty-desc">You are not yet enrolled in a teacher\'s class. Please wait for your teacher to assign you.</p>' +
-          '</div>';
-        if (todayPanel) todayPanel.innerHTML = msg;
-        if (allPanel)   allPanel.innerHTML   = msg;
+        var teacherEl  = document.getElementById('dash-teacher-name');
+        if (teacherEl) teacherEl.textContent = 'No teacher assigned';
         document.getElementById('student-act-done-count').textContent = '0/0 done';
         updateProgressBanner(0, 0);
-        // Teacher card defaults to "no teacher", but an admin may have already
-        // assigned one even though the teacher hasn't enrolled the student into
-        // their class yet (that's what "not enrolled" above means) — check for
-        // that admin-side assignment so the name shows up right away.
-        var teacherEl = document.getElementById('dash-teacher-name');
-        if (teacherEl) teacherEl.textContent = 'No teacher assigned';
+
+        // "Not yet enrolled" only makes sense when there's truly no teacher
+        // in the picture at all. An admin may have already assigned one even
+        // though the teacher hasn't enrolled the student into their class
+        // yet (no `students` row, so no activities to show) — in that case
+        // show a softer "no activities yet" message instead, since the
+        // student does have a teacher, just no published activities.
+        function renderEmpty(hasTeacher) {
+          var msg = hasTeacher
+            ? '<div class="student-act-empty">' +
+                '<div class="student-act-empty-icon">📋</div>' +
+                '<p class="student-act-empty-title">No activities yet</p>' +
+                '<p class="student-act-empty-desc">Your teacher hasn\'t added any activities for you yet. Check back soon!</p>' +
+              '</div>'
+            : '<div class="student-act-empty">' +
+                '<div class="student-act-empty-icon">🏫</div>' +
+                '<p class="student-act-empty-title">Not yet enrolled</p>' +
+                '<p class="student-act-empty-desc">You are not yet enrolled in a teacher\'s class. Please wait for your teacher to assign you.</p>' +
+              '</div>';
+          if (todayPanel) todayPanel.innerHTML = msg;
+          if (allPanel)   allPanel.innerHTML   = msg;
+        }
+
         if (sid && teacherEl) {
           fetch('STUDENT_BACKEND/student_get_profile.php?admin_account_id=' + encodeURIComponent(sid))
             .then(function(r){ return r.json(); })
             .then(function(td){
-              if (td.success && td.teacher_name) teacherEl.textContent = td.teacher_name;
+              var hasTeacher = !!(td.success && td.teacher_name);
+              renderEmpty(hasTeacher);
+              if (hasTeacher) teacherEl.textContent = td.teacher_name;
               if (td.success && td.teacher_photo) {
                 var tp = document.getElementById('dash-teacher-photo');
                 if (tp) {
@@ -264,7 +278,9 @@
                   if (tSample) tSample.style.display = 'none';
                 }
               }
-            }).catch(function(){});
+            }).catch(function(){ renderEmpty(false); });
+        } else {
+          renderEmpty(false);
         }
       }
 

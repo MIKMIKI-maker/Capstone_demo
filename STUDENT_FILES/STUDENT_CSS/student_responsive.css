@@ -23,10 +23,17 @@ table { display: block; max-width: 100%; overflow-x: auto; }
    only ever be opened via the hamburger button, which is itself
    display:none outside <=900px — so .show/.student-sidebar-open never
    get applied at desktop widths regardless. ---------- */
-.student-hamburger-btn {
+.student-mobile-topbar {
   display: none;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.student-hamburger-btn {
+  display: flex;
   width: 40px;
   height: 40px;
+  flex-shrink: 0;
   border-radius: 10px;
   background: #1E3A8A;
   color: #fff;
@@ -54,7 +61,7 @@ table { display: block; max-width: 100%; overflow-x: auto; }
 @media (max-width: 900px) {
   body { flex-direction: column; height: auto; overflow-y: auto; }
 
-  .student-hamburger-btn { display: flex; }
+  .student-mobile-topbar { display: flex; }
 
   .student-sidebar {
     position: fixed;
@@ -80,11 +87,10 @@ table { display: block; max-width: 100%; overflow-x: auto; }
   .student-sidebar-nav { flex-direction: column; }
   .student-sidebar-footer { flex-wrap: nowrap; }
 
-  /* Hamburger and the notif bell share the top corners of .student-main
-     — same trick as Admin — instead of the bell sitting in the topbar's
-     own row further down the page. z-index:1 (not auto) so this and its
-     absolutely-positioned children can't end up ambiguously stacked
-     relative to the drawer/overlay above. */
+  /* z-index:1 (not auto) so .student-main and everything in normal flow
+     inside it — including .student-mobile-topbar and the notif bell now
+     living inside it — can't end up ambiguously stacked relative to the
+     drawer/overlay above (which sit at z-index 9000/9001). */
   .student-main {
     height: auto;
     overflow-y: visible;
@@ -92,12 +98,6 @@ table { display: block; max-width: 100%; overflow-x: auto; }
     width: 100%;
     position: relative;
     z-index: 1;
-    padding-top: 84px;
-  }
-  .student-notif-btn {
-    position: absolute;
-    top: 24px;
-    right: 16px;
   }
 
   .student-content-grid,
@@ -124,9 +124,7 @@ table { display: block; max-width: 100%; overflow-x: auto; }
 @media (max-width: 480px) {
   .student-greeting { font-size: 22px; }
   .student-page-title { font-size: 22px; }
-  /* Longhand (not the padding shorthand) so this doesn't reset the
-     84px padding-top reserved for the hamburger/notif bell at 900px. */
-  .student-main { padding-left: 14px; padding-right: 14px; padding-bottom: 14px; }
+  .student-main { padding: 14px; }
   .student-signout-btn span { display: none; }
 
   .student-stat-cards,
