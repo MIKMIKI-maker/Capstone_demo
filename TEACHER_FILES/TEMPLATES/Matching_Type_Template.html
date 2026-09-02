@@ -458,7 +458,7 @@ function initActivityTheme(){
        with each stacked panel scrolling in its own cramped little box
        instead of the page just scrolling normally like everything else
        in the portal. */
-    html, body{ height:auto; overflow:auto; }
+    html, body{ height:auto; overflow-y:auto; overflow-x:hidden; }
     .mtg-body{ grid-template-columns:1fr; height:auto; overflow:visible; }
     .mtg-left-col, .mtg-preview-col, .mtg-right-col{ overflow-y:visible; height:auto; }
   }
