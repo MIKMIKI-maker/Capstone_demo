@@ -82,9 +82,20 @@ table { display: block; max-width: 100%; overflow-x: auto; }
   .teacher-sidebar.teacher-sidebar-open { transform: translateX(0); }
 
   /* The drawer has its full 260px width to work with, so labels/text
-     stay visible — no icon-only collapsing like the old rail did. */
+     stay visible — no icon-only collapsing like the old rail did.
+     Several pages' OWN stylesheets (Teacher_dashboard.css,
+     Teacher_notif.css, Teacher_IEP.css — predating this shared file)
+     still carry their own leftover icon-rail media query that sets
+     display:none on these same elements at a narrower breakpoint of
+     their own (780px). Since that's a different rule this file never
+     otherwise touches, it stays in full effect unless explicitly
+     undone here — !important guarantees it's undone regardless of
+     which of those legacy rules happen to apply on a given page. */
   .teacher-sidebar-logo { justify-content: flex-start; padding: 26px 20px 22px; }
+  .teacher-sidebar-logo-text { display: flex !important; }
   .teacher-nav-item { justify-content: flex-start; padding: 13px 16px; }
+  .teacher-nav-item span { display: inline !important; }
+  .teacher-nav-arrow { display: inline-block !important; }
   .teacher-profile { justify-content: flex-start; padding: 10px 14px; }
 
   /* The name/role block next to the avatar isn't always given the
@@ -95,7 +106,11 @@ table { display: block; max-width: 100%; overflow-x: auto; }
      applied to the Admin/Student sidebars. */
   .teacher-profile { min-width: 0; }
   .teacher-info,
-  .teacher-profile > div:not(.teacher-avatar) { min-width: 0; flex: 1; }
+  .teacher-profile > div:not(.teacher-avatar) {
+    display: block !important;
+    min-width: 0;
+    flex: 1;
+  }
   .teacher-name,
   .teacher-role {
     overflow: hidden;
@@ -103,7 +118,12 @@ table { display: block; max-width: 100%; overflow-x: auto; }
     white-space: nowrap;
   }
   .teacher-signout-btn { min-width: 0; }
-  .teacher-signout-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .teacher-signout-btn span {
+    display: inline !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
   /* z-index:1 (not auto) so .teacher-main-content and everything in
      normal flow inside it can't end up ambiguously stacked relative to
