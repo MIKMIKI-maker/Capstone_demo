@@ -489,7 +489,12 @@ body.lbl-preview-only .lbl-exit-float{display:flex;}
 @media(max-width:1100px){
   html, body{ height:auto; overflow-y:auto; overflow-x:hidden; }
   .lbl-body{grid-template-columns:1fr; height:auto; overflow:visible;}
-  .lbl-left-col,.lbl-preview-col,.lbl-right-col{overflow-y:visible;height:auto;}
+  .lbl-left-col,.lbl-preview-col,.lbl-right-col{overflow-y:visible;overflow-x:hidden;height:auto;min-width:0;max-width:100%;}
+    /* Nested flex/grid rows (item pairs, button rows, sliders,
+       swatches) have the SAME min-width:auto default one level
+       deeper, so the fix above wasn't enough on its own — this
+       lets every descendant shrink too instead of overflowing. */
+    .lbl-left-col *, .lbl-preview-col *, .lbl-right-col *{ min-width:0; }
 }
 @media(max-width:640px){
   .lbl-top{padding:12px 14px;gap:10px;}

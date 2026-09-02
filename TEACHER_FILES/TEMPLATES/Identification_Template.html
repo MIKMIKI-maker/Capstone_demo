@@ -469,7 +469,22 @@ function initActivityTheme(){
   @media (max-width:1100px){
     html, body{ height:auto; overflow-y:auto; overflow-x:hidden; }
     .bgl-body{ grid-template-columns:1fr; height:auto; overflow:visible; }
-    .bgl-left-col, .bgl-preview-col, .bgl-right-col{ overflow-y:visible; height:auto; }
+    /* Grid items default to min-width:auto, so any fixed/non-shrinking
+       content inside forced the WHOLE column wider than the phone
+       instead of shrinking to fit it. This one rule is what actually
+       makes each panel fluid/flexible. */
+    .bgl-left-col, .bgl-preview-col, .bgl-right-col{
+      overflow-y:visible;
+      overflow-x:hidden;
+      height:auto;
+      min-width:0;
+      max-width:100%;
+    }
+    /* Nested flex/grid rows (item pairs, button rows, sliders,
+       swatches) have the SAME min-width:auto default one level
+       deeper, so the fix above wasn't enough on its own — this
+       lets every descendant shrink too instead of overflowing. */
+    .bgl-left-col *, .bgl-preview-col *, .bgl-right-col *{ min-width:0; }
   }
 
   @media (max-width:640px){
