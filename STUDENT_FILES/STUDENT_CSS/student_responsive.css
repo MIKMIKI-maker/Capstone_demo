@@ -37,6 +37,21 @@ table { display: block; max-width: 100%; overflow-x: auto; }
   .student-sidebar-logo {
     margin-bottom: 14px;
     padding-bottom: 14px;
+    padding-right: 56px;
+  }
+
+  /* .student-notif-btn lives in .student-topbar (inside .student-main),
+     a separate DOM subtree from .student-sidebar — so it can't be
+     repositioned "inside" the sidebar card via a positioned-ancestor
+     .student-sidebar is static, always the first thing on the page in
+     this column layout, so a fixed position near the top-right reliably
+     lands on top of the card's logo row without needing to move the
+     element (and its single, JS-updated unread badge) in the DOM. */
+  .student-notif-btn {
+    position: fixed;
+    top: 18px;
+    right: 16px;
+    z-index: 500;
   }
 
   /* Nav items wrap onto as many rows as needed instead of forcing 4

@@ -608,6 +608,15 @@ body {
   .student-main {
     padding: 20px;
   }
+
+  /* With just one story bubble, the row's default left alignment made it
+     look stuck to the side instead of a centered feature. */
+  .student-stories-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
 }
 
 @media (max-width: 480px) {
