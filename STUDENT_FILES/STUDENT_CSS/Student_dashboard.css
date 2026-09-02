@@ -605,6 +605,18 @@ body {
     text-align: center;
   }
 
+  /* Bar + "x/100" text stay inline as long as there's room, but wrap the
+     text onto its own line instead of squeezing the bar past a readable
+     width once the row gets too tight for both. */
+  .student-progress-bar-wrap {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 6px;
+  }
+  .student-progress-bar {
+    min-width: 60px;
+  }
+
   .student-main {
     padding: 20px;
   }
