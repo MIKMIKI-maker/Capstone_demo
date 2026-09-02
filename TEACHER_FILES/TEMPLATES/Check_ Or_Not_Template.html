@@ -303,7 +303,13 @@ function initActivityTheme(){
   .chk-deco .d-flower1{ position:absolute; bottom:8px; left:18px; font-size:24px; }
   .chk-deco .d-flower2{ position:absolute; bottom:6px; right:26px; font-size:22px; }
 
-  .chk-stage-inner{ position:relative; z-index:2; transform-origin:top center; }
+  .chk-stage-inner{ position:relative; z-index:2; transform-origin:top center;
+    /* Hidden (opacity:0) by JS the instant fullscreen/preview mode is
+       entered, then faded back in once fitStageToScreen() has computed
+       the correct scale — without this, the learner briefly saw the
+       activity at full size and then watched it visibly jump/shrink
+       into place a beat later. */
+    transition: opacity .18s ease; }
   .chk-title{ text-align:center; font-weight:700; font-size:1.1em; color:var(--chk-text); }
   .chk-instr{ text-align:center; font-size:.42em; font-weight:600; color:var(--chk-text); opacity:.9; margin:6px 0 22px; max-width:820px; margin-left:auto; margin-right:auto; }
 
@@ -1482,6 +1488,7 @@ function initActivityTheme(){
 
   function enterPreview(){
     document.body.classList.add("chk-preview-only");
+    stageInner.style.opacity = "0";
     requestFullscreen(document.documentElement);
     setTimeout(fitStageToScreen, 120);
   }
@@ -1491,6 +1498,7 @@ function initActivityTheme(){
     stageScale = 1;
     stageInner.style.transform = "";
     stageInner.style.marginBottom = "";
+    stageInner.style.opacity = "1";
   }
   $("chkPreviewBtn").addEventListener("click", enterPreview);
   $("chkExitFloatBtn").addEventListener("click", exitPreview);
@@ -1672,6 +1680,7 @@ function initActivityTheme(){
       stageInner.style.transform = `scale(${stageScale})`;
       stageInner.style.marginBottom = `-${naturalH * (1 - stageScale)}px`;
     }
+    stageInner.style.opacity = "1";
   }
 
   ["fullscreenchange", "webkitfullscreenchange"].forEach(evt=>{
@@ -1952,6 +1961,7 @@ function initActivityTheme(){
 
         renderItems(); renderSwatches(); syncDesignControls(); applyAppearance(); renderActivity(); renderSlideNav();
         document.body.classList.add('chk-preview-only');
+        stageInner.style.opacity = "0";
         setTimeout(fitStageToScreen, 50);
 
         document.addEventListener('fullscreenchange', function() {

@@ -306,7 +306,13 @@ function initActivityTheme(){
   .mtg-deco .d-flower1{ position:absolute; bottom:8px; left:18px; font-size:24px; }
   .mtg-deco .d-flower2{ position:absolute; bottom:6px; right:26px; font-size:22px; }
 
-  .mtg-stage-inner{ position:relative; z-index:2; transform-origin:top center; }
+  .mtg-stage-inner{ position:relative; z-index:2; transform-origin:top center;
+    /* Hidden (opacity:0) by JS the instant fullscreen/preview mode is
+       entered, then faded back in once fitStageToScreen() has computed
+       the correct scale — without this, the learner briefly saw the
+       activity at full size and then watched it visibly jump/shrink
+       into place a beat later. */
+    transition: opacity .18s ease; }
   .mtg-title{ text-align:center; font-weight:700; font-size:1.25em; color:var(--mtg-text); }
   .mtg-instr{ text-align:center; font-size:.5em; font-weight:500; color:var(--mtg-text); opacity:.85; margin:6px 0 22px; }
   .mtg-match{ position:relative; z-index:2; display:grid; grid-template-columns:1fr 1fr; gap:110px; }
@@ -1571,6 +1577,7 @@ function initActivityTheme(){
 
   function enterPreview(){
     document.body.classList.add("mtg-preview-only");
+    stageInner.style.opacity = "0";
     requestFullscreen(document.documentElement);
     setTimeout(fitStageToScreen, 120);
   }
@@ -1580,6 +1587,7 @@ function initActivityTheme(){
     stageScale = 1;
     stageInner.style.transform = "";
     stageInner.style.marginBottom = "";
+    stageInner.style.opacity = "1";
     setTimeout(drawLines, 60);
   }
   $("mtgPreviewBtn").addEventListener("click", enterPreview);
@@ -1788,6 +1796,7 @@ function initActivityTheme(){
       // Collapse the extra layout space that CSS transform doesn't reduce
       stageInner.style.marginBottom = `-${naturalH * (1 - stageScale)}px`;
     }
+    stageInner.style.opacity = "1";
     drawLines();
   }
 
@@ -2077,6 +2086,7 @@ function initActivityTheme(){
 
         renderItems(); renderSwatches(); syncDesignControls(); applyAppearance(); renderActivity(); renderSlideNav();
         document.body.classList.add('mtg-preview-only');
+        stageInner.style.opacity = "0";
         setTimeout(fitStageToScreen, 50);
 
         // Pressing Escape exits fullscreen — immediately go back to student portal

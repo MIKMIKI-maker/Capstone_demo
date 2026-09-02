@@ -318,7 +318,13 @@ function initActivityTheme(){
   .srt-deco .d-flower1{ position:absolute; bottom:8px; left:18px; font-size:24px; }
   .srt-deco .d-flower2{ position:absolute; bottom:6px; right:26px; font-size:22px; }
 
-  .srt-stage-inner{ position:relative; z-index:2; transform-origin:top center; }
+  .srt-stage-inner{ position:relative; z-index:2; transform-origin:top center;
+    /* Hidden (opacity:0) by JS the instant fullscreen/preview mode is
+       entered, then faded back in once fitStageToScreen() has computed
+       the correct scale — without this, the learner briefly saw the
+       activity at full size and then watched it visibly jump/shrink
+       into place a beat later. */
+    transition: opacity .18s ease; }
   .srt-title{ text-align:center; font-weight:700; font-size:1.25em; color:var(--srt-text); }
   .srt-instr{ text-align:center; font-size:.5em; font-weight:500; color:var(--srt-text); opacity:.85; margin:6px 0 22px; }
 
@@ -1715,6 +1721,7 @@ function initActivityTheme(){
 
   function enterPreview(){
     document.body.classList.add("srt-preview-only");
+    stageInner.style.opacity = "0";
     requestFullscreen(document.documentElement);
     setTimeout(fitStageToScreen, 120);
   }
@@ -1724,6 +1731,7 @@ function initActivityTheme(){
     stageScale = 1;
     stageInner.style.transform = "";
     stageInner.style.marginBottom = "";
+    stageInner.style.opacity = "1";
   }
   $("srtPreviewBtn").addEventListener("click", enterPreview);
   $("srtExitFloatBtn").addEventListener("click", exitPreview);
@@ -1940,6 +1948,7 @@ function initActivityTheme(){
       stageInner.style.transform = `scale(${stageScale})`;
       stageInner.style.marginBottom = `-${naturalH * (1 - stageScale)}px`;
     }
+    stageInner.style.opacity = "1";
   }
 
   window.addEventListener("resize", ()=>{ if (document.body.classList.contains("srt-preview-only")) fitStageToScreen(); });
@@ -2228,6 +2237,7 @@ function initActivityTheme(){
 
         renderCategories(); renderItems(); renderSwatches(); syncDesignControls(); applyAppearance(); renderActivity(); renderSlideNav();
         document.body.classList.add('srt-preview-only');
+        stageInner.style.opacity = "0";
         setTimeout(fitStageToScreen, 50);
 
         document.addEventListener('fullscreenchange', function() {

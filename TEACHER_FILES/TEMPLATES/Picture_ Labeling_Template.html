@@ -316,7 +316,12 @@ body{font-family:var(--font);color:var(--ink);background:#eef2f9;display:flex;fl
 .lbl-deco .d-flower1{position:absolute;bottom:8px;left:18px;font-size:24px;}
 .lbl-deco .d-flower2{position:absolute;bottom:6px;right:26px;font-size:22px;}
 
-.lbl-stage-inner{position:relative;z-index:2;transform-origin:top center;}
+.lbl-stage-inner{position:relative;z-index:2;transform-origin:top center;
+  /* Hidden (opacity:0) by JS the instant fullscreen/preview mode is entered,
+     then faded back in once fitStageToScreen() has computed the correct
+     scale — without this, the learner briefly saw the activity at full size
+     and then watched it visibly jump/shrink into place a beat later. */
+  transition:opacity .18s ease;}
 .lbl-title{text-align:center;font-weight:700;font-size:1em;color:var(--lbl-text);margin-bottom:4px;}
 .lbl-instr{text-align:center;font-size:.48em;font-weight:500;color:var(--lbl-text);opacity:.85;margin-bottom:18px;}
 
@@ -1518,6 +1523,7 @@ function fitStageToScreen(){
     stageInner.style.transform = `scale(${stageScale})`;
     stageInner.style.marginBottom = `-${naturalH * (1 - stageScale)}px`;
   }
+  stageInner.style.opacity = '1';
 }
 
 function requestFullscreen(el){
@@ -1537,6 +1543,7 @@ function enterPreview(){
   fsWords=buildWordBank();
   renderActivity();
   document.body.classList.add('lbl-preview-only');
+  stageInner.style.opacity = '0';
   requestFullscreen(document.documentElement);
   setTimeout(fitStageToScreen, 120);
 }
@@ -1546,6 +1553,7 @@ function exitPreview(){
   stageScale = 1;
   stageInner.style.transform = '';
   stageInner.style.marginBottom = '';
+  stageInner.style.opacity = '1';
   answers={}; suggestedMarks={}; checked=false; selectedWord=null;
   renderActivity();
 }
@@ -1993,6 +2001,7 @@ loadPublishedForEditIfAny();
       fsWords=buildWordBank();
       renderActivity(); renderSlideNav();
       document.body.classList.add('lbl-preview-only');
+      stageInner.style.opacity = '0';
       setTimeout(fitStageToScreen, 50);
 
       document.addEventListener('fullscreenchange', function(){
