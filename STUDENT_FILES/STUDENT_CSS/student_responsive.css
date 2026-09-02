@@ -34,24 +34,22 @@ table { display: block; max-width: 100%; overflow-x: auto; }
     overflow: visible;
   }
 
+  /* .student-notif-btn normally lives in the page's own header, a
+     separate DOM subtree from .student-sidebar — ASSETS/student_notif_position.js
+     actually moves the element into this row at this same breakpoint
+     (and back out above it) so it's a real flex child here, not a
+     position:fixed overlay that drifted out of place once the page
+     scrolled. margin-left:auto (not justify-content:space-between —
+     that would also shove the logo image away from its own title/sub
+     text, the row's other two children) pushes just the bell to the
+     row's right edge while the logo keeps its normal tight grouping. */
   .student-sidebar-logo {
     margin-bottom: 14px;
     padding-bottom: 14px;
-    padding-right: 56px;
   }
-
-  /* .student-notif-btn lives in .student-topbar (inside .student-main),
-     a separate DOM subtree from .student-sidebar — so it can't be
-     repositioned "inside" the sidebar card via a positioned-ancestor
-     .student-sidebar is static, always the first thing on the page in
-     this column layout, so a fixed position near the top-right reliably
-     lands on top of the card's logo row without needing to move the
-     element (and its single, JS-updated unread badge) in the DOM. */
-  .student-notif-btn {
-    position: fixed;
-    top: 18px;
-    right: 16px;
-    z-index: 500;
+  .student-sidebar-logo .student-notif-btn {
+    margin-left: auto;
+    flex-shrink: 0;
   }
 
   /* Nav items wrap onto as many rows as needed instead of forcing 4
