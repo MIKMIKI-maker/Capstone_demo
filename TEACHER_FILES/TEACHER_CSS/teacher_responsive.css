@@ -173,12 +173,21 @@ table { display: block; max-width: 100%; overflow-x: auto; }
   .teacher-stats-container { flex-wrap: wrap; }
   .teacher-stat-card { flex: 1 1 140px; }
 
-  /* table{display:block;overflow-x:auto} above lets the table scroll,
-     but with no minimum width the browser squeezed columns (email,
-     action buttons) down to unreadable/clipped instead of scrolling.
-     A min-width forces a real horizontal scroll with intact columns,
-     same pattern as .teacher-history-row above. */
-  #teacher-learnersTable, #teacher-activitiesTable { min-width: 700px; }
+  /* table{display:block;overflow-x:auto} (unconditional rule above)
+     breaks a real multi-column data table's layout algorithm — thead/
+     tbody keep their table-specific display, so the browser can no
+     longer line up columns correctly, and the actual scroll clipping
+     was happening on .teacher-table-container/.teacher-table-card
+     (overflow:hidden), which the table's own overflow-x:auto can't
+     override. Force the table back to real table layout and let its
+     container do the horizontal scrolling instead — the min-width
+     forces a real scroll with intact columns, same pattern as
+     .teacher-history-row above. */
+  #teacher-learnersTable, #teacher-activitiesTable {
+    display: table;
+    min-width: 700px;
+  }
+  .teacher-table-container, .teacher-table-card { overflow-x: auto; }
 
   /* ---------- Settings: split profile-menu / form layout ---------- */
   /* .teacher-settings-container was a fixed side-by-side flex row
@@ -205,6 +214,17 @@ table { display: block; max-width: 100%; overflow-x: auto; }
   .teacher-topbar-left { width: 100%; }
   .teacher-greeting,
   .teacher-greeting-sub { text-align: center; }
+
+  /* My Learners toolbar (status filter + search + buttons) all fought
+     for space in one row — the search input shrank so much its own
+     placeholder text got truncated mid-word. Stack each control full
+     width instead. */
+  .teacher-toolbar { flex-direction: column; align-items: stretch; }
+  .teacher-toolbar .teacher-status-dropdown,
+  .teacher-toolbar .teacher-status-select,
+  .teacher-toolbar .teacher-search-wrap,
+  .teacher-toolbar .btn-search,
+  .teacher-toolbar .btn-add { width: 100%; max-width: none; margin-left: 0; }
 
   .teacher-plan-grid,
   .teacher-ring-stats,
