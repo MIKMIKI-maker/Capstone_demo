@@ -3,9 +3,10 @@
    Loaded after each page's own stylesheet (same specificity, later
    source order wins) so one file fixes phone/iPad layout across every
    Student_*.html page instead of duplicating these rules five times.
-   At <=900px, .student-sidebar becomes a hidden off-canvas drawer
-   toggled by a hamburger button (see ASSETS/student_portal.js), the
-   same pattern as the Admin portal's mobile nav.
+   At <=900px, .student-sidebar stays the same always-visible blue card
+   (logo, nav, profile card, sign-out) but stacks into its own rows
+   instead of sitting fixed down the left edge, with each row's content
+   set to actually shrink/wrap so nothing gets cut off.
    ============================================================ */
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -17,83 +18,67 @@ table { display: block; max-width: 100%; overflow-x: auto; }
   .student-main { padding: 22px; }
 }
 
-/* ---------- Off-canvas hamburger drawer, added/created by
-   ASSETS/student_portal.js on every Student_*.html page. Defined
-   unconditionally (not inside the media query) since the drawer can
-   only ever be opened via the hamburger button, which is itself
-   display:none outside <=900px — so .show/.student-sidebar-open never
-   get applied at desktop widths regardless. ---------- */
-.student-mobile-topbar {
-  display: none;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-.student-hamburger-btn {
-  display: flex;
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0;
-  border-radius: 10px;
-  background: #1E3A8A;
-  color: #fff;
-  border: none;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, .2);
-}
-.student-sidebar-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, .45);
-  z-index: 9000;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .25s ease;
-}
-.student-sidebar-overlay.show { opacity: 1; pointer-events: auto; }
-
-/* ---------- Sidebar becomes a hidden off-canvas drawer instead of an
-   always-visible horizontal strip, matching the Admin portal's mobile
-   nav pattern. ---------- */
+/* ---------- Sidebar becomes a full-width card stacked above the page
+   content, instead of a fixed-height column down the left edge. ---------- */
 @media (max-width: 900px) {
   body { flex-direction: column; height: auto; overflow-y: auto; }
 
-  .student-mobile-topbar { display: flex; }
-
   .student-sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: auto;
-    margin: 0;
-    width: 230px;
-    flex: none;
-    height: 100vh;
-    border-radius: 0;
+    width: 100%;
+    height: auto;
+    position: static;
     flex-direction: column;
-    flex-wrap: nowrap;
     align-items: stretch;
-    transform: translateX(-100%);
-    transition: transform .25s ease;
-    z-index: 9001;
-    overflow-y: auto;
-    overflow-x: hidden;
-    scrollbar-width: none;
+    border-radius: 0 0 28px 28px;
+    padding: 18px 16px;
+    overflow: visible;
   }
-  .student-sidebar::-webkit-scrollbar { display: none; }
-  .student-sidebar.student-sidebar-open { transform: translateX(0); }
-  .student-sidebar-nav { flex-direction: column; }
-  .student-sidebar-footer { flex-wrap: nowrap; }
 
-  /* .student-user-info (name + role in the bottom profile card) defaults
-     to min-width:auto as a flex child, so a longer student name refused
-     to shrink and pushed the whole card — and the sign-out button below
-     it — past the drawer's 230px width, cutting them off. Let it shrink
-     and ellipsize instead of overflowing. */
-  .student-sidebar-user { min-width: 0; }
+  .student-sidebar-logo {
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+  }
+
+  /* Nav items wrap onto as many rows as needed instead of forcing 4
+     items into one line — each item can also shrink and ellipsize its
+     label rather than overflow the row. */
+  .student-sidebar-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 0;
+  }
+  .student-nav-item {
+    flex: 1 1 auto;
+    min-width: 100px;
+    justify-content: center;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  .student-nav-item span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .student-nav-arrow { display: none; }
+
+  /* Profile card + sign-out share one row, sign-out pinned to its own
+     fixed-width corner (icon only) so it can never be squeezed out by a
+     long student name — .student-user-info below handles that instead
+     by shrinking/ellipsizing the text. */
+  .student-sidebar-footer {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 14px;
+    padding-top: 14px;
+  }
+  .student-sidebar-user {
+    flex: 1;
+    min-width: 0;
+  }
   .student-user-info { min-width: 0; flex: 1; }
   .student-user-name,
   .student-user-role {
@@ -101,21 +86,13 @@ table { display: block; max-width: 100%; overflow-x: auto; }
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .student-signout-btn { min-width: 0; }
-  .student-signout-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-  /* z-index:1 (not auto) so .student-main and everything in normal flow
-     inside it — including .student-mobile-topbar and the notif bell now
-     living inside it — can't end up ambiguously stacked relative to the
-     drawer/overlay above (which sit at z-index 9000/9001). */
-  .student-main {
-    height: auto;
-    overflow-y: visible;
-    padding: 20px;
-    width: 100%;
-    position: relative;
-    z-index: 1;
+  .student-signout-btn {
+    flex-shrink: 0;
+    padding: 10px;
   }
+  .student-signout-btn span { display: none; }
+
+  .student-main { height: auto; overflow-y: visible; padding: 20px; }
 
   .student-content-grid,
   .student-form-grid { grid-template-columns: 1fr; }
@@ -142,7 +119,9 @@ table { display: block; max-width: 100%; overflow-x: auto; }
   .student-greeting { font-size: 22px; }
   .student-page-title { font-size: 22px; }
   .student-main { padding: 14px; }
-  .student-signout-btn span { display: none; }
+
+  .student-sidebar { padding: 14px 12px; }
+  .student-nav-item { min-width: 76px; padding: 9px 8px; font-size: 12px; }
 
   .student-stat-cards,
   .student-content-grid,
