@@ -166,6 +166,20 @@ table { display: block; max-width: 100%; overflow-x: auto; }
   .teacher-report-grid,
   .teacher-progress-grid { grid-template-columns: 1fr; }
 
+  /* .teacher-progress-grid collapsing to 1fr above isn't enough on its
+     own — .teacher-left-col/.teacher-right-col are still grid items,
+     which default to min-width:auto, so fixed-ish content inside them
+     (the 6-column bar chart, the history table) kept forcing the whole
+     column — and with it the whole page — wider than the phone instead
+     of shrinking to fit. Same bug, same fix as everywhere else this
+     pass: let the columns actually shrink, and let the two pieces of
+     genuinely wide content (chart, history table) scroll horizontally
+     within their own card instead. */
+  .teacher-left-col, .teacher-right-col { min-width: 0; }
+  .teacher-progress-body { padding: 16px; }
+  .teacher-chart-card { overflow-x: auto; }
+  .teacher-bar-chart { flex-shrink: 0; min-width: 260px; }
+
   .teacher-plan-grid,
   .teacher-ring-stats,
   .teacher-stat-cards,
