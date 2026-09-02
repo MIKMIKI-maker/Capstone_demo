@@ -600,9 +600,24 @@ body {
     grid-template-columns: 1fr;
   }
 
+  /* align-items:center is the base (row-layout) rule, meant to vertically
+     center .student-progress-left/-right as row siblings on desktop —
+     harmless there since align-items only affects the CROSS axis (height)
+     in a row. But flex-direction:column below flips the cross axis to
+     WIDTH, so that same center inherited unintentionally shrink-wrapped
+     both children to their own content width instead of the full banner
+     — the progress bar was never actually filling/scaling with the
+     available width, just sized to whatever the label text needed.
+     stretch here (mobile-only) is what makes the bar genuinely fluid. */
   .student-progress-banner {
     flex-direction: column;
+    align-items: stretch;
     text-align: center;
+  }
+  /* Just the left half (where the bar lives) — .student-progress-right
+     (the trophy badge) stays shrink-wrapped/centered as it already was. */
+  .student-progress-left {
+    width: 100%;
   }
 
   /* Bar + "x/100" text stay inline as long as there's room, but wrap the
