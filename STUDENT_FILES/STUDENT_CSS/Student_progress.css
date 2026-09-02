@@ -255,6 +255,14 @@ body {
   .student-overview-card { justify-content: center; text-align: center; }
   .student-ov-divider { display: none; }
   .student-main { padding: 20px; }
+
+  /* .student-history-card already has overflow-x:auto, but the table
+     itself had no min-width — with none of its own, the browser's table
+     auto-layout just crushed all 7 columns (badges included) to fit the
+     phone width instead of actually overflowing into that scrollbar.
+     Force a min-width so the badges/text get their own room and the
+     existing scroll wrapper kicks in as intended. */
+  .student-history-table { min-width: 760px; }
 }
 
 
