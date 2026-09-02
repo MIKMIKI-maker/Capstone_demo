@@ -1,0 +1,34 @@
+/* ============================================================
+   Shared responsive layer for the Admin portal.
+   Loaded after each page's own stylesheet (same specificity, later
+   source order wins) so one file harmonizes phone/iPad layout across
+   every Admin_*.html page, matching the pattern already used for the
+   Teacher and Student portals (teacher_responsive.css / student_responsive.css).
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+img, video, canvas { max-width: 100%; height: auto; }
+table { display: block; max-width: 100%; overflow-x: auto; }
+
+/* ---------- Tablet (iPad portrait/landscape) ---------- */
+@media (max-width: 1024px) {
+  .admin-main { padding: 22px; }
+}
+
+/* ---------- Sidebar becomes a horizontal strip, matching the pattern
+   Admin_dashboard.css already established ---------- */
+@media (max-width: 768px) {
+  html, body { overflow: auto; height: auto; }
+  body { flex-direction: column; }
+  .admin-sidebar {
+    width: 100%; height: auto; min-width: unset;
+    flex-direction: row; flex-wrap: wrap;
+  }
+  .admin-main { height: auto; overflow-y: unset; overflow-x: hidden; padding: 20px 16px; }
+  .admin-topbar { flex-wrap: wrap; gap: 12px; }
+}
+
+/* ---------- Phone ---------- */
+@media (max-width: 480px) {
+  .admin-main { padding-left: 12px; padding-right: 12px; }
+}

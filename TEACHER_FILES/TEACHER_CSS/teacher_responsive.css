@@ -1,0 +1,76 @@
+/* ============================================================
+   Shared responsive layer for the Teacher portal.
+   Loaded after each page's own stylesheet (same specificity, later
+   source order wins) so one file fixes phone/iPad layout across every
+   Teacher_*.html page instead of duplicating these rules ten times.
+   Targets the class names that are identical on every teacher page:
+   .teacher-sidebar, .teacher-main-content, .teacher-topbar, --sidebar-w.
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+img, video, canvas { max-width: 100%; height: auto; }
+table { display: block; max-width: 100%; overflow-x: auto; }
+
+/* ---------- Tablet (iPad portrait/landscape, small laptop) ---------- */
+@media (max-width: 1024px) {
+  :root { --sidebar-w: 84px; }
+
+  .teacher-sidebar-logo-text,
+  .teacher-sidebar-title,
+  .teacher-sidebar-sub,
+  .teacher-nav-item span,
+  .teacher-nav-arrow,
+  .teacher-info,
+  .teacher-signout-btn span { display: none; }
+
+  /* The name/role block next to the sidebar-footer avatar isn't always
+     given the .teacher-info class, but it's always the avatar's sibling. */
+  .teacher-profile > div:not(.teacher-avatar) { display: none; }
+
+  .teacher-sidebar-logo { justify-content: center; padding: 20px 0; }
+  .teacher-nav-item { justify-content: center; padding: 14px; }
+  .teacher-profile { justify-content: center; padding: 10px; }
+  .teacher-main-content { padding: 20px; }
+
+  .teacher-dashboard-grid,
+  .teacher-report-grid,
+  .teacher-progress-grid { grid-template-columns: 1fr; }
+
+  .teacher-plan-grid,
+  .teacher-ring-stats,
+  .teacher-stat-cards,
+  .teacher-template-grid,
+  .teacher-grading-evidence,
+  .teacher-grading-grid,
+  .teacher-form-grid,
+  .teacher-generator-form,
+  .learner-print-summary { grid-template-columns: repeat(2, 1fr); }
+
+  .teacher-history-card { overflow-x: auto; }
+  .teacher-history-row, .teacher-history-header { min-width: 560px; }
+}
+
+/* ---------- Phone ---------- */
+@media (max-width: 640px) {
+  :root { --sidebar-w: 60px; }
+
+  .teacher-topbar { flex-wrap: wrap; gap: 12px; }
+  .teacher-topbar-right,
+  .teacher-topbar-actions,
+  .teacher-topbar-title-group { width: 100%; }
+  .teacher-main-content { padding: 14px; }
+  .teacher-greeting { font-size: 17px; }
+  .teacher-welcome-banner { flex-direction: column; align-items: flex-start; gap: 14px; }
+
+  .teacher-plan-grid,
+  .teacher-ring-stats,
+  .teacher-stat-cards,
+  .teacher-template-grid,
+  .teacher-grading-evidence,
+  .teacher-grading-grid,
+  .teacher-form-grid,
+  .teacher-generator-form,
+  .teacher-bottom-row,
+  .learner-print-summary,
+  .learner-print-signatures { grid-template-columns: 1fr; }
+}

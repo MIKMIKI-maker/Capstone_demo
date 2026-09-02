@@ -1,0 +1,61 @@
+/* ============================================================
+   Shared responsive layer for the Student portal.
+   Loaded after each page's own stylesheet (same specificity, later
+   source order wins) so one file fixes phone/iPad layout across every
+   Student_*.html page instead of duplicating these rules five times.
+   Every student page already collapses .student-sidebar into a
+   horizontal strip at 900px — this file just makes that consistent
+   everywhere and fills in the missing phone-tier polish + content grids.
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+img, video, canvas { max-width: 100%; height: auto; }
+table { display: block; max-width: 100%; overflow-x: auto; }
+
+/* ---------- Tablet (iPad portrait/landscape) ---------- */
+@media (max-width: 1024px) {
+  .student-main { padding: 22px; }
+}
+
+/* ---------- Sidebar becomes a horizontal strip (matches the pattern
+   already used on Student_dashboard/Student_notif/etc.) ---------- */
+@media (max-width: 900px) {
+  body { flex-direction: column; height: auto; overflow-y: auto; }
+  .student-sidebar {
+    width: 100%; flex-direction: row; flex-wrap: wrap; align-items: center;
+    border-radius: 0 0 28px 28px; position: static; height: auto;
+  }
+  .student-sidebar-footer { flex-wrap: wrap; }
+  .student-main { height: auto; overflow-y: visible; padding: 20px; }
+
+  .student-content-grid,
+  .student-form-grid { grid-template-columns: 1fr; }
+  .student-stat-cards { grid-template-columns: repeat(2, 1fr); }
+
+  /* The page-header row (mascot+title+subtitle on the left, "Full view" +
+     bell on the right) doesn't shrink on its own — the actions group is
+     fixed-width and the title/subtitle are flex children that won't wrap
+     below their intrinsic size unless told to. Both bugs showed up as real
+     overflow on an actual phone once the sidebar had already gone
+     horizontal, so this has to kick in at the same breakpoint, not later. */
+  .student-page-header { flex-wrap: wrap; gap: 10px; }
+  .student-header-actions { width: 100%; justify-content: flex-end; }
+  .student-page-headline,
+  .student-page-headline > div { min-width: 0; }
+  .student-page-title { font-size: 26px; }
+  .student-page-sub { overflow-wrap: break-word; }
+
+  .student-topbar { flex-wrap: wrap; gap: 10px; }
+}
+
+/* ---------- Phone ---------- */
+@media (max-width: 480px) {
+  .student-greeting { font-size: 22px; }
+  .student-page-title { font-size: 22px; }
+  .student-main { padding: 14px; }
+  .student-signout-btn span { display: none; }
+
+  .student-stat-cards,
+  .student-content-grid,
+  .student-form-grid { grid-template-columns: 1fr; }
+}
