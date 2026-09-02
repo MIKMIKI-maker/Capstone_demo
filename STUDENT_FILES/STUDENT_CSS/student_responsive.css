@@ -80,12 +80,29 @@ table { display: block; max-width: 100%; overflow-x: auto; }
     transition: transform .25s ease;
     z-index: 9001;
     overflow-y: auto;
+    overflow-x: hidden;
     scrollbar-width: none;
   }
   .student-sidebar::-webkit-scrollbar { display: none; }
   .student-sidebar.student-sidebar-open { transform: translateX(0); }
   .student-sidebar-nav { flex-direction: column; }
   .student-sidebar-footer { flex-wrap: nowrap; }
+
+  /* .student-user-info (name + role in the bottom profile card) defaults
+     to min-width:auto as a flex child, so a longer student name refused
+     to shrink and pushed the whole card — and the sign-out button below
+     it — past the drawer's 230px width, cutting them off. Let it shrink
+     and ellipsize instead of overflowing. */
+  .student-sidebar-user { min-width: 0; }
+  .student-user-info { min-width: 0; flex: 1; }
+  .student-user-name,
+  .student-user-role {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .student-signout-btn { min-width: 0; }
+  .student-signout-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   /* z-index:1 (not auto) so .student-main and everything in normal flow
      inside it — including .student-mobile-topbar and the notif bell now
