@@ -5,32 +5,118 @@
    Teacher_*.html page instead of duplicating these rules ten times.
    Targets the class names that are identical on every teacher page:
    .teacher-sidebar, .teacher-main-content, .teacher-topbar, --sidebar-w.
+
+   At <=1024px, .teacher-sidebar becomes a hidden off-canvas drawer
+   toggled by a hamburger button (see ASSETS/teacher_portal.js), same
+   pattern as the Admin portal's mobile nav — instead of the old
+   icon-only collapsed rail that stayed permanently on screen.
    ============================================================ */
 
 *, *::before, *::after { box-sizing: border-box; }
 img, video, canvas { max-width: 100%; height: auto; }
 table { display: block; max-width: 100%; overflow-x: auto; }
 
-/* ---------- Tablet (iPad portrait/landscape, small laptop) ---------- */
+/* ---------- Off-canvas hamburger drawer, added/created by
+   ASSETS/teacher_portal.js on every Teacher_*.html page. Defined
+   unconditionally (not inside the media query) since the drawer can
+   only ever be opened via the hamburger button, which is itself
+   display:none outside <=1024px — so .show/.teacher-sidebar-open never
+   get applied at desktop widths regardless. ---------- */
+.teacher-hamburger-btn {
+  display: none;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  margin-bottom: 14px;
+  border-radius: 10px;
+  background: #1E3A8A;
+  color: #fff;
+  border: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .2);
+}
+.teacher-sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, .45);
+  z-index: 9000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s ease;
+}
+.teacher-sidebar-overlay.show { opacity: 1; pointer-events: auto; }
+
+/* ---------- Tablet + phone: sidebar becomes a hidden off-canvas
+   drawer instead of an always-visible icon-only rail. ---------- */
 @media (max-width: 1024px) {
-  :root { --sidebar-w: 84px; }
+  html, body { overflow: auto; height: auto; }
+  .teacher-app-wrapper { height: auto; overflow: visible; }
 
-  .teacher-sidebar-logo-text,
-  .teacher-sidebar-title,
-  .teacher-sidebar-sub,
-  .teacher-nav-item span,
-  .teacher-nav-arrow,
+  .teacher-hamburger-btn { display: flex; }
+
+  .teacher-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: auto;
+    margin: 0;
+    width: 260px;
+    min-width: 260px;
+    height: 100vh;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    padding: 0;
+    border-radius: 0;
+    transform: translateX(-100%);
+    transition: transform .25s ease;
+    z-index: 9001;
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, .25);
+    scrollbar-width: none;
+  }
+  .teacher-sidebar::-webkit-scrollbar { display: none; }
+  .teacher-sidebar.teacher-sidebar-open { transform: translateX(0); }
+
+  /* The drawer has its full 260px width to work with, so labels/text
+     stay visible — no icon-only collapsing like the old rail did. */
+  .teacher-sidebar-logo { justify-content: flex-start; padding: 26px 20px 22px; }
+  .teacher-nav-item { justify-content: flex-start; padding: 13px 16px; }
+  .teacher-profile { justify-content: flex-start; padding: 10px 14px; }
+
+  /* The name/role block next to the avatar isn't always given the
+     .teacher-info class (some pages leave it a bare div) but it's
+     always the avatar's sibling — cover both. It defaults to
+     min-width:auto as a flex child, so a long teacher name could push
+     the sign-out button past the drawer's edge — same fix already
+     applied to the Admin/Student sidebars. */
+  .teacher-profile { min-width: 0; }
   .teacher-info,
-  .teacher-signout-btn span { display: none; }
+  .teacher-profile > div:not(.teacher-avatar) { min-width: 0; flex: 1; }
+  .teacher-name,
+  .teacher-role {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .teacher-signout-btn { min-width: 0; }
+  .teacher-signout-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-  /* The name/role block next to the sidebar-footer avatar isn't always
-     given the .teacher-info class, but it's always the avatar's sibling. */
-  .teacher-profile > div:not(.teacher-avatar) { display: none; }
-
-  .teacher-sidebar-logo { justify-content: center; padding: 20px 0; }
-  .teacher-nav-item { justify-content: center; padding: 14px; }
-  .teacher-profile { justify-content: center; padding: 10px; }
-  .teacher-main-content { padding: 20px; }
+  /* z-index:1 (not auto) so .teacher-main-content and everything in
+     normal flow inside it can't end up ambiguously stacked relative to
+     the drawer/overlay above (z-index 9000/9001) — the same stacking
+     bug found and fixed on the Admin portal earlier. */
+  .teacher-main-content {
+    width: 100%;
+    height: auto;
+    overflow-y: visible;
+    padding: 20px;
+    position: relative;
+    z-index: 1;
+  }
 
   .teacher-dashboard-grid,
   .teacher-report-grid,
@@ -52,8 +138,6 @@ table { display: block; max-width: 100%; overflow-x: auto; }
 
 /* ---------- Phone ---------- */
 @media (max-width: 640px) {
-  :root { --sidebar-w: 60px; }
-
   .teacher-topbar { flex-wrap: wrap; gap: 12px; }
   .teacher-topbar-right,
   .teacher-topbar-actions,
