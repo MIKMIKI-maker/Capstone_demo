@@ -3,9 +3,9 @@
    Loaded after each page's own stylesheet (same specificity, later
    source order wins) so one file fixes phone/iPad layout across every
    Student_*.html page instead of duplicating these rules five times.
-   Every student page already collapses .student-sidebar into a
-   horizontal strip at 900px — this file just makes that consistent
-   everywhere and fills in the missing phone-tier polish + content grids.
+   At <=900px, .student-sidebar becomes a hidden off-canvas drawer
+   toggled by a hamburger button (see ASSETS/student_portal.js), the
+   same pattern as the Admin portal's mobile nav.
    ============================================================ */
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -17,16 +17,88 @@ table { display: block; max-width: 100%; overflow-x: auto; }
   .student-main { padding: 22px; }
 }
 
-/* ---------- Sidebar becomes a horizontal strip (matches the pattern
-   already used on Student_dashboard/Student_notif/etc.) ---------- */
+/* ---------- Off-canvas hamburger drawer, added/created by
+   ASSETS/student_portal.js on every Student_*.html page. Defined
+   unconditionally (not inside the media query) since the drawer can
+   only ever be opened via the hamburger button, which is itself
+   display:none outside <=900px — so .show/.student-sidebar-open never
+   get applied at desktop widths regardless. ---------- */
+.student-hamburger-btn {
+  display: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #1E3A8A;
+  color: #fff;
+  border: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .2);
+}
+.student-sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, .45);
+  z-index: 9000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s ease;
+}
+.student-sidebar-overlay.show { opacity: 1; pointer-events: auto; }
+
+/* ---------- Sidebar becomes a hidden off-canvas drawer instead of an
+   always-visible horizontal strip, matching the Admin portal's mobile
+   nav pattern. ---------- */
 @media (max-width: 900px) {
   body { flex-direction: column; height: auto; overflow-y: auto; }
+
+  .student-hamburger-btn { display: flex; }
+
   .student-sidebar {
-    width: 100%; flex-direction: row; flex-wrap: wrap; align-items: center;
-    border-radius: 0 0 28px 28px; position: static; height: auto;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: auto;
+    margin: 0;
+    width: 230px;
+    flex: none;
+    height: 100vh;
+    border-radius: 0;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    transform: translateX(-100%);
+    transition: transform .25s ease;
+    z-index: 9001;
+    overflow-y: auto;
+    scrollbar-width: none;
   }
-  .student-sidebar-footer { flex-wrap: wrap; }
-  .student-main { height: auto; overflow-y: visible; padding: 20px; }
+  .student-sidebar::-webkit-scrollbar { display: none; }
+  .student-sidebar.student-sidebar-open { transform: translateX(0); }
+  .student-sidebar-nav { flex-direction: column; }
+  .student-sidebar-footer { flex-wrap: nowrap; }
+
+  /* Hamburger and the notif bell share the top corners of .student-main
+     — same trick as Admin — instead of the bell sitting in the topbar's
+     own row further down the page. z-index:1 (not auto) so this and its
+     absolutely-positioned children can't end up ambiguously stacked
+     relative to the drawer/overlay above. */
+  .student-main {
+    height: auto;
+    overflow-y: visible;
+    padding: 20px;
+    width: 100%;
+    position: relative;
+    z-index: 1;
+    padding-top: 84px;
+  }
+  .student-notif-btn {
+    position: absolute;
+    top: 24px;
+    right: 16px;
+  }
 
   .student-content-grid,
   .student-form-grid { grid-template-columns: 1fr; }
@@ -52,7 +124,9 @@ table { display: block; max-width: 100%; overflow-x: auto; }
 @media (max-width: 480px) {
   .student-greeting { font-size: 22px; }
   .student-page-title { font-size: 22px; }
-  .student-main { padding: 14px; }
+  /* Longhand (not the padding shorthand) so this doesn't reset the
+     84px padding-top reserved for the hamburger/notif bell at 900px. */
+  .student-main { padding-left: 14px; padding-right: 14px; padding-bottom: 14px; }
   .student-signout-btn span { display: none; }
 
   .student-stat-cards,
