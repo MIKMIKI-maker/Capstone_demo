@@ -209,6 +209,7 @@ function initActivityTheme(){
   .mtg-btn:active{ transform:translateY(2px); }
   .mtg-btn--ghost{ background:#fff; color:var(--ink); border:1.5px solid var(--field-border); }
   .mtg-btn--ghost:hover{ background:#f7f9fd; }
+  .mtg-back-btn{ text-decoration:none; flex:none; }
   .mtg-btn--print{ background:var(--gold); color:#5c4400; box-shadow:0 4px 0 #d9a416; }
   .mtg-btn--pub{ background:var(--green); color:#fff; box-shadow:0 4px 0 var(--green-dark); }
 
@@ -452,7 +453,22 @@ function initActivityTheme(){
   .mtg-domain-opt input[type="radio"]{ accent-color:#0891b2; cursor:pointer; }
 
   @media (max-width:1100px){
-    .mtg-body{ grid-template-columns:1fr; }
+    /* Below this width the 3-column grid stacks into one column, but the
+       page was still a fixed-height app shell (html,body{overflow:hidden})
+       with each stacked panel scrolling in its own cramped little box
+       instead of the page just scrolling normally like everything else
+       in the portal. */
+    html, body{ height:auto; overflow:auto; }
+    .mtg-body{ grid-template-columns:1fr; height:auto; overflow:visible; }
+    .mtg-left-col, .mtg-preview-col, .mtg-right-col{ overflow-y:visible; height:auto; }
+  }
+
+  @media (max-width:640px){
+    .mtg-top{ padding:12px 14px; gap:10px; }
+    .mtg-top h1{ font-size:17px; }
+    .mtg-back-btn{ order:-1; flex-basis:100%; justify-content:center; }
+    .mtg-top-actions{ width:100%; margin-left:0; justify-content:center; }
+    .mtg-btn{ flex:1 1 auto; justify-content:center; font-size:12.5px; padding:9px 10px; }
   }
 
   /* ===== PRINTABLE WORKSHEET (Generate Printable button / PDF via browser print) ===== */
@@ -540,6 +556,7 @@ function initActivityTheme(){
 
   <!-- TOP BAR -->
   <div class="mtg-top">
+    <a class="mtg-btn mtg-btn--ghost mtg-back-btn" href="../Teacher_generate.html" title="Back to Generate Materials">← Back</a>
     <div class="mtg-logo">🧩</div>
     <div>
       <h1>Matching Type Template Generator</h1>

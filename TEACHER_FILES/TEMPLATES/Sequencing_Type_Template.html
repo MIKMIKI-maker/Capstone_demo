@@ -208,6 +208,7 @@ function initActivityTheme(){
   .seq-btn:active{ transform:translateY(2px); }
   .seq-btn--ghost{ background:#fff; color:var(--ink); border:1.5px solid var(--field-border); }
   .seq-btn--ghost:hover{ background:#f7f9fd; }
+  .seq-back-btn{ text-decoration:none; flex:none; }
   .seq-btn--edit{ background:var(--purple); color:#fff; box-shadow:0 4px 0 var(--purple-dark); }
   .seq-btn--print{ background:var(--gold); color:#5c4400; box-shadow:0 4px 0 #d9a416; }
   .seq-btn--pub{ background:var(--green); color:#fff; box-shadow:0 4px 0 var(--green-dark); }
@@ -497,8 +498,18 @@ function initActivityTheme(){
   }
 
   @media (max-width:1100px){
-    .seq-body{ grid-template-columns:1fr; }
+    html, body{ height:auto; overflow:auto; }
+    .seq-body{ grid-template-columns:1fr; height:auto; overflow:visible; }
     body.seq-right-collapsed .seq-body{ grid-template-columns:1fr; }
+    .seq-left-col, .seq-preview-col, .seq-right-col{ overflow-y:visible; height:auto; }
+  }
+
+  @media (max-width:640px){
+    .seq-top{ padding:12px 14px; gap:10px; }
+    .seq-top h1{ font-size:17px; }
+    .seq-back-btn{ order:-1; flex-basis:100%; justify-content:center; }
+    .seq-top-actions{ width:100%; margin-left:0; justify-content:center; }
+    .seq-btn{ flex:1 1 auto; justify-content:center; font-size:12.5px; padding:9px 10px; }
   }
   /* ===== DESIGN FOR SCORING ===== */
   .seq-modal-emoji{
@@ -570,6 +581,7 @@ function initActivityTheme(){
 
   <!-- TOP BAR -->
   <div class="seq-top">
+    <a class="seq-btn seq-btn--ghost seq-back-btn" href="../Teacher_generate.html" title="Back to Generate Materials">← Back</a>
     <div class="seq-logo">🔢</div>
     <div>
       <h1>Sequencing Template Generator</h1>

@@ -209,6 +209,7 @@ body{font-family:var(--font);color:var(--ink);background:#eef2f9;display:flex;fl
 .lbl-btn:active{transform:translateY(2px);}
 .lbl-btn--ghost{background:#fff;color:var(--ink);border:1.5px solid var(--field-border);}
 .lbl-btn--ghost:hover{background:#f7f9fd;}
+.lbl-back-btn{text-decoration:none;flex:none;}
 .lbl-btn--print{background:var(--gold);color:#5c4400;box-shadow:0 4px 0 #d9a416;}
 .lbl-btn--pub{background:var(--green);color:#fff;box-shadow:0 4px 0 var(--green-dark);}
 
@@ -485,7 +486,18 @@ body.lbl-preview-only .lbl-exit-float{display:flex;}
 .lbl-domain-opt:has(input:checked){border-color:#0891b2;background:#ecfeff;color:#0891b2;}
 .lbl-domain-opt input[type="radio"]{accent-color:#0891b2;cursor:pointer;}
 
-@media(max-width:1100px){.lbl-body{grid-template-columns:1fr;}}
+@media(max-width:1100px){
+  html, body{ height:auto; overflow:auto; }
+  .lbl-body{grid-template-columns:1fr; height:auto; overflow:visible;}
+  .lbl-left-col,.lbl-preview-col,.lbl-right-col{overflow-y:visible;height:auto;}
+}
+@media(max-width:640px){
+  .lbl-top{padding:12px 14px;gap:10px;}
+  .lbl-top h1{font-size:17px;}
+  .lbl-back-btn{order:-1;flex-basis:100%;justify-content:center;}
+  .lbl-top-actions{width:100%;margin-left:0;justify-content:center;}
+  .lbl-btn{flex:1 1 auto;justify-content:center;font-size:12.5px;padding:9px 10px;}
+}
 
 /* ===== PRINTABLE WORKSHEET (Generate Printable button / PDF via browser print) ===== */
 .lbl-print-area{ display:none; }
@@ -537,6 +549,7 @@ body.lbl-preview-only .lbl-exit-float{display:flex;}
 
 <!-- ===== TOP BAR ===== -->
 <div class="lbl-top">
+  <a class="lbl-btn lbl-btn--ghost lbl-back-btn" href="../Teacher_generate.html" title="Back to Generate Materials">← Back</a>
   <div class="lbl-logo">🏷️</div>
   <div>
     <h1>Picture Labeling Template Generator</h1>

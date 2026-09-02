@@ -209,6 +209,7 @@ function initActivityTheme(){
   .bgl-btn:active{ transform:translateY(2px); }
   .bgl-btn--ghost{ background:#fff; color:var(--ink); border:1.5px solid var(--field-border); }
   .bgl-btn--ghost:hover{ background:#f7f9fd; }
+  .bgl-back-btn{ text-decoration:none; flex:none; }
   .bgl-btn--print{ background:var(--gold); color:#5c4400; box-shadow:0 4px 0 #d9a416; }
   .bgl-btn--pub{ background:var(--green); color:#fff; box-shadow:0 4px 0 var(--green-dark); }
 
@@ -466,7 +467,17 @@ function initActivityTheme(){
   .bgl-domain-opt input[type="radio"]{ accent-color:#0891b2; cursor:pointer; }
 
   @media (max-width:1100px){
-    .bgl-body{ grid-template-columns:1fr; }
+    html, body{ height:auto; overflow:auto; }
+    .bgl-body{ grid-template-columns:1fr; height:auto; overflow:visible; }
+    .bgl-left-col, .bgl-preview-col, .bgl-right-col{ overflow-y:visible; height:auto; }
+  }
+
+  @media (max-width:640px){
+    .bgl-top{ padding:12px 14px; gap:10px; }
+    .bgl-top h1{ font-size:17px; }
+    .bgl-back-btn{ order:-1; flex-basis:100%; justify-content:center; }
+    .bgl-top-actions{ width:100%; margin-left:0; justify-content:center; }
+    .bgl-btn{ flex:1 1 auto; justify-content:center; font-size:12.5px; padding:9px 10px; }
   }
 
   /* ===== PRINTABLE WORKSHEET (Generate Printable button / PDF via browser print) ===== */
@@ -521,6 +532,7 @@ function initActivityTheme(){
 
   <!-- TOP BAR -->
   <div class="bgl-top">
+    <a class="bgl-btn bgl-btn--ghost bgl-back-btn" href="../Teacher_generate.html" title="Back to Generate Materials">← Back</a>
     <div class="bgl-logo">🔤</div>
     <div>
       <h1>Beginning Letter/Sound Identification Generator</h1>
