@@ -38,7 +38,12 @@
     var notifBtn = document.querySelector('.teacher-notif-btn');
     if (notifBtn) bar.appendChild(notifBtn);
 
-    var main = document.querySelector('.teacher-main-content') || document.querySelector('main') || document.body;
+    // .teacher-main is Teacher_settings.html's own name for this same
+    // element (every other Teacher_*.html page calls it
+    // .teacher-main-content) and it has no <main> tag either, so
+    // without this the bar fell all the way through to document.body —
+    // landing outside the page's flex layout entirely instead of inside it.
+    var main = document.querySelector('.teacher-main-content') || document.querySelector('.teacher-main') || document.querySelector('main') || document.body;
     main.insertBefore(bar, main.firstChild);
 
     // Without this, the page behind the overlay could still scroll while

@@ -62,7 +62,12 @@ table { display: block; max-width: 100%; overflow-x: auto; }
      horizontal scroll instead of just being contained — explicit
      per-axis avoids that. */
   html, body { overflow-y: auto; overflow-x: hidden; height: auto; }
-  .teacher-app-wrapper { height: auto; overflow: visible; }
+  /* .teacher-container is Teacher_settings.html's own name for the
+     same outer flex wrapper every other Teacher_*.html page calls
+     .teacher-app-wrapper — cover both so Settings actually gets this
+     shared mobile layer instead of staying locked to its desktop
+     fixed-height/overflow:hidden flex row. */
+  .teacher-app-wrapper, .teacher-container { height: auto; overflow: visible; }
 
   .teacher-mobile-topbar { display: flex; }
   .teacher-mobile-topbar .teacher-notif-btn { flex-shrink: 0; }
@@ -138,8 +143,17 @@ table { display: block; max-width: 100%; overflow-x: auto; }
   /* z-index:1 (not auto) so .teacher-main-content and everything in
      normal flow inside it can't end up ambiguously stacked relative to
      the drawer/overlay above (z-index 9000/9001) — the same stacking
-     bug found and fixed on the Admin portal earlier. */
-  .teacher-main-content {
+     bug found and fixed on the Admin portal earlier.
+     .teacher-main is Settings' own name for this same element — cover
+     both, same reasoning as .teacher-container above. Without this,
+     .teacher-main stayed at height:100vh;overflow-y:auto from its own
+     stylesheet, and teacher_portal.js's hamburger/bell row (which only
+     ever looks for .teacher-main-content, then <main>, then <body> —
+     Settings has neither of the first two) landed as the very first
+     child of <body> instead, completely outside this flex layout: an
+     extra row sitting above a still-100vh-tall container, clipping its
+     own bottom content and throwing off the whole page's spacing. */
+  .teacher-main-content, .teacher-main {
     width: 100%;
     height: auto;
     overflow-y: visible;
@@ -203,7 +217,7 @@ table { display: block; max-width: 100%; overflow-x: auto; }
   .teacher-topbar-right,
   .teacher-topbar-actions,
   .teacher-topbar-title-group { width: 100%; }
-  .teacher-main-content { padding: 14px; }
+  .teacher-main-content, .teacher-main { padding: 14px; }
   .teacher-greeting { font-size: 17px; }
   .teacher-welcome-banner { flex-direction: column; align-items: flex-start; gap: 14px; }
 
