@@ -1,0 +1,2295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SPED ALM — Tracing Template Generator</title>
+<link rel="icon" type="image/png" href="../../ASSETS/logo.png" />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&family=Andika:wght@400;700&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+<script>
+/* Happy activity sound effects (synthesized — no external audio files needed) */
+var _actAudioCtx = null;
+function _actGetAudioCtx(){
+  if (!_actAudioCtx) { try { _actAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ return null; } }
+  if (_actAudioCtx.state === 'suspended') { _actAudioCtx.resume(); }
+  return _actAudioCtx;
+}
+function _actTone(ctx, freq, startTime, duration, peakGain){
+  var osc = ctx.createOscillator(), gain = ctx.createGain();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(freq, startTime);
+  gain.gain.setValueAtTime(0, startTime);
+  gain.gain.linearRampToValueAtTime(peakGain, startTime + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(startTime); osc.stop(startTime + duration + 0.02);
+}
+// Cheerful, child-friendly chimes. tier: "perfect" | "good" | "tryagain"
+function playActivitySound(tier){
+  var ctx = _actGetAudioCtx();
+  if (!ctx) return;
+  _duckThemeForCelebration();
+  var now = ctx.currentTime;
+  if (tier === 'perfect') {
+    [523.25, 659.25, 783.99, 1046.50, 1318.51].forEach(function(f, i){ _actTone(ctx, f, now + i*0.09, 0.35, 0.22); });
+  } else if (tier === 'good') {
+    _actTone(ctx, 659.25, now, 0.22, 0.22);
+    _actTone(ctx, 880.00, now + 0.12, 0.32, 0.22);
+  } else {
+    _actTone(ctx, 392.00, now, 0.18, 0.18);
+    _actTone(ctx, 440.00, now + 0.15, 0.24, 0.18);
+  }
+}
+// Light tap/selection feedback — a quick tick when picking an answer, a
+// snap chime when it locks in.
+function playPickupSound(){
+  var ctx = _actGetAudioCtx();
+  if (!ctx) return;
+  _actTone(ctx, 720, ctx.currentTime, 0.05, 0.12);
+}
+function playDropSound(success){
+  var ctx = _actGetAudioCtx();
+  if (!ctx) return;
+  var now = ctx.currentTime;
+  if (success) {
+    _actTone(ctx, 660, now, 0.06, 0.16);
+    _actTone(ctx, 990, now + 0.05, 0.09, 0.16);
+  } else {
+    _actTone(ctx, 300, now, 0.09, 0.10);
+  }
+}
+
+/* Soft looping background theme (happy, low-volume) while a student works
+   through the activity. Starts on first interaction (browsers block audio
+   until a real user gesture), ducks under the score chime, and stays off
+   if the student muted it before (remembered per-browser). */
+var _themeGain = null, _themeLoopTimer = null, _themeLoopActive = false, _themeMuted = false;
+// Real background track, routed through _themeGain so mute + the celebration
+// "duck" still work the same way. Falls back to a short synthesized riff if
+// the file is ever missing or the browser can't decode it.
+var THEME_AUDIO_SRC = 'audio/theme.mp3';
+var THEME_VOLUME = 0.15;
+var _themeAudioEl = null, _themeMediaSrc = null, _themeUsingFallback = false;
+// Fallback riff only — used if THEME_AUDIO_SRC fails to load.
+var THEME_PATTERN = [
+  { f: 523.25, d: 0.16 }, // C5
+  { f: 659.25, d: 0.16 }, // E5
+  { f: 783.99, d: 0.16 }, // G5
+  { f: 1046.50, d: 0.34 } // C6 — landing note
+];
+var THEME_GAP = 0.05;
+function _actGetThemeGain(ctx){
+  if (!_themeGain) { _themeGain = ctx.createGain(); _themeGain.gain.value = _themeMuted ? 0 : THEME_VOLUME; _themeGain.connect(ctx.destination); }
+  return _themeGain;
+}
+function _scheduleThemeLoop(){
+  if (!_themeLoopActive) return;
+  var ctx = _actGetAudioCtx();
+  if (!ctx) { _themeLoopTimer = setTimeout(_scheduleThemeLoop, 400); return; }
+  var gain = _actGetThemeGain(ctx), now = ctx.currentTime, t = now;
+  THEME_PATTERN.forEach(function(note){
+    var osc = ctx.createOscillator(), g = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(note.f, t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(1, t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.001, t + note.d);
+    osc.connect(g); g.connect(gain);
+    osc.start(t); osc.stop(t + note.d + 0.03);
+    t += note.d + THEME_GAP;
+  });
+  _themeLoopTimer = setTimeout(_scheduleThemeLoop, (t - now) * 1000);
+}
+function startThemeMusic(){
+  if (_themeLoopActive) return;
+  var ctx = _actGetAudioCtx();
+  if (!ctx) return;
+  _themeLoopActive = true;
+  if (_themeUsingFallback) { _scheduleThemeLoop(); return; }
+  if (!_themeAudioEl) {
+    _themeAudioEl = new Audio(THEME_AUDIO_SRC);
+    _themeAudioEl.loop = true;
+    _themeAudioEl.preload = 'auto';
+    _themeAudioEl.addEventListener('error', function(){
+      _themeUsingFallback = true;
+      if (_themeLoopActive) _scheduleThemeLoop();
+    });
+    try {
+      _themeMediaSrc = ctx.createMediaElementSource(_themeAudioEl);
+      _themeMediaSrc.connect(_actGetThemeGain(ctx));
+    } catch (e) {
+      _themeUsingFallback = true;
+      _scheduleThemeLoop();
+      return;
+    }
+  }
+  _themeAudioEl.play().catch(function(){
+    // Autoplay was blocked (e.g. no genuine gesture yet) rather than the file
+    // being broken — don't give up on the real track permanently, just play
+    // the fallback riff for now so there's still something audible.
+    if (_themeLoopActive && !_themeUsingFallback) _scheduleThemeLoop();
+  });
+}
+function stopThemeMusic(){
+  _themeLoopActive = false;
+  if (_themeLoopTimer) { clearTimeout(_themeLoopTimer); _themeLoopTimer = null; }
+  if (_themeAudioEl) { try { _themeAudioEl.pause(); } catch(e){} }
+}
+function _duckThemeForCelebration(){
+  if (!_themeGain || !_themeLoopActive || _themeMuted) return;
+  var ctx = _actGetAudioCtx();
+  if (!ctx) return;
+  var now = ctx.currentTime;
+  _themeGain.gain.cancelScheduledValues(now);
+  _themeGain.gain.setValueAtTime(_themeGain.gain.value, now);
+  _themeGain.gain.linearRampToValueAtTime(THEME_VOLUME * 0.2, now + 0.15);
+  _themeGain.gain.linearRampToValueAtTime(THEME_VOLUME, now + 1.8);
+}
+function setThemeMuted(muted){
+  _themeMuted = muted;
+  try { localStorage.setItem('spedalm_theme_muted', muted ? '1' : '0'); } catch(e){}
+  var btn = document.getElementById('_actThemeToggleBtn');
+  if (btn) btn.textContent = muted ? '🔇' : '🔊';
+  if (_themeGain) {
+    var ctx = _actGetAudioCtx();
+    if (ctx) {
+      _themeGain.gain.cancelScheduledValues(ctx.currentTime);
+      _themeGain.gain.linearRampToValueAtTime(muted ? 0 : THEME_VOLUME, ctx.currentTime + 0.25);
+    }
+  }
+}
+// Call only from inside a real click/keydown handler (e.g. the student's
+// "Start Activity" button) — browsers require a genuine user gesture before
+// audio is allowed to play, and this both starts it and installs the mute toggle.
+function initActivityTheme(){
+  try { _themeMuted = localStorage.getItem('spedalm_theme_muted') === '1'; } catch(e){}
+  if (!document.getElementById('_actThemeToggleBtn')) {
+    var btn = document.createElement('button');
+    btn.id = '_actThemeToggleBtn';
+    btn.type = 'button';
+    btn.textContent = _themeMuted ? '🔇' : '🔊';
+    btn.title = 'Turn activity music on/off';
+    btn.setAttribute('aria-label', 'Turn activity music on or off');
+    btn.style.cssText = 'position:fixed;bottom:18px;right:18px;z-index:99999;width:46px;height:46px;border-radius:50%;border:none;background:#fff;box-shadow:0 4px 14px rgba(0,0,0,.18);font-size:20px;cursor:pointer;';
+    btn.onclick = function(){ setThemeMuted(!_themeMuted); };
+    document.body.appendChild(btn);
+  }
+  startThemeMusic();
+}
+</script>
+<style>
+  :root{
+    --blue:#2f6fed; --blue-dark:#1b4fb8;
+    --purple:#7b6ef0; --purple-dark:#5546c4;
+    --green:#2fbf57; --green-dark:#1f9d44;
+    --red:#e23b54; --red-dark:#b9263c;
+    --gold:#ffc34d; --ink:#243a5e; --ink-soft:#5d7299;
+    --field:#f7f9fd; --field-border:#e6ebf4; --line:#eef2f8;
+    --font:"Fredoka","Nunito",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html, body{ height:100%; overflow:hidden; }
+  body{ font-family:var(--font); color:var(--ink); background:#eef2f9; display:flex; flex-direction:column; }
+
+  /* ===== TOP BAR ===== */
+  .trc-top{
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap; flex:none;
+    background:#fff; padding:14px 22px; border-bottom:1px solid var(--line);
+  }
+  .trc-logo{ width:46px; height:46px; border-radius:14px; flex:none;
+    background:linear-gradient(135deg,#ff8a5b,#7b6ef0); display:flex; align-items:center; justify-content:center; font-size:24px; }
+  .trc-top h1{ font-weight:700; font-size:21px; line-height:1.1; }
+  .trc-top .trc-tsub{ color:var(--ink-soft); font-size:12px; font-weight:500; }
+  .trc-top-actions{ margin-left:auto; display:flex; gap:10px; flex-wrap:wrap; }
+  .trc-btn{ cursor:pointer; border:none; font-family:var(--font); font-weight:700; font-size:14px;
+    padding:11px 18px; border-radius:13px; display:inline-flex; align-items:center; gap:7px;
+    transition:transform .08s ease, filter .1s ease; }
+  .trc-btn:active{ transform:translateY(2px); }
+  .trc-btn--ghost{ background:#fff; color:var(--ink); border:1.5px solid var(--field-border); }
+  .trc-btn--ghost:hover{ background:#f7f9fd; }
+  .trc-btn--print{ background:var(--gold); color:#5c4400; box-shadow:0 4px 0 #d9a416; }
+  .trc-btn--pub{ background:var(--green); color:#fff; box-shadow:0 4px 0 var(--green-dark); }
+
+  /* ===== BODY GRID ===== */
+  .trc-body{ display:grid; grid-template-columns:280px 1fr 270px; gap:16px; padding:16px; align-items:stretch;
+    flex:1; min-height:0; overflow:hidden; }
+  .trc-left-col, .trc-preview-col, .trc-right-col{ overflow-y:auto; min-height:0; padding-right:2px;
+    scrollbar-width:thin; scrollbar-color:#c7d3e8 transparent; }
+  .trc-left-col::-webkit-scrollbar, .trc-preview-col::-webkit-scrollbar, .trc-right-col::-webkit-scrollbar{ width:6px; }
+  .trc-left-col::-webkit-scrollbar-track, .trc-preview-col::-webkit-scrollbar-track, .trc-right-col::-webkit-scrollbar-track{ background:transparent; }
+  .trc-left-col::-webkit-scrollbar-thumb, .trc-preview-col::-webkit-scrollbar-thumb, .trc-right-col::-webkit-scrollbar-thumb{ background:#c7d3e8; border-radius:10px; }
+  .trc-left-col::-webkit-scrollbar-thumb:hover, .trc-preview-col::-webkit-scrollbar-thumb:hover, .trc-right-col::-webkit-scrollbar-thumb:hover{ background:#aebedb; }
+  .trc-card{ background:#fff; border:1px solid var(--line); border-radius:18px; padding:16px; }
+  .trc-card + .trc-card{ margin-top:16px; }
+  .trc-step{ font-size:12px; font-weight:800; letter-spacing:.04em; color:var(--ink-soft); text-transform:uppercase; margin-bottom:12px; }
+  .trc-step .trc-edit-link{ color:var(--purple); cursor:pointer; font-weight:700; text-transform:none; letter-spacing:0; }
+
+  /* ----- Activity Slides (multi-activity) navigator ----- */
+  .trc-slidebar{ display:flex; align-items:center; gap:8px; }
+  .trc-slidebar button{ width:30px; height:30px; flex:none; border-radius:9px; border:1.5px solid var(--field-border); background:#fff; cursor:pointer; font-size:14px; color:var(--ink); }
+  .trc-slidebar button:hover:not(:disabled){ background:#f1f4fa; }
+  .trc-slidebar button:disabled{ opacity:.35; cursor:default; }
+  .trc-slide-label{ flex:1; text-align:center; font-weight:700; font-size:13px; color:var(--ink); }
+  .trc-slide-actions{ display:flex; gap:8px; margin-top:10px; }
+  .trc-slide-actions button{ flex:1; cursor:pointer; border:1.5px dashed var(--purple); background:#f3f1fe; color:var(--purple);
+    font-family:var(--font); font-weight:700; font-size:12.5px; padding:8px; border-radius:11px; }
+  .trc-slide-actions button.danger{ border-color:#f0a8b4; background:#fdeef1; color:#c43a55; }
+
+  /* Activity type card */
+  .trc-type{ display:flex; align-items:center; gap:12px; border:2px solid var(--purple); background:#f3f1fe; border-radius:14px; padding:13px; }
+  .trc-type-ic{ width:40px; height:40px; border-radius:11px; background:#fff; display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 3px 0 #ddd8f7; }
+  .trc-type b{ font-weight:700; font-size:15px; }
+  .trc-type-desc{ color:var(--ink-soft); font-size:12.5px; font-weight:500; line-height:1.5; margin-top:12px; }
+
+  /* Items list */
+  .trc-item-row{ padding:10px 0; border-bottom:1px solid var(--line); position:relative; }
+  .trc-item-row:last-of-type{ border-bottom:none; }
+  .trc-item-top{ display:flex; align-items:flex-start; gap:10px; }
+  .trc-item-preview{ flex:none; width:56px; height:56px; border-radius:10px; border:1.5px solid var(--field-border);
+    background:var(--field); display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:800; color:var(--ink); }
+
+  .trc-item-fields{ flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
+  .trc-item-fields label{ font-size:10.5px; font-weight:800; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.03em; }
+  .trc-char-row{ display:flex; gap:6px; align-items:center; }
+  .trc-char-row select{ flex:1; padding:6px 7px; border-radius:8px; border:1.5px solid var(--field-border); background:#fff; font-family:var(--font); font-size:13px; color:var(--ink); }
+  .trc-char-row select.trc-char-select{ border-color:var(--green); background:#f0fbf2; font-weight:700; }
+  .trc-name-input{ width:100%; padding:7px 9px; border-radius:8px; border:1.5px solid var(--field-border); background:#fff;
+    font-family:var(--font); font-size:13px; font-weight:600; color:var(--ink); outline:none; box-sizing:border-box; }
+  .trc-name-input:focus{ border-color:var(--purple); box-shadow:0 0 0 3px rgba(123,110,240,.12); }
+
+  .trc-item-menu{ position:absolute; top:10px; right:0; cursor:pointer; border:none; background:none; color:var(--ink-soft); font-size:18px; width:28px; height:28px; border-radius:8px; }
+  .trc-item-menu:hover{ background:#f1f4fa; }
+  .trc-pop{ position:absolute; right:0; top:36px; z-index:5; background:#fff; border:1px solid var(--field-border); border-radius:12px; box-shadow:0 8px 24px rgba(36,58,94,.18); padding:6px; display:none; }
+  .trc-pop.show{ display:block; }
+  .trc-pop button{ display:block; width:100%; text-align:left; border:none; background:none; cursor:pointer; font-family:var(--font); font-size:13px; padding:8px 14px; border-radius:8px; color:var(--ink); white-space:nowrap; }
+  .trc-pop button:hover{ background:#f1f4fa; }
+  .trc-pop button.del{ color:#d6336c; }
+  .trc-add{ cursor:pointer; width:100%; margin-top:10px; border:1.5px dashed var(--purple); background:#f3f1fe; color:var(--purple); font-family:var(--font); font-weight:700; font-size:13px; padding:9px; border-radius:12px; }
+
+  /* Template Guide (cream box) */
+  .trc-tip{ background:#fef6e6; border:1px solid #f6e2b3; border-radius:14px; padding:13px; }
+  .trc-tip b{ font-size:13px; display:flex; align-items:center; gap:6px; }
+  .trc-tip p{ color:#7a5e1d; font-size:12px; font-weight:500; line-height:1.5; margin-top:6px; }
+  .trc-guide-settings-btn{ margin-left:auto; cursor:pointer; border:1.5px solid #cbb8f3; background:#f3f1fe; color:var(--purple);
+    font-family:var(--font); font-weight:800; font-size:13px; padding:7px 12px; border-radius:10px; white-space:nowrap; }
+  .trc-guide-settings-btn:hover{ background:#e6e1fb; }
+
+  /* ===== CENTER PREVIEW ===== */
+  .trc-preview-col .trc-step{ margin-bottom:12px; }
+  .trc-stage{
+    position:relative; overflow:hidden; border-radius:20px;
+    border:1px solid var(--line);
+    background:#fdf6d8; padding:30px;
+    --trc-text:#243a5e; font-family:'Andika',sans-serif; font-size:40px;
+  }
+  .trc-deco{ position:absolute; inset:0; pointer-events:none; }
+  .trc-stage.no-deco .trc-deco{ display:none; }
+  .trc-deco .d-sun{ position:absolute; top:14px; right:22px; font-size:42px; }
+  .trc-deco .d-cloud1{ position:absolute; top:18px; left:24px; font-size:30px; opacity:.9; }
+  .trc-deco .d-cloud2{ position:absolute; top:46%; right:10px; font-size:26px; opacity:.8; }
+  .trc-deco .d-grass{ position:absolute; left:0; right:0; bottom:0; height:64px;
+    background:linear-gradient(180deg, rgba(126,217,124,0), #aee08a 70%); }
+  .trc-deco .d-flower1{ position:absolute; bottom:8px; left:18px; font-size:24px; }
+  .trc-deco .d-flower2{ position:absolute; bottom:6px; right:26px; font-size:22px; }
+
+  .trc-stage-inner{ position:relative; z-index:2; transform-origin:top center; }
+  .trc-title{ text-align:center; font-weight:700; font-size:1.25em; color:var(--trc-text); }
+  .trc-instr{ text-align:center; font-size:.5em; font-weight:500; color:var(--trc-text); opacity:.85; margin:6px 0 22px; }
+
+  /* Multi-column: 4 cards per row at normal preview widths. auto-fit + a
+     minmax lower bound (rather than a hard repeat(4,1fr)) means a slide with
+     fewer than 4 items doesn't leave a stretched-empty trailing column — the
+     unused track collapses and the real items share the freed-up space —
+     and it naturally reflows to fewer columns on narrower viewports without
+     needing a separate breakpoint. The max-width caps it at 4 columns even
+     on a very wide teacher monitor in the (non-fullscreen) builder view,
+     where the center column isn't otherwise width-limited: a 5th 190px
+     track + gap needs ~1014px, so 960px keeps it capped at 4. */
+  .trc-grid{ position:relative; z-index:2; display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:16px; justify-items:center; max-width:960px; margin-left:auto; margin-right:auto; }
+  .trc-scard{ background:#fff; border:3px solid #e2c98f; border-radius:18px; padding:12px;
+    display:flex; flex-direction:column; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(36,58,94,.08);
+    transition:border-color .15s ease; width:100%; max-width:230px; min-width:0; box-sizing:border-box; }
+  .trc-scard-label{ font-size:.42em; font-weight:700; color:var(--trc-text); text-align:center; }
+  .trc-canvas-wrap{ position:relative; width:5.4em; height:3.8em; max-width:100%; border-radius:14px; overflow:hidden;
+    background:#fff; border:1.5px solid var(--field-border); touch-action:none; }
+  .trc-canvas-wrap canvas{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+  .trc-canvas{ cursor:crosshair; }
+  .trc-scard-status{ font-size:.4em; font-weight:800; min-height:1.2em; }
+  .trc-scard-status.correct{ color:var(--green-dark); }
+  .trc-scard-status.wrong{ color:var(--red-dark); }
+
+  /* border style variants */
+  .trc-stage.bs-dashed .trc-scard{ border-style:dashed; }
+  .trc-stage.bs-solid .trc-scard{ border-radius:8px; }
+  .trc-stage.bs-dashed .trc-canvas-wrap{ border-style:dashed; }
+  .trc-stage.bs-solid .trc-canvas-wrap{ border-radius:4px; }
+
+  .trc-stage-controls{ display:flex; flex-direction:column; align-items:center; gap:10px; margin-top:22px; position:relative; z-index:2; }
+  .trc-stage-btnrow{ display:flex; justify-content:center; gap:10px; }
+  .trc-mini{ cursor:pointer; border:none; font-family:var(--font); font-weight:700; font-size:.5em; padding:.55em 1.2em; border-radius:12px; }
+  .trc-mini--reset{ background:#eef3fb; color:var(--ink-soft); }
+  .trc-mini--check{ background:var(--green); color:#fff; }
+  .trc-hint{ font-size:.46em; font-weight:700; min-height:1.3em; text-align:center; color:var(--red-dark); }
+  .trc-stage-nav{ display:flex; align-items:center; gap:14px; margin-top:6px; }
+  .trc-stage-nav button{ cursor:pointer; border:none; background:#eef3fb; color:var(--ink-soft); font-family:var(--font); font-weight:700; font-size:.42em; padding:.55em 1em; border-radius:10px; }
+  .trc-stage-nav button:disabled{ opacity:.35; cursor:default; }
+  .trc-stage-nav span{ font-weight:700; font-size:.42em; color:var(--trc-text); opacity:.8; }
+
+  /* accessibility reminders */
+  .trc-reminders{ background:#f6f2fe; border:1px solid #e4dcfa; border-radius:16px; padding:14px 16px; margin-top:16px; }
+  .trc-reminders .r-title{ font-size:11px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; color:var(--purple); margin-bottom:12px; }
+  .trc-rem-list{ display:flex; gap:10px; flex-wrap:wrap; justify-content:space-between; }
+  .trc-rem{ display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; flex:1; min-width:80px; color:var(--ink-soft); font-size:11.5px; font-weight:600; }
+  .trc-rem .r-ic{ font-size:20px; }
+
+  /* ===== RIGHT SETTINGS ===== */
+  .trc-right-col{ position:relative; }
+  .trc-set-title{ display:flex; align-items:center; gap:8px; font-weight:700; font-size:15px; margin-bottom:16px; }
+  .trc-collapse-btn{ cursor:pointer; border:1.5px solid var(--field-border); background:#fff; width:30px; height:30px; flex:none;
+    border-radius:9px; font-size:14px; color:var(--ink-soft); margin-left:auto; }
+  .trc-collapse-btn:hover{ background:#f1f4fa; }
+  .trc-right-panel-guide{ display:none; }
+  body.trc-right-collapsed .trc-right-panel-full{ display:none; }
+  body.trc-right-collapsed .trc-right-panel-guide{ display:block; }
+  .trc-set-label{ font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-soft); margin:0 0 9px; }
+  .trc-set-group{ margin-bottom:18px; }
+  .trc-swatches{ display:flex; gap:8px; flex-wrap:wrap; }
+  .trc-sw{ width:38px; height:38px; border-radius:11px; cursor:pointer; border:2px solid #fff; box-shadow:0 0 0 1.5px var(--field-border); position:relative; }
+  .trc-sw.sel{ box-shadow:0 0 0 2.5px var(--purple); }
+  .trc-sw.sel::after{ content:"✓"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--purple); font-weight:800; font-size:14px; }
+  .trc-input, .trc-select{ width:100%; padding:11px 13px; border-radius:12px; border:1.5px solid var(--field-border); background:#fff; font-family:var(--font); font-size:14px; color:var(--ink); outline:none; }
+  .trc-input:focus, .trc-select:focus{ border-color:var(--purple); }
+  .trc-size-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .trc-size-num{ width:54px; text-align:center; padding:5px; border:1.5px solid var(--field-border); border-radius:8px; font-family:var(--font); font-weight:700; }
+  .trc-size-row{ display:flex; align-items:center; gap:10px; }
+  .trc-size-row input[type=range]{ flex:1; accent-color:var(--purple); }
+  .trc-size-row .a-sm{ font-size:13px; font-weight:700; } .trc-size-row .a-lg{ font-size:20px; font-weight:700; }
+  .trc-color-row{ display:flex; align-items:center; gap:8px; }
+  .trc-color-row input[type=color]{ width:46px; height:34px; border:none; border-radius:9px; background:none; cursor:pointer; }
+  .trc-seg{ display:flex; gap:8px; }
+  .trc-seg button{ flex:1; cursor:pointer; border:1.5px solid var(--field-border); background:#fff; border-radius:11px; padding:10px 4px; font-family:var(--font); font-weight:600; font-size:12px; color:var(--ink-soft); display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .trc-seg button.sel{ border-color:var(--purple); background:#f3f1fe; color:var(--purple); }
+  .trc-seg .seg-box{ width:30px; height:20px; border:2.5px solid var(--ink-soft); }
+  .trc-seg button.sel .seg-box{ border-color:var(--purple); }
+  .seg-rounded{ border-radius:8px; } .seg-dashed{ border-style:dashed; border-radius:8px; } .seg-solid{ border-radius:2px; }
+  .trc-spacing{ display:flex; align-items:center; gap:12px; }
+  .trc-spacing button{ width:34px; height:34px; border-radius:10px; border:1.5px solid var(--field-border); background:#fff; cursor:pointer; font-size:18px; font-weight:700; color:var(--ink); }
+  .trc-spacing span{ font-weight:700; font-size:14px; flex:1; text-align:center; }
+  .trc-check{ display:flex; align-items:center; gap:9px; padding:7px 0; cursor:pointer; font-size:14px; font-weight:600; }
+  .trc-check input{ width:18px; height:18px; accent-color:var(--purple); }
+  .trc-set-actions{ display:flex; gap:10px; margin-top:8px; }
+  .trc-set-actions button{ flex:1; cursor:pointer; border:none; font-family:var(--font); font-weight:700; font-size:14px; padding:12px; border-radius:12px; }
+  .trc-reset{ background:#eef2f8; color:var(--ink-soft); }
+  .trc-apply{ background:var(--purple); color:#fff; box-shadow:0 4px 0 var(--purple-dark); }
+
+  /* preview-only mode */
+  body.trc-preview-only .trc-left-col,
+  body.trc-preview-only .trc-right-col,
+  body.trc-preview-only .trc-top,
+  body.trc-preview-only .trc-preview-col > .trc-step,
+  body.trc-preview-only .trc-reminders{ display:none; }
+  body.trc-preview-only .trc-body{ grid-template-columns:1fr; min-height:100vh; padding:0; overflow:hidden; }
+  body.trc-preview-only .trc-preview-col{ width:100%; max-width:100%; overflow:hidden; }
+  body.trc-preview-only .trc-stage{
+    width:100%; min-height:100vh; border-radius:0; border:none;
+    padding:50px 40px 70px; display:flex; flex-direction:column; justify-content:center;
+  }
+  body.trc-preview-only .trc-grid,
+  body.trc-preview-only .trc-title,
+  body.trc-preview-only .trc-instr{ max-width:900px; width:100%; margin-left:auto; margin-right:auto; }
+
+  /* ===== FLOATING EXIT BUTTON ===== */
+  .trc-exit-float{
+    display:none; position:fixed; top:14px; right:14px; z-index:100;
+    align-items:center; gap:6px; cursor:pointer; border:none;
+    background:rgba(36,58,94,.85); color:#fff; font-family:var(--font); font-weight:700; font-size:13px;
+    padding:10px 18px; border-radius:30px; box-shadow:0 6px 18px rgba(0,0,0,.25);
+  }
+  .trc-exit-float:hover{ background:rgba(36,58,94,1); }
+  body.trc-preview-only .trc-exit-float{ display:flex; }
+
+  /* ===== SCORE MODAL ===== */
+  .trc-modal-overlay{ position:fixed; inset:0; background:rgba(36,58,94,.55); z-index:80;
+    display:none; align-items:center; justify-content:center; padding:20px; }
+  .trc-modal-overlay.show{ display:flex; }
+  .trc-modal-card{ background:#fff; border-radius:26px; padding:34px 30px; max-width:360px; width:100%;
+    text-align:center; box-shadow:0 24px 60px rgba(0,0,0,.3); animation:trcPop .22s ease; }
+  @keyframes trcPop{ from{ transform:scale(.85); opacity:0; } to{ transform:scale(1); opacity:1; } }
+  .trc-modal-emoji{ width:110px; height:110px; object-fit:contain; margin-bottom:12px; animation:trcRewardFloat 2s ease-in-out infinite; }
+  @keyframes trcRewardFloat{ 0%,100%{ transform:translateY(0) scale(1); } 50%{ transform:translateY(-10px) scale(1.06); } }
+  .trc-modal-score{ font-size:26px; font-weight:800; color:var(--ink); margin:4px 0 8px; }
+  .trc-modal-msg{ font-size:14px; font-weight:600; color:var(--ink-soft); margin-bottom:22px; line-height:1.5; }
+  .trc-review-list{ text-align:left; border-top:1.5px dashed var(--field-border); padding-top:12px; margin-bottom:16px; }
+  .trc-review-title{ font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:var(--purple); margin-bottom:10px; }
+  .trc-review-row{ display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--line); }
+  .trc-review-thumb{ width:30px; height:30px; border-radius:7px; object-fit:cover; flex:none; background:var(--field);
+    display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; color:var(--ink); }
+  .trc-review-text{ flex:1; min-width:0; font-size:12.5px; }
+  .trc-review-text b{ display:block; font-size:12px; }
+  .trc-review-text span{ color:var(--ink-soft); font-size:11px; }
+  .trc-review-status{ flex:none; width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; }
+  .trc-review-status.correct{ background:#e8fbee; color:var(--green-dark); }
+  .trc-review-status.wrong{ background:#fdeef1; color:var(--red-dark); }
+  .trc-pending-note{ font-size:11px; color:var(--ink-soft); font-style:italic; margin-bottom:14px; }
+  .trc-modal-actions{ display:flex; gap:10px; }
+  .trc-modal-actions button{ flex:1; cursor:pointer; border:none; font-family:var(--font); font-weight:700; font-size:14px; padding:13px; border-radius:14px; }
+  .trc-modal-try{ background:var(--purple); color:#fff; box-shadow:0 4px 0 var(--purple-dark); }
+  .trc-modal-close{ background:#eef2f8; color:var(--ink-soft); }
+
+  /* ===== PUBLISH MODAL ===== */
+  .trc-publish-card{ max-width:560px; text-align:left; }
+  .trc-publish-card h3{ text-align:center; font-size:18px; font-weight:800; color:var(--ink); margin-bottom:16px; }
+  .trc-publish-field{ margin-bottom:18px; }
+  .trc-publish-field label{ display:block; font-size:12.5px; font-weight:700; color:var(--ink-soft);
+    margin-bottom:6px; }
+  .trc-publish-field input[type="date"]{ width:100%; padding:10px 12px; border-radius:10px;
+    border:1.5px solid var(--field-border); background:#fff; font-family:var(--font); font-size:14px;
+    color:var(--ink); outline:none; }
+  .trc-publish-field input[type="date"]:focus{ border-color:var(--purple); }
+  .trc-publish-field .trc-publish-hint{ font-size:11.5px; color:var(--ink-soft); font-weight:500; margin-top:5px; }
+  .trc-publish-confirm{ background:var(--green); color:#fff; box-shadow:0 4px 0 var(--green-dark); }
+  .trc-domain-radios{ display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+  .trc-domain-opt{ display:flex; align-items:center; gap:5px; font-size:12px; font-weight:600;
+    color:var(--ink); cursor:pointer; padding:5px 10px; border:1.5px solid var(--field-border);
+    border-radius:8px; background:#fff; transition:border-color .15s,background .15s; }
+  .trc-domain-opt:has(input:checked){ border-color:#0891b2; background:#ecfeff; color:#0891b2; }
+  .trc-domain-opt input[type="radio"]{ accent-color:#0891b2; cursor:pointer; }
+
+  @media (max-width:1100px){
+    .trc-body{ grid-template-columns:1fr; }
+  }
+
+  /* ===== PRINTABLE WORKSHEET (Generate Printable button / PDF via browser print) ===== */
+  .trc-print-area{ display:none; }
+  .trc-print-page{ font-family:'Poppins',sans-serif; color:#243a5e; }
+  .trc-print-head{ text-align:center; margin-bottom:10px; }
+  .trc-print-head h2{ font-size:21px; font-weight:700; margin:0 0 4px; }
+  .trc-print-objective{ font-size:13.5px; font-style:italic; color:#5d7299; font-weight:600; }
+  .trc-print-sub{ font-size:12.5px; color:#5d7299; font-weight:500; margin-top:4px; }
+  .trc-print-divider{ margin:14px 0 22px; display:flex; flex-direction:column; gap:22px; }
+  .trc-print-divider .trc-print-rule{ border-top:2.5px solid #94a3b8; }
+  .trc-print-divider .trc-print-rule-dash{ border-top:2.5px dashed #94a3b8; }
+  .trc-print-footer{ margin-top:auto; padding-top:14px; border-top:1.5px solid #cbd5e1; font-size:11.5px; }
+  .trc-print-footer-label{ font-weight:700; }
+  .trc-print-checks{ display:flex; flex-wrap:wrap; gap:16px; margin-top:8px; }
+  .trc-print-checks label{ display:flex; align-items:center; gap:6px; }
+  .trc-print-box{ width:13px; height:13px; border:1.5px solid #64748b; border-radius:3px; display:inline-block; }
+  .trc-print-grid{ display:flex; flex-direction:column; gap:18px; flex:1; }
+  .trc-print-item{ border:2px solid #cbd5e1; border-radius:16px; padding:14px 20px 18px; display:flex; flex-direction:column; gap:8px; break-inside:avoid; page-break-inside:avoid; }
+  .trc-print-item-label{ font-size:15px; font-weight:700; color:#243a5e; }
+  .trc-print-trace-row svg{ width:100%; height:auto; display:block; }
+  .trc-print-blank-line{ border-top:2px solid #cbd5e1; margin-top:4px; }
+
+  @media print{
+    body *{ visibility:hidden; }
+    .trc-print-area, .trc-print-area *{ visibility:visible; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .trc-print-area{ display:block; position:absolute; left:0; top:0; width:100%; margin:0; padding:0; }
+    .trc-print-page{ page-break-after:always; padding:6mm 8mm; min-height:100vh; display:flex; flex-direction:column; box-sizing:border-box; }
+    .trc-print-page:last-child{ page-break-after:auto; }
+    @page{ margin:8mm; size:auto; }
+  }
+  /* ── SPOTLIGHT TOUR ── */
+  .trc-btn--help{background:#ffc34d;color:#5c4400;box-shadow:0 4px 0 #d9a416;}
+  #trcTourSpot{display:none;position:fixed;z-index:8999;pointer-events:none;border-radius:14px;box-shadow:0 0 0 9999px rgba(15,23,55,.72);transition:left .22s ease,top .22s ease,width .22s ease,height .22s ease;}
+  #trcTourRing{display:none;position:fixed;z-index:9000;pointer-events:none;border-radius:16px;border:3px solid #ffc34d;transition:left .22s ease,top .22s ease,width .22s ease,height .22s ease;animation:trcTourPulse 1.5s ease-in-out infinite;}
+  @keyframes trcTourPulse{0%,100%{opacity:1;}50%{opacity:.25;}}
+  #trcTourTip{display:none;position:fixed;z-index:9001;background:#fff;border-radius:18px;box-shadow:0 16px 50px rgba(15,23,55,.28);padding:20px 22px 16px;width:290px;transition:left .22s ease,top .22s ease;}
+  .trc-tour-action{cursor:pointer;border:none;font-family:var(--font);font-weight:700;font-size:13px;padding:9px 16px;border-radius:10px;}
+  #trcTourStep{font-size:13px;font-weight:800;color:var(--ink);margin-bottom:6px;line-height:1.3;}
+  #trcTourDesc{font-size:12.5px;color:var(--ink-soft);line-height:1.6;margin-bottom:16px;}
+  .trc-tour-row{display:flex;align-items:center;gap:8px;}
+  #trcTourSkip{background:none;color:#94a3b8;font-size:12px;margin-right:auto;padding:4px 0;}
+  #trcTourBack{background:#f1f5f9;color:var(--ink-soft);}
+  #trcTourNext{background:var(--purple);color:#fff;}
+</style>
+</head>
+<body>
+
+  <!-- Floating exit button (preview / fullscreen mode) -->
+  <button class="trc-exit-float" id="trcExitFloatBtn" type="button">✖ Exit</button>
+
+  <!-- TOP BAR -->
+  <div class="trc-top">
+    <div class="trc-logo">✍️</div>
+    <div>
+      <h1>Tracing Template Generator</h1>
+      <div class="trc-tsub">Letter &amp; number tracing activities for learners (ASD / Intellectual Disability) — handwriting &amp; fine motor practice</div>
+    </div>
+    <div class="trc-top-actions">
+      <button class="trc-btn trc-btn--help" id="trcHelpBtn" type="button">❓ Help</button>
+      <button class="trc-btn trc-btn--print" id="trcPrintBtn" type="button">🖨️ Generate Printable</button>
+      <button class="trc-btn trc-btn--ghost" id="trcPreviewBtn" type="button">👁 Preview</button>
+      <button class="trc-btn trc-btn--ghost" id="trcDraftBtn" type="button">💾 Save Draft</button>
+      <button class="trc-btn trc-btn--pub" id="trcPubBtn" type="button">🌐 Publish</button>
+    </div>
+  </div>
+
+  <!-- BODY -->
+  <div class="trc-body">
+
+    <!-- LEFT COLUMN -->
+    <div class="trc-left-col">
+
+      <div class="trc-card">
+        <div class="trc-step">Activity Slides <span class="trc-edit-link">(max 3 — Easy → Medium → Hard)</span></div>
+        <div class="trc-slidebar">
+          <button id="trcPrevSlide" type="button">◂</button>
+          <div class="trc-slide-label" id="trcSlideLabel">Slide 1 of 1</div>
+          <button id="trcNextSlide" type="button">▸</button>
+        </div>
+        <div class="trc-slide-actions">
+          <button id="trcAddSlide" type="button">+ Add Slide</button>
+          <button id="trcDeleteSlide" type="button" class="danger">🗑 Delete</button>
+        </div>
+      </div>
+
+      <div class="trc-card">
+        <div class="trc-step">1. Activity Type</div>
+        <div class="trc-type">
+          <div class="trc-type-ic">✍️</div>
+          <b>Tracing</b>
+        </div>
+        <p class="trc-type-desc">Learners trace over each dotted letter or number with their finger or mouse to build handwriting and fine motor skills.</p>
+      </div>
+
+      <div class="trc-card">
+        <div class="trc-step">2. Characters to Trace <span class="trc-edit-link">(letters &amp; numbers)</span></div>
+        <div id="trcItems"></div>
+        <button class="trc-add" id="trcAddItem" type="button">+ Add Item</button>
+      </div>
+
+    </div>
+
+    <!-- CENTER PREVIEW -->
+    <div class="trc-preview-col">
+      <div class="trc-step">4. Activity Preview</div>
+      <div class="trc-stage" id="trcStage">
+        <div class="trc-deco">
+          <span class="d-sun">☀️</span><span class="d-cloud1">☁️</span><span class="d-cloud2">☁️</span>
+          <div class="d-grass"></div><span class="d-flower1">🌼</span><span class="d-flower2">🌸</span>
+        </div>
+        <div class="trc-stage-inner" id="trcStageInner">
+          <div class="trc-title" id="trcTitle"></div>
+          <div class="trc-instr" id="trcInstr"></div>
+          <div class="trc-grid" id="trcGrid"></div>
+          <div class="trc-stage-controls">
+            <div class="trc-hint" id="trcHint"></div>
+            <div class="trc-stage-btnrow">
+              <button class="trc-mini trc-mini--reset" id="trcReset" type="button">↺ Try Again</button>
+              <button class="trc-mini trc-mini--check" id="trcCheck" type="button">✓ Check answers</button>
+            </div>
+            <div class="trc-stage-nav" id="trcStageNav">
+              <button id="trcStagePrev" type="button">◂ Previous</button>
+              <span id="trcStageSlideLabel">Slide 1 of 1</span>
+              <button id="trcStageNext" type="button">Next ▸</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="trc-reminders">
+        <div class="r-title">♿ Accessibility Reminders</div>
+        <div class="trc-rem-list">
+          <div class="trc-rem"><span class="r-ic">✋</span>Use a stylus or finger</div>
+          <div class="trc-rem"><span class="r-ic">🔵</span>Start at the dot</div>
+          <div class="trc-rem"><span class="r-ic">⏳</span>Take your time</div>
+          <div class="trc-rem"><span class="r-ic">📄</span>One letter per page</div>
+          <div class="trc-rem"><span class="r-ic">✍️</span>Large, clear strokes</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT SETTINGS -->
+    <div class="trc-right-col" id="trcRightCol">
+      <div class="trc-card trc-right-panel-full" id="trcRightPanelFull">
+        <div class="trc-set-title">🎨 Design &amp; Settings
+          <button class="trc-collapse-btn" id="trcCollapseBtn" type="button" title="Hide panel">⮜</button>
+        </div>
+
+        <div class="trc-set-group">
+          <div class="trc-set-label">Background Color</div>
+          <div class="trc-swatches" id="trcSwatches"></div>
+        </div>
+
+        <div class="trc-set-group">
+          <div class="trc-set-label">Fonts</div>
+          <select class="trc-select" id="trcFont">
+            <option value="'Andika',sans-serif">Andika (handwriting guide)</option>
+            <option value="'Quicksand',sans-serif">Quicksand</option>
+            <option value="'Comic Sans MS','Comic Sans',cursive">Comic Sans MS</option>
+            <option value="'Fredoka',sans-serif">Fredoka</option>
+            <option value="'Nunito',sans-serif">Nunito</option>
+            <option value="'Poppins',sans-serif">Poppins</option>
+            <option value="Verdana,sans-serif">Verdana</option>
+            <option value="Arial,sans-serif">Arial</option>
+          </select>
+        </div>
+
+        <div class="trc-set-group">
+          <div class="trc-size-head">
+            <div class="trc-set-label" style="margin:0">Font Size</div>
+            <input class="trc-size-num" id="trcSizeNum" type="number" min="20" max="64" />
+          </div>
+          <div class="trc-size-row">
+            <span class="a-sm">A</span>
+            <input type="range" id="trcSize" min="20" max="64" step="1" />
+            <span class="a-lg">A</span>
+          </div>
+        </div>
+
+        <div class="trc-set-group">
+          <div class="trc-size-head">
+            <div class="trc-set-label" style="margin:0">Guide Line Thickness</div>
+            <input class="trc-size-num" id="trcThickNum" type="number" min="4" max="20" />
+          </div>
+          <div class="trc-size-row">
+            <span class="a-sm">┄</span>
+            <input type="range" id="trcThick" min="4" max="20" step="1" />
+            <span class="a-lg">┅</span>
+          </div>
+        </div>
+
+        <div class="trc-set-group">
+          <div class="trc-set-label">Text Color</div>
+          <div class="trc-color-row">
+            <input type="color" id="trcTextColor" />
+            <span style="font-size:13px;color:var(--ink-soft);font-weight:600">Title &amp; labels</span>
+          </div>
+        </div>
+
+        <div class="trc-set-group">
+          <div class="trc-set-label">Guide Color</div>
+          <div class="trc-color-row">
+            <input type="color" id="trcGuideColor" />
+            <span style="font-size:13px;color:var(--ink-soft);font-weight:600">Dotted outline</span>
+          </div>
+        </div>
+
+        <div class="trc-set-group">
+          <div class="trc-set-label">Pen Color</div>
+          <div class="trc-color-row">
+            <input type="color" id="trcPenColor" />
+            <span style="font-size:13px;color:var(--ink-soft);font-weight:600">Student's stroke</span>
+          </div>
+        </div>
+
+        <div class="trc-set-group">
+          <div class="trc-set-label">Border Style</div>
+          <div class="trc-seg" id="trcBorder">
+            <button data-b="rounded" class="sel" type="button"><span class="seg-box seg-rounded"></span>Rounded</button>
+            <button data-b="dashed" type="button"><span class="seg-box seg-dashed"></span>Dashed</button>
+            <button data-b="solid" type="button"><span class="seg-box seg-solid"></span>Solid</button>
+          </div>
+        </div>
+
+        <div class="trc-set-group">
+          <div class="trc-set-label">Spacing</div>
+          <div class="trc-spacing">
+            <button id="trcSpaceMinus" type="button">−</button>
+            <span id="trcSpaceVal">Medium</span>
+            <button id="trcSpacePlus" type="button">+</button>
+          </div>
+        </div>
+
+        <div class="trc-set-group">
+          <div class="trc-set-label">Instruction Text</div>
+          <input class="trc-input" id="trcInstrInput" type="text" />
+        </div>
+
+        <div class="trc-set-group">
+          <div class="trc-set-label">Title</div>
+          <input class="trc-input" id="trcTitleInput" type="text" />
+        </div>
+
+        <div class="trc-set-group">
+          <div class="trc-set-label">Other Options</div>
+          <label class="trc-check"><input type="checkbox" id="trcShowTitle" checked /> Show title</label>
+          <label class="trc-check"><input type="checkbox" id="trcShowInstr" checked /> Show instructions</label>
+          <label class="trc-check"><input type="checkbox" id="trcShowDeco" checked /> Show decorations</label>
+        </div>
+
+        <div class="trc-set-actions">
+          <button class="trc-reset" id="trcResetAll" type="button">↻ Reset</button>
+          <button class="trc-apply" id="trcApply" type="button">✓ Apply Changes</button>
+        </div>
+      </div>
+
+      <div class="trc-tip trc-right-panel-guide" id="trcRightPanelGuide">
+        <b>💡 Template Guide
+          <button class="trc-guide-settings-btn" id="trcShowSettingsBtn" type="button" title="Show Design & Settings">🎨 Settings</button>
+        </b>
+        <p>
+          • Pick which letters or numbers to trace.<br>
+          • Add an optional word/caption for each one.<br>
+          • Change guide thickness, guide color, and pen color.<br>
+          • Preview before publishing.<br>
+          • Add as many items as needed.
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SCORE MODAL -->
+  <div class="trc-modal-overlay" id="trcModalOverlay">
+    <div class="trc-modal-card">
+      <img class="trc-modal-emoji" id="trcModalEmoji" src="" alt="Result" />
+      <div class="trc-modal-score" id="trcModalScore">0 / 0 traced</div>
+      <div class="trc-modal-msg" id="trcModalMsg">Great job!</div>
+
+      <div class="trc-review-list" id="trcReviewList" style="display:none;">
+        <div class="trc-review-title">📋 Item-by-Item Results</div>
+        <div id="trcReviewRows"></div>
+      </div>
+      <div id="trcRetakeInfo" style="display:none;font-size:12px;color:#64748b;margin-bottom:4px;"></div>
+      <div class="trc-modal-actions">
+        <button class="trc-modal-close" id="trcModalCloseBtn" type="button">✖ Close</button>
+        <button class="trc-modal-try" id="trcModalTryBtn" type="button">🔁 Try Again</button>
+        <button class="trc-modal-try trc-publish-confirm" id="trcStudentSubmitBtn" type="button" style="display:none;">✅ Submit Final Answer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PUBLISH MODAL -->
+  <div class="trc-modal-overlay" id="trcPublishOverlay">
+    <div class="trc-modal-card trc-publish-card">
+      <h3 id="trcPublishTitle">🌐 Publish Activity</h3>
+      <div class="trc-publish-field">
+        <label>🎯 Learning Domain</label>
+        <div class="trc-domain-radios">
+          <label class="trc-domain-opt"><input type="radio" name="trcDomain" value="cognitive" checked /> Cognitive</label>
+          <label class="trc-domain-opt"><input type="radio" name="trcDomain" value="language" /> Language Development</label>
+          <label class="trc-domain-opt"><input type="radio" name="trcDomain" value="communication" /> Communication</label>
+          <label class="trc-domain-opt"><input type="radio" name="trcDomain" value="motor" /> Fine Motor</label>
+          <label class="trc-domain-opt"><input type="radio" name="trcDomain" value="social" /> Social & Emotional</label>
+          <label class="trc-domain-opt"><input type="radio" name="trcDomain" value="self" /> Self-Help / Daily Living</label>
+          <label class="trc-domain-opt"><input type="radio" name="trcDomain" value="aesthetic" /> Aesthetic & Creative</label>
+        </div>
+      </div>
+      <div class="trc-publish-field">
+        <label for="trcDeadlineInput">📅 Deadline</label>
+        <input type="date" id="trcDeadlineInput" />
+        <div class="trc-publish-hint">Choose the last day the activity can still be submitted.</div>
+      </div>
+      <div class="trc-modal-actions">
+        <button class="trc-modal-close" id="trcPublishCancelBtn" type="button">✖ Cancel</button>
+        <button class="trc-modal-try trc-publish-confirm" id="trcPublishConfirmBtn" type="button">✅ Confirm Publish</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRINTABLE WORKSHEET AREA (populated just before window.print()) -->
+  <div class="trc-print-area" id="trcPrintArea"></div>
+
+  <!-- TEACHING MODAL (Level 2 scaffold — shown after repeated failed attempts) -->
+  <div class="trc-modal-overlay" id="trcTeachOverlay">
+    <div class="trc-modal-card">
+      <div style="font-size:15px;font-weight:800;color:#1e3a8a;margin-bottom:6px;">✍️ Let's Trace Together</div>
+      <div style="font-size:13px;color:#64748b;margin-bottom:14px;">Use your finger or mouse. Follow the dotted line from start to end. Try to cover the whole letter!</div>
+      <div id="trcTeachRows" style="text-align:left;max-height:280px;overflow-y:auto;margin-bottom:14px;"></div>
+      <div class="trc-modal-actions">
+        <button class="trc-modal-try trc-publish-confirm" id="trcTeachCloseBtn" type="button">✅ Got it, Try Again</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* =====================================================================
+   TRACING TEMPLATE GENERATOR — main script
+   Same architecture as Identification_Template.html, adapted for
+   letter/number handwriting-tracing items (dotted guide + drawn stroke
+   on a single <canvas> per item, completion-based scoring).
+   Sections:
+     1. STATE            – design settings + the list of activity slides
+     2. SLIDE NAVIGATION – switching / adding / deleting activity slides
+     3. ITEMS EDITOR      – the left-hand "Characters to Trace" list
+     4. ACTIVITY PREVIEW – the guide+draw canvas tracing interaction
+     5. SCORE MODAL       – popup shown after "Check answers"
+     6. APPEARANCE        – design & settings panel (right column)
+     7. TOP BAR ACTIONS   – preview / save / collapse panel / publish
+     8. INIT              – first render on page load
+   ===================================================================== */
+
+  const $ = id => document.getElementById(id);
+  const CHAR_UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+  const CHAR_NUM   = "0123456789".split("");
+  function isDigitChar(c){ return c >= "0" && c <= "9"; }
+  // Display form for a stored character: letters show as their "Aa"
+  // uppercase+lowercase pair, digits show as-is.
+  function charDisplay(c){ return isDigitChar(c) ? c : (c + c.toLowerCase()); }
+
+  /* student-mode flags (set by initStudentMode below) */
+  var _stuMode = false, _stuPubId = '', _stuRetake = 0,
+      _stuLastScore = null, _stuLastTotal = null, _stuProg = [], _stuSlideScores = [], _stuSlideRetakes = {}, _stuSubmitDone = false, _stuSubmissionPromise = null,
+      _stuScaffoldLevel = {}, _stuMissedLabels = {}, _stuMissedDetail = {}, PASS_THRESHOLD = 0.8, _stuAlreadyPassed = false, _stuPubMeta = null;
+
+  // Level 1 (after 3 failed attempts): a lower completion threshold is used
+  // by scoreCheck() automatically based on _stuScaffoldLevel — nothing
+  // needs to be pre-filled here.
+
+  // Level 2 (after 4 failed attempts): there is no "correct answer" to
+  // reveal for tracing — instead, show the guide characters bigger with
+  // encouragement copy, then let the student redo the activity from a
+  // blank/cleared board.
+  function showTeachingModal(slideIndex){
+    var activity = state.activities[slideIndex];
+    var rows = $("trcTeachRows");
+    rows.innerHTML = "";
+    activity.items.forEach(function(it){
+      var row = document.createElement("div");
+      row.style.cssText = "display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid #f1f5f9;";
+      row.innerHTML = '<div style="min-width:48px;text-align:center;font-size:34px;font-weight:800;color:#1e3a8a;font-family:Poppins,sans-serif;">'+printEscape(charDisplay(it.char))+'</div>'
+        + '<div style="flex:1;font-size:13px;font-weight:600;color:#334155;">'
+        +   (it.label ? 'Trace the '+(isDigitChar(it.char)?'number':'letter')+' for <b style="color:#1e3a8a;">'+printEscape(it.label)+'</b>. ' : '')
+        +   'Start at the dot, follow the dotted line slowly from start to end, and try to cover the whole shape.'
+        + '</div>';
+      rows.appendChild(row);
+    });
+    $("trcTeachOverlay").classList.add("show");
+  }
+  $("trcTeachCloseBtn").addEventListener("click", function(){
+    $("trcTeachOverlay").classList.remove("show");
+    resetAnswers(); renderActivity();
+  });
+
+  /* ── IndexedDB helper (large data — no quota limit) ─────────── */
+  var _idb = (function(){
+    var DB='sped_alm_db', VER=1, ST='blobs';
+    function open(cb){
+      var r=indexedDB.open(DB,VER);
+      r.onupgradeneeded=function(e){e.target.result.createObjectStore(ST);};
+      r.onsuccess=function(e){cb(null,e.target.result);};
+      r.onerror=function(e){cb(e.target.error,null);};
+    }
+    return {
+      save:function(key,val,cb){open(function(err,db){if(err){cb&&cb(err);return;}var tx=db.transaction(ST,'readwrite');tx.objectStore(ST).put(val,key);tx.oncomplete=function(){cb&&cb(null);};tx.onerror=function(e){cb&&cb(e.target.error);};});},
+      load:function(key,cb){open(function(err,db){if(err){cb(err,null);return;}var tx=db.transaction(ST,'readonly');var r=tx.objectStore(ST).get(key);r.onsuccess=function(){cb(null,r.result||null);};r.onerror=function(e){cb(e.target.error,null);};});},
+      del:function(key,cb){open(function(err,db){if(err){cb&&cb(err);return;}var tx=db.transaction(ST,'readwrite');tx.objectStore(ST).delete(key);tx.oncomplete=function(){cb&&cb(null);};});}
+    };
+  })();
+
+  /* ------------------------------------------------------------- *
+   * 1. STATE
+   * ------------------------------------------------------------- */
+
+  const DEFAULT_DESIGN = {
+    bg:"#fdf6d8", font:"'Andika',sans-serif", fontSize:40, strokeWidth:10,
+    textColor:"#243a5e", guideColor:"#94a3b8", penColor:"#1b4fb8", border:"rounded", spacing:"Medium",
+    showTitle:true, showInstr:true, showDeco:true
+  };
+  const BG_SWATCHES = ["#fdf6d8","#eaf2ff","#e8faf0","#f0eefc","#fdebf2","#ffffff"];
+  const SPACINGS = ["Small","Medium","Large"];
+  const SPACE_GAP = { Small:14, Medium:22, Large:32 };
+
+  // One "activity" = one set of trace-able characters shown together.
+  function makeDefaultActivity(){
+    return {
+      title:"Trace the Letters",
+      instruction:"Trace over each dotted letter with your finger or mouse.",
+      items:[
+        { char:"A", label:"Apple" },
+        { char:"B", label:"Ball" },
+        { char:"C", label:"Cat" },
+        { char:"1", label:"" }
+      ]
+    };
+  }
+  function makeBlankActivity(slideNumber){
+    return {
+      title:"New Activity "+slideNumber,
+      instruction:"Trace over each dotted letter with your finger or mouse.",
+      items:[
+        { char:"A", label:"" },
+        { char:"B", label:"" }
+      ]
+    };
+  }
+
+  const state = {
+    ...structuredClone(DEFAULT_DESIGN),
+    thumb:null,
+    activities:[ makeDefaultActivity() ],
+    currentIndex:0
+  };
+
+  function currentActivity(){ return state.activities[state.currentIndex]; }
+
+  // Play-mode state — reset whenever a new slide is shown.
+  let traceDist = {}; // itemIndex -> cumulative pointer-drag distance while drawing
+  let traceCanvasSize = {}; // itemIndex -> the drawing canvas's pixel width (for the completion threshold)
+  let suggestedMarks = {}; // itemIndex -> bool (traced enough to count as complete)
+  let stageScale = 1;
+  const TRACE_COMPLETION_MULT = 2.5; // must drag at least this many canvas-widths of ink to count as "traced"
+
+  const stage = $("trcStage"), stageInner = $("trcStageInner"), grid = $("trcGrid");
+
+  /* ------------------------------------------------------------- *
+   * 2. SLIDE NAVIGATION
+   * ------------------------------------------------------------- */
+
+  const MAX_SLIDES = 3;
+  const DIFFICULTY_LABELS = ["Easy", "Medium", "Hard"];
+
+  function renderSlideNav(){
+    const total = state.activities.length;
+    const diffTag = ` — ${DIFFICULTY_LABELS[state.currentIndex] || "Hard"}`;
+    $("trcSlideLabel").textContent = `Slide ${state.currentIndex+1} of ${total}${diffTag}`;
+    $("trcPrevSlide").disabled = state.currentIndex === 0;
+    $("trcNextSlide").disabled = state.currentIndex === total-1;
+    $("trcDeleteSlide").disabled = total <= 1;
+    $("trcAddSlide").disabled = total >= MAX_SLIDES;
+
+    $("trcStageSlideLabel").textContent = `Slide ${state.currentIndex+1} of ${total}${diffTag}`;
+    $("trcStagePrev").disabled = state.currentIndex === 0;
+    var _curScore = _stuSlideScores[state.currentIndex];
+    var _curPassed = !!(_curScore && (_curScore.correct / _curScore.total) >= PASS_THRESHOLD);
+    $("trcStageNext").disabled = state.currentIndex === total-1 || (_stuMode && !_curPassed);
+    $("trcStageNav").style.display = total > 1 ? "flex" : "none";
+  }
+
+  function refreshSlideUI(){
+    renderItems();
+    $("trcTitleInput").value = currentActivity().title;
+    $("trcInstrInput").value = currentActivity().instruction;
+    renderActivity();
+    renderSlideNav();
+  }
+
+  function goToSlide(index){
+    state.currentIndex = Math.max(0, Math.min(state.activities.length-1, index));
+    refreshSlideUI();
+  }
+
+  $("trcPrevSlide").addEventListener("click", ()=> goToSlide(state.currentIndex-1));
+  $("trcNextSlide").addEventListener("click", ()=> goToSlide(state.currentIndex+1));
+  $("trcStagePrev").addEventListener("click", ()=> goToSlide(state.currentIndex-1));
+  $("trcStageNext").addEventListener("click", ()=> goToSlide(state.currentIndex+1));
+
+  $("trcAddSlide").addEventListener("click", ()=>{
+    if (state.activities.length >= MAX_SLIDES) { alert("Maximum of " + MAX_SLIDES + " slides (Easy → Medium → Hard)."); return; }
+    state.activities.push(makeBlankActivity(state.activities.length+1));
+    goToSlide(state.activities.length-1);
+  });
+
+  $("trcDeleteSlide").addEventListener("click", ()=>{
+    if (state.activities.length <= 1){ alert("Keep at least one slide."); return; }
+    state.activities.splice(state.currentIndex, 1);
+    goToSlide(Math.min(state.currentIndex, state.activities.length-1));
+  });
+
+  /* ------------------------------------------------------------- *
+   * 3. ITEMS EDITOR (left column "Items" list)
+   * ------------------------------------------------------------- */
+
+  // Letters are always stored/picked as the uppercase form (it.char); the
+  // lowercase partner is derived everywhere via .toLowerCase() so a single
+  // item always represents the "Aa"-style uppercase+lowercase pair.
+  function charSelect(selected, cls){
+    const sel = document.createElement("select");
+    if (cls) sel.className = cls;
+    function addGroup(label, arr, textFn){
+      const og = document.createElement("optgroup"); og.label = label;
+      arr.forEach(c=>{
+        const opt = document.createElement("option");
+        opt.value = c; opt.textContent = textFn ? textFn(c) : c;
+        if (c === selected) opt.selected = true;
+        og.appendChild(opt);
+      });
+      sel.appendChild(og);
+    }
+    addGroup("Letters A–Z", CHAR_UPPER, function(c){ return c + c.toLowerCase(); });
+    addGroup("Numbers 0–9", CHAR_NUM);
+    return sel;
+  }
+
+  function itemRow(itemIndex){
+    const items = currentActivity().items;
+    const it = items[itemIndex];
+    const row = document.createElement("div"); row.className = "trc-item-row";
+
+    const top = document.createElement("div"); top.className = "trc-item-top";
+
+    /* ---- preview column: shows the currently-picked character ---- */
+    const preview = document.createElement("div"); preview.className = "trc-item-preview";
+    preview.textContent = charDisplay(it.char);
+    top.appendChild(preview);
+
+    /* ---- character + label fields ---- */
+    const fields = document.createElement("div"); fields.className = "trc-item-fields";
+
+    const l1 = document.createElement("label"); l1.textContent = "Character";
+    const charRow = document.createElement("div"); charRow.className = "trc-char-row";
+    const charSel = charSelect(it.char, "trc-char-select");
+    charSel.addEventListener("change", e=>{ it.char = e.target.value; preview.textContent = charDisplay(it.char); renderActivity(); });
+    charRow.appendChild(charSel);
+    fields.appendChild(l1); fields.appendChild(charRow);
+
+    const l0 = document.createElement("label"); l0.textContent = "Label / Word (optional)";
+    const nameInput = document.createElement("input");
+    nameInput.type = "text"; nameInput.className = "trc-name-input"; nameInput.placeholder = "e.g. Apple";
+    nameInput.value = it.label || "";
+    nameInput.addEventListener("input", e=>{ it.label = e.target.value; renderActivity(); });
+    fields.appendChild(l0); fields.appendChild(nameInput);
+
+    top.appendChild(fields);
+    row.appendChild(top);
+
+    /* ---- item menu (delete) ---- */
+    const menu = document.createElement("button"); menu.className = "trc-item-menu"; menu.type = "button"; menu.textContent = "⋮";
+    const pop = document.createElement("div"); pop.className = "trc-pop";
+    const del = document.createElement("button"); del.className = "del"; del.type = "button"; del.textContent = "🗑 Remove item";
+    del.addEventListener("click", ()=>{
+      if (items.length <= 1){ alert("Keep at least 1 item."); return; }
+      items.splice(itemIndex, 1); renderItems(); renderActivity();
+    });
+    pop.appendChild(del);
+    menu.addEventListener("click", e=>{
+      e.stopPropagation();
+      document.querySelectorAll(".trc-pop").forEach(p=>{ if (p !== pop) p.classList.remove("show"); });
+      pop.classList.toggle("show");
+    });
+    row.appendChild(menu); row.appendChild(pop);
+
+    return row;
+  }
+
+  function renderItems(){
+    const wrap = $("trcItems"); wrap.innerHTML = "";
+    currentActivity().items.forEach((_, i)=> wrap.appendChild(itemRow(i)));
+  }
+  document.addEventListener("click", ()=> document.querySelectorAll(".trc-pop").forEach(p=> p.classList.remove("show")));
+
+  $("trcAddItem").addEventListener("click", ()=>{
+    currentActivity().items.push({ char:"A", label:"" });
+    renderItems(); renderActivity();
+  });
+
+  /* ------------------------------------------------------------- *
+   * 4. ACTIVITY PREVIEW (trace the dotted guide character)
+   * ------------------------------------------------------------- */
+
+  // Draws the guide onto the tracing canvas (clearing it first), styled
+  // after a classic ruled handwriting-practice sheet: a soft-gray baseline
+  // (+ midline for letters) behind a DOTTED-outline glyph. Letters are drawn
+  // as an uppercase+lowercase pair ("Aa") on the shared baseline — uppercase
+  // sized to cap-height, lowercase to x-height; digits draw as a single
+  // dotted glyph with just the baseline (no x-height concept). The student
+  // then draws directly on this same canvas/context, on top of the guide.
+  function drawGuideChar(canvas, ch){
+    var ctx = canvas.getContext("2d");
+    var w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    if (!w || !h) return;
+    var isDigit = isDigitChar(ch);
+    var baselineY = h * 0.72;
+    var upperSize = Math.round(h * 0.62);
+    var lowerSize = Math.round(h * 0.42);
+    var midlineY = baselineY - lowerSize * 0.55;
+    // Read the teacher's chosen font (Fonts dropdown) rather than a fixed
+    // typeface, so the guide letterforms match what's selected — Andika is
+    // the worksheet-style default (double-story a/g, uniform stroke weight).
+    var fontName = state.font || "'Andika',sans-serif";
+    var gap = Math.max(4, w * 0.03);
+
+    ctx.save();
+
+    // Ruled "handwriting paper" guide lines, drawn behind the glyph(s).
+    ctx.strokeStyle = "#94a3b8";
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath(); ctx.moveTo(w * 0.05, baselineY); ctx.lineTo(w * 0.95, baselineY); ctx.stroke();
+    if (!isDigit) {
+      ctx.beginPath(); ctx.moveTo(w * 0.05, midlineY); ctx.lineTo(w * 0.95, midlineY); ctx.stroke();
+    }
+
+    // Shrink to fit if the uppercase+lowercase pair would run wider than the
+    // canvas (e.g. "Mm", "Ww") — measured once, then scaled down together.
+    if (!isDigit){
+      ctx.font = "700 " + upperSize + "px " + fontName;
+      var upperW = ctx.measureText(ch).width;
+      ctx.font = "700 " + lowerSize + "px " + fontName;
+      var lowerW = ctx.measureText(ch.toLowerCase()).width;
+      var totalW = upperW + gap + lowerW;
+      var maxW = w * 0.9;
+      if (totalW > maxW && totalW > 0){
+        var scale = maxW / totalW;
+        upperSize = Math.round(upperSize * scale);
+        lowerSize = Math.round(lowerSize * scale);
+        gap = gap * scale;
+      }
+    }
+
+    // Dotted-outline glyph(s): a near-zero dash length with round line caps
+    // renders as a row of small round dots, like the reference worksheet.
+    var dotGap = Math.max(5, (state.strokeWidth || 10) * 0.9);
+    ctx.strokeStyle = state.guideColor;
+    ctx.lineWidth = state.strokeWidth || 10;
+    ctx.lineCap = "round";
+    ctx.setLineDash([1, dotGap]);
+    ctx.textBaseline = "alphabetic";
+
+    if (isDigit){
+      ctx.font = "700 " + upperSize + "px " + fontName;
+      ctx.textAlign = "center";
+      ctx.strokeText(ch, w / 2, baselineY);
+    } else {
+      ctx.font = "700 " + upperSize + "px " + fontName;
+      ctx.textAlign = "right";
+      ctx.strokeText(ch, w / 2 - gap / 2, baselineY);
+      ctx.font = "700 " + lowerSize + "px " + fontName;
+      ctx.textAlign = "left";
+      ctx.strokeText(ch.toLowerCase(), w / 2 + gap / 2, baselineY);
+    }
+    ctx.restore();
+  }
+
+  // Pointer Events (not separate mouse/touch handlers) so finger and mouse
+  // both work. Tracks cumulative drawn distance for the completion check.
+  function setupDrawCanvas(canvas, itemIndex){
+    var ctx = canvas.getContext("2d");
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.strokeStyle = state.penColor;
+    ctx.lineWidth = Math.max(4, state.strokeWidth || 10);
+    var drawing = false, lastX = 0, lastY = 0;
+    function pos(e){
+      var rect = canvas.getBoundingClientRect();
+      var sx = canvas.width / rect.width, sy = canvas.height / rect.height;
+      return { x: (e.clientX - rect.left) * sx, y: (e.clientY - rect.top) * sy };
+    }
+    canvas.addEventListener("pointerdown", function(e){
+      drawing = true;
+      try { canvas.setPointerCapture(e.pointerId); } catch(err){}
+      var p = pos(e); lastX = p.x; lastY = p.y;
+      ctx.beginPath(); ctx.moveTo(p.x, p.y);
+      e.preventDefault();
+    });
+    canvas.addEventListener("pointermove", function(e){
+      if (!drawing) return;
+      var p = pos(e);
+      var d = Math.hypot(p.x - lastX, p.y - lastY);
+      traceDist[itemIndex] = (traceDist[itemIndex] || 0) + d;
+      ctx.lineTo(p.x, p.y); ctx.stroke();
+      lastX = p.x; lastY = p.y;
+      e.preventDefault();
+    });
+    function endStroke(e){
+      if (!drawing) return;
+      drawing = false;
+      try { canvas.releasePointerCapture(e.pointerId); } catch(err){}
+    }
+    canvas.addEventListener("pointerup", endStroke);
+    canvas.addEventListener("pointercancel", endStroke);
+  }
+
+  function traceCard(itemIndex){
+    const it = currentActivity().items[itemIndex];
+    const el = document.createElement("div"); el.className = "trc-scard"; el.dataset.i = itemIndex;
+
+    const label = document.createElement("div"); label.className = "trc-scard-label";
+    label.textContent = it.label ? (charDisplay(it.char) + " — " + it.label) : charDisplay(it.char);
+    el.appendChild(label);
+
+    const wrap = document.createElement("div"); wrap.className = "trc-canvas-wrap";
+    const canvas = document.createElement("canvas"); canvas.className = "trc-canvas";
+    wrap.appendChild(canvas);
+    el.appendChild(wrap);
+
+    const status = document.createElement("div"); status.className = "trc-scard-status";
+    el.appendChild(status);
+
+    return el;
+  }
+
+  // Canvases can only be measured/sized once they're actually laid out in
+  // the DOM, so this runs a frame after renderActivity() inserts the cards.
+  // A single canvas per card holds both the dashed guide letter(s) (drawn
+  // first, as background) and the student's ink drawn directly on top of it.
+  function initCanvases(){
+    document.querySelectorAll(".trc-scard").forEach(function(card){
+      var i = +card.dataset.i;
+      var it = currentActivity().items[i];
+      if (!it) return;
+      var wrap = card.querySelector(".trc-canvas-wrap");
+      var cv = card.querySelector(".trc-canvas");
+      var w = Math.round(wrap.clientWidth) || 200, h = Math.round(wrap.clientHeight) || 200;
+      cv.width = w; cv.height = h;
+      traceCanvasSize[i] = w;
+      drawGuideChar(cv, it.char);
+      setupDrawCanvas(cv, i);
+    });
+  }
+
+  function renderActivity(){
+    const activity = currentActivity();
+    $("trcTitle").textContent = activity.title;
+    $("trcInstr").textContent = activity.instruction;
+    $("trcTitle").style.display = state.showTitle ? "block" : "none";
+    $("trcInstr").style.display = state.showInstr ? "block" : "none";
+
+    traceDist = {};
+    traceCanvasSize = {};
+    suggestedMarks = {};
+    grid.innerHTML = "";
+    activity.items.forEach((_, i)=> grid.appendChild(traceCard(i)));
+    $("trcHint").textContent = "";
+    requestAnimationFrame(initCanvases);
+    if (document.body.classList.contains("trc-preview-only")) setTimeout(fitStageToScreen, 30);
+  }
+
+  function resetAnswers(){
+    traceDist = {};
+    suggestedMarks = {};
+    // The guide and the student's ink now share one canvas, so clearing it
+    // must immediately redraw the dashed guide — otherwise "Try Again" would
+    // hand the student a blank canvas instead of a fresh guide to trace.
+    document.querySelectorAll(".trc-scard").forEach(function(card){
+      var i = +card.dataset.i;
+      var it = currentActivity().items[i];
+      var cv = card.querySelector(".trc-canvas");
+      if (!it || !cv) return;
+      drawGuideChar(cv, it.char);
+    });
+    document.querySelectorAll(".trc-scard").forEach(function(card){ card.style.borderColor = ""; });
+    document.querySelectorAll(".trc-scard-status").forEach(function(s){ s.textContent = ""; s.className = "trc-scard-status"; });
+    $("trcHint").textContent = "";
+  }
+  $("trcReset").addEventListener("click", resetAnswers);
+
+  $("trcCheck").addEventListener("click", ()=>{
+    const items = currentActivity().items;
+    const totalItems = items.length;
+    var untraced = items.some((_, idx)=> !(traceDist[idx] > 0));
+    if (untraced){
+      $("trcHint").textContent = "Trace every letter before checking.";
+      return;
+    }
+    let correctCount = 0;
+    suggestedMarks = {};
+    const _scLevel = _stuScaffoldLevel[state.currentIndex] || 0;
+    items.forEach((it, idx)=>{
+      var size = traceCanvasSize[idx] || 200;
+      var threshold = TRACE_COMPLETION_MULT * size;
+      if (_scLevel >= 1) threshold *= 0.7; // Level 1 scaffold: an easier completion bar
+      const isCorrect = (traceDist[idx] || 0) >= threshold;
+      suggestedMarks[idx] = isCorrect;
+      if (isCorrect) correctCount++;
+      const card = grid.querySelector('[data-i="'+idx+'"]');
+      if (card){
+        card.style.borderColor = isCorrect ? "#1f9d44" : "#e23b54";
+        var st = card.querySelector(".trc-scard-status");
+        if (st){ st.textContent = isCorrect ? "✓ Traced!" : "Try again"; st.className = "trc-scard-status " + (isCorrect ? "correct" : "wrong"); }
+      }
+    });
+    if (correctCount < totalItems) $("trcHint").textContent = "Trace over the dotted letter — try to draw all the way through it!";
+    if (_stuMode) {
+      var _msi = state.currentIndex;
+      _stuMissedLabels[_msi] = _stuMissedLabels[_msi] || {};
+      _stuMissedDetail[_msi] = _stuMissedDetail[_msi] || {};
+      items.forEach(function(it, idx){
+        if (suggestedMarks[idx]) return;
+        var label = it.label || charDisplay(it.char);
+        _stuMissedLabels[_msi][label] = true;
+        var d = _stuMissedDetail[_msi][label] = _stuMissedDetail[_msi][label] || { correct: charDisplay(it.char), img: '', choices: {} };
+        d.choices['Incomplete trace'] = (d.choices['Incomplete trace'] || 0) + 1;
+      });
+    }
+    openScoreModal(correctCount, totalItems);
+  });
+  window.addEventListener("resize", ()=>{
+    if (document.body.classList.contains("trc-preview-only")) fitStageToScreen();
+  });
+
+  /* ------------------------------------------------------------- *
+   * 5. SCORE MODAL
+   * ------------------------------------------------------------- */
+
+  function renderReviewRows(stuMode){
+    const wrap = $("trcReviewRows"); wrap.innerHTML = "";
+    const items = currentActivity().items;
+    Object.keys(suggestedMarks).forEach(idx=>{
+      const it = items[idx];
+      const ok = suggestedMarks[idx];
+      const row = document.createElement("div"); row.className = "trc-review-row";
+
+      const thumb = document.createElement("div"); thumb.className = "trc-review-thumb";
+      thumb.textContent = charDisplay(it.char);
+      row.appendChild(thumb);
+
+      const text = document.createElement("div"); text.className = "trc-review-text";
+      const kind = isDigitChar(it.char) ? "Number" : "Letter";
+      const b = document.createElement("b"); b.textContent = `#${+idx+1}: ` + (it.label ? it.label + ' (' + charDisplay(it.char) + ')' : kind + ' "' + charDisplay(it.char) + '"');
+      const span = document.createElement("span");
+      if (stuMode) {
+        span.textContent = ok ? "✅ Great tracing!" : "💡 Clue: Trace over the dotted line again, slowly, from start to end.";
+      } else {
+        span.textContent = "Character: " + charDisplay(it.char);
+      }
+      text.appendChild(b); text.appendChild(span);
+      row.appendChild(text);
+
+      const status = document.createElement("div");
+      status.className = "trc-review-status " + (ok ? "correct" : "wrong");
+      status.textContent = ok ? "✓" : "✗";
+      row.appendChild(status);
+
+      wrap.appendChild(row);
+    });
+  }
+
+  function openScoreModal(correctCount, totalItems){
+    const percent = correctCount / totalItems;
+    let image, message;
+    if (percent === 1){
+      image = "images/perfect.png";
+      message = "Perfect! You got them all correct! 🎊";
+      playActivitySound('perfect');
+      confetti({ particleCount:200, spread:120, startVelocity:40, origin:{ y:0.6 } });
+      setTimeout(()=>{
+        confetti({ particleCount:100, spread:80, origin:{ x:0.2, y:0.6 } });
+        confetti({ particleCount:100, spread:80, origin:{ x:0.8, y:0.6 } });
+      }, 300);
+    }
+    else if (percent >= PASS_THRESHOLD){ image = "images/goodjob.png"; message = "Good job! You passed! ⭐"; playActivitySound('good'); }
+    else { image = "images/tryagain.png"; message = "Let's try again! You need " + Math.round(PASS_THRESHOLD*100) + "% to pass. 💪"; playActivitySound('tryagain'); }
+
+    $("trcModalEmoji").src = image;
+    $("trcModalEmoji").onerror = function(){ this.onerror=null; this.src="images/placeholder.png"; };
+    $("trcModalScore").textContent = `${correctCount} / ${totalItems} traced`;
+    $("trcModalMsg").textContent = message;
+
+    // Teacher-in-the-loop: the system only SUGGESTS a score. Show a read-only
+    // per-item ✓/✗ list in teacher preview; hide it in student mode, where the
+    // submission is stored as pending review instead.
+    $("trcReviewList").style.display = "block";
+    renderReviewRows(_stuMode);
+
+    $("trcModalOverlay").classList.add("show");
+
+    if (_stuMode) {
+      _stuLastScore = correctCount; _stuLastTotal = totalItems;
+      _stuSlideScores[state.currentIndex] = { correct: correctCount, total: totalItems, ansItems: Object.keys(suggestedMarks).map(function(i){var it=currentActivity().items[+i];var lbl=it?((it.label||(it.char&&charDisplay(it.char)))||('Item '+(+i+1))):('Item '+(+i+1));return{label:lbl,img:'',studentAnswer:suggestedMarks[+i]?'Traced':'Incomplete',correctAnswer:(it&&it.char&&charDisplay(it.char))||'—',correct:!!suggestedMarks[+i]};}) };
+      var _ts = state.activities.length, _isLast = state.currentIndex >= _ts - 1;
+      var _allDone = _stuSlideScores.filter(Boolean).length === _ts && _stuSlideScores.every(function(s){ return s && (s.correct / s.total) >= PASS_THRESHOLD; });
+      if (_ts > 1 && !_isLast && percent >= PASS_THRESHOLD) {
+        $("trcModalCloseBtn").style.display = ""; $("trcModalCloseBtn").textContent = "Next Slide →"; $("trcModalCloseBtn").dataset.nextSlide = "1";
+      } else {
+        $("trcModalCloseBtn").style.display = "none"; $("trcModalCloseBtn").dataset.nextSlide = "";
+      }
+      $("trcModalTryBtn").textContent = "🔁 Retake";
+      $("trcStudentSubmitBtn").style.display = (_allDone && !_stuAlreadyPassed) ? "" : "none";
+      var ri = $("trcRetakeInfo");
+      var _csr = _stuSlideRetakes[state.currentIndex] || 0;
+      ri.style.display = _stuRetake > 0 ? "" : "none";
+      if (_stuRetake > 0) ri.textContent = (_ts > 1 ? 'Slide '+(state.currentIndex+1)+': ' : '') + (_csr > 0 ? _csr + ' retake(s). ' : '') + 'Total retakes: ' + _stuRetake;
+    }
+  }
+  function closeScoreModal(){ $("trcModalOverlay").classList.remove("show"); }
+
+  // Live ping to the teacher's notification feed while the student is still
+  // mid-activity (before any final submission) — fires once per slide, right
+  // when the 3rd retake happens, so the teacher can notice struggle in near
+  // real time (teacher notif page polls every 30s).
+  function notifyTeacherRetake(si){
+    if (!_stuPubMeta || !_stuPubMeta.db_activity_id || !_stuPubMeta.teacherId) return;
+    var _stuId = sessionStorage.getItem('student_record_id');
+    if (!_stuId) return;
+    fetch('../../STUDENT_FILES/STUDENT_BACKEND/student_notify_teacher_retake.php', {
+      method: 'POST', keepalive: true,
+      body: new URLSearchParams({
+        teacher_id: _stuPubMeta.teacherId,
+        student_id: _stuId,
+        activity_id: _stuPubMeta.db_activity_id,
+        activity_title: _stuPubMeta.title || 'Activity',
+        slide_number: si + 1,
+        difficulty: DIFFICULTY_LABELS[si] || 'Hard',
+        retake_count: _stuSlideRetakes[si]
+      })
+    });
+  }
+
+  $("trcModalCloseBtn").addEventListener("click", function(){
+    var goNext = _stuMode && $("trcModalCloseBtn").dataset.nextSlide === '1';
+    closeScoreModal();
+    if (goNext) { var ni = state.currentIndex + 1; if (ni < state.activities.length) goToSlide(ni); }
+  });
+  $("trcModalTryBtn").addEventListener("click", ()=>{
+    var showTeach = false, justEased = false;
+    var si = state.currentIndex;
+    if (_stuMode) {
+      var lastPct = _stuSlideScores[si] ? (_stuSlideScores[si].correct / _stuSlideScores[si].total) : 1;
+      _stuRetake++; _stuSlideRetakes[si] = (_stuSlideRetakes[si]||0)+1; _stuSlideScores[si] = undefined;
+      if (_stuSlideRetakes[si] === 3) notifyTeacherRetake(si);
+      if (lastPct < PASS_THRESHOLD) {
+        var curLevel = _stuScaffoldLevel[si] || 0;
+        if (curLevel >= 2 || _stuSlideRetakes[si] >= 4) { _stuScaffoldLevel[si] = 2; showTeach = true; }
+        else if (_stuSlideRetakes[si] >= 3) { _stuScaffoldLevel[si] = 1; justEased = true; }
+      }
+    }
+    closeScoreModal();
+    if (showTeach) {
+      showTeachingModal(si); // its own close button resets the board once the student is done reading
+      return;
+    }
+    resetAnswers(); renderActivity();
+    if (justEased) $("trcHint").textContent = "💡 We made this a bit easier — you don't need to trace as much this time. You can do it!";
+  });
+
+  /* ------------------------------------------------------------- *
+   * 6. APPEARANCE (Design & Settings panel)
+   * ------------------------------------------------------------- */
+
+  // Redraws the guide letter(s) — used whenever guide color/thickness
+  // settings change. The guide and the student's ink share one canvas now,
+  // so this necessarily also clears any ink drawn so far (drawGuideChar()
+  // clears the canvas before redrawing); acceptable since this only runs
+  // from the teacher's own Design & Settings panel, not mid-trace.
+  function refreshGuides(){
+    document.querySelectorAll(".trc-scard").forEach(function(card){
+      var i = +card.dataset.i, it = currentActivity().items[i];
+      var cv = card.querySelector(".trc-canvas");
+      if (!it || !cv || !cv.width) return;
+      drawGuideChar(cv, it.char);
+    });
+  }
+  // Applies the current pen color/width to already-created canvases so a
+  // mid-activity settings change affects the next stroke immediately —
+  // this does NOT clear anything, just updates the context's stroke style.
+  function refreshPenStyle(){
+    document.querySelectorAll(".trc-canvas").forEach(function(cv){
+      var ctx = cv.getContext("2d");
+      ctx.strokeStyle = state.penColor;
+      ctx.lineWidth = Math.max(4, state.strokeWidth || 10);
+    });
+  }
+
+  function applyAppearance(){
+    stage.style.background = state.bg;
+    stage.style.fontFamily = state.font;
+    stage.style.fontSize = state.fontSize + "px";
+    stage.style.setProperty("--trc-text", state.textColor);
+    stage.classList.toggle("bs-dashed", state.border === "dashed");
+    stage.classList.toggle("bs-solid", state.border === "solid");
+    stage.classList.toggle("no-deco", !state.showDeco);
+    grid.style.gap = SPACE_GAP[state.spacing] + "px";
+    refreshGuides();
+    refreshPenStyle();
+  }
+
+  function renderSwatches(){
+    const wrap = $("trcSwatches"); wrap.innerHTML = "";
+    BG_SWATCHES.forEach(color=>{
+      const swatch = document.createElement("div");
+      swatch.className = "trc-sw" + (color === state.bg ? " sel" : "");
+      swatch.style.background = color;
+      swatch.addEventListener("click", ()=>{ state.bg = color; applyAppearance(); renderSwatches(); });
+      wrap.appendChild(swatch);
+    });
+  }
+
+  $("trcFont").addEventListener("change", e=>{ state.font = e.target.value; applyAppearance(); });
+
+  function setFontSize(value){
+    value = Math.max(20, Math.min(64, value));
+    state.fontSize = value;
+    $("trcSize").value = value; $("trcSizeNum").value = value;
+    applyAppearance();
+  }
+  $("trcSize").addEventListener("input", e=> setFontSize(+e.target.value));
+  $("trcSizeNum").addEventListener("input", e=> setFontSize(+e.target.value || 40));
+
+  function setStrokeWidth(value){
+    value = Math.max(4, Math.min(20, value));
+    state.strokeWidth = value;
+    $("trcThick").value = value; $("trcThickNum").value = value;
+    applyAppearance();
+  }
+  $("trcThick").addEventListener("input", e=> setStrokeWidth(+e.target.value));
+  $("trcThickNum").addEventListener("input", e=> setStrokeWidth(+e.target.value || 10));
+
+  $("trcTextColor").addEventListener("input", e=>{ state.textColor = e.target.value; applyAppearance(); });
+  $("trcGuideColor").addEventListener("input", e=>{ state.guideColor = e.target.value; applyAppearance(); });
+  $("trcPenColor").addEventListener("input", e=>{ state.penColor = e.target.value; applyAppearance(); });
+
+  document.querySelectorAll("#trcBorder button").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      state.border = btn.dataset.b;
+      document.querySelectorAll("#trcBorder button").forEach(b=> b.classList.remove("sel"));
+      btn.classList.add("sel");
+      applyAppearance();
+    });
+  });
+
+  function setSpacing(delta){
+    let index = SPACINGS.indexOf(state.spacing) + delta;
+    index = Math.max(0, Math.min(SPACINGS.length-1, index));
+    state.spacing = SPACINGS[index];
+    $("trcSpaceVal").textContent = state.spacing;
+    applyAppearance();
+  }
+  $("trcSpaceMinus").addEventListener("click", ()=> setSpacing(-1));
+  $("trcSpacePlus").addEventListener("click", ()=> setSpacing(1));
+
+  $("trcInstrInput").addEventListener("input", e=>{
+    currentActivity().instruction = e.target.value;
+    $("trcInstr").textContent = e.target.value;
+  });
+  $("trcTitleInput").addEventListener("input", e=>{
+    currentActivity().title = e.target.value;
+    $("trcTitle").textContent = e.target.value;
+  });
+
+  $("trcShowTitle").addEventListener("change", e=>{ state.showTitle = e.target.checked; renderActivity(); });
+  $("trcShowInstr").addEventListener("change", e=>{ state.showInstr = e.target.checked; renderActivity(); });
+  $("trcShowDeco").addEventListener("change", e=>{ state.showDeco = e.target.checked; applyAppearance(); });
+
+  $("trcApply").addEventListener("click", ()=>{ applyAppearance(); flash($("trcApply"), "✓ Applied"); });
+
+  $("trcResetAll").addEventListener("click", ()=>{
+    Object.assign(state, structuredClone(DEFAULT_DESIGN));
+    syncDesignControls(); applyAppearance(); renderActivity();
+  });
+
+  function syncDesignControls(){
+    $("trcFont").value = state.font;
+    $("trcSize").value = state.fontSize; $("trcSizeNum").value = state.fontSize;
+    $("trcThick").value = state.strokeWidth || 10; $("trcThickNum").value = state.strokeWidth || 10;
+    $("trcTextColor").value = state.textColor;
+    $("trcGuideColor").value = state.guideColor;
+    $("trcPenColor").value = state.penColor;
+    $("trcSpaceVal").textContent = state.spacing;
+    $("trcShowTitle").checked = state.showTitle; $("trcShowInstr").checked = state.showInstr;
+    $("trcShowDeco").checked = state.showDeco;
+    document.querySelectorAll("#trcBorder button").forEach(b=> b.classList.toggle("sel", b.dataset.b === state.border));
+    renderSwatches();
+  }
+
+  /* ------------------------------------------------------------- *
+   * 7. TOP BAR ACTIONS
+   * ------------------------------------------------------------- */
+
+  function flash(button, text){
+    const original = button.textContent;
+    button.textContent = text;
+    setTimeout(()=> button.textContent = original, 1100);
+  }
+
+  function requestFullscreen(el){
+    const request = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+    if (request) request.call(el).catch(()=>{});
+  }
+  function exitFullscreen(){
+    const exit = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+    if (document.fullscreenElement || document.webkitFullscreenElement){
+      if (exit) exit.call(document).catch(()=>{});
+    }
+  }
+
+  function enterPreview(){
+    document.body.classList.add("trc-preview-only");
+    requestFullscreen(document.documentElement);
+    setTimeout(fitStageToScreen, 120);
+  }
+  function exitPreview(){
+    document.body.classList.remove("trc-preview-only");
+    exitFullscreen();
+    stageScale = 1;
+    stageInner.style.transform = "";
+    stageInner.style.marginBottom = "";
+  }
+  $("trcPreviewBtn").addEventListener("click", enterPreview);
+  $("trcExitFloatBtn").addEventListener("click", exitPreview);
+
+  /* ── Generate Printable (worksheet handout / PDF via browser print) ── */
+  function printEscape(s){
+    var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML;
+  }
+  // printEscape() does not escape quote characters, so it is not safe inside an
+  // HTML attribute (e.g. src="..."). Use this for any teacher-entered value
+  // placed inside an attribute, so a value like `x" onerror="...` can't break out.
+  function escAttr(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function printChecklistHtml(){
+    return '<div class="trc-print-footer"><span class="trc-print-footer-label">Note: Pupils Performance Checklist</span>'
+      + '<div class="trc-print-checks">'
+      + '<label><span class="trc-print-box"></span> Full Physical Prompt</label>'
+      + '<label><span class="trc-print-box"></span> Assisted</label>'
+      + '<label><span class="trc-print-box"></span> Verbal Cuing</label>'
+      + '<label><span class="trc-print-box"></span> Independent</label>'
+      + '</div></div>';
+  }
+  // Builds one handwriting-practice row: the character repeated several
+  // times as a large DOTTED SVG glyph over a ruled baseline (+ midline for
+  // letters), matching the on-screen canvas guide. Letters repeat as an
+  // uppercase+lowercase "Aa" pair; digits repeat alone. Inline SVG <text>
+  // with stroke-dasharray is the safer cross-browser bet for a crisp printed
+  // dotted outline than a strokeText()'d <canvas> would be via window.print().
+  function buildTraceSvgRow(ch, reps){
+    reps = reps || 6;
+    var isDigit = isDigitChar(ch);
+    var w = 900, h = 150;
+    var baselineY = h * 0.72;
+    var upperSize = h * 0.58;
+    var lowerSize = h * 0.4;
+    var midlineY = baselineY - lowerSize * 0.55;
+    var cellW = w / reps;
+    var guideColor = escAttr(state.guideColor || "#94a3b8");
+    // Same font the teacher picked in the Fonts dropdown (Andika by default)
+    // so the printed worksheet's guide letters match the on-screen canvas.
+    var svgFont = escAttr(state.font || "'Andika',sans-serif");
+
+    var lines = '<line x1="8" y1="'+baselineY+'" x2="'+(w-8)+'" y2="'+baselineY+'" stroke="#94a3b8" stroke-width="2" stroke-dasharray="8 5"/>';
+    if (!isDigit){
+      lines += '<line x1="8" y1="'+midlineY+'" x2="'+(w-8)+'" y2="'+midlineY+'" stroke="#94a3b8" stroke-width="2" stroke-dasharray="8 5"/>';
+    }
+
+    var glyphs = "";
+    for (var i = 0; i < reps; i++){
+      var cx = cellW * (i + 0.5);
+      if (isDigit){
+        glyphs += '<text x="'+cx+'" y="'+baselineY+'" text-anchor="middle" font-family="'+svgFont+'" font-weight="700" '
+          + 'font-size="'+upperSize+'" fill="none" stroke="'+guideColor+'" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 9">'+printEscape(ch)+'</text>';
+      } else {
+        var gap = cellW * 0.06;
+        glyphs += '<text x="'+(cx - gap/2)+'" y="'+baselineY+'" text-anchor="end" font-family="'+svgFont+'" font-weight="700" '
+          + 'font-size="'+upperSize+'" fill="none" stroke="'+guideColor+'" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 9">'+printEscape(ch)+'</text>';
+        glyphs += '<text x="'+(cx + gap/2)+'" y="'+baselineY+'" text-anchor="start" font-family="'+svgFont+'" font-weight="700" '
+          + 'font-size="'+lowerSize+'" fill="none" stroke="'+guideColor+'" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 9">'+printEscape(ch.toLowerCase())+'</text>';
+      }
+    }
+    return '<svg viewBox="0 0 '+w+' '+h+'" xmlns="http://www.w3.org/2000/svg">'+lines+glyphs+'</svg>';
+  }
+  function buildPrintPages(){
+    var pages = "";
+    state.activities.forEach(function(activity, slideIdx){
+      var itemsHtml = activity.items.map(function(it){
+        var kind = isDigitChar(it.char) ? "Number" : "Letter";
+        var labelHtml = kind + ' "' + printEscape(charDisplay(it.char)) + '"' + (it.label ? ' — ' + printEscape(it.label) : '');
+        return '<div class="trc-print-item">'
+          + '<div class="trc-print-item-label">'+labelHtml+'</div>'
+          + '<div class="trc-print-trace-row">'+buildTraceSvgRow(it.char)+'</div>'
+          + '<div class="trc-print-trace-row">'+buildTraceSvgRow(it.char)+'</div>'
+          + '<div class="trc-print-blank-line"></div>'
+          + '</div>';
+      }).join("");
+      pages += '<div class="trc-print-page">'
+        + '<div class="trc-print-head"><h2>'+printEscape(activity.title)+'</h2>'
+        + '<div class="trc-print-objective">('+printEscape(activity.instruction)+')</div>'
+        + (state.activities.length > 1 ? '<div class="trc-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+' — '+(DIFFICULTY_LABELS[slideIdx]||"")+'</div>' : '')
+        + '</div>'
+        + '<div class="trc-print-divider"><div class="trc-print-rule"></div><div class="trc-print-rule-dash"></div><div class="trc-print-rule"></div></div>'
+        + '<div class="trc-print-grid">'+itemsHtml+'</div>'
+        + printChecklistHtml()
+        + '</div>';
+    });
+    return pages;
+  }
+  function generatePrintable(){
+    $("trcPrintArea").innerHTML = buildPrintPages();
+    setTimeout(function(){ window.print(); }, 60);
+  }
+  window.addEventListener("afterprint", function(){ $("trcPrintArea").innerHTML = ""; });
+  $("trcPrintBtn").addEventListener("click", generatePrintable);
+
+  /* ── Save Draft to localStorage ── */
+  function saveDraft() {
+    var draftId = new URLSearchParams(location.search).get('draft_id') || ('draft_' + Date.now());
+    var firstTitle = (state.activities[0] && state.activities[0].title) || '';
+    var draft = {
+      id:           draftId,
+      title:        firstTitle || 'Untitled Draft',
+      type:         'Tracing',
+      templateFile: 'TEMPLATES/Tracing_Template.html',
+      learner:      sessionStorage.getItem('selected_learner')   || 'ALL',
+      condition:    sessionStorage.getItem('selected_condition') || '',
+      teacherName:  sessionStorage.getItem('teacher_name')       || '—',
+      savedAt:      new Date().toISOString(),
+      data:         JSON.parse(JSON.stringify(state))
+    };
+    var drafts = [];
+    try { drafts = JSON.parse(localStorage.getItem('teacher_drafts') || '[]'); } catch(e) {}
+    var idx = drafts.findIndex(function(d){ return d.id === draftId; });
+    if (idx >= 0) drafts[idx] = draft; else drafts.push(draft);
+    try {
+      localStorage.setItem('teacher_drafts', JSON.stringify(drafts));
+      history.replaceState(null, '', '?draft_id=' + encodeURIComponent(draftId));
+      flash($('trcDraftBtn'), '✓ Draft Saved!');
+      setTimeout(function(){ window.location.href = '../Teacher_activies.html'; }, 700);
+    } catch(e) { alert('Storage full – could not save draft.'); }
+  }
+
+  /* ── Load Draft from localStorage if ?draft_id= in URL ── */
+  function loadDraftIfAny() {
+    var draftId = new URLSearchParams(location.search).get('draft_id');
+    if (!draftId) return;
+    var drafts = [];
+    try { drafts = JSON.parse(localStorage.getItem('teacher_drafts') || '[]'); } catch(e) {}
+    var draft = drafts.find(function(d){ return d.id === draftId; });
+    if (!draft || !draft.data) return;
+    Object.assign(state, draft.data);
+    refreshSlideUI();
+    syncDesignControls();
+    applyAppearance();
+  }
+
+  $("trcDraftBtn").addEventListener("click", saveDraft);
+
+  /* ── Re-open an already-published activity for editing if ?edit_pub_id= in URL ──
+     Content only ever lived in the publishing browser's storage (pub_data_<id>),
+     so this just reloads that same saved state back into the editor. The
+     activity was already locked (server-side) by Teacher_activies.html before
+     navigating here. */
+  var _editingPub = null;
+  function loadPublishedForEditIfAny() {
+    var pubId = new URLSearchParams(location.search).get('edit_pub_id');
+    if (!pubId) return;
+    var pubs = [];
+    try { pubs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+    var pub = pubs.find(function(p){ return p.id === pubId; });
+    _editingPub = pub || { id: pubId };
+
+    function applyLoadedContent(data) {
+      Object.assign(state, data);
+      refreshSlideUI();
+      syncDesignControls();
+      applyAppearance();
+      $("trcPubBtn").textContent = '💾 Save Changes';
+      var banner = document.createElement('div');
+      banner.style.cssText = 'background:#fff7e6;border:1.5px solid #f5c563;color:#92620a;font-weight:700;font-size:13px;padding:10px 14px;border-radius:10px;margin-bottom:12px;';
+      banner.textContent = '✏️ Editing a published activity — students can\'t open it until you save changes.';
+      var host = document.querySelector('.trc-left-col');
+      if (host) host.insertBefore(banner, host.firstChild);
+    }
+
+    function fetchRemote() {
+      var actId = _editingPub.db_activity_id || pubId;
+      fetch('../TEACHER_BACKEND/teacher_get_activity_content.php?activity_id=' + encodeURIComponent(actId))
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if (!d.success || !d.content) { alert("Could not load this activity's saved content."); return; }
+          _editingPub.db_activity_id = d.activity_id;
+          _editingPub.teacherId = String(d.teacher_id || _editingPub.teacherId || '');
+          _editingPub.title = d.title || _editingPub.title;
+          _editingPub.deadline = d.deadline || _editingPub.deadline;
+          _editingPub.condition = d.condition || _editingPub.condition;
+          applyLoadedContent(d.content);
+        })
+        .catch(function(){ alert("Could not load this activity's saved content."); });
+    }
+
+    if (!pub) { fetchRemote(); return; }
+
+    _idb.load('pub_data_' + pubId, function(err, saved) {
+      var data = saved;
+      if (!data) { try { data = JSON.parse(localStorage.getItem('pub_data_' + pubId) || 'null'); } catch(e){} }
+      if (!data) { fetchRemote(); return; }
+      applyLoadedContent(data);
+    });
+  }
+
+  window.addEventListener('pagehide', function(){
+    if (_editingPub && !_editingPub._saved && _editingPub.db_activity_id && _editingPub.teacherId) {
+      fetch('../TEACHER_BACKEND/teacher_lock_activity.php', {
+        method: 'POST', keepalive: true,
+        body: new URLSearchParams({ action: 'unlock', teacher_id: _editingPub.teacherId, activity_id: _editingPub.db_activity_id, activity_title: _editingPub.title || 'Activity' })
+      });
+    }
+  });
+
+  // Shrinks the whole activity (title, instruction, item grid, buttons) so
+  // it always fits on screen in preview mode.
+  function fitStageToScreen(){
+    if (!document.body.classList.contains("trc-preview-only")) return;
+    stageInner.style.transform = "none";
+    stageInner.style.marginBottom = "";
+    stageScale = 1;
+    const sp = window.getComputedStyle(stage);
+    const padV = (parseFloat(sp.paddingTop)||0) + (parseFloat(sp.paddingBottom)||0);
+    const padH = (parseFloat(sp.paddingLeft)||0) + (parseFloat(sp.paddingRight)||0);
+    const availableH = window.innerHeight - padV;
+    const availableW = stage.clientWidth - padH;
+    const naturalH = stageInner.scrollHeight;
+    const naturalW = stageInner.scrollWidth;
+    // Fit BOTH dimensions, not just height — a phone-width viewport is often
+    // narrower than the stage's fixed-gap content before it's ever too tall,
+    // and scaling for height alone left the extra width silently clipped by
+    // the stage's overflow:hidden (looked like a blank colored rectangle).
+    const scaleH = naturalH > availableH ? availableH / naturalH : 1;
+    const scaleW = naturalW > availableW ? availableW / naturalW : 1;
+    stageScale = Math.min(scaleH, scaleW, 1);
+    if (stageScale < 1) {
+      stageInner.style.transform = `scale(${stageScale})`;
+      stageInner.style.marginBottom = `-${naturalH * (1 - stageScale)}px`;
+    }
+  }
+
+  ["fullscreenchange", "webkitfullscreenchange"].forEach(evt=>{
+    document.addEventListener(evt, ()=>{
+      const stillFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+      if (!stillFullscreen) document.body.classList.remove("trc-preview-only");
+    });
+  });
+
+  $("trcCollapseBtn").addEventListener("click", ()=> document.body.classList.add("trc-right-collapsed"));
+  $("trcShowSettingsBtn").addEventListener("click", ()=> document.body.classList.remove("trc-right-collapsed"));
+
+  function openPublishModal(){
+    if (_editingPub) {
+      $("trcPublishTitle").textContent = '💾 Save Changes';
+      $("trcPublishConfirmBtn").textContent = '💾 Save Changes';
+      if (_editingPub.deadline) $("trcDeadlineInput").value = _editingPub.deadline;
+      if (_editingPub.condition) {
+        var r = document.querySelector('input[name="trcDomain"][value="' + _editingPub.condition + '"]');
+        if (r) r.checked = true;
+      }
+    }
+    $("trcPublishOverlay").classList.add("show");
+  }
+  function closePublishModal(){ $("trcPublishOverlay").classList.remove("show"); }
+
+  $("trcPubBtn").addEventListener("click", openPublishModal);
+  $("trcPublishCancelBtn").addEventListener("click", closePublishModal);
+
+  function compressThumb(dataURL, callback) {
+    if (!dataURL) { callback(''); return; }
+    var img = new Image();
+    img.onload = function() {
+      var MAX = 160;
+      var ratio = Math.min(MAX / img.width, MAX / img.height, 1);
+      var cv = document.createElement('canvas');
+      cv.width = Math.round(img.width * ratio);
+      cv.height = Math.round(img.height * ratio);
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      callback(cv.toDataURL('image/jpeg', 0.55));
+    };
+    img.onerror = function() { callback(''); };
+    img.src = dataURL;
+  }
+
+  // Small (44px) compressed thumbnail used for per-item images sent in
+  // notification/submission data — keeps notification rows lightweight.
+  function compressItemThumb(dataURL) {
+    return new Promise(function(resolve){
+      if (!dataURL) { resolve(''); return; }
+      var img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function() {
+        try {
+          var MAX = 44;
+          var ratio = Math.min(MAX / img.width, MAX / img.height, 1);
+          var cv = document.createElement('canvas');
+          cv.width = Math.round(img.width * ratio);
+          cv.height = Math.round(img.height * ratio);
+          cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+          resolve(cv.toDataURL('image/jpeg', 0.6));
+        } catch(e) { resolve(''); } // cross-origin image tainted the canvas — skip the thumbnail, don't block submission
+      };
+      img.onerror = function() { resolve(''); };
+      img.src = dataURL;
+    });
+  }
+
+  function confirmPublish() {
+    var deadline = $("trcDeadlineInput").value;
+    if (!deadline) { alert("Please set a deadline date before publishing."); return; }
+    var domain = document.querySelector('input[name="trcDomain"]:checked').value;
+    var firstTitle = (state.activities[0] && state.activities[0].title) || 'Untitled Activity';
+    compressThumb(state.thumb, function(smallThumb) {
+
+    if (_editingPub) {
+      var acts = []; try { acts = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+      var i = acts.findIndex(function(a){ return a.id === _editingPub.id; });
+      if (i >= 0) {
+        acts[i].title = firstTitle; acts[i].thumbnail = smallThumb; acts[i].deadline = deadline;
+        acts[i].condition = domain; acts[i].locked = false;
+        try { localStorage.setItem('published_activities', JSON.stringify(acts)); } catch(e){}
+      }
+      _idb.save('pub_data_' + _editingPub.id, JSON.parse(JSON.stringify(state)), function(err){ if(err) console.warn('IDB save failed:',err); });
+      _editingPub._saved = true;
+      var _finishEdit = function(){ closePublishModal(); window.location.href = '../Teacher_activies.html'; };
+      if (_editingPub.db_activity_id && _editingPub.teacherId) {
+        var fdU = new FormData();
+        fdU.append('teacher_id', _editingPub.teacherId);
+        fdU.append('activity_id', _editingPub.db_activity_id);
+        fdU.append('activity_title', firstTitle);
+        fdU.append('subject', domain);
+        fdU.append('content_json', JSON.stringify(state));
+        fdU.append('deadline', deadline);
+        fetch('../TEACHER_BACKEND/teacher_update_activity.php', { method: 'POST', body: fdU })
+          .then(function(r){ return r.json(); })
+          .then(function(d){
+            if (d && d.success === false) {
+              alert('Save failed: ' + (d.message || 'Unknown error') + '\nPlease try again.');
+              return;
+            }
+            _finishEdit();
+          })
+          .catch(function(){
+            alert('Could not reach the server to save this activity. Please check your connection and try again.');
+          });
+      } else {
+        _finishEdit();
+      }
+      return;
+    }
+
+    var pub = {
+      id:          'pub-' + Date.now(),
+      title:       firstTitle,
+      type:        'Tracing',
+      deadline:    deadline,
+      thumbnail:   smallThumb,
+      teacherName: sessionStorage.getItem('teacher_name') || '—',
+      teacherId:   sessionStorage.getItem('teacher_id')   || '',
+      learner:     sessionStorage.getItem('selected_learner')   || 'ALL',
+      condition:   sessionStorage.getItem('selected_condition') || '',
+      publishedAt: new Date().toISOString()
+    };
+    var existing = [];
+    try { existing = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+    existing.push(pub);
+    try { localStorage.setItem('published_activities', JSON.stringify(existing)); } catch(e){ alert('Storage full – try clearing old drafts first.'); return; }
+    _idb.save('pub_data_' + pub.id, JSON.parse(JSON.stringify(state)), function(err){
+      if (err) console.warn('IDB save failed:', err);
+    });
+    var notifs = [];
+    try { notifs = JSON.parse(localStorage.getItem('student_notifications') || '[]'); } catch(e){}
+    notifs.unshift({ id:'notif-'+Date.now(), type:'new_activity',
+      title:'New activity available',
+      message:'Your teacher published "' + firstTitle + '".',
+      activityId:pub.id, isRead:false, createdAt:new Date().toISOString() });
+    try { localStorage.setItem('student_notifications', JSON.stringify(notifs)); } catch(e){}
+    var _pubRef = pub;
+    var _assignedIds = [];
+    try { _assignedIds = JSON.parse(sessionStorage.getItem('selected_learner_ids') || '[]'); } catch(e) {}
+    if (!_assignedIds.length) { var _fb = parseInt(sessionStorage.getItem('selected_learner_id') || '0'); if (_fb > 0) _assignedIds = [_fb]; }
+    var fdC = new FormData();
+    fdC.append('teacher_id', _pubRef.teacherId);
+    fdC.append('activity_title', _pubRef.title);
+    fdC.append('activity_type', 'Tracing');
+    fdC.append('subject', domain);
+    fdC.append('grade_level', '');
+    fdC.append('status', 'published');
+    fdC.append('assigned_student_ids', JSON.stringify(_assignedIds));
+    fdC.append('content_json', JSON.stringify(state));
+    fdC.append('deadline', deadline);
+    fetch('../TEACHER_BACKEND/teacher_create_activity.php', { method: 'POST', body: fdC })
+    .then(function(r){ return r.json(); }).then(function(d){
+      // Previously this always navigated away regardless of the response, so a
+      // failed publish (session expired, DB error, etc.) looked identical to a
+      // successful one — the teacher had no idea it never actually saved.
+      if (d.success && d.activity_id) {
+        var acts = []; try { acts = JSON.parse(localStorage.getItem('published_activities')||'[]'); } catch(e){}
+        var i = acts.findIndex(function(a){ return a.id === _pubRef.id; });
+        if (i >= 0) { acts[i].db_activity_id = d.activity_id; try { localStorage.setItem('published_activities', JSON.stringify(acts)); } catch(e){} }
+        closePublishModal();
+        window.location.href = '../Teacher_activies.html';
+      } else {
+        alert('Publish failed: ' + (d.message || 'Unknown error') + '\nPlease try again.');
+      }
+    }).catch(function(){
+      alert('Could not reach the server to publish this activity. Please check your connection and try again.');
+    });
+    }); // end compressThumb
+  }
+  $("trcPublishConfirmBtn").addEventListener("click", confirmPublish);
+
+  /* ------------------------------------------------------------- *
+   * 8. INIT
+   * ------------------------------------------------------------- */
+
+  renderItems();
+  renderSwatches();
+  syncDesignControls();
+  applyAppearance();
+  renderActivity();
+  renderSlideNav();
+  loadDraftIfAny();
+  loadPublishedForEditIfAny();
+
+  /* ── STUDENT MODE ─────────────────────────────────────────── */
+  (function () {
+    var p = new URLSearchParams(location.search);
+    if (p.get('student_mode') !== '1') return;
+    _stuMode = true;
+    _stuPubId = p.get('pub_id') || '';
+
+    try { _stuProg = JSON.parse(localStorage.getItem('student_progress') || '[]'); } catch(e){}
+    // student_progress is a single localStorage key with no per-student scoping,
+    // so on a shared/reused browser, a DIFFERENT student's earlier pass here made
+    // this student's real attempts look like harmless "practice" and get silently
+    // dropped before ever reaching the submission fetch. Match on studentId too.
+    var _stuCurrentId = sessionStorage.getItem('student_record_id') || '';
+    var prev = _stuProg.find(function(r){ return r.pubId === _stuPubId && String(r.studentId||'') === _stuCurrentId; });
+    if (prev) _stuRetake = prev.retakes || 0;
+    // Already passed and submitted before — this session is just practice,
+    // so nothing here should be recorded or re-sent to the teacher again.
+    _stuAlreadyPassed = !!(prev && prev.percent >= Math.round(PASS_THRESHOLD*100));
+
+    function showNotAvailable() {
+      document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Poppins,sans-serif;gap:16px;padding:32px;text-align:center;">'
+        + '<div style="font-size:72px;">📭</div>'
+        + '<h2 style="color:#1e3a8a;margin:0;">Activity Not Available</h2>'
+        + '<p style="color:#64748b;max-width:340px;margin:0;">The activity content could not be loaded. Ask your teacher to republish it.</p>'
+        + '<button onclick="window.history.back()" style="margin-top:8px;background:#1e3a8a;color:#fff;border:none;padding:12px 28px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;">← Exit</button>'
+        + '</div>';
+    }
+
+    function applyStudentMode(saved) {
+      if (!saved) { showNotAvailable(); return; }
+
+      Object.assign(state, saved);
+      state.currentIndex = 0;
+
+      var pubs = [];
+      try { pubs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+      var pub = pubs.find(function(r){ return r.id === _stuPubId; }) || {};
+      _stuPubMeta = pub;
+      if (pub.locked) {
+        document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Poppins,sans-serif;gap:16px;padding:32px;text-align:center;">'
+          + '<div style="font-size:72px;">⏸️</div>'
+          + '<h2 style="color:#1e3a8a;margin:0;">Activity Temporarily Unavailable</h2>'
+          + '<p style="color:#64748b;max-width:340px;margin:0;">Your teacher is updating "' + (pub.title || 'this activity') + '" right now. Please check back in a bit.</p>'
+          + '<button onclick="window.history.back()" style="margin-top:8px;background:#1e3a8a;color:#fff;border:none;padding:12px 28px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;">← Exit</button>'
+          + '</div>';
+        return;
+      }
+      var splashThumb = pub.thumbnail
+        ? '<img src="' + pub.thumbnail + '" style="width:120px;height:120px;object-fit:cover;border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.35);" />'
+        : '<div style="font-size:80px;line-height:1;">🔗</div>';
+      var dueText = pub.deadline
+        ? '<p style="color:#fde68a;font-size:15px;margin:0;">📅 Due: ' + new Date(pub.deadline+'T00:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) + '</p>'
+        : '';
+      var retakeText = _stuRetake > 0
+        ? '<p style="color:#fca5a5;font-size:13px;margin:0;">You have retaken this ' + _stuRetake + ' time(s).</p>'
+        : '';
+
+      var splash = document.createElement('div');
+      splash.id = 'stuSplash';
+      splash.style.cssText = 'position:fixed;inset:0;background:linear-gradient(145deg,#1e3a8a 0%,#1e40af 60%,#1d4ed8 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:99999;padding:32px;text-align:center;';
+      splash.innerHTML = splashThumb
+        + '<h1 style="color:#fff;font-family:Fredoka,Poppins,sans-serif;font-size:32px;font-weight:700;margin:0;max-width:520px;line-height:1.2;">' + (pub.title || state.activities[0]&&state.activities[0].title || 'Activity') + '</h1>'
+        + '<p style="color:#93c5fd;font-size:15px;margin:0;">Letter &amp; Number Tracing</p>'
+        + dueText + retakeText
+        + '<button id="stuSplashBtn" style="margin-top:12px;background:#22c55e;color:#fff;border:none;padding:18px 56px;border-radius:18px;font-family:Fredoka,Poppins,sans-serif;font-size:24px;font-weight:700;cursor:pointer;box-shadow:0 6px 0 #15803d;transition:transform .1s;">▶ Start Activity</button>'
+        + '<button onclick="window.history.back()" style="background:transparent;color:#93c5fd;border:none;font-size:14px;cursor:pointer;margin-top:4px;">← Exit</button>';
+      document.body.appendChild(splash);
+
+      function _stuGoBack() {
+        if (_stuSubmissionPromise) {
+          var pendingSubmission = _stuSubmissionPromise;
+          _stuSubmissionPromise = null;
+          pendingSubmission.then(function() { _stuGoBack(); }, function() { _stuGoBack(); });
+          return;
+        }
+        _stuMode = false;
+        if (document.fullscreenElement) document.exitFullscreen();
+        var ret = sessionStorage.getItem('stu_return_url');
+        sessionStorage.removeItem('stu_return_url');
+        if (ret && ret.indexOf('Student_') !== -1) { window.location.href = ret; return; }
+        var base = window.location.href.split('/TEACHER_FILES/')[0];
+        window.location.href = base + '/STUDENT_FILES/Student_mymaterials.html';
+      }
+
+      document.getElementById('stuSplashBtn').addEventListener('click', function(e) {
+        e.stopPropagation();
+        var fs = document.documentElement;
+        if (fs.requestFullscreen) fs.requestFullscreen().catch(function(){});
+        else if (fs.webkitRequestFullscreen) fs.webkitRequestFullscreen();
+        splash.remove();
+        initActivityTheme();
+
+        renderItems(); renderSwatches(); syncDesignControls(); applyAppearance(); renderActivity(); renderSlideNav();
+        document.body.classList.add('trc-preview-only');
+        setTimeout(fitStageToScreen, 50);
+
+        document.addEventListener('fullscreenchange', function() {
+          if (!document.fullscreenElement && _stuMode) _stuGoBack();
+        });
+        document.addEventListener('webkitfullscreenchange', function() {
+          if (!document.webkitFullscreenElement && _stuMode) _stuGoBack();
+        });
+
+        var origExit = document.querySelector('.trc-exit-float');
+        if (origExit) {
+          var newExit = origExit.cloneNode(false);
+          newExit.textContent = '← Exit';
+          origExit.parentNode.replaceChild(newExit, origExit);
+          newExit.addEventListener('click', function(ev) { ev.preventDefault(); ev.stopPropagation(); _stuGoBack(); });
+        }
+
+        $('trcStudentSubmitBtn').addEventListener('click', function() {
+          if (_stuSubmitDone) { _stuGoBack(); return; }
+          var _slideCount = state.activities.length;
+          var _missing = []; for (var _si=0;_si<_slideCount;_si++){if(!_stuSlideScores[_si])_missing.push(_si+1);}
+          if (_missing.length>0){alert(_slideCount>1?'Please check all slides first. Missing: Slide '+_missing.join(', Slide '):'Please check your answers first before submitting.');return;}
+          var _totCorrect=_stuSlideScores.reduce(function(s,x){return s+x.correct;},0);
+          var _totItems=_stuSlideScores.reduce(function(s,x){return s+x.total;},0);
+          var pct = Math.round((_totCorrect / _totItems) * 100);
+          if (pct < Math.round(PASS_THRESHOLD*100)) { alert('You need at least ' + Math.round(PASS_THRESHOLD*100) + '% to submit this activity. Keep trying!'); return; }
+
+          // Show final summary right away — the recording/notification below
+          // finishes compressing thumbnails in the background afterward.
+          var _fi=pct>=100?'images/perfect.png':pct>=80?'images/goodjob.png':'images/tryagain.png';
+          var _fm=(pct>=80?'Excellent work! 🌟':pct>=50?'Good effort! Keep practicing! ⭐':'Keep trying! Practice makes perfect! 💪') + (_stuAlreadyPassed ? ' (Practice mode — not recorded)' : '');
+          $('trcModalEmoji').src=_fi; $('trcModalScore').textContent=_totCorrect+' / '+_totItems+' traced ('+pct+'%)'; $('trcModalMsg').textContent=_fm;
+          $('trcModalCloseBtn').style.display='none'; $('trcModalTryBtn').style.display='none';
+          $('trcStudentSubmitBtn').textContent='🏠 Go to Dashboard';
+          var _fbR=$('trcReviewRows'); _fbR.innerHTML='';
+          $('trcReviewList').style.display=_slideCount>1?'block':'none';
+          if(_slideCount>1){_stuSlideScores.forEach(function(s,si){var sp=Math.round((s.correct/s.total)*100);var sc=sp>=80?'#1f9d44':sp>=50?'#ca8a04':'#e23b54';var sr=_stuSlideRetakes[si]||0;var rd=document.createElement('div');rd.style.cssText='display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:13px;align-items:center;';rd.innerHTML='<span style="font-weight:600;">Slide '+(si+1)+(sr>0?' <span style="color:#e23b54;font-size:10px;">('+sr+'× retake)</span>':'')+'</span><span style="font-weight:700;color:'+sc+';">'+s.correct+'/'+s.total+' ('+sp+'%)</span>';_fbR.appendChild(rd);});}
+          _stuSubmitDone=true;
+
+          if (_stuAlreadyPassed) return;
+
+          var _scaffoldUsed = Math.max(0, ...Object.keys(_stuScaffoldLevel).map(function(k){ return _stuScaffoldLevel[k]; }));
+          var _struggledRaw = [];
+          Object.keys(_stuMissedDetail).forEach(function(si){
+            Object.keys(_stuMissedDetail[si]).forEach(function(label){
+              if (_struggledRaw.some(function(x){ return x.label === label; })) return;
+              var d = _stuMissedDetail[si][label];
+              var bestChoice = null, bestCount = 0;
+              Object.keys(d.choices).forEach(function(c){ if (d.choices[c] > bestCount) { bestChoice = c; bestCount = d.choices[c]; } });
+              _struggledRaw.push({ label: label, correct: d.correct, thought: bestChoice, img: d.img || '' });
+            });
+          });
+          var _allAnsItems = [];
+          _stuSlideScores.forEach(function(s){ s.ansItems.forEach(function(item){ _allAnsItems.push(item); }); });
+
+          Promise.all(_struggledRaw.concat(_allAnsItems).map(function(it){
+            return compressItemThumb(it.img).then(function(thumb){ it.img = thumb; });
+          })).then(function(){
+            var _struggledItems = _struggledRaw.map(function(it){ return { label: it.label, correct: it.correct, thought: it.thought, img: it.img }; });
+            var record = { pubId:_stuPubId, studentId: sessionStorage.getItem('student_record_id')||'', title:pub.title||'Activity', type:'Tracing',
+              grading:pub.grading||'', deadline:pub.deadline||'',
+              score:_totCorrect, total:_totItems, percent:pct, retakes:_stuRetake,
+              pendingTeacherReview:true, submittedAt:new Date().toISOString() };
+            var idx = _stuProg.findIndex(function(r){ return r.pubId === _stuPubId; });
+            if (idx >= 0) _stuProg[idx] = record; else _stuProg.push(record);
+            try { localStorage.setItem('student_progress', JSON.stringify(_stuProg)); } catch(e){}
+            var notifs = [];
+            try { notifs = JSON.parse(localStorage.getItem('student_notifications') || '[]'); } catch(e){}
+            notifs.unshift({ id:'notif-'+Date.now(), type:'achievement',
+              title:'Activity Submitted! 🌟',
+              message:'You scored '+pct+'% (suggested) on "'+(pub.title||'Activity')+'"'+(_stuRetake>0?' after '+_stuRetake+' retake(s)':'')+'. Your teacher will confirm your final grade.',
+              isRead:false, createdAt:new Date().toISOString() });
+            try { localStorage.setItem('student_notifications', JSON.stringify(notifs)); } catch(e){}
+            var _stuRecordId = sessionStorage.getItem('student_record_id');
+            var _ansJson = JSON.stringify((function(){var all=[];_stuSlideScores.forEach(function(s,si){if(_slideCount>1){var sr=_stuSlideRetakes[si]||0;all.push({isSlideHeader:true,label:'Slide '+(si+1)+(sr>0?' ('+sr+' retake'+(sr>1?'s':'')+')':''),slideRetakes:sr,studentAnswer:'',correctAnswer:'',correct:null});}s.ansItems.forEach(function(item){all.push(Object.assign({},item));});});return all;})());
+            if (pub.db_activity_id && pub.teacherId && _stuRecordId) {
+              _stuSubmissionPromise = fetch('../TEACHER_BACKEND/teacher_complete_activity.php', {
+                method: 'POST', keepalive: true,
+                body: new URLSearchParams({ teacher_id: pub.teacherId, student_id: _stuRecordId, activity_id: pub.db_activity_id, score: pct, total_items: _totItems, pub_id: _stuPubId||'', answers_json: _ansJson, retake_count: _stuRetake||0, scaffold_used: _scaffoldUsed, struggled_items_json: JSON.stringify(_struggledItems) })
+              }).then(function(r){ return r.json(); }).then(function(d){
+                // teacher_complete_activity.php always returns HTTP 200, even on a
+                // DB write failure — checking response.ok alone (as elsewhere) never
+                // catches that. Without this, a failed submission still showed the
+                // student a success toast, and the teacher's reports just silently
+                // had no data for it.
+                if (!d || d.success === false) {
+                  alert('Your submission could not be saved: ' + ((d && d.message) || 'Unknown error') + '\nPlease try again or tell your teacher.');
+                }
+              }).catch(function(){
+                alert('Your submission could not be saved due to a connection issue. Please try again or tell your teacher.');
+              });
+            }
+          });
+        });
+      });
+    }
+
+    function fetchRemoteActivity() {
+      fetch('../../STUDENT_FILES/STUDENT_BACKEND/student_get_activity_content.php?activity_id=' + encodeURIComponent(_stuPubId))
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if (!d.success || !d.content) { applyStudentMode(null); return; }
+          var pubs = [];
+          try { pubs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+          var idx = pubs.findIndex(function(p){ return p.id === _stuPubId; });
+          var pubEntry = {
+            id: _stuPubId, title: d.title || 'Activity', type: d.type || 'Tracing',
+            deadline: d.deadline || '', thumbnail: (d.content && d.content.thumb) || '',
+            teacherName: '—', teacherId: String(d.teacher_id || ''),
+            learner: 'ALL', condition: d.condition || '',
+            publishedAt: new Date().toISOString(),
+            db_activity_id: d.activity_id, locked: !!d.is_locked
+          };
+          if (idx >= 0) pubs[idx] = pubEntry; else pubs.push(pubEntry);
+          try { localStorage.setItem('published_activities', JSON.stringify(pubs)); } catch(e){}
+          _idb.save('pub_data_' + _stuPubId, d.content, function(){});
+          applyStudentMode(d.content);
+        })
+        .catch(function(){ applyStudentMode(null); });
+    }
+
+    // Cached content can be stale on whether the teacher has since locked
+    // this activity for editing — always re-check the lock flag live before
+    // letting the student in, even when opening from cache.
+    function applyStudentModeFreshLock(cached) {
+      var pubs = [];
+      try { pubs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+      var pubEntry = pubs.find(function(r){ return r.id === _stuPubId; });
+      var dbActId = pubEntry && pubEntry.db_activity_id;
+      if (!dbActId) { applyStudentMode(cached); return; }
+      fetch('../../STUDENT_FILES/STUDENT_BACKEND/student_check_activity_lock.php?activity_id=' + encodeURIComponent(dbActId))
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          pubEntry.locked = !!(d.success && d.is_locked);
+          try { localStorage.setItem('published_activities', JSON.stringify(pubs)); } catch(e){}
+          applyStudentMode(cached);
+        })
+        .catch(function(){ applyStudentMode(cached); });
+    }
+
+    _idb.load('pub_data_' + _stuPubId, function(err, saved) {
+      if (saved) { applyStudentModeFreshLock(saved); return; }
+      var ls = null;
+      try { ls = JSON.parse(localStorage.getItem('pub_data_' + _stuPubId) || 'null'); } catch(e){}
+      if (ls) { applyStudentModeFreshLock(ls); return; }
+      fetchRemoteActivity();
+    });
+  })();
+
+  /* ── SPOTLIGHT TOUR ── */
+  (function(){
+    var STEPS=[
+      {get:function(){return document.querySelector('.trc-left-col');},title:'📋 Step 1 of 10 — Activity Slides',desc:'Each slide is a separate tracing task. Click the arrows to switch slides and "+ Add Slide" to create more.',side:'right'},
+      {get:function(){return document.querySelector('.trc-type');},title:'✍️ Step 2 of 10 — Activity Type',desc:'This is a Tracing activity. Learners trace over a large dotted letter or number with their finger or mouse.',side:'right'},
+      {get:function(){return $('trcItems');},title:'🔤 Step 3 of 10 — Characters List',desc:'Each item is one letter or number to trace, plus an optional word/caption. The learner sees it as a big dotted outline.',side:'right'},
+      {get:function(){return document.querySelector('.trc-char-row');},title:'🎯 Step 4 of 10 — Pick the Character',desc:'Choose a letter or number from the dropdown — grouped into Letters A–Z (shown as an uppercase+lowercase pair, like "Aa") and Numbers 0–9.',side:'right'},
+      {get:function(){return $('trcAddItem');},title:'➕ Step 5 of 10 — Add Item',desc:'Click to add more letters or numbers to this slide. 3–5 items per slide is ideal for SPED learners.',side:'right'},
+      {get:function(){document.body.classList.remove('trc-right-collapsed');return $('trcInstrInput');},title:'💬 Step 6 of 10 — Instruction Text',desc:'Type the direction here — e.g. "Sundan ang tuldok upang maisulat ang letra." Shown at the top of the learner\'s screen.',side:'left'},
+      {get:function(){document.body.classList.remove('trc-right-collapsed');return $('trcRightPanelFull');},title:'🎨 Step 7 of 10 — Design & Settings',desc:'Customize the look: background color, font, guide line thickness, and guide/pen colors. Click "✓ Apply Changes" to preview it live.',side:'left'},
+      {get:function(){return $('trcPreviewBtn');},title:'🖥️ Step 8 of 10 — Fullscreen Preview',desc:'Opens the exact view your learner sees. Try tracing a letter yourself to test the activity.',side:'bottom'},
+      {get:function(){return $('trcDraftBtn');},title:'💾 Step 9 of 10 — Save Draft',desc:'Saves your progress. Drafts appear in your activity list so you can return and keep editing anytime.',side:'bottom'},
+      {get:function(){return $('trcPubBtn');},title:'🌐 Step 10 of 10 — Publish Activity',desc:'When ready, click Publish to assign this to a learner. Set the grading period and deadline — they can then open it from their portal.',side:'bottom'}
+    ];
+    var _cur=0,_sp=null,_ring=null,_tip=null;
+    function _placeSpot(el){var r=el.getBoundingClientRect(),p=8;var s={left:(r.left-p)+'px',top:(r.top-p)+'px',width:(r.width+p*2)+'px',height:(r.height+p*2)+'px'};['left','top','width','height'].forEach(function(k){_sp.style[k]=s[k];_ring.style[k]=s[k];});}
+    function _placeTip(el,side){var r=el.getBoundingClientRect(),gap=18,p=8;var tw=_tip.offsetWidth||290,th=_tip.offsetHeight||170;var vw=window.innerWidth,vh=window.innerHeight;var left,top;if(side==='right'){left=r.right+p+gap;top=r.top+(r.height-th)/2;}else if(side==='left'){left=r.left-p-gap-tw;top=r.top+(r.height-th)/2;}else{left=r.left+(r.width-tw)/2;top=r.bottom+p+gap;}left=Math.max(10,Math.min(vw-tw-10,left));top=Math.max(10,Math.min(vh-th-10,top));_tip.style.left=left+'px';_tip.style.top=top+'px';}
+    function _showStep(i){if(i<0||i>=STEPS.length){_endTour();return;}_cur=i;var s=STEPS[i],el;try{el=s.get();}catch(e){el=null;}if(!el){_showStep(i+1);return;}try{el.scrollIntoView({behavior:'smooth',block:'nearest',inline:'nearest'});}catch(e){}setTimeout(function(){_placeSpot(el);_sp.style.display=_ring.style.display=_tip.style.display='block';$('trcTourStep').textContent=s.title;$('trcTourDesc').textContent=s.desc;$('trcTourBack').style.visibility=i===0?'hidden':'visible';$('trcTourNext').textContent=i===STEPS.length-1?'✓ Tapos na':'Next →';setTimeout(function(){_placeTip(el,s.side);},20);},90);}
+    function _endTour(){if(_sp)_sp.style.display=_ring.style.display=_tip.style.display='none';}
+    function _startTour(){_sp=$('trcTourSpot');_ring=$('trcTourRing');_tip=$('trcTourTip');_showStep(0);}
+    $('trcHelpBtn').addEventListener('click',_startTour);
+    document.addEventListener('keydown',function(e){if(e.key==='Escape'&&_sp&&_sp.style.display!=='none')_endTour();});
+    window.addEventListener('load',function(){$('trcTourNext').addEventListener('click',function(){if(_cur>=STEPS.length-1)_endTour();else _showStep(_cur+1);});$('trcTourBack').addEventListener('click',function(){_showStep(_cur-1);});$('trcTourSkip').addEventListener('click',_endTour);});
+  })();
+</script>
+<!-- TOUR ELEMENTS -->
+<div id="trcTourSpot"></div>
+<div id="trcTourRing"></div>
+<div id="trcTourTip">
+  <div id="trcTourStep"></div>
+  <div id="trcTourDesc"></div>
+  <div class="trc-tour-row">
+    <button id="trcTourSkip" class="trc-tour-action" type="button">✕ Skip</button>
+    <button id="trcTourBack" class="trc-tour-action" type="button">← Back</button>
+    <button id="trcTourNext" class="trc-tour-action" type="button">Next →</button>
+  </div>
+</div>
+</body>
+</html>

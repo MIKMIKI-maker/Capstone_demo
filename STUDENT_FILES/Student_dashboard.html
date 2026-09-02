@@ -8,8 +8,8 @@
   <title>SPED ALM - Student Dashboard</title>
   <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
 
-  <link href="STUDENT_CSS/Student_dashboard.css" rel="stylesheet" />
-  <link href="STUDENT_CSS/student_responsive.css" rel="stylesheet" />
+  <link href="STUDENT_CSS/Student_dashboard.css?v=3" rel="stylesheet" />
+  <link href="STUDENT_CSS/student_responsive.css?v=1" rel="stylesheet" />
   <link
     href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;family=Nunito:wght@400;600;700;800;900&amp;family=Inter:wght@400;500;600&amp;display=swap"
     rel="stylesheet" />
@@ -17,6 +17,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&amp;display=swap"
     rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
+  <script src="../ASSETS/student_portal.js?v=1" defer></script>
 </head>
 
 <body>
@@ -528,7 +529,8 @@
         'CheckOrX':         '../TEACHER_FILES/TEMPLATES/Check_ Or_Not_Template.html',
         'LetterID':         '../TEACHER_FILES/TEMPLATES/Identification_Template.html',
         'PictureLabeling':  '../TEACHER_FILES/TEMPLATES/Picture_ Labeling_Template.html',
-        'WrittenResponse':  '../TEACHER_FILES/TEMPLATES/Written_Response_Template.html'
+        'WrittenResponse':  '../TEACHER_FILES/TEMPLATES/Written_Response_Template.html',
+        'Tracing':          '../TEACHER_FILES/TEMPLATES/Tracing_Template.html'
       };
       function startActivity(dbId, type) {
         var tpl = _TPL[type];

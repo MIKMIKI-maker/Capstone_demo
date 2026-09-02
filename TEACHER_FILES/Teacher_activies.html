@@ -474,7 +474,7 @@
                     ? esc(a.learner) + ' <span style="color:#64748b;font-size:11px;">(' + esc(a.grading) + ' Grading)</span>'
                     : esc(a.learner);
 
-                var _typeIcons = {Matching:'🔗',Sorting:'🗂️',Sequencing:'🔢',LetterID:'🔤',PictureLabeling:'🏷️',WrittenResponse:'✏️',CheckOrX:'✅',Upload:'📎'};
+                var _typeIcons = {Matching:'🔗',Sorting:'🗂️',Sequencing:'🔢',LetterID:'🔤',PictureLabeling:'🏷️',WrittenResponse:'✏️',CheckOrX:'✅',Tracing:'✍️',Upload:'📎'};
                 var _fallbackIcon = _typeIcons[a.type] || '🖼️';
                 var _tb = a.thumbnail
                     ? '<img src="'+esc(a.thumbnail)+'" style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex:none;" />'
@@ -511,7 +511,8 @@
             CheckOrX:         'TEMPLATES/Check_%20Or_Not_Template.html',
             LetterID:         'TEMPLATES/Identification_Template.html',
             PictureLabeling:  'TEMPLATES/Picture_%20Labeling_Template.html',
-            WrittenResponse:  'TEMPLATES/Written_Response_Template.html'
+            WrittenResponse:  'TEMPLATES/Written_Response_Template.html',
+            Tracing:          'TEMPLATES/Tracing_Template.html'
         };
         function editPublished(id, type) {
             var tpl = EDITABLE_TYPES[type];

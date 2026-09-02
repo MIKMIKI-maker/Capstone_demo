@@ -597,7 +597,61 @@ body {
   }
 
   .student-profile-cards {
-    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .student-profile-card {
+    /* Grid items default to a content-based min-width (like flex items do)
+       — without this, the track refused to shrink below the card's natural
+       min-content width (64px photo + nowrap text) and the second card
+       overflowed off the right edge of the screen instead of fitting. */
+    min-width: 0;
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .student-pcard-avatar {
+    width: 46px;
+    height: 46px;
+    font-size: 16px;
+  }
+
+  /* The dashboard's actual profile-card avatar — .student-pcard-avatar
+     above isn't used by this markup, this is (photo img + sample-svg
+     fallback in a wrapper), left at its 64px desktop size otherwise. */
+  .student-pcard-photo-wrap {
+    width: 42px;
+    height: 42px;
+  }
+
+  .student-pcard-photo,
+  .student-pcard-photo-sample {
+    width: 42px;
+    height: 42px;
+  }
+
+  .student-pcard-info { min-width: 0; }
+
+  .student-pcard-label { font-size: 9.5px; }
+
+  .student-pcard-name {
+    font-size: 15px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .student-pcard-sub {
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .student-badge-active {
+    margin-top: 6px;
+    padding: 3px 9px;
+    font-size: 10.5px;
   }
 
   .student-progress-banner {
