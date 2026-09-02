@@ -22,12 +22,17 @@ table { display: block; max-width: 100%; overflow-x: auto; }
    only ever be opened via the hamburger button, which is itself
    display:none outside <=1024px — so .show/.teacher-sidebar-open never
    get applied at desktop widths regardless. ---------- */
-.teacher-hamburger-btn {
+.teacher-mobile-topbar {
   display: none;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.teacher-hamburger-btn {
+  display: flex;
   width: 40px;
   height: 40px;
   flex-shrink: 0;
-  margin-bottom: 14px;
   border-radius: 10px;
   background: #1E3A8A;
   color: #fff;
@@ -55,7 +60,8 @@ table { display: block; max-width: 100%; overflow-x: auto; }
   html, body { overflow: auto; height: auto; }
   .teacher-app-wrapper { height: auto; overflow: visible; }
 
-  .teacher-hamburger-btn { display: flex; }
+  .teacher-mobile-topbar { display: flex; }
+  .teacher-mobile-topbar .teacher-notif-btn { flex-shrink: 0; }
 
   .teacher-sidebar {
     position: fixed;

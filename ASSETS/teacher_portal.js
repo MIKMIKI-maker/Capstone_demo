@@ -3,7 +3,7 @@
 
   // Every Teacher_*.html page already loads TEACHER_CSS/teacher_responsive.css
   // last, which defines the off-canvas drawer styles (.teacher-sidebar's
-  // mobile position/transform, .teacher-hamburger-btn, .teacher-sidebar-overlay)
+  // mobile position/transform, .teacher-mobile-topbar, .teacher-sidebar-overlay)
   // at <=1024px. This just wires up the toggle behavior once, shared across
   // every teacher page, instead of duplicating it in each file.
   function setupSidebarToggle() {
@@ -19,10 +19,27 @@
     btn.className = 'teacher-hamburger-btn';
     btn.setAttribute('aria-label', 'Toggle menu');
     btn.innerHTML = '<i class="fa-solid fa-bars"></i>';
-    // Inserted into the main content column (not fixed to the viewport) so
-    // it takes its own space above the greeting instead of floating over it.
+
+    // A real flex row (hamburger left, notif bell right) in normal
+    // document flow, instead of leaving the bell in its original topbar
+    // position where it ended up hanging below the greeting once that
+    // topbar wrapped on a phone. Inserted as .teacher-main-content's
+    // first child, so it takes its own space at the very top and pushes
+    // the greeting/page header down cleanly below it.
+    var bar = document.createElement('div');
+    bar.className = 'teacher-mobile-topbar';
+    bar.appendChild(btn);
+
+    // Move the page's own notif bell into this row instead of leaving
+    // it wherever it sits in the topbar (some pages share that spot
+    // with other action buttons, e.g. "Generate PDF" — those stay put,
+    // only the bell moves). Relocating the existing element (not
+    // cloning it) keeps its badge/href/listeners intact.
+    var notifBtn = document.querySelector('.teacher-notif-btn');
+    if (notifBtn) bar.appendChild(notifBtn);
+
     var main = document.querySelector('.teacher-main-content') || document.querySelector('main') || document.body;
-    main.insertBefore(btn, main.firstChild);
+    main.insertBefore(bar, main.firstChild);
 
     // Without this, the page behind the overlay could still scroll while
     // the drawer was open.
