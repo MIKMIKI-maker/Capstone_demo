@@ -30,14 +30,6 @@
     bar.className = 'teacher-mobile-topbar';
     bar.appendChild(btn);
 
-    // Move the page's own notif bell into this row instead of leaving
-    // it wherever it sits in the topbar (some pages share that spot
-    // with other action buttons, e.g. "Generate PDF" — those stay put,
-    // only the bell moves). Relocating the existing element (not
-    // cloning it) keeps its badge/href/listeners intact.
-    var notifBtn = document.querySelector('.teacher-notif-btn');
-    if (notifBtn) bar.appendChild(notifBtn);
-
     // .teacher-main is Teacher_settings.html's own name for this same
     // element (every other Teacher_*.html page calls it
     // .teacher-main-content) and it has no <main> tag either, so
@@ -45,6 +37,29 @@
     // landing outside the page's flex layout entirely instead of inside it.
     var main = document.querySelector('.teacher-main-content') || document.querySelector('.teacher-main') || document.querySelector('main') || document.body;
     main.insertBefore(bar, main.firstChild);
+
+    // Move the page's own notif bell into this row instead of leaving
+    // it wherever it sits in the topbar (some pages share that spot
+    // with other action buttons, e.g. "Generate PDF" — those stay put,
+    // only the bell moves). Relocating the existing element (not
+    // cloning it) keeps its badge/href/listeners intact — but only at
+    // <=1024px: this is a real DOM move, not a copy, and
+    // .teacher-mobile-topbar is display:none above that width, so
+    // moving it unconditionally made the bell vanish on desktop too.
+    // Track its original spot so it can move back on resize.
+    var notifBtn = document.querySelector('.teacher-notif-btn');
+    var notifHome = notifBtn ? notifBtn.parentNode : null;
+    var notifNextSibling = notifBtn ? notifBtn.nextSibling : null;
+
+    function placeNotifBtn() {
+      if (!notifBtn) return;
+      if (window.innerWidth <= 1024) {
+        if (notifBtn.parentNode !== bar) bar.appendChild(notifBtn);
+      } else if (notifHome && notifBtn.parentNode !== notifHome) {
+        notifHome.insertBefore(notifBtn, notifNextSibling);
+      }
+    }
+    placeNotifBtn();
 
     // Without this, the page behind the overlay could still scroll while
     // the drawer was open.
@@ -69,6 +84,7 @@
     });
     window.addEventListener('resize', function () {
       if (window.innerWidth > 1024) closeSidebar();
+      placeNotifBtn();
     });
   }
 
