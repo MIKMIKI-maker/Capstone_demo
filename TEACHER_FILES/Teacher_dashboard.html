@@ -12,8 +12,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap"
         rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
-    <link href="TEACHER_CSS/Teacher_dashboard.css?v=2" rel="stylesheet" />
-    <link href="TEACHER_CSS/teacher_responsive.css?v=8" rel="stylesheet" />
+    <link href="TEACHER_CSS/Teacher_dashboard.css?v=12" rel="stylesheet" />
+    <link href="TEACHER_CSS/teacher_responsive.css?v=67" rel="stylesheet" />
 </head>
 
 <body>
@@ -107,6 +107,7 @@
                     </a>
                 </div>
             </header>
+            <hr class="teacher-divider" />
             <!-- WELCOME BANNER -->
             <section class="teacher-welcome-banner">
                 <div class="teacher-welcome-left">
@@ -170,12 +171,12 @@
                     <div class="teacher-bottom-row">
                         <!-- TODAY'S TASKS -->
                         <section class="teacher-panel teacher-tasks-panel">
-                            <div class="teacher-panel-header teacher-tasks-header">
+                            <div class="teacher-panel-header teacher-tasks-header" onclick="if(window.innerWidth<=640)openTasksModal()" title="My Tasks">
                                 <h3 style="cursor:pointer;" onclick="openTasksModal()">
                                     <span class="teacher-panel-icon">📋</span>
-                                    My Tasks
+                                    <span class="teacher-tasks-label">My Tasks</span>
                                 </h3>
-                                <div style="display:flex;gap:8px;align-items:center;">
+                                <div style="display:flex;gap:8px;align-items:center;" class="teacher-tasks-header-actions">
                                     <span class="teacher-task-count-badge" id="teacher-task-count"></span>
                                     <button class="teacher-task-add-btn" onclick="openTasksModal()" title="View / add tasks">+</button>
                                 </div>
@@ -184,10 +185,10 @@
                         </section>
                         <!-- RECENT ACTIVITY -->
                         <section class="teacher-panel teacher-activity-panel">
-                            <div class="teacher-panel-header teacher-activity-header">
+                            <div class="teacher-panel-header teacher-activity-header" onclick="openMobilePanelModal(this.closest('.teacher-panel'), '⚡ Recent Activity')" title="Recent Activity">
                                 <h3>
                                     <span class="teacher-panel-icon">⚡</span>
-                                    Recent Activity
+                                    <span class="teacher-activity-label">Recent Activity</span>
                                 </h3>
                                 <a class="teacher-view-all-link" href="Teacher_activies.html">View All</a>
                             </div>
@@ -197,12 +198,12 @@
                 </div><!-- /teacher-left-col -->
                 <!-- RIGHT COLUMN: Student Progress -->
                 <aside class="teacher-progress-panel teacher-panel">
-                    <div class="teacher-panel-header teacher-progress-header">
+                    <div class="teacher-panel-header teacher-progress-header" onclick="openMobilePanelModal(this.closest('.teacher-panel'), '🎓 Student Progress')" title="Student Progress">
                         <h3>
                             <span class="teacher-icon-circle blue">
                                 <i class="fa-solid fa-graduation-cap"></i>
                             </span>
-                            Student Progress
+                            <span class="teacher-progress-label">Student Progress</span>
                         </h3>
                         <a class="teacher-view-all-link" href="Teacher_learners.html">View All</a>
                     </div>
@@ -237,6 +238,27 @@
         </div>
     </div>
 
+    <!-- ===== MOBILE PANEL MODAL (Recent Activity / Student Progress) =====
+         Reuses the same t-modal-* look as the Tasks modal above. Instead of
+         re-rendering the data, it MOVES the panel's already-populated
+         .teacher-panel-body (and .teacher-progress-footer, for Student
+         Progress) into this modal's body while open, then moves it back to
+         its original spot in the dashboard on close — so the exact same
+         live-updating DOM nodes/handlers are shown, nothing is duplicated
+         or re-fetched. Mobile-only: see openMobilePanelModal()'s width guard. -->
+    <div class="t-modal-overlay" id="mobile-panel-modal" onclick="if(event.target===this) closeMobilePanelModal()">
+        <div class="t-modal-box" style="max-height:78vh;">
+            <div class="t-modal-header">
+                <span class="t-modal-title" id="mobile-panel-modal-title"></span>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <a class="teacher-view-all-link" id="mobile-panel-modal-viewall" href="#">View All</a>
+                    <button class="t-modal-close" type="button" onclick="closeMobilePanelModal()">✕</button>
+                </div>
+            </div>
+            <div class="t-modal-body" id="mobile-panel-modal-body"></div>
+        </div>
+    </div>
+
     <script>
         var currentTaskFilter = 'all';
 
@@ -265,6 +287,16 @@
             }
         }
 
+        // "Mamatid Elementary School" -> "Mamatid ES", for the compact
+        // location line — falls back to the full name unchanged if it
+        // doesn't end in the usual "Elementary/Integrated/... School".
+        function shortenSchoolName(name) {
+            if (!name) return name;
+            return name.replace(/\s+elementary\s+school$/i, ' ES')
+                       .replace(/\s+integrated\s+school$/i, ' IS')
+                       .replace(/\s+national\s+high\s+school$/i, ' NHS');
+        }
+
         function updateTeacherDateTime() {
             var name = sessionStorage.getItem('teacher_name') || 'Teacher';
             var school = sessionStorage.getItem('teacher_school') || '';
@@ -275,9 +307,21 @@
             var hour = parseInt(now.toLocaleString('en-US', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Asia/Singapore' }), 10);
             var tod = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
             document.getElementById('teacher-greeting').textContent = 'Good ' + tod + ', ' + name + ' 👋';
-            document.getElementById('teacher-greeting-sub').textContent = school
-                ? dateStr + ' · ' + timeStr + ' · ' + school
-                : dateStr + ' · ' + timeStr;
+            // Mobile gets the card layout with "(PHST)" and the school
+            // as a "📍 " location tag on the same line; desktop keeps the
+            // original plain "date · time · school".
+            if (window.innerWidth <= 640) {
+                // The icon and school name are wrapped together in one
+                // nowrap span — otherwise a line-wrap could break right
+                // between them (the space after the icon is a valid wrap
+                // point), leaving the pin icon stranded on its own line.
+                document.getElementById('teacher-greeting-sub').innerHTML = dateStr + ' · ' + timeStr + ' (PHST)'
+                    + (school ? ' · <span style="white-space:nowrap;"><i class="fa-solid fa-location-dot"></i> ' + shortenSchoolName(school) + '</span>' : '');
+            } else {
+                document.getElementById('teacher-greeting-sub').textContent = school
+                    ? dateStr + ' · ' + timeStr + ' · ' + school
+                    : dateStr + ' · ' + timeStr;
+            }
         }
 
         function initDefaults() {
@@ -324,9 +368,14 @@
                     var opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Singapore' };
                     var dateStr = now.toLocaleDateString('en-US', opts);
                     var timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Singapore' });
-                    document.getElementById('teacher-greeting-sub').textContent = t.schoolName
-                        ? dateStr + ' · ' + timeStr + ' · ' + t.schoolName
-                        : dateStr + ' · ' + timeStr;
+                    if (window.innerWidth <= 640) {
+                        document.getElementById('teacher-greeting-sub').innerHTML = dateStr + ' · ' + timeStr + ' (PHST)'
+                            + (t.schoolName ? ' · <span style="white-space:nowrap;"><i class="fa-solid fa-location-dot"></i> ' + shortenSchoolName(t.schoolName) + '</span>' : '');
+                    } else {
+                        document.getElementById('teacher-greeting-sub').textContent = t.schoolName
+                            ? dateStr + ' · ' + timeStr + ' · ' + t.schoolName
+                            : dateStr + ' · ' + timeStr;
+                    }
 
                     applyProfilePic();
                 })
@@ -434,6 +483,49 @@
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: body
             }).then(function() { loadDashboardStats(); }).catch(function() {});
+        }
+
+        // ── MOBILE PANEL TILES (Recent Activity / Student Progress) ───────
+        // On phone width these panels collapse into a small icon tile (see
+        // teacher_responsive.css); tapping the tile opens the same modal
+        // window pattern as My Tasks, by moving the panel's already-live
+        // body (and footer, for Student Progress) into the shared modal.
+        var _mobilePanelHome = null; // { body, bodyNext, bodyParent, footer, footerNext, footerParent }
+
+        function openMobilePanelModal(panelEl, title) {
+            if (window.innerWidth > 640) return;
+            var body = panelEl.querySelector('.teacher-panel-body');
+            var footer = panelEl.querySelector('.teacher-progress-footer');
+            var modalBody = document.getElementById('mobile-panel-modal-body');
+            modalBody.innerHTML = '';
+
+            _mobilePanelHome = {
+                body: body, bodyNext: body ? body.nextSibling : null, bodyParent: body ? body.parentNode : null,
+                footer: footer, footerNext: footer ? footer.nextSibling : null, footerParent: footer ? footer.parentNode : null
+            };
+            if (body) modalBody.appendChild(body);
+            if (footer) modalBody.appendChild(footer);
+
+            // Reuse the panel's own "View All" link (still sitting in its
+            // now-collapsed header, untouched) so the modal can jump to
+            // that same full page instead of being a dead end.
+            var srcLink = panelEl.querySelector('.teacher-view-all-link');
+            var modalLink = document.getElementById('mobile-panel-modal-viewall');
+            if (srcLink) { modalLink.href = srcLink.href; modalLink.style.display = ''; }
+            else { modalLink.style.display = 'none'; }
+
+            document.getElementById('mobile-panel-modal-title').textContent = title;
+            document.getElementById('mobile-panel-modal').classList.add('open');
+        }
+
+        function closeMobilePanelModal() {
+            if (_mobilePanelHome) {
+                var h = _mobilePanelHome;
+                if (h.body && h.bodyParent) h.bodyParent.insertBefore(h.body, h.bodyNext);
+                if (h.footer && h.footerParent) h.footerParent.insertBefore(h.footer, h.footerNext);
+                _mobilePanelHome = null;
+            }
+            document.getElementById('mobile-panel-modal').classList.remove('open');
         }
 
         // ── TASKS MODAL ──────────────────────────────────────────────────

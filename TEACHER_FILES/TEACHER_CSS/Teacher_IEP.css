@@ -210,6 +210,8 @@ body {
     margin-top: 3px;
 }
 
+.teacher-divider { border: none; border-top: 1px solid #E2E8F0; margin-bottom: 22px; }
+
 
 .teacher-notif-btn {
     position: relative;
@@ -541,7 +543,19 @@ body {
     .teacher-main-content { padding: 18px; }
     .teacher-grading-grid { grid-template-columns: 1fr; }
     .teacher-grading-frame { height: 130px; }
-    .teacher-action-row { grid-template-columns: 1fr; gap: 12px; }
+    /* Stay 3 columns side by side instead of stacking — shrink each
+       button (icon on top, small wrapped label below) to fit. */
+    .teacher-action-row { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .btn-generate, .btn-view, .btn-upload-mat {
+        flex-direction: column;
+        gap: 5px;
+        padding: 10px 4px;
+        font-size: 8px;
+        line-height: 1.25;
+        border-radius: 10px;
+        text-align: center;
+    }
+    .btn-generate i, .btn-view i, .btn-upload-mat i { font-size: 15px; }
     .teacher-filter-bar { flex-direction: column; align-items: stretch; }
     .teacher-select-wrap select { min-width: 100%; }
     .teacher-multiselect-wrap { min-width: 100%; }

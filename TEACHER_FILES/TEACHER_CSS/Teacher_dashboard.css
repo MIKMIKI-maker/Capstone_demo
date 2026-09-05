@@ -224,6 +224,8 @@ body {
     gap: 16px;
 }
 
+.teacher-divider { border: none; border-top: 1px solid #E2E8F0; margin-bottom: 22px; }
+
 .teacher-greeting {
     font-size: 22px;
     font-weight: 700;
@@ -857,7 +859,6 @@ body {
     .teacher-main-content { padding: 18px; }
     .teacher-plan-grid { grid-template-columns: 1fr; }
     .teacher-greeting { font-size: 17px; }
-    .teacher-welcome-banner { flex-direction: column; align-items: flex-start; gap: 14px; }
 }
 
 @media (max-width: 480px) {

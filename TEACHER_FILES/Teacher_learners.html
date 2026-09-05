@@ -13,7 +13,7 @@
         rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
     <link href="TEACHER_CSS/Teacher_learners.css?v=2" rel="stylesheet" />
-    <link href="TEACHER_CSS/teacher_responsive.css?v=8" rel="stylesheet" />
+    <link href="TEACHER_CSS/teacher_responsive.css?v=67" rel="stylesheet" />
 </head>
 
 <body>
@@ -361,13 +361,13 @@
                 var badgeCls = s.status === 'active' ? 'teacher-badge-active' : 'teacher-badge-inactive';
                 var statusTxt = s.status === 'active' ? 'Active' : 'Inactive';
                 return '<tr>'
-                    + '<td>' + escHtml(s.name) + disability + '</td>'
-                    + '<td>' + escHtml(s.age || '—') + '</td>'
-                    + '<td>' + escHtml(s.parent_name || '—') + '</td>'
-                    + '<td>' + escHtml(s.parent_phone || '—') + '</td>'
-                    + '<td>' + (s.parent_email ? '<a href="mailto:' + escHtml(s.parent_email) + '" style="color:#2563EB;text-decoration:none;font-size:12px;">' + escHtml(s.parent_email) + '</a>' : '<span style="color:#94A3B8;">—</span>') + '</td>'
-                    + '<td><span class="' + badgeCls + '">' + statusTxt + '</span></td>'
-                    + '<td><button class="btn-view" onclick="viewProgress(' + s.id + ')" type="button">View Progress</button></td>'
+                    + '<td data-label="Student Name">' + escHtml(s.name) + disability + '</td>'
+                    + '<td data-label="Age">' + escHtml(s.age || '—') + '</td>'
+                    + '<td data-label="Parent Name">' + escHtml(s.parent_name || '—') + '</td>'
+                    + '<td data-label="Contact">' + escHtml(s.parent_phone || '—') + '</td>'
+                    + '<td data-label="Email">' + (s.parent_email ? '<a href="mailto:' + escHtml(s.parent_email) + '" style="color:#2563EB;text-decoration:none;font-size:12px;">' + escHtml(s.parent_email) + '</a>' : '<span style="color:#94A3B8;">—</span>') + '</td>'
+                    + '<td data-label="Status"><span class="' + badgeCls + '">' + statusTxt + '</span></td>'
+                    + '<td data-label="Actions"><button class="btn-view" onclick="viewProgress(' + s.id + ')" type="button">View Progress</button></td>'
                     + '</tr>';
             }).join('');
         }

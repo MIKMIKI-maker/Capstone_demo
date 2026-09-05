@@ -14,7 +14,6 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 img, video, canvas { max-width: 100%; height: auto; }
-table { display: block; max-width: 100%; overflow-x: auto; }
 
 /* ---------- Off-canvas hamburger drawer, added/created by
    ASSETS/teacher_portal.js on every Teacher_*.html page. Defined
@@ -62,6 +61,16 @@ table { display: block; max-width: 100%; overflow-x: auto; }
      horizontal scroll instead of just being contained — explicit
      per-axis avoids that. */
   html, body { overflow-y: auto; overflow-x: hidden; height: auto; }
+  /* This was previously unconditional (applied on desktop too), which
+     broke ordinary <table> layout everywhere — display:block strips a
+     table of its table-layout algorithm entirely, so a table narrower
+     than its container (e.g. IEP's 2-column "Select Learner(s)" list)
+     stopped stretching to fill it and left a dead blank gap beside the
+     shrunk rows, with a selected row's highlight only covering the
+     shrunk columns instead of the full card width. Needed only for the
+     genuinely-wide tables (History, My Learners) so they can scroll
+     horizontally on a narrow screen — scope it to that case only. */
+  table { display: block; max-width: 100%; overflow-x: auto; }
   /* .teacher-container is Teacher_settings.html's own name for the
      same outer flex wrapper every other Teacher_*.html page calls
      .teacher-app-wrapper — cover both so Settings actually gets this
@@ -211,58 +220,495 @@ table { display: block; max-width: 100%; overflow-x: auto; }
      container do the horizontal scrolling instead — the min-width
      forces a real scroll with intact columns, same pattern as
      .teacher-history-row above. */
-  #teacher-learnersTable, #teacher-activitiesTable {
+  #teacher-activitiesTable {
     display: table;
     min-width: 700px;
   }
   .teacher-table-container, .teacher-table-card { overflow-x: auto; }
 
+  /* Teacher_IEP.html's "Select Learner(s)" table is only 3 narrow
+     columns (checkbox/name/condition) — it isn't a wide table that
+     needs to scroll, so give it back display:table (no min-width) so
+     it stretches to fill the card like a normal table instead of
+     block-ifying into shrunk rows with dead space beside them. */
+  .iep-student-table { display: table; }
+
   /* ---------- Settings: split profile-menu / form layout ---------- */
   /* .teacher-settings-container was a fixed side-by-side flex row
      (240px menu + form), squeezing the form fields on a phone. Stack
-     them vertically instead. */
-  .teacher-settings-container { flex-direction: column; }
-  .teacher-left-panel { width: 100%; }
+     them vertically instead. align-items was still the desktop
+     flex-start, so once stacked, .teacher-content-panel (the white
+     "My Profile" card) sized to its own content instead of stretching
+     to the container's width — it sat left-aligned with a chunk of
+     background showing on the right instead of filling/centering. */
+  .teacher-settings-container { flex-direction: column; align-items: stretch; }
+  .teacher-left-panel, .teacher-content-panel { width: 100%; margin: 0 auto; }
 }
 
 /* ---------- Phone ---------- */
 @media (max-width: 640px) {
   .teacher-topbar { flex-wrap: wrap; gap: 12px; }
-  .teacher-topbar-right,
+  /* Scoped to .teacher-topbar specifically — .teacher-topbar-right and
+     .teacher-topbar-title-group are reused by Teacher_mylearners.html's
+     DIFFERENT topbar (.teacher-progress-topbar, back-button + title +
+     Generate PDF), which never wraps to begin with; a bare rule here
+     forced its title group and right side to both claim 100% width in
+     that still-single-row bar, squeezing/wrapping everything. */
+  .teacher-topbar .teacher-topbar-right,
   .teacher-topbar-actions,
-  .teacher-topbar-title-group { width: 100%; }
+  .teacher-topbar .teacher-topbar-title-group { width: 100%; }
   .teacher-main-content, .teacher-main { padding: 14px; }
   .teacher-greeting { font-size: 17px; }
-  .teacher-welcome-banner { flex-direction: column; align-items: flex-start; gap: 14px; }
+
+  /* Keep the "Mikylla De Leon / Special Education Teacher" card and the
+     "Assigned Learners" stat side by side even on a phone instead of
+     stacking them — shrink both to fit the row instead. */
+  .teacher-welcome-banner { padding: 14px 16px; gap: 10px; flex-wrap: nowrap; }
+  .teacher-welcome-left { gap: 10px; min-width: 0; }
+  .teacher-welcome-avatar,
+  .teacher-welcome-avatar-inner { width: 48px; height: 48px; }
+  .teacher-welcome-avatar-inner { font-size: 19px; }
+  .teacher-online-dot { width: 12px; height: 12px; bottom: 2px; right: 2px; }
+  .teacher-welcome-text { min-width: 0; }
+  .teacher-welcome-text h2 {
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .teacher-welcome-text p {
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .teacher-welcome-stat { flex-shrink: 0; padding: 10px 12px; gap: 8px; }
+  /* Scoped to .teacher-welcome-stat specifically — .teacher-stat-icon
+     is reused on Teacher_report.html for a different (colored-box)
+     icon, and a bare rule here would otherwise collide with that page's
+     own override further down since both match the same class name. */
+  .teacher-welcome-stat .teacher-stat-icon { font-size: 18px; position: relative; top: 3px; }
+  .teacher-stat-number { font-size: 20px; }
+  .teacher-stat-label { font-size: 10px; white-space: nowrap; }
 
   /* Once .teacher-topbar wraps at this breakpoint, .teacher-topbar-left
-     (the "Good morning, X" greeting) is left on its own row but stayed
-     shrink-wrapped/left-aligned — give it the same full-width treatment
-     as .teacher-topbar-right above and center its text. */
-  .teacher-topbar-left { width: 100%; }
-  .teacher-greeting,
-  .teacher-greeting-sub { text-align: center; }
+     (the "Good morning, X" greeting) is left on its own row — give it
+     the same full-width treatment as .teacher-topbar-right above. No
+     card box around it (a .teacher-divider <hr> under the whole topbar
+     does the separation instead, matching every other teacher page).
+     Scoped to .teacher-topbar — same class name is reused by
+     Teacher_mylearners.html's non-wrapping .teacher-progress-topbar. */
+  .teacher-topbar .teacher-topbar-left {
+    width: 100%;
+  }
+  .teacher-greeting-sub { line-height: 1.9; }
+  .teacher-greeting-sub i { color: var(--pink); font-size: 13px; }
 
-  /* My Learners toolbar (status filter + search + buttons) all fought
-     for space in one row — the search input shrank so much its own
-     placeholder text got truncated mid-word. Stack each control full
-     width instead. */
-  .teacher-toolbar { flex-direction: column; align-items: stretch; }
-  .teacher-toolbar .teacher-status-dropdown,
-  .teacher-toolbar .teacher-status-select,
-  .teacher-toolbar .teacher-search-wrap,
-  .teacher-toolbar .btn-search,
-  .teacher-toolbar .btn-add { width: 100%; max-width: none; margin-left: 0; }
+  /* My Learners toolbar (status filter + search + buttons) and the
+     3 stat cards keep the same side-by-side layout as desktop instead
+     of stacking — every piece just shrinks to fit a phone row. */
+  .teacher-stats-container { gap: 6px; }
+  .teacher-stat-card { flex: 1 1 0; min-width: 0; padding: 8px 6px; gap: 2px; }
+  .teacher-stat-card .teacher-stat-num { font-size: 18px; }
+  .teacher-stat-card .teacher-stat-label,
+  .teacher-stat-card .teacher-stat-name { font-size: 8.5px; }
+  .teacher-stat-card .teacher-stat-title { font-size: 10px; }
 
-  .teacher-plan-grid,
-  .teacher-ring-stats,
-  .teacher-stat-cards,
-  .teacher-template-grid,
-  .teacher-grading-evidence,
-  .teacher-grading-grid,
+  .teacher-toolbar { flex-wrap: nowrap; gap: 6px; margin-bottom: 14px; }
+  .teacher-status-dropdown { flex-shrink: 0; }
+  .teacher-status-select { min-width: 0; width: 74px; padding: 7px 22px 7px 8px; font-size: 9.5px; }
+  .teacher-sel-chevron { right: 8px; font-size: 9px; }
+  .teacher-search-wrap { flex: 1; min-width: 0; max-width: none; padding: 0 8px; }
+  .teacher-search-wrap i { font-size: 11px; }
+  .teacher-search-wrap input { font-size: 10px; padding: 7px 0; }
+  .btn-search { flex-shrink: 0; padding: 7px 10px; font-size: 9.5px; }
+  .btn-add { flex-shrink: 0; margin-left: 0; padding: 7px 8px; font-size: 9px; white-space: nowrap; }
+
+  /* Keep #teacher-learnersTable looking like the real table (same
+     columns side by side as desktop), genuinely fitting the phone
+     width with no horizontal scroll. table-layout:fixed is the part
+     that actually makes this possible — plain auto layout keeps
+     widening the table to fit each cell's full content (a whole email
+     address, a full phone number), no matter how small the font gets,
+     which is what kept forcing horizontal scroll. Fixed layout instead
+     divides the available width evenly across columns and lets long
+     content truncate with an ellipsis within its own cell. */
+  #teacher-learnersTable { display: table; width: 100%; table-layout: fixed; }
+  /* Contact and Email genuinely can't be both small enough to fit and
+     actually readable — 7 columns forced font-size down to ~7px with
+     everything ellipsis-truncated into illegibility. Drop those two
+     columns from view on a phone (still in the desktop table, still in
+     the underlying data) so the remaining 5 can use a real, readable size. */
+  #teacher-learnersTable th:nth-child(4), #teacher-learnersTable td:nth-child(4),
+  #teacher-learnersTable th:nth-child(5), #teacher-learnersTable td:nth-child(5) {
+    display: none;
+  }
+  #teacher-learnersTable th, #teacher-learnersTable td {
+    padding: 7px 10px 7px 6px;
+    font-size: 9px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #teacher-learnersTable .teacher-badge-active,
+  #teacher-learnersTable .teacher-badge-inactive { padding: 2px 5px; font-size: 7.5px !important; }
+  #teacher-learnersTable .btn-view { padding: 4px 3px; font-size: 6.5px !important; white-space: normal; line-height: 1.1; }
+  /* The "(ASD)"/"(ADHD)" condition tag carries its own inline font-size
+     (renderTable() in Teacher_learners.html) that otherwise wins over
+     the td rule above by specificity — !important is the only way to
+     actually resize it to match everything else. */
+  #teacher-learnersTable td span { font-size: 8px !important; }
+  /* Give the naturally-short columns (Age, Status) less of the fixed
+     width and the naturally-long ones (Name, Parent Name) more, instead
+     of the 5 visible columns splitting it perfectly evenly. */
+  #teacher-learnersTable th:nth-child(1), #teacher-learnersTable td:nth-child(1) { width: 28%; }
+  #teacher-learnersTable th:nth-child(2), #teacher-learnersTable td:nth-child(2) { width: 10%; }
+  #teacher-learnersTable th:nth-child(3), #teacher-learnersTable td:nth-child(3) { width: 24%; }
+  #teacher-learnersTable th:nth-child(6), #teacher-learnersTable td:nth-child(6) { width: 19%; }
+  #teacher-learnersTable th:nth-child(7), #teacher-learnersTable td:nth-child(7) { width: 19%; }
+  /* The Status pill and the View Progress button are fixed UI elements,
+     not free text — ellipsis-truncating them (the generic td rule above)
+     just clipped the badge and left a stray "…" floating past its edge.
+     They should fit or wrap, never truncate. */
+  #teacher-learnersTable td:nth-child(6), #teacher-learnersTable td:nth-child(7) {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    text-align: center;
+  }
+  .teacher-pagination { padding: 8px 10px; gap: 4px; }
+  .teacher-pagination button { padding: 4px 8px; font-size: 9.5px; }
+
+  /* Teacher_activies.html ("Recent Activity" full list): tried shrinking
+     the table down and hiding columns, then a card layout — both were
+     rejected (still cramped/truncated text, or looked bad). Reverted to
+     just letting the full desktop-size table scroll horizontally inside
+     its card (the #teacher-activitiesTable{display:table;min-width:700px}
+     rule already above, in the <=1024px block, handles that). The Edit /
+     View Submissions / Unpublish buttons still shrink a bit — same
+     natural width/wording as desktop, just smaller padding and font, so
+     less of the row needs scrolling; nothing is hidden or force-equal-
+     width this time, so there's no truncation or lopsided gaps to fix. */
+  .teacher-actions-cell .btn-view,
+  .teacher-actions-cell .btn-edit,
+  .teacher-actions-cell .btn-delete {
+    padding: 6px 12px;
+    font-size: 10px;
+    gap: 4px;
+  }
+
   .teacher-form-grid,
-  .teacher-generator-form,
   .teacher-bottom-row,
   .learner-print-summary,
   .learner-print-signatures { grid-template-columns: 1fr; }
+
+  /* Teacher_mylearners.html's sticky progress topbar (back button +
+     "Learner Progress — Name" + Generate PDF) — shrink so the title
+     doesn't wrap onto 4 lines and the button doesn't get squeezed. */
+  .teacher-progress-topbar { padding: 12px 14px; gap: 8px; }
+  .btn-back-circle { width: 30px; height: 30px; font-size: 11px; }
+  .teacher-topbar-back-label { font-size: 8.5px; }
+  .teacher-topbar-title { font-size: 13px; }
+  .btn-pdf { padding: 7px 12px; font-size: 10px; gap: 5px; }
+
+  /* Teacher_mylearners.html's 3 ring-chart stat cards (Overall Progress /
+     Average Score / Activities Completed) — stay side by side on a phone
+     instead of stacking, shrink the ring + card down to fit. */
+  .teacher-ring-stats { grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 14px; }
+  .teacher-ring-card { padding: 10px 6px; gap: 6px; border-radius: 12px; }
+  /* The <svg> itself has width/height="90" as HTML attributes (needed so
+     its viewBox-based stroke-dasharray math stays correct) — CSS on the
+     wrapper alone won't shrink it, the svg needs its own size override. */
+  .teacher-ring-wrap { width: 54px; height: 54px; }
+  .teacher-ring-wrap svg { width: 100%; height: 100%; }
+  .teacher-ring-label { font-size: 10px !important; }
+  .teacher-ring-title { font-size: 8px; }
+  .teacher-ring-sub { font-size: 6.5px; margin-top: 0; }
+
+  /* Teacher_generate.html's "Generate Materials" template picker (8
+     activity-type cards) — 2 per row on a phone instead of 3 (desktop)
+     or 1 (fully stacked), shrunk to fit. */
+  .teacher-template-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 18px; }
+  .teacher-tpl-card { padding: 10px 8px; gap: 8px; border-radius: 12px; }
+  .teacher-tpl-icon { width: 30px; height: 30px; border-radius: 9px; font-size: 13px; }
+  .teacher-tpl-body h3 { font-size: 10.5px; margin-bottom: 2px; }
+  .teacher-tpl-body > p { font-size: 8.5px; margin-bottom: 5px; }
+  .teacher-tpl-meta-row { font-size: 8px; }
+
+  /* Reports page (Teacher_report.html): keep the exact same layout as
+     desktop at every breakpoint down to a phone — same column counts
+     for the stat cards / Skills+Activity grid / grading-report
+     generator form / evidence grid / learner table — just shrink
+     everything (padding, icons, fonts) to fit instead of restacking. */
+  .teacher-stat-cards { grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 14px; }
+  .teacher-stat-card { padding: 6px 5px; gap: 4px; border-radius: 10px; }
+  .teacher-stat-card .teacher-stat-icon { width: 24px; height: 24px; border-radius: 7px; font-size: 10px; }
+  .teacher-stat-info { min-width: 0; }
+  .teacher-stat-num { font-size: 6.5px; }
+  .teacher-stat-label {
+    font-size: 5px;
+    margin-top: 1px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .teacher-report-grid { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .teacher-panel { padding: 10px 10px; border-radius: 12px; }
+  .teacher-panel-title { font-size: 10.5px; margin-bottom: 8px; }
+  .teacher-skill-row { margin-bottom: 8px; }
+  .teacher-skill-meta { font-size: 8.5px; margin-bottom: 3px; }
+  .teacher-skill-bar-bg { height: 5px; }
+  #report-activity-list { font-size: 9px !important; }
+  #report-activity-list span { font-size: 9px !important; }
+
+  /* Scoped to #teacher-reportLearnersTable specifically (an id added to
+     Teacher_report.html's table) — .teacher-table-card is a wrapper class
+     shared with Teacher_activies.html's activity table, and a class-only
+     selector here was unintentionally also shrinking/ellipsis-clipping
+     that page's Status badge and Edit button into tiny near-circles. */
+  #teacher-reportLearnersTable { display: table; width: 100%; table-layout: fixed; }
+  #teacher-reportLearnersTable thead th,
+  #teacher-reportLearnersTable tbody td {
+    padding: 6px 10px 6px 6px;
+    font-size: 7.5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #teacher-reportLearnersTable td:nth-child(4), #teacher-reportLearnersTable td:nth-child(6) {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    text-align: center;
+  }
+  .teacher-status-badge { padding: 2px 6px; font-size: 6.5px !important; }
+  .teacher-report-row-btn { padding: 3px 5px; font-size: 6.5px !important; }
+  .teacher-table-card-title { padding: 10px 12px; font-size: 11px; }
+
+  .teacher-grading-generator { padding: 12px; margin-top: 14px; }
+  .teacher-generator-header h2 { font-size: 12px; }
+  .teacher-generator-header p { font-size: 8.5px; }
+  .teacher-generator-form { grid-template-columns: 1.2fr 1fr 1fr; gap: 6px; }
+  .teacher-generator-form label, .teacher-comment-field { font-size: 8px; gap: 4px; }
+  .teacher-generator-form select, .teacher-comment-field textarea { padding: 6px 7px; font: 8px 'Poppins', sans-serif; }
+  .teacher-grading-identity { padding: 8px 9px; font-size: 9px; margin-top: 10px; }
+  .teacher-grading-evidence { grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 8px; }
+  .teacher-grading-evidence > div { padding: 6px; }
+  .teacher-grading-evidence span { font-size: 6.5px; }
+  .teacher-grading-evidence strong { font-size: 9px; margin-top: 2px; }
+  .teacher-generator-actions { gap: 6px; margin-top: 10px; }
+  .btn-action { padding: 7px 10px; font-size: 9.5px; gap: 4px; }
+
+  /* Teacher_settings.html's "Password & Security" card is already a
+     flex row (icon+text left, button right) on desktop — nothing kept
+     it that way on a phone, so it just overflowed sideways. Force it
+     to stay one row and shrink everything to fit instead of stacking. */
+  .teacher-pwd-card { flex-wrap: nowrap; padding: 8px 10px; gap: 8px; }
+  .teacher-pwd-card-left { gap: 7px; min-width: 0; }
+  .teacher-pwd-icon { width: 26px; height: 26px; border-radius: 8px; font-size: 11px; flex-shrink: 0; }
+  .teacher-pwd-card-info { min-width: 0; }
+  .teacher-pwd-card-info h4 { font-size: 9.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .teacher-pwd-card-info p { font-size: 7.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .teacher-btn-change-pwd { flex-shrink: 0; padding: 6px 9px; font-size: 8.5px; white-space: nowrap; }
+  .teacher-btn-save { padding: 8px 18px; font-size: 11px; gap: 6px; }
+
+  /* Settings left panel's profile card (avatar + name + role + Active
+     badge) — drop the white card box entirely so it just floats on the
+     page background, and make the avatar photo itself bigger. */
+  .teacher-profile-box {
+    background: none;
+    box-shadow: none;
+    padding: 6px 0 14px;
+    margin-bottom: 8px;
+  }
+  .teacher-profile-box .profile-avatar { width: 130px; height: 130px; font-size: 42px; }
+
+  /* Teacher_IEP.html's "Learning Activity Plan" grading-period images
+     stay 3 columns side by side on a phone instead of stacking full-
+     width and full-height — shrink the frames down to small thumbnails. */
+  .teacher-grading-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .teacher-grading-frame { height: 70px; border-radius: 10px; padding: 3px; }
+  .frame-fallback { font-size: 22px; }
+
+  /* "Select Learner(s)" card — everything shrunk to fit a phone width. */
+  .iep-student-card-header {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 14px;
+  }
+  .iep-student-card-title { font-size: 12.5px; }
+  .iep-selected-badge { font-size: 9.5px; padding: 2px 8px; }
+  .iep-select-all-label { font-size: 11px; gap: 5px; }
+  .iep-select-all-label input { width: 13px; height: 13px; }
+  .iep-student-table thead th { padding: 7px 10px; font-size: 9.5px; }
+  .iep-st-row td { padding: 8px 10px; font-size: 11.5px; }
+  .iep-cond-badge { font-size: 9px; padding: 2px 7px; }
+
+  /* .iep-toast (the "Please select a learner..." popup) has no width of
+     its own — position:fixed + no max-width made the browser's shrink-
+     to-fit algorithm pick an oddly narrow box for the long message,
+     wrapping it across 3-4 lines instead of using the phone's actual
+     width. Force it onto one line at a size that fits. */
+  .iep-toast {
+    left: 12px;
+    right: 12px;
+    max-width: none;
+    transform: translateY(20px);
+    padding: 10px 14px;
+    gap: 8px;
+    font-size: 10.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .iep-toast.show { transform: translateY(0); }
+  .iep-toast i { font-size: 13px; flex-shrink: 0; }
+
+  /* Learning Activity Plan (First/Second/Third Grading) stays 3 columns
+     side by side on a phone instead of stacking — shrink everything
+     inside each card to fit instead. */
+  .teacher-plan-section { padding: 12px; }
+  .teacher-plan-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .teacher-plan-card { padding: 8px 6px; min-width: 0; }
+  .teacher-grading-badge {
+    display: block;
+    text-align: center;
+    font-size: 7.5px;
+    padding: 4px 3px;
+    margin-bottom: 7px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .teacher-plan-items { gap: 4px; }
+  .teacher-plan-items li {
+    padding: 5px 4px;
+    font-size: 8px;
+    line-height: 1.25;
+  }
+
+  /* My Tasks / Recent Activity / Student Progress collapse into small
+     iPhone-home-screen-style app icons instead of full-width cards:
+     a colored "squircle" glyph tile with its label caption underneath
+     (on the plain page background, not inside the tile — same as a
+     real iOS icon), tap to open the modal/tile behavior wired in
+     Teacher_dashboard.html's openTasksModal()/openMobilePanelModal(). */
+  .teacher-tasks-panel,
+  .teacher-activity-panel,
+  .teacher-progress-panel {
+    width: 78px;
+    border: none;
+    background: none;
+    box-shadow: none;
+    /* .teacher-panel (base rule) sets overflow:hidden for the desktop
+       card look — left on, it clipped the label text (both edges,
+       since it's centered) any time a name was wider than the icon
+       itself, e.g. "Recent Activity"/"Student Progress" read as
+       "ecent Activit"/"udent Progre". The label wraps to fit within
+       the tile's own width instead (see below), so this can just be
+       reopened rather than relying on clipping. */
+    overflow: visible;
+  }
+  .teacher-tasks-panel .teacher-panel-body,
+  .teacher-activity-panel .teacher-panel-body,
+  .teacher-progress-panel .teacher-panel-body,
+  .teacher-progress-panel .teacher-progress-footer {
+    display: none;
+  }
+  .teacher-tasks-panel .teacher-tasks-header,
+  .teacher-activity-panel .teacher-panel-header,
+  .teacher-progress-panel .teacher-panel-header {
+    cursor: pointer;
+    /* .teacher-tasks-header/.teacher-activity-header/.teacher-progress-
+       header each set their own desktop background (cream/lavender/
+       light-blue) — with padding now 0 that tint still painted right
+       up against the icon as a visible box behind it. */
+    background: none;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 6px;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .teacher-tasks-panel .teacher-panel-header h3,
+  .teacher-activity-panel .teacher-panel-header h3,
+  .teacher-progress-panel .teacher-panel-header h3 {
+    flex-direction: column;
+    gap: 6px;
+  }
+  /* The colored icon square itself — .teacher-panel-icon (My Tasks,
+     Recent Activity: a plain emoji span) and .teacher-icon-circle
+     (Student Progress: wraps a Font Awesome glyph) both become this
+     same squircle treatment, just with their own gradient. */
+  .teacher-tasks-panel .teacher-panel-icon,
+  .teacher-activity-panel .teacher-panel-icon,
+  .teacher-progress-panel .teacher-icon-circle {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    color: #fff;
+    box-shadow: 0 4px 10px rgba(15, 23, 42, .18), 0 1px 2px rgba(15, 23, 42, .12);
+  }
+  .teacher-tasks-panel .teacher-panel-icon { background: linear-gradient(160deg, #FFB020, #F97316); }
+  .teacher-activity-panel .teacher-panel-icon { background: linear-gradient(160deg, #A78BFA, #7C3AED); }
+  .teacher-progress-panel .teacher-icon-circle { background: linear-gradient(160deg, #60A5FA, #2563EB); font-size: 22px; }
+
+  /* Label caption under the icon, like a real home-screen app name.
+     Single line (not wrapped) — .teacher-tasks-panel etc. above already
+     switched to overflow:visible, so a label a little wider than its
+     78px tile just extends past it slightly instead of being clipped
+     or forced onto an awkward second line. */
+  .teacher-tasks-label,
+  .teacher-activity-label,
+  .teacher-progress-label {
+    display: block;
+    width: 100%;
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    text-align: center;
+    line-height: 1.25;
+  }
+
+  /* Everything else that lived in these headers on desktop (the +
+     button, the pending-count pill, the View All link) doesn't fit
+     the icon-tile look — hidden here, still reachable once opened. */
+  .teacher-tasks-panel .teacher-task-add-btn,
+  .teacher-tasks-panel .teacher-task-count-badge,
+  .teacher-activity-panel .teacher-view-all-link,
+  .teacher-progress-panel .teacher-view-all-link {
+    display: none;
+  }
+
+  /* ---------- Lay the Learning Activity Plan card + the three tiles
+     (My Tasks / Recent Activity / Student Progress) out as one flex
+     row group instead of each stacking in its own full-width row.
+     .teacher-left-col and .teacher-bottom-row only exist to group
+     things for the desktop grid layout — display:contents removes
+     their own box at this breakpoint so their children (the plan
+     section, then the two bottom-row tiles) become direct flex items
+     of .teacher-dashboard-grid, sitting alongside .teacher-progress-
+     panel (already a sibling) in the same wrapping row. ---------- */
+  .teacher-dashboard-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+  .teacher-left-col,
+  .teacher-bottom-row {
+    display: contents;
+  }
+  .teacher-plan-section {
+    flex: 1 1 100%;
+    width: 100%;
+  }
 }
