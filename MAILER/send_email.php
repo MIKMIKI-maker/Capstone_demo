@@ -8,6 +8,40 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
 /**
+ * Records every send attempt (success or failure) to email_log, since Gmail
+ * gives no usage dashboard of its own for a regular SMTP account — this is
+ * the only way to see how many of the 500/day quota have been used, or why
+ * a particular send failed. Never lets a logging failure break the actual
+ * email send — swallows its own errors.
+ */
+function _logEmailAttempt(string $toEmail, string $subject, bool $success, ?string $errorMessage): void {
+    try {
+        require_once __DIR__ . '/../ADMIN_FILES/ADMIN_BACKEND/db.php';
+        $conn = getDatabaseConnection();
+        if (!$conn) return;
+        $conn->query("CREATE TABLE IF NOT EXISTS email_log (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            recipient_email VARCHAR(255) NOT NULL,
+            subject VARCHAR(500),
+            success TINYINT(1) NOT NULL,
+            error_message TEXT,
+            sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_sent_at (sent_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $stmt = $conn->prepare("INSERT INTO email_log (recipient_email, subject, success, error_message) VALUES (?, ?, ?, ?)");
+        if ($stmt) {
+            $successInt = $success ? 1 : 0;
+            $stmt->bind_param("ssis", $toEmail, $subject, $successInt, $errorMessage);
+            $stmt->execute();
+            $stmt->close();
+        }
+        $conn->close();
+    } catch (\Throwable $e) {
+        error_log('_logEmailAttempt failed: ' . $e->getMessage());
+    }
+}
+
+/**
  * Sends an HTML email via the configured SMTP account.
  * Returns true on success, false on failure — never throws, so a broken
  * mail server can't take down the caller's own request (the notification/
@@ -16,10 +50,12 @@ use PHPMailer\PHPMailer\Exception;
 function send_email(string $toEmail, string $toName, string $subject, string $htmlBody): bool {
     if (!SMTP_USER || !SMTP_PASSWORD) {
         error_log('send_email: SMTP_USER/SMTP_PASSWORD not configured — skipping email to ' . $toEmail);
+        _logEmailAttempt($toEmail, $subject, false, 'SMTP not configured');
         return false;
     }
     if (!filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
         error_log('send_email: invalid recipient address: ' . $toEmail);
+        _logEmailAttempt($toEmail, $subject, false, 'Invalid recipient address');
         return false;
     }
 
@@ -42,9 +78,11 @@ function send_email(string $toEmail, string $toName, string $subject, string $ht
         $mail->AltBody  = trim(strip_tags(str_replace(['<br>', '<br/>', '<br />'], "\n", $htmlBody)));
 
         $mail->send();
+        _logEmailAttempt($toEmail, $subject, true, null);
         return true;
     } catch (Exception $e) {
         error_log('send_email failed to ' . $toEmail . ': ' . $mail->ErrorInfo);
+        _logEmailAttempt($toEmail, $subject, false, $mail->ErrorInfo);
         return false;
     }
 }
