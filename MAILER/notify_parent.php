@@ -12,7 +12,7 @@ function notifyParentByEmail($parent_email, $parent_name, $student_name, $title,
     $safeStudent = htmlspecialchars($student_name, ENT_QUOTES, 'UTF-8');
     $safeTitle   = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
     $safeMessage = nl2br(htmlspecialchars($message, ENT_QUOTES, 'UTF-8'));
-    $logoUrl  = get_logo_data_uri();
+    $logoUrl  = LOGO_CID_SRC;
     $loginUrl = PUBLIC_SITE_URL . '/ADMIN_FILES/login_screen.html';
     $year = date('Y');
 

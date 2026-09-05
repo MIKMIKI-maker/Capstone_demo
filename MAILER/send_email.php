@@ -72,6 +72,17 @@ function send_email(string $toEmail, string $toName, string $subject, string $ht
         $mail->setFrom(SMTP_USER, SMTP_FROM_NAME);
         $mail->addAddress($toEmail, $toName);
 
+        // Gmail (and most mail clients) strip data: URI images out of HTML
+        // email bodies as a security measure — a base64-embedded <img> just
+        // renders broken. An inline CID attachment is the actual supported
+        // way to embed an image that doesn't depend on the recipient
+        // fetching it from a live server. Every current template references
+        // it as <img src="cid:sped_logo">.
+        $logoPath = __DIR__ . '/logo_email.png';
+        if (is_file($logoPath)) {
+            $mail->addEmbeddedImage($logoPath, 'sped_logo', 'logo.png');
+        }
+
         $mail->isHTML(true);
         $mail->Subject = $subject;
         $mail->Body    = $htmlBody;

@@ -101,7 +101,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         // PUBLIC_SITE_URL (not the request's own host) so the logo/login
         // link work in the recipient's inbox even when this code is running
         // on localhost/Docker — see MAILER/mailer_config.php.
-        $logoUrl = get_logo_data_uri();
+        $logoUrl = LOGO_CID_SRC;
         $loginUrl = PUBLIC_SITE_URL . '/ADMIN_FILES/login_screen.html';
 
         $safeName = htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8');

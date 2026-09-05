@@ -25,22 +25,15 @@ define('SMTP_FROM_NAME', getenv('SMTP_FROM_NAME') ?: 'SPED ALM');
 define('PUBLIC_SITE_URL', getenv('PUBLIC_SITE_URL') ?: 'https://capstone-demo-le1j.onrender.com');
 
 /**
- * Returns the SPED ALM logo as a base64 data: URI, for embedding directly
- * IN the email HTML rather than linking to PUBLIC_SITE_URL/ASSETS/logo.png.
- * A linked image depends on the live site being reachable and awake at the
- * exact moment the recipient's mail client renders the email — Render's
- * free tier spins down after inactivity, so a cold instance can make the
- * logo fail to load (permanently, for that one open, on some clients) even
- * though the URL works fine moments later. Embedding removes that
- * dependency entirely. MAILER/logo_email.png is a small (~4KB) 96x96
- * downscale of ASSETS/logo.png — the full 1.6MB original would bloat the
- * email and risk spam-filter/clipping thresholds.
+ * Returns the <img src> value for the SPED ALM logo inside an email.
+ * A base64 data: URI looked like the right fix for the logo depending on
+ * PUBLIC_SITE_URL being reachable at render time (Render's free tier spins
+ * down after inactivity, so a cold instance made the linked logo fail to
+ * load) — but Gmail and most mail clients strip data: URIs out of HTML
+ * email bodies as a security measure, so that "fix" just rendered broken
+ * too. The actual supported way to embed an image in an email is a CID
+ * (Content-ID) inline attachment: send_email() calls
+ * $mail->addEmbeddedImage(.../logo_email.png, 'sped_logo', ...) on every
+ * send, and this constant is the matching "cid:" reference for <img src>.
  */
-function get_logo_data_uri(): string {
-    static $cached = null;
-    if ($cached !== null) return $cached;
-    $path = __DIR__ . '/logo_email.png';
-    if (!is_file($path)) { $cached = ''; return $cached; }
-    $cached = 'data:image/png;base64,' . base64_encode(file_get_contents($path));
-    return $cached;
-}
+define('LOGO_CID_SRC', 'cid:sped_logo');
