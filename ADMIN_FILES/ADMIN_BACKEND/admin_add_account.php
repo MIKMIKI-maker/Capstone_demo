@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/admin_push_notification.php';
+require_once __DIR__ . '/../../MAILER/send_email.php';
 requireAdminSession();
 
 $conn = getDatabaseConnection();
@@ -93,6 +94,22 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             "{$fullName} ({$email}) has been added as a {$roleLabel}.",
             $stmt->insert_id ?? null
         );
+
+        // Welcome email straight to the new account's own inbox with its
+        // login credentials — $raw_password is the plaintext default (or
+        // admin-chosen) password, before it got hashed into $password above.
+        $safeName = htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8');
+        $safeEmail = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
+        $safePassword = htmlspecialchars($raw_password, ENT_QUOTES, 'UTF-8');
+        $welcomeHtml = "<p>Hello {$safeName},</p>"
+            . "<p>Your {$roleLabel} account on SPED ALM has been created. You can log in with:</p>"
+            . "<div style=\"background:#f1f5f9;border-left:4px solid #1e3a8a;padding:12px 16px;margin:12px 0;\">"
+            . "<p style=\"margin:0 0 4px;\"><b>Username:</b> {$safeEmail}</p>"
+            . "<p style=\"margin:0;\"><b>Password:</b> {$safePassword}</p>"
+            . "</div>"
+            . "<p>Please log in and change your password as soon as possible.</p>"
+            . "<p style=\"color:#64748b;font-size:12px;\">This is an automated message from SPED ALM. Please do not reply directly to this email.</p>";
+        send_email($email, $fullName, 'Your SPED ALM account has been created', $welcomeHtml);
 
         echo json_encode(['success' => true, 'message' => 'Account added successfully']);
     } else {
