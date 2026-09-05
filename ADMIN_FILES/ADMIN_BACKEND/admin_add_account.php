@@ -110,16 +110,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $welcomeHtml = "<div style=\"max-width:480px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;padding:32px 28px;font-family:Arial,Helvetica,sans-serif;color:#1e293b;\">"
             . "<div style=\"text-align:center;margin-bottom:18px;\"><img src=\"{$logoUrl}\" alt=\"SPED ALM\" width=\"64\" height=\"64\" style=\"width:64px;height:64px;border-radius:50%;\"></div>"
             . "<h2 style=\"text-align:center;color:#1e3a8a;margin:0 0 24px;font-size:22px;\">Welcome to SPED ALM</h2>"
-            . "<p style=\"margin:0 0 12px;\">Hello, {$safeName},</p>"
-            . "<p style=\"margin:0 0 16px;\">Your {$roleLabel} account has been successfully created.</p>"
+            . "<p style=\"margin:0 0 12px;\">Dear {$safeName},</p>"
+            . "<p style=\"margin:0 0 16px;\">We are pleased to inform you that your {$roleLabel} Account has been successfully created in the SPED ALM System.</p>"
+            . "<p style=\"margin:0 0 10px;\">Below are your account credentials:</p>"
             . "<div style=\"background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px;margin:0 0 24px;\">"
             . "<p style=\"margin:0 0 8px;font-size:14px;\"><strong>Username:</strong> {$safeEmail}</p>"
             . "<p style=\"margin:0;font-size:14px;\"><strong>Password:</strong> {$safePassword}</p>"
             . "</div>"
             . "<div style=\"text-align:center;margin:0 0 24px;\"><a href=\"{$loginUrl}\" style=\"display:inline-block;background:#1e3a8a;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:10px;font-weight:700;font-size:14px;\">Log In to SPED ALM</a></div>"
-            . "<p style=\"font-size:13px;color:#64748b;margin:0 0 20px;\">For your security, please change your password after logging in.</p>"
+            . "<p style=\"font-size:13px;color:#64748b;margin:0 0 20px;\">Please keep your account credentials confidential and secure. You may now log in to the SPED ALM System using the credentials provided above.</p>"
             . "<hr style=\"border:none;border-top:1px solid #e2e8f0;margin:0 0 16px;\">"
-            . "<p style=\"font-size:12px;color:#94a3b8;text-align:center;margin:0;\">This is an automated message from SPED ALM. Please do not reply directly to this email.</p>"
+            . "<p style=\"margin:0;\">Sincerely yours,<br>SPED ALM System</p>"
             . "</div>";
         send_email($email, $fullName, 'Your SPED ALM account has been created', $welcomeHtml);
 
