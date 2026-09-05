@@ -15,11 +15,32 @@ define('SMTP_USER', getenv('SMTP_USER') ?: '');
 define('SMTP_PASSWORD', getenv('SMTP_PASSWORD') ?: '');
 define('SMTP_FROM_NAME', getenv('SMTP_FROM_NAME') ?: 'SPED ALM');
 
-// Base URL used for images/links INSIDE emails (logo, "Log In" button).
+// Base URL used for the "Log In"/"View Notification" LINKS inside emails.
 // Deliberately NOT derived from the request ($_SERVER['HTTP_HOST']) —
 // emails are opened in the recipient's own mail client (Gmail, etc.),
-// which can only load images from a publicly reachable address. A request
-// running on localhost/Docker would otherwise put "http://localhost:8080/..."
-// into the email, which Gmail's servers can never reach — the logo just
-// silently fails to load. Always point at the real deployed site instead.
+// which can only load a publicly reachable address. A request running on
+// localhost/Docker would otherwise put "http://localhost:8080/..." into
+// the email, which the recipient can never reach. Always point at the
+// real deployed site instead.
 define('PUBLIC_SITE_URL', getenv('PUBLIC_SITE_URL') ?: 'https://capstone-demo-le1j.onrender.com');
+
+/**
+ * Returns the SPED ALM logo as a base64 data: URI, for embedding directly
+ * IN the email HTML rather than linking to PUBLIC_SITE_URL/ASSETS/logo.png.
+ * A linked image depends on the live site being reachable and awake at the
+ * exact moment the recipient's mail client renders the email — Render's
+ * free tier spins down after inactivity, so a cold instance can make the
+ * logo fail to load (permanently, for that one open, on some clients) even
+ * though the URL works fine moments later. Embedding removes that
+ * dependency entirely. MAILER/logo_email.png is a small (~4KB) 96x96
+ * downscale of ASSETS/logo.png — the full 1.6MB original would bloat the
+ * email and risk spam-filter/clipping thresholds.
+ */
+function get_logo_data_uri(): string {
+    static $cached = null;
+    if ($cached !== null) return $cached;
+    $path = __DIR__ . '/logo_email.png';
+    if (!is_file($path)) { $cached = ''; return $cached; }
+    $cached = 'data:image/png;base64,' . base64_encode(file_get_contents($path));
+    return $cached;
+}
