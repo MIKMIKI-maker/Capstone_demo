@@ -21,8 +21,8 @@ function notifyParentByEmail($parent_email, $parent_name, $student_name, $title,
         . "<p style=\"text-align:center;margin:0 0 2px;font-weight:700;color:#1e3a8a;font-size:15px;\">SPED ALM SYSTEM</p>"
         . "<p style=\"text-align:center;margin:0 0 22px;color:#64748b;font-size:13px;\">Student Notification</p>"
         . "<hr style=\"border:none;border-top:1px solid #e2e8f0;margin:0 0 20px;\">"
-        . "<p style=\"margin:0 0 12px;\">Hello, {$safeParent},</p>"
-        . "<p style=\"margin:0 0 16px;\">Your child's teacher has sent a new notification regarding <b>{$safeStudent}</b>.</p>"
+        . "<p style=\"margin:0 0 12px;\">Dear {$safeParent},</p>"
+        . "<p style=\"margin:0 0 16px;\">This is to inform you that your child's teacher has sent a new notification regarding <b>{$safeStudent}</b>.</p>"
         . "<div style=\"background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px;margin:0 0 20px;\">"
         . "<p style=\"margin:0 0 8px;font-weight:700;color:#1e3a8a;font-size:14px;\">🔔 {$safeTitle}</p>"
         . "<p style=\"margin:0;font-size:14px;\">{$safeMessage}</p>"
@@ -30,6 +30,7 @@ function notifyParentByEmail($parent_email, $parent_name, $student_name, $title,
         . "<p style=\"margin:0 0 20px;font-size:13px;color:#64748b;\">Please log in to your SPED ALM account to view the complete notification.</p>"
         . "<div style=\"text-align:center;margin:0 0 24px;\"><a href=\"{$loginUrl}\" style=\"display:inline-block;background:#1e3a8a;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:10px;font-weight:700;font-size:14px;\">View Notification</a></div>"
         . "<hr style=\"border:none;border-top:1px solid #e2e8f0;margin:0 0 16px;\">"
+        . "<p style=\"margin:0 0 16px;\">Sincerely yours,<br>SPED ALM System</p>"
         . "<p style=\"font-size:12px;color:#94a3b8;text-align:center;margin:0 0 4px;\">This is an automated message from SPED ALM. Please do not reply directly to this email.</p>"
         . "<p style=\"font-size:12px;color:#cbd5e1;text-align:center;margin:0;\">© {$year} SPED ALM</p>"
         . "</div>";
