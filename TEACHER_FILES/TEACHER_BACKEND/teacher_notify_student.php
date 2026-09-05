@@ -1,6 +1,22 @@
 <?php
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/teacher_auth.php';
+require_once __DIR__ . '/../../MAILER/send_email.php';
+
+function notifyParentByEmail($parent_email, $parent_name, $student_name, $title, $message) {
+    if (!$parent_email) return;
+    $safeStudent = htmlspecialchars($student_name, ENT_QUOTES, 'UTF-8');
+    $safeTitle   = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+    $safeMessage = nl2br(htmlspecialchars($message, ENT_QUOTES, 'UTF-8'));
+    $html = "<p>Hello " . htmlspecialchars($parent_name ?: 'Parent/Guardian', ENT_QUOTES, 'UTF-8') . ",</p>"
+        . "<p>Your child's teacher sent a new notification regarding <b>{$safeStudent}</b>:</p>"
+        . "<div style=\"background:#f1f5f9;border-left:4px solid #1e3a8a;padding:12px 16px;margin:12px 0;\">"
+        . "<p style=\"margin:0 0 6px;font-weight:700;color:#1e3a8a;\">{$safeTitle}</p>"
+        . "<p style=\"margin:0;\">{$safeMessage}</p>"
+        . "</div>"
+        . "<p style=\"color:#64748b;font-size:12px;\">This is an automated message from SPED ALM. Please do not reply directly to this email.</p>";
+    send_email($parent_email, $parent_name ?: 'Parent/Guardian', "New notification for {$student_name}: {$title}", $html);
+}
 
 header('Content-Type: application/json');
 header('Cache-Control: no-cache');
@@ -44,10 +60,19 @@ if ($action === 'send') {
         $stmt = $conn->prepare("INSERT INTO student_notifications (teacher_id, student_id, title, message, notification_type) VALUES (?, ?, ?, ?, ?)");
         $stmt->bind_param("iisss", $teacher_id, $student_id, $title, $message, $type);
         if ($stmt->execute()) {
-            // Look up student name for the teacher's sent-log entry
-            $snq = $conn->prepare("SELECT student_name FROM students WHERE id = ? AND teacher_id = ?");
+            // Look up student name + parent contact for the teacher's sent-log
+            // entry and the parent email notification below.
+            $snq = $conn->prepare("SELECT student_name, parent_name, parent_email FROM students WHERE id = ? AND teacher_id = ?");
             $student_label = 'a student';
-            if ($snq) { $snq->bind_param("ii", $student_id, $teacher_id); $snq->execute(); if ($snrow = $snq->get_result()->fetch_assoc()) { $student_label = $snrow['student_name']; } $snq->close(); }
+            if ($snq) {
+                $snq->bind_param("ii", $student_id, $teacher_id);
+                $snq->execute();
+                if ($snrow = $snq->get_result()->fetch_assoc()) {
+                    $student_label = $snrow['student_name'];
+                    notifyParentByEmail($snrow['parent_email'], $snrow['parent_name'], $student_label, $title, $message);
+                }
+                $snq->close();
+            }
             pushTeacherNotification($conn, $teacher_id, 'message', 'Notification Sent', 'To ' . $student_label . ': "' . $title . '"');
             echo json_encode(['success' => true, 'message' => 'Notification sent']);
         } else {
@@ -56,7 +81,7 @@ if ($action === 'send') {
         $stmt->close();
     } else {
         // Broadcast to all students of this teacher
-        $bq = $conn->prepare("SELECT id FROM students WHERE teacher_id = ?");
+        $bq = $conn->prepare("SELECT id, student_name, parent_name, parent_email FROM students WHERE teacher_id = ?");
         $count = 0;
         if ($bq) {
             $bq->bind_param("i", $teacher_id);
@@ -68,7 +93,10 @@ if ($action === 'send') {
                 while ($s = $students_res->fetch_assoc()) {
                     $sid = (int)$s['id'];
                     $ins->bind_param("iisss", $teacher_id, $sid, $title, $message, $type);
-                    if ($ins->execute()) $count++;
+                    if ($ins->execute()) {
+                        $count++;
+                        notifyParentByEmail($s['parent_email'], $s['parent_name'], $s['student_name'], $title, $message);
+                    }
                 }
                 $ins->close();
             }

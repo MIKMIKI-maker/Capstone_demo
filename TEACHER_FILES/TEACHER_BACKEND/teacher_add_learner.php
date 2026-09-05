@@ -2,6 +2,7 @@
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/db.php';
 require_once __DIR__ . '/teacher_auth.php';
+require_once __DIR__ . '/../../MAILER/send_email.php';
 
 header('Content-Type: application/json');
 
@@ -84,6 +85,25 @@ if (!$stmt) {
 $stmt->bind_param("iissssssis", $teacher_id, $admin_account_id, $student_name, $parent_name, $parent_email, $parent_phone, $disability_type, $grade_level, $age, $status);
 
 if ($stmt->execute()) {
+    if ($parent_email) {
+        $teacher_label = 'Your child\'s teacher';
+        $tnq = $conn->prepare("SELECT first_name, last_name FROM teacher_accounts WHERE id = ?");
+        if ($tnq) {
+            $tnq->bind_param("i", $teacher_id);
+            $tnq->execute();
+            if ($tnrow = $tnq->get_result()->fetch_assoc()) {
+                $teacher_label = trim($tnrow['first_name'] . ' ' . $tnrow['last_name']) ?: $teacher_label;
+            }
+            $tnq->close();
+        }
+        $safeStudent = htmlspecialchars($student_name, ENT_QUOTES, 'UTF-8');
+        $safeTeacher = htmlspecialchars($teacher_label, ENT_QUOTES, 'UTF-8');
+        $html = "<p>Hello " . htmlspecialchars($parent_name ?: 'Parent/Guardian', ENT_QUOTES, 'UTF-8') . ",</p>"
+            . "<p><b>{$safeStudent}</b> has been enrolled with {$safeTeacher} on SPED ALM.</p>"
+            . "<p>You'll receive updates and notifications here at this email address whenever the teacher sends one, and you can track {$safeStudent}'s progress by asking the teacher for access to the student portal.</p>"
+            . "<p style=\"color:#64748b;font-size:12px;\">This is an automated message from SPED ALM. Please do not reply directly to this email.</p>";
+        send_email($parent_email, $parent_name ?: 'Parent/Guardian', "{$student_name} has been enrolled — SPED ALM", $html);
+    }
     echo json_encode(['success' => true, 'message' => 'Student added successfully', 'id' => $stmt->insert_id]);
 } else {
     echo json_encode(['success' => false, 'message' => 'Failed to add student: ' . $stmt->error]);
