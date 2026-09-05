@@ -98,17 +98,29 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         // Welcome email straight to the new account's own inbox with its
         // login credentials — $raw_password is the plaintext default (or
         // admin-chosen) password, before it got hashed into $password above.
+        // PUBLIC_SITE_URL (not the request's own host) so the logo/login
+        // link work in the recipient's inbox even when this code is running
+        // on localhost/Docker — see MAILER/mailer_config.php.
+        $logoUrl = PUBLIC_SITE_URL . '/ASSETS/logo.png';
+        $loginUrl = PUBLIC_SITE_URL . '/ADMIN_FILES/login_screen.html';
+
         $safeName = htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8');
         $safeEmail = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
         $safePassword = htmlspecialchars($raw_password, ENT_QUOTES, 'UTF-8');
-        $welcomeHtml = "<p>Hello {$safeName},</p>"
-            . "<p>Your {$roleLabel} account on SPED ALM has been created. You can log in with:</p>"
-            . "<div style=\"background:#f1f5f9;border-left:4px solid #1e3a8a;padding:12px 16px;margin:12px 0;\">"
-            . "<p style=\"margin:0 0 4px;\"><b>Username:</b> {$safeEmail}</p>"
-            . "<p style=\"margin:0;\"><b>Password:</b> {$safePassword}</p>"
+        $welcomeHtml = "<div style=\"max-width:480px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;padding:32px 28px;font-family:Arial,Helvetica,sans-serif;color:#1e293b;\">"
+            . "<div style=\"text-align:center;margin-bottom:18px;\"><img src=\"{$logoUrl}\" alt=\"SPED ALM\" width=\"64\" height=\"64\" style=\"width:64px;height:64px;border-radius:50%;\"></div>"
+            . "<h2 style=\"text-align:center;color:#1e3a8a;margin:0 0 24px;font-size:22px;\">Welcome to SPED ALM</h2>"
+            . "<p style=\"margin:0 0 12px;\">Hello, {$safeName},</p>"
+            . "<p style=\"margin:0 0 16px;\">Your {$roleLabel} account has been successfully created.</p>"
+            . "<div style=\"background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px;margin:0 0 24px;\">"
+            . "<p style=\"margin:0 0 8px;font-size:14px;\"><strong>Username:</strong> {$safeEmail}</p>"
+            . "<p style=\"margin:0;font-size:14px;\"><strong>Password:</strong> {$safePassword}</p>"
             . "</div>"
-            . "<p>Please log in and change your password as soon as possible.</p>"
-            . "<p style=\"color:#64748b;font-size:12px;\">This is an automated message from SPED ALM. Please do not reply directly to this email.</p>";
+            . "<div style=\"text-align:center;margin:0 0 24px;\"><a href=\"{$loginUrl}\" style=\"display:inline-block;background:#1e3a8a;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:10px;font-weight:700;font-size:14px;\">Log In to SPED ALM</a></div>"
+            . "<p style=\"font-size:13px;color:#64748b;margin:0 0 20px;\">For your security, please change your password after logging in.</p>"
+            . "<hr style=\"border:none;border-top:1px solid #e2e8f0;margin:0 0 16px;\">"
+            . "<p style=\"font-size:12px;color:#94a3b8;text-align:center;margin:0;\">This is an automated message from SPED ALM. Please do not reply directly to this email.</p>"
+            . "</div>";
         send_email($email, $fullName, 'Your SPED ALM account has been created', $welcomeHtml);
 
         echo json_encode(['success' => true, 'message' => 'Account added successfully']);

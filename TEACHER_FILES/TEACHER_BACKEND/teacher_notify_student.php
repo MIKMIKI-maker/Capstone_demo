@@ -1,22 +1,7 @@
 <?php
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/teacher_auth.php';
-require_once __DIR__ . '/../../MAILER/send_email.php';
-
-function notifyParentByEmail($parent_email, $parent_name, $student_name, $title, $message) {
-    if (!$parent_email) return;
-    $safeStudent = htmlspecialchars($student_name, ENT_QUOTES, 'UTF-8');
-    $safeTitle   = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
-    $safeMessage = nl2br(htmlspecialchars($message, ENT_QUOTES, 'UTF-8'));
-    $html = "<p>Hello " . htmlspecialchars($parent_name ?: 'Parent/Guardian', ENT_QUOTES, 'UTF-8') . ",</p>"
-        . "<p>Your child's teacher sent a new notification regarding <b>{$safeStudent}</b>:</p>"
-        . "<div style=\"background:#f1f5f9;border-left:4px solid #1e3a8a;padding:12px 16px;margin:12px 0;\">"
-        . "<p style=\"margin:0 0 6px;font-weight:700;color:#1e3a8a;\">{$safeTitle}</p>"
-        . "<p style=\"margin:0;\">{$safeMessage}</p>"
-        . "</div>"
-        . "<p style=\"color:#64748b;font-size:12px;\">This is an automated message from SPED ALM. Please do not reply directly to this email.</p>";
-    send_email($parent_email, $parent_name ?: 'Parent/Guardian', "New notification for {$student_name}: {$title}", $html);
-}
+require_once __DIR__ . '/../../MAILER/notify_parent.php';
 
 header('Content-Type: application/json');
 header('Cache-Control: no-cache');

@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/teacher_auth.php';
+require_once __DIR__ . '/../../MAILER/notify_parent.php';
 
 header('Content-Type: application/json');
 
@@ -47,8 +48,9 @@ if ($stmt->execute() && $stmt->affected_rows > 0) {
     $stmt->close();
 
     // Look up the student/activity this submission belongs to, for the progress
-    // sync below and for the "your activity was graded" notification.
-    $look = $conn->prepare("SELECT sub.student_id, sub.activity_id, a.activity_title FROM activity_submissions sub JOIN teacher_activities a ON a.id = sub.activity_id WHERE sub.id = ?");
+    // sync below and for the "your activity was graded" notification (both the
+    // in-app one and the parent email).
+    $look = $conn->prepare("SELECT sub.student_id, sub.activity_id, a.activity_title, s.student_name, s.parent_name, s.parent_email FROM activity_submissions sub JOIN teacher_activities a ON a.id = sub.activity_id JOIN students s ON s.id = sub.student_id WHERE sub.id = ?");
     $look->bind_param("i", $submission_id);
     $look->execute();
     $row = $look->get_result()->fetch_assoc();
@@ -67,6 +69,8 @@ if ($stmt->execute() && $stmt->affected_rows > 0) {
         $notif_msg   = 'Your teacher graded "' . $row['activity_title'] . '"' . ($finalized_score !== null ? ' — score: ' . $finalized_score : '') . '.';
         $nstmt = $conn->prepare("INSERT INTO student_notifications (teacher_id, student_id, title, message, notification_type) VALUES (?, ?, ?, ?, 'graded')");
         if ($nstmt) { $nstmt->bind_param("iiss", $teacher_id, $row['student_id'], $notif_title, $notif_msg); $nstmt->execute(); $nstmt->close(); }
+
+        notifyParentByEmail($row['parent_email'], $row['parent_name'], $row['student_name'], $notif_title, $notif_msg);
     }
 
     echo json_encode(['success' => true]);
