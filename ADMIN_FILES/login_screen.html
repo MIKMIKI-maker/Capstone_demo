@@ -259,6 +259,35 @@
         });
       });
 
+      /* Live-updating "try again in X" countdown for a lockout response,
+         instead of a static "5 minutes" message that never changes even as
+         the wait gets shorter. Ticks down to 0 and re-enables the button on
+         its own — the user doesn't have to refresh to try again. */
+      var _lockoutTimer = null;
+      function startLockoutCountdown(seconds, errEl, submitBtn) {
+        if (_lockoutTimer) clearInterval(_lockoutTimer);
+        var remaining = Math.ceil(seconds);
+        function render() {
+          var mins = Math.floor(remaining / 60);
+          var secs = remaining % 60;
+          errEl.textContent = 'Too many attempts. Please try again in ' + mins + ':' + (secs < 10 ? '0' : '') + secs + '.';
+          errEl.style.display = 'block';
+        }
+        render();
+        if (submitBtn) submitBtn.disabled = true;
+        _lockoutTimer = setInterval(function () {
+          remaining--;
+          if (remaining <= 0) {
+            clearInterval(_lockoutTimer);
+            _lockoutTimer = null;
+            errEl.style.display = 'none';
+            if (submitBtn) submitBtn.disabled = false;
+            return;
+          }
+          render();
+        }, 1000);
+      }
+
       /* Handle login form submission */
       var loginForm = document.getElementById("login_screen_form_1");
       if (loginForm) {
@@ -345,10 +374,13 @@
                 if (errEl) {
                   if (jsonData.code === 'account_deleted') {
                     errEl.innerHTML = '<strong>Account deactivated.</strong> Your account has been deactivated by the administrator.<br>Please contact your school administrator to restore your access.';
+                    errEl.style.display = 'block';
+                  } else if (jsonData.code === 'too_many_attempts' && jsonData.retry_after_seconds) {
+                    startLockoutCountdown(jsonData.retry_after_seconds, errEl, document.querySelector('.admin-btn-signin'));
                   } else {
                     errEl.textContent = jsonData.message || 'Login failed. Please check your credentials.';
+                    errEl.style.display = 'block';
                   }
-                  errEl.style.display = 'block';
                 }
               }
             } catch (e) {

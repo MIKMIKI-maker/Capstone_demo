@@ -126,14 +126,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     // would also block every other account trying to log in from there.
     $MAX_ATTEMPTS = 5;
     $LOCKOUT_MINUTES = 5;
-    $chk = $conn->prepare("SELECT COUNT(*) AS cnt FROM login_attempts WHERE email = ? AND attempted_at > DATE_SUB(NOW(), INTERVAL ? MINUTE)");
+    // Fetching the oldest attempt in the window (not just the count) is what
+    // lets the frontend show a live countdown instead of a static "5
+    // minutes" — the lockout actually clears as soon as that oldest attempt
+    // ages past the window, which is almost never exactly 5 minutes away.
+    $chk = $conn->prepare("SELECT COUNT(*) AS cnt, MIN(attempted_at) AS oldest FROM login_attempts WHERE email = ? AND attempted_at > DATE_SUB(NOW(), INTERVAL ? MINUTE)");
     if ($chk) {
         $chk->bind_param("si", $email, $LOCKOUT_MINUTES);
         $chk->execute();
         $chkRow = $chk->get_result()->fetch_assoc();
         $chk->close();
         if ($chkRow && (int)$chkRow['cnt'] >= $MAX_ATTEMPTS) {
-            echo json_encode(['status' => 'error', 'code' => 'too_many_attempts', 'message' => 'Too many failed login attempts. Please try again in ' . $LOCKOUT_MINUTES . ' minutes.']);
+            $retryAfter = max(1, ($LOCKOUT_MINUTES * 60) - (time() - strtotime($chkRow['oldest'])));
+            echo json_encode(['status' => 'error', 'code' => 'too_many_attempts', 'message' => 'Too many failed login attempts. Please try again in ' . $LOCKOUT_MINUTES . ' minutes.', 'retry_after_seconds' => $retryAfter]);
             $conn->close();
             exit;
         }
