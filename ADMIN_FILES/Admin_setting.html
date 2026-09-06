@@ -114,14 +114,55 @@
       <!-- LEFT: Settings Menu -->
       <div class="admin-settings-menu">
         <p class="admin-settings-menu-label">SETTINGS</p>
-        <button class="admin-settings-tab active" onclick="switchTab('security', this)" type="button">
+        <button class="admin-settings-tab active" onclick="switchTab('profile', this)" type="button">
+          <span class="admin-tab-icon"><i class="fa-solid fa-user"></i></span> Profile
+        </button>
+        <button class="admin-settings-tab" onclick="switchTab('security', this)" type="button">
           <span class="admin-tab-icon"><i class="fa-solid fa-shield-halved"></i></span> Security
         </button>
       </div>
       <!-- RIGHT: Settings Panel -->
       <div class="admin-settings-panel">
+        <!-- PROFILE -->
+        <div class="admin-settings-section" id="admin-section-profile" style="display:flex;">
+          <div class="admin-section-header">
+            <span class="admin-section-dot"></span>
+            <h2 class="admin-section-title">Profile</h2>
+          </div>
+          <div class="admin-section-content">
+            <div class="admin-profile-header-card">
+              <div class="admin-profile-header-avatar-wrap">
+                <div class="admin-profile-header-avatar" id="admin-header-avatar">A</div>
+                <button class="admin-edit-avatar-btn" id="admin-btn-edit-avatar" type="button" title="Upload profile picture">
+                  <i class="fa-solid fa-camera" style="font-size:10px;"></i>
+                </button>
+                <button class="admin-remove-avatar-btn" id="admin-btn-remove-avatar" type="button" title="Remove photo" style="display:none;">
+                  <i class="fa-solid fa-trash" style="font-size:10px;"></i>
+                </button>
+                <input type="file" id="admin-avatar-upload" accept="image/*" aria-label="Upload profile picture" />
+              </div>
+              <div class="admin-profile-header-info">
+                <h3 id="admin-header-name">Admin</h3>
+                <p class="admin-role-text">School Administrator</p>
+                <p class="admin-email-text" id="admin-header-email"></p>
+              </div>
+            </div>
+            <div class="admin-profile-form-grid">
+              <div class="admin-form-group">
+                <label>First Name</label>
+                <input id="admin-field-first-name" class="admin-setting-input" placeholder="First name" type="text" />
+              </div>
+              <div class="admin-form-group">
+                <label>Last Name</label>
+                <input id="admin-field-last-name" class="admin-setting-input" placeholder="Last name" type="text" />
+              </div>
+            </div>
+            <div id="admin-profile-message" style="display:none;margin-bottom:10px;padding:10px 14px;border-radius:8px;font-size:12.5px;font-weight:500;max-width:500px;"></div>
+            <button class="admin-btn-signin" style="width:auto;padding:10px 22px;" id="admin-profile-save-btn" type="button">Save Changes</button>
+          </div>
+        </div>
         <!-- SECURITY (2FA) -->
-        <div class="admin-settings-section" id="admin-section-security">
+        <div class="admin-settings-section" id="admin-section-security" style="display:none;">
           <div class="admin-section-header">
             <span class="admin-section-dot"></span>
             <h2 class="admin-section-title">Security</h2>
@@ -191,8 +232,132 @@
     function switchTab(tab, el) {
       document.querySelectorAll('.admin-settings-tab').forEach(t => t.classList.remove('active'));
       el.classList.add('active');
+      document.getElementById('admin-section-profile').style.display = tab === 'profile' ? 'flex' : 'none';
       document.getElementById('admin-section-security').style.display = tab === 'security' ? 'flex' : 'none';
     }
+
+    /* ── Profile tab ──────────────────────────────────────────────── */
+    function loadAdminProfile() {
+      fetch('ADMIN_BACKEND/admin_get_profile.php')
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.success) return;
+          document.getElementById('admin-field-first-name').value = data.first_name || '';
+          document.getElementById('admin-field-last-name').value = data.last_name || '';
+          document.getElementById('admin-header-email').textContent = data.admin_email || '';
+          var fullName = (data.first_name || '') + (data.last_name ? ' ' + data.last_name : '');
+          document.getElementById('admin-header-name').textContent = fullName.trim() || 'Admin';
+          renderAdminAvatarPreview(data.profile_photo || '');
+
+          var sidebarName = document.querySelector('.admin-sidebar-user .admin-user-name');
+          if (sidebarName) sidebarName.textContent = fullName.trim() || 'Admin';
+        })
+        .catch(function () {});
+    }
+
+    function renderAdminAvatarPreview(pic) {
+      var el = document.getElementById('admin-header-avatar');
+      var removeBtn = document.getElementById('admin-btn-remove-avatar');
+      if (pic) {
+        el.innerHTML = '<img src="' + pic + '" alt="Profile" class="admin-avatar-uploaded-img" />';
+        removeBtn.style.display = 'flex';
+      } else {
+        var name = document.getElementById('admin-field-first-name').value || 'A';
+        el.textContent = name.trim().charAt(0).toUpperCase() || 'A';
+        removeBtn.style.display = 'none';
+      }
+    }
+
+    document.getElementById('admin-btn-edit-avatar').addEventListener('click', function () {
+      document.getElementById('admin-avatar-upload').click();
+    });
+
+    function _compressAdminPhoto(dataURL, cb) {
+      var img = new Image();
+      img.onload = function () {
+        var max = 200, w = img.width, h = img.height;
+        if (w > h) { if (w > max) { h = Math.round(h * max / w); w = max; } }
+        else       { if (h > max) { w = Math.round(w * max / h); h = max; } }
+        var c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        cb(c.toDataURL('image/jpeg', 0.82));
+      };
+      img.src = dataURL;
+    }
+
+    document.getElementById('admin-avatar-upload').addEventListener('change', function () {
+      var file = this.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        _compressAdminPhoto(e.target.result, function (pic) {
+          renderAdminAvatarPreview(pic);
+          saveAdminPhoto(pic);
+        });
+      };
+      reader.readAsDataURL(file);
+      this.value = '';
+    });
+
+    document.getElementById('admin-btn-remove-avatar').addEventListener('click', function () {
+      renderAdminAvatarPreview('');
+      saveAdminPhoto('');
+    });
+
+    function saveAdminPhoto(photo) {
+      var params = new URLSearchParams();
+      params.append('photo', photo);
+      fetch('ADMIN_BACKEND/admin_save_profile_photo.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString()
+      }).catch(function () {});
+    }
+
+    document.getElementById('admin-profile-save-btn').addEventListener('click', function () {
+      var firstName = document.getElementById('admin-field-first-name').value.trim();
+      var lastName = document.getElementById('admin-field-last-name').value.trim();
+      var msgEl = document.getElementById('admin-profile-message');
+
+      function showProfileMsg(text, ok) {
+        msgEl.textContent = text;
+        msgEl.style.display = 'block';
+        msgEl.style.background = ok ? '#d1fae5' : '#fee2e2';
+        msgEl.style.color = ok ? '#065f46' : '#991b1b';
+      }
+
+      if (!firstName) { showProfileMsg('First name is required.', false); return; }
+
+      var btn = this;
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+
+      var params = new URLSearchParams();
+      params.append('first_name', firstName);
+      params.append('last_name', lastName);
+      params.append('csrf_token', _csrfToken);
+
+      fetch('ADMIN_BACKEND/admin_update_profile.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString()
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          showProfileMsg(data.message, data.success);
+          if (data.success) {
+            var fullName = firstName + (lastName ? ' ' + lastName : '');
+            document.getElementById('admin-header-name').textContent = fullName;
+            var sidebarName = document.querySelector('.admin-sidebar-user .admin-user-name');
+            if (sidebarName) sidebarName.textContent = fullName;
+          }
+        })
+        .catch(function () { showProfileMsg('Network error. Please try again.', false); })
+        .then(function () { btn.disabled = false; btn.textContent = 'Save Changes'; });
+    });
+
+    loadAdminProfile();
 
     /* ── Change Password (Security tab) ─────────────────────────────── */
     document.getElementById('pwd-change-btn').addEventListener('click', function () {

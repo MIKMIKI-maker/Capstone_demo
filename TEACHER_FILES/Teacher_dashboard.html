@@ -140,30 +140,27 @@
                         <div class="teacher-plan-grid">
                             <div class="teacher-plan-card">
                                 <span class="teacher-grading-badge badge-blue">First Grading</span>
-                                <ul class="teacher-plan-items">
-                                    <li>Cognitive Development</li>
-                                    <li>Communication Skills</li>
-                                    <li>Fine Motor Skills</li>
-                                    <li>Attention &amp; Routine</li>
-                                </ul>
+                                <ul class="teacher-plan-items" id="teacher-plan-First"></ul>
+                                <div class="teacher-plan-add-row">
+                                    <input class="teacher-plan-add-input" id="teacher-plan-input-First" placeholder="Add a focus area..." type="text" onkeydown="if(event.key==='Enter') addPlanItem('First')" />
+                                    <button class="teacher-plan-add-btn" type="button" onclick="addPlanItem('First')">+</button>
+                                </div>
                             </div>
                             <div class="teacher-plan-card">
                                 <span class="teacher-grading-badge badge-pink">Second Grading</span>
-                                <ul class="teacher-plan-items">
-                                    <li>Social Skills</li>
-                                    <li>Emotional Regulation</li>
-                                    <li>Gross Motor Skills</li>
-                                    <li>Behavior Support</li>
-                                </ul>
+                                <ul class="teacher-plan-items" id="teacher-plan-Second"></ul>
+                                <div class="teacher-plan-add-row">
+                                    <input class="teacher-plan-add-input" id="teacher-plan-input-Second" placeholder="Add a focus area..." type="text" onkeydown="if(event.key==='Enter') addPlanItem('Second')" />
+                                    <button class="teacher-plan-add-btn" type="button" onclick="addPlanItem('Second')">+</button>
+                                </div>
                             </div>
                             <div class="teacher-plan-card">
                                 <span class="teacher-grading-badge badge-orange">Third Grading</span>
-                                <ul class="teacher-plan-items">
-                                    <li>Life Skills</li>
-                                    <li>Self-Help Skills</li>
-                                    <li>Functional Communication</li>
-                                    <li>Evaluation &amp; Progress Monitoring</li>
-                                </ul>
+                                <ul class="teacher-plan-items" id="teacher-plan-Third"></ul>
+                                <div class="teacher-plan-add-row">
+                                    <input class="teacher-plan-add-input" id="teacher-plan-input-Third" placeholder="Add a focus area..." type="text" onkeydown="if(event.key==='Enter') addPlanItem('Third')" />
+                                    <button class="teacher-plan-add-btn" type="button" onclick="addPlanItem('Third')">+</button>
+                                </div>
                             </div>
                         </div>
                     </section>
@@ -338,7 +335,55 @@
             initDefaults();
             loadTeacherProfile();
             loadDashboardStats();
+            loadActivityPlan();
         });
+
+        function loadActivityPlan() {
+            var tid = getCurrentTeacherId();
+            fetch('TEACHER_BACKEND/teacher_activity_plan.php?teacher_id=' + tid + '&action=get')
+                .then(function(r) { return r.json(); })
+                .then(function(data) { if (data.success) renderActivityPlan(data.plan); })
+                .catch(function() {});
+        }
+
+        function renderActivityPlan(plan) {
+            ['First', 'Second', 'Third'].forEach(function(period) {
+                var list = document.getElementById('teacher-plan-' + period);
+                var items = (plan && plan[period]) || [];
+                list.innerHTML = items.map(function(item) {
+                    return '<li>'
+                        + '<span>' + escHtml(item.text) + '</span>'
+                        + '<button class="teacher-plan-item-del" type="button" onclick="deletePlanItem(' + item.id + ',\'' + period + '\')" title="Remove">✕</button>'
+                        + '</li>';
+                }).join('');
+            });
+        }
+
+        function addPlanItem(period) {
+            var input = document.getElementById('teacher-plan-input-' + period);
+            var text = (input.value || '').trim();
+            if (!text) { input.focus(); return; }
+            var tid = getCurrentTeacherId();
+            input.value = '';
+            fetch('TEACHER_BACKEND/teacher_activity_plan.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'action=create&teacher_id=' + tid + '&grading_period=' + encodeURIComponent(period) + '&item_text=' + encodeURIComponent(text)
+            }).then(function(r) { return r.json(); })
+              .then(function() { loadActivityPlan(); })
+              .catch(function() {});
+        }
+
+        function deletePlanItem(itemId) {
+            var tid = getCurrentTeacherId();
+            fetch('TEACHER_BACKEND/teacher_activity_plan.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'action=delete&teacher_id=' + tid + '&item_id=' + itemId
+            }).then(function(r) { return r.json(); })
+              .then(function() { loadActivityPlan(); })
+              .catch(function() {});
+        }
 
         function loadTeacherProfile() {
             var teacherId = getCurrentTeacherId();

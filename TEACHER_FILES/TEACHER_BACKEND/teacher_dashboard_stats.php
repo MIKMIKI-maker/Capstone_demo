@@ -74,7 +74,7 @@ $stmt = $conn->prepare(
         (SELECT COUNT(*) FROM learner_progress lp WHERE lp.student_id = s.id AND lp.teacher_id = ?) AS activity_count
      FROM students s
      WHERE s.teacher_id = ?
-     ORDER BY s.student_name
+     ORDER BY last_score DESC, s.student_name
      LIMIT 12"
 );
 if ($stmt) {
