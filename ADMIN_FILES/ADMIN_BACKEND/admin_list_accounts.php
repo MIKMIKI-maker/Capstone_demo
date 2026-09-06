@@ -27,18 +27,25 @@ if ($checkCreated && $checkCreated->num_rows == 0) {
 // Ensure profile_photo column exists
 $conn->query("ALTER TABLE admin_accounts ADD COLUMN IF NOT EXISTS profile_photo LONGTEXT NULL DEFAULT NULL");
 
-$result = $conn->query("SELECT id, admin_email, first_name, last_name,
-    COALESCE(phone_number, '') as phone_number,
-    role, condition_info,
-    COALESCE(assigned_teacher_id, 0) as assigned_teacher_id,
-    COALESCE(parent_name, '') as parent_name,
-    COALESCE(status, 'inactive') as status,
-    last_login,
-    COALESCE(created_at, NOW()) as created_at,
-    COALESCE(profile_photo, '') as profile_photo
-FROM admin_accounts
-WHERE is_deleted = 0 OR is_deleted IS NULL
-ORDER BY id DESC");
+// last_activity_taken (students only) proves genuine engagement — an
+// activity actually submitted — rather than just last_login, which only
+// proves the account was opened and could sit at "Active" forever even if
+// the student never did any actual work after that first login.
+$result = $conn->query("SELECT a.id, a.admin_email, a.first_name, a.last_name,
+    COALESCE(a.phone_number, '') as phone_number,
+    a.role, a.condition_info,
+    COALESCE(a.assigned_teacher_id, 0) as assigned_teacher_id,
+    COALESCE(a.parent_name, '') as parent_name,
+    COALESCE(a.status, 'inactive') as status,
+    a.last_login,
+    COALESCE(a.created_at, NOW()) as created_at,
+    COALESCE(a.profile_photo, '') as profile_photo,
+    (SELECT MAX(sub.submitted_at) FROM activity_submissions sub
+     INNER JOIN students s ON s.id = sub.student_id
+     WHERE s.admin_account_id = a.id) AS last_activity_taken
+FROM admin_accounts a
+WHERE a.is_deleted = 0 OR a.is_deleted IS NULL
+ORDER BY a.id DESC");
 
 if (!$result) {
     echo json_encode([]);
