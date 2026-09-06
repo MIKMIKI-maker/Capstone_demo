@@ -258,6 +258,13 @@
             </div>
           </div>
           <div class="admin-v2-info-row">
+            <div class="admin-v2-info-icon"><i class="fa-regular fa-clock"></i></div>
+            <div class="admin-v2-info-text">
+              <span class="admin-v2-info-label">Last Active</span>
+              <span class="admin-v2-info-val" id="tv-lastactive">—</span>
+            </div>
+          </div>
+          <div class="admin-v2-info-row">
             <div class="admin-v2-info-icon"><i class="fa-solid fa-circle-dot"></i></div>
             <div class="admin-v2-info-text">
               <span class="admin-v2-info-label">Status</span>
@@ -334,6 +341,13 @@
             </div>
           </div>
           <div class="admin-v2-info-row">
+            <div class="admin-v2-info-icon"><i class="fa-regular fa-clock"></i></div>
+            <div class="admin-v2-info-text">
+              <span class="admin-v2-info-label">Last Active</span>
+              <span class="admin-v2-info-val" id="sv-lastactive">—</span>
+            </div>
+          </div>
+          <div class="admin-v2-info-row">
             <div class="admin-v2-info-icon"><i class="fa-solid fa-circle-dot"></i></div>
             <div class="admin-v2-info-text">
               <span class="admin-v2-info-label">Status</span>
@@ -388,6 +402,7 @@
         <div class="admin-view-info-row" id="admin-vi-row-email"><span class="admin-vi-icon">📧</span><span class="admin-vi-label">Email</span><span class="admin-vi-val">—</span></div>
         <div class="admin-view-info-row" id="admin-vi-row-role"><span class="admin-vi-icon">👤</span><span class="admin-vi-label">Role</span><span class="admin-vi-val">—</span></div>
         <div class="admin-view-info-row" id="admin-vi-row-created"><span class="admin-vi-icon">📅</span><span class="admin-vi-label">Date Created</span><span class="admin-vi-val">—</span></div>
+        <div class="admin-view-info-row" id="admin-vi-row-lastactive"><span class="admin-vi-icon">🕒</span><span class="admin-vi-label">Last Active</span><span class="admin-vi-val">—</span></div>
         <div class="admin-view-info-row" id="admin-vi-row-status"><span class="admin-vi-icon">🔵</span><span class="admin-vi-label">Status</span><span class="admin-vi-val"><span class="admin-badge admin-badge--gray">—</span></span></div>
       </div>
       <div class="admin-modal-footer-row">
@@ -911,6 +926,26 @@
     var selectedAccount = null;
     var teacherStudentsData = [];
 
+    // Students: last_login only proves the account was opened once — it
+    // never proves the student actually did any work after that.
+    // last_activity_taken (an actual submitted activity) is the real
+    // engagement signal for that role. Teacher/Admin use last_login since
+    // "taking an activity" doesn't apply to them.
+    function fmtLastActive(account) {
+      function fmtDate(s) {
+        if (!s) return null;
+        var d = new Date(s.replace(' ', 'T'));
+        if (isNaN(d)) return null;
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      }
+      if (account.role === 'student') {
+        var lastActivity = fmtDate(account.last_activity_taken);
+        return lastActivity ? ('Activity: ' + lastActivity) : 'No activity yet';
+      }
+      var lastLogin = fmtDate(account.last_login);
+      return lastLogin ? ('Login: ' + lastLogin) : 'Never logged in';
+    }
+
     function viewUser(id) {
       var account = accountList.find(function(acc) { return acc.id == id; });
       if (!account) return;
@@ -948,6 +983,7 @@
       } else {
         document.getElementById('tv-created').textContent = '—';
       }
+      document.getElementById('tv-lastactive').textContent = fmtLastActive(account);
 
       var sb = document.getElementById('tv-status');
       sb.textContent = account.status;
@@ -1024,6 +1060,7 @@
       } else {
         document.getElementById('sv-created').textContent = '—';
       }
+      document.getElementById('sv-lastactive').textContent = fmtLastActive(account);
 
       var sb = document.getElementById('sv-status');
       sb.textContent = account.status;
@@ -1116,6 +1153,8 @@
       } else {
         setRow('admin-vi-row-created', '');
       }
+
+      setRow('admin-vi-row-lastactive', fmtLastActive(account));
 
       document.getElementById('admin-vi-row-status').style.display = 'flex';
       var statusBadge = document.querySelector('#admin-vi-row-status .admin-badge');

@@ -9,6 +9,7 @@
   <link href="ADMIN_LOGIN_CSS/animations.css" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 
 
@@ -176,6 +177,52 @@
           <button class="admin-btn-signin" type="button" id="admin-2fa-verify-btn">Verify <i class="fa-solid fa-arrow-right" style="font-size:14px;margin-left:4px;"></i></button>
           <button type="button" id="admin-2fa-back-btn" style="background:none;border:none;color:#64748b;font-size:13px;margin-top:14px;cursor:pointer;width:100%;text-decoration:underline;">← Back to sign in</button>
         </div>
+
+        <!-- 2FA mandatory first-time setup — hidden until the password step
+             returns status:"need_2fa_setup" (this admin account has no 2FA
+             yet). Every admin must complete this once; there's no toggle to
+             skip it, so this replaces the old optional Settings > Security
+             "Enable 2FA" flow entirely. -->
+        <div id="admin-login-step-2fa-setup" style="display:none;">
+          <div class="login-brand">
+            <img alt="SPED ALM Logo" class="login-brand-logo" src="../ASSETS/logo.png" />
+            <span class="login-brand-title">SPED ALM</span>
+            <span class="login-brand-tagline">Two-Factor Authentication Setup Required</span>
+          </div>
+
+          <!-- STEP 1: Scan QR code -->
+          <div id="admin-2fa-setup-step1">
+            <div class="login-portal-badge">
+              <div class="login-portal-badge-icon-circle"><i class="fa-solid fa-shield-halved"></i></div>
+              <div class="login-portal-badge-text">
+                <span class="login-portal-badge-title">2FA is required for Admin accounts</span>
+                <span class="login-portal-badge-sub">Set it up once now — every future login will ask for a code.</span>
+              </div>
+            </div>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;text-align:center;margin:16px 0;">
+              <p style="font-size:13px;font-weight:700;color:#1e293b;margin:0 0 14px;">1. Scan this QR code with your authenticator app</p>
+              <div id="admin-2fa-setup-qr" style="display:inline-block;background:#fff;padding:12px;border-radius:10px;"></div>
+              <p style="font-size:12px;color:#94a3b8;margin:14px 0 4px;">Can't scan? Enter this key manually:</p>
+              <code id="admin-2fa-setup-manual-key" style="font-size:13px;font-weight:700;color:#1e3a8a;background:#eff6ff;padding:6px 12px;border-radius:8px;display:inline-block;letter-spacing:1px;"></code>
+            </div>
+            <div class="admin-form-group">
+              <label for="admin-2fa-setup-code">2. Enter the 6-digit code from the app</label>
+              <input id="admin-2fa-setup-code" placeholder="000000" type="text" inputmode="numeric" maxlength="6" style="letter-spacing:4px;font-size:20px;text-align:center;" />
+            </div>
+            <div id="admin-2fa-setup-error" style="display:none;background:#fff5f5;border:1.5px solid #fca5a5;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-family:'Poppins',sans-serif;font-size:13px;color:#991b1b;line-height:1.6;"></div>
+            <button class="admin-btn-signin" type="button" id="admin-2fa-setup-confirm-btn">Confirm & Continue <i class="fa-solid fa-arrow-right" style="font-size:14px;margin-left:4px;"></i></button>
+          </div>
+
+          <!-- STEP 2: Backup codes (shown once, right after setup succeeds) -->
+          <div id="admin-2fa-setup-step2" style="display:none;">
+            <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:18px 20px;margin:16px 0;">
+              <p style="font-size:13px;font-weight:700;color:#92400e;margin:0 0 8px;"><i class="fa-solid fa-key"></i> Save these backup codes</p>
+              <p style="font-size:12.5px;color:#92400e;margin:0 0 14px;">Each code can be used once to sign in if you lose access to your authenticator app. Store them somewhere safe — they won't be shown again.</p>
+              <div id="admin-2fa-setup-backup-codes" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;font-family:monospace;font-size:14px;font-weight:700;color:#1e293b;background:#fff;border-radius:8px;padding:14px;"></div>
+            </div>
+            <button class="admin-btn-signin" type="button" id="admin-2fa-setup-done-btn">I've saved these — Continue <i class="fa-solid fa-arrow-right" style="font-size:14px;margin-left:4px;"></i></button>
+          </div>
+        </div>
       </div>
     </form>
   </div>
@@ -297,6 +344,29 @@
         document.getElementById('admin-login-step-password').style.display = 'block';
       }
 
+      /* Mandatory first-time 2FA setup (no 2FA on this account yet) —
+         generates a QR code right away so the admin can scan it while the
+         setup step is already on screen. */
+      function showSetupStep() {
+        document.getElementById('admin-login-step-password').style.display = 'none';
+        document.getElementById('admin-login-step-2fa-setup').style.display = 'block';
+        document.getElementById('admin-2fa-setup-step1').style.display = 'block';
+        document.getElementById('admin-2fa-setup-step2').style.display = 'none';
+
+        fetch('ADMIN_BACKEND/admin_2fa_setup_generate.php')
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (!data.success) return;
+            var qrEl = document.getElementById('admin-2fa-setup-qr');
+            qrEl.innerHTML = '';
+            new QRCode(qrEl, { text: data.otpauth_uri, width: 180, height: 180 });
+            document.getElementById('admin-2fa-setup-manual-key').textContent = data.secret;
+            document.getElementById('admin-2fa-setup-code').value = '';
+            document.getElementById('admin-2fa-setup-error').style.display = 'none';
+          })
+          .catch(function () {});
+      }
+
       /* Handle login form submission */
       var loginForm = document.getElementById("admin_screen_form_1");
       if (loginForm) {
@@ -336,6 +406,8 @@
 
               if (jsonData.status === "need_2fa") {
                 show2faStep();
+              } else if (jsonData.status === "need_2fa_setup") {
+                showSetupStep();
               } else if (jsonData.status === "success") {
                 if (jsonData.role !== "admin") {
                   var wrongPortalEl = document.getElementById('login-error-msg');
@@ -417,6 +489,54 @@
       if (code2faInput) {
         code2faInput.addEventListener('keydown', function (e) {
           if (e.key === 'Enter') { e.preventDefault(); verify2faBtn.click(); }
+        });
+      }
+
+      /* Handle mandatory 2FA setup confirmation */
+      var setupConfirmedData = null;
+      var setupConfirmBtn = document.getElementById('admin-2fa-setup-confirm-btn');
+      if (setupConfirmBtn) {
+        setupConfirmBtn.addEventListener('click', function () {
+          var code = document.getElementById('admin-2fa-setup-code').value;
+          var errEl = document.getElementById('admin-2fa-setup-error');
+          if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+
+          fetch('ADMIN_BACKEND/admin_2fa_setup_confirm.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'code=' + encodeURIComponent(code)
+          })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (!data.success) {
+              if (errEl) { errEl.textContent = data.message || 'Incorrect code. Please try again.'; errEl.style.display = 'block'; }
+              return;
+            }
+            setupConfirmedData = data;
+            var list = document.getElementById('admin-2fa-setup-backup-codes');
+            list.innerHTML = data.backup_codes.map(function (c) { return '<div>' + c + '</div>'; }).join('');
+            document.getElementById('admin-2fa-setup-step1').style.display = 'none';
+            document.getElementById('admin-2fa-setup-step2').style.display = 'block';
+          })
+          .catch(function () {
+            if (errEl) { errEl.textContent = 'Unable to reach the login server. Please try again.'; errEl.style.display = 'block'; }
+          });
+        });
+      }
+
+      var setupCodeInput = document.getElementById('admin-2fa-setup-code');
+      if (setupCodeInput) {
+        setupCodeInput.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') { e.preventDefault(); setupConfirmBtn.click(); }
+        });
+      }
+
+      var setupDoneBtn = document.getElementById('admin-2fa-setup-done-btn');
+      if (setupDoneBtn) {
+        setupDoneBtn.addEventListener('click', function () {
+          if (!setupConfirmedData) return;
+          var rememberedEmail = document.getElementById('remember-me').checked ? document.getElementById('admin-email').value : '';
+          completeAdminLogin(setupConfirmedData, rememberedEmail);
         });
       }
     });

@@ -188,13 +188,20 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $clr = $conn->prepare("DELETE FROM login_attempts WHERE email = ?");
             if ($clr) { $clr->bind_param("s", $email); $clr->execute(); $clr->close(); }
 
-            // 2FA only applies to the admin role. Password is correct, but the
-            // real session isn't granted yet — only a "pending" marker good
-            // for the one follow-up 2FA-code request, verified in
-            // admin_2fa_login_verify.php before any admin_* session var is set.
-            if ($row['role'] === 'admin' && !empty($row['totp_enabled'])) {
-                $_SESSION['pending_2fa_admin_id'] = $row['id'];
-                echo json_encode(['status' => 'need_2fa', 'message' => 'Enter your 2FA code']);
+            // 2FA is mandatory for every admin account. Password is correct,
+            // but the real session isn't granted yet — only a "pending"
+            // marker good for the one follow-up request, verified in
+            // admin_2fa_login_verify.php (already has 2FA) or
+            // admin_2fa_setup_confirm.php (first-time setup) before any
+            // admin_* session var is set.
+            if ($row['role'] === 'admin') {
+                if (!empty($row['totp_enabled'])) {
+                    $_SESSION['pending_2fa_admin_id'] = $row['id'];
+                    echo json_encode(['status' => 'need_2fa', 'message' => 'Enter your 2FA code']);
+                } else {
+                    $_SESSION['pending_2fa_setup_admin_id'] = $row['id'];
+                    echo json_encode(['status' => 'need_2fa_setup', 'message' => '2FA setup required']);
+                }
                 $stmt->close();
                 $conn->close();
                 exit;
