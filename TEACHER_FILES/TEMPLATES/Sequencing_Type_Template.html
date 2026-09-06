@@ -2109,8 +2109,8 @@ function initActivityTheme(){
         splash.remove();
         initActivityTheme();
 
-        renderItems(); renderSwatches(); syncDesignControls(); applyAppearance(); renderActivity(); renderSlideNav();
         document.body.classList.add('seq-preview-only');
+        renderItems(); renderSwatches(); syncDesignControls(); applyAppearance(); renderActivity(); renderSlideNav();
         var _stg2 = $("seqStage");
         if (_stg2) _stg2.style.opacity = "0";
         setTimeout(fitStageToScreen, 50);

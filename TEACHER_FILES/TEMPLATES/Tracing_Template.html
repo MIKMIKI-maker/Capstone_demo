@@ -2103,8 +2103,8 @@ function initActivityTheme(){
         splash.remove();
         initActivityTheme();
 
-        renderItems(); renderSwatches(); syncDesignControls(); applyAppearance(); renderActivity(); renderSlideNav();
         document.body.classList.add('trc-preview-only');
+        renderItems(); renderSwatches(); syncDesignControls(); applyAppearance(); renderActivity(); renderSlideNav();
         setTimeout(fitStageToScreen, 50);
 
         document.addEventListener('fullscreenchange', function() {
