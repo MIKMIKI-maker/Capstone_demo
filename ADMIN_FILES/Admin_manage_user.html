@@ -424,7 +424,7 @@
             <div class="admin-input-wrap"><span>📞</span><input name="phone_number" placeholder="Phone number..."
                 type="text" /></div>
           </div>
-          <div class="admin-field-group">
+          <div class="admin-field-group" id="admin-edit-role-wrap">
             <label>Role</label>
             <div class="admin-role-cards">
               <div class="admin-role-card admin-role-card--teacher admin-active-teacher"
@@ -493,7 +493,7 @@
           <div class="admin-field-group">
             <input type="hidden" id="admin-edit-status-input" name="admin_status_input" value="active" />
           </div>
-          <div class="admin-reset-card">
+          <div class="admin-reset-card" id="admin-edit-reset-wrap">
             <div>
               <div class="admin-reset-title">🔑 Reset Password</div>
               <div class="admin-reset-desc">Generate a temporary password for this user. They will be prompted to change
@@ -1166,6 +1166,15 @@
       document.getElementById('admin-edit-role-input').value = account.role;
       document.getElementById('admin-edit-status-input').value = account.status;
       modal.querySelector('input[name="user_id"]').value = account.id;
+
+      // Admin accounts don't have a phone number field, can't have their role
+      // changed away from admin (that's how an admin account gets stranded),
+      // and can't be reset through this generic flow — same reasoning as why
+      // admin_delete_account.php refuses to delete them.
+      var isAdmin = account.role === 'admin';
+      if (phoneWrap) phoneWrap.style.display = isAdmin ? 'none' : phoneWrap.style.display;
+      document.getElementById('admin-edit-role-wrap').style.display = isAdmin ? 'none' : 'block';
+      document.getElementById('admin-edit-reset-wrap').style.display = isAdmin ? 'none' : 'flex';
 
       showModal('admin-modal-edit');
     }
