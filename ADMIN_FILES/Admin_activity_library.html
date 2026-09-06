@@ -201,16 +201,6 @@
                 <button onclick="resetFilters()" type="button" style="font-size:11px;font-weight:600;color:#6366f1;background:none;border:none;cursor:pointer;padding:0;">Reset all</button>
               </div>
 
-              <!-- Status -->
-              <div style="margin-bottom:14px;">
-                <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Status</div>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                  <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:#374151;cursor:pointer;"><input type="radio" name="al-f-status" value="" onchange="applyFilter()" checked style="accent-color:#6366f1;"> All</label>
-                  <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:#374151;cursor:pointer;"><input type="radio" name="al-f-status" value="Draft" onchange="applyFilter()" style="accent-color:#6366f1;"> Draft</label>
-                  <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:#374151;cursor:pointer;"><input type="radio" name="al-f-status" value="Published" onchange="applyFilter()" style="accent-color:#6366f1;"> Published</label>
-                </div>
-              </div>
-
               <!-- Template Type -->
               <div>
                 <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Template Type</div>
@@ -520,17 +510,11 @@
       return Array.prototype.map.call(checked, function(cb) { return cb.value; });
     }
 
-    function getActiveStatusFilter() {
-      var radio = document.querySelector('input[name="al-f-status"]:checked');
-      return radio ? radio.value : '';
-    }
-
     function updateFilterDot() {
       var types  = getActiveTypeFilters();
-      var status = getActiveStatusFilter();
       var dot    = document.getElementById('al-filter-active-dot');
       var btn    = document.getElementById('al-filter-toggle-btn');
-      var active = types.length > 0 || status !== '';
+      var active = types.length > 0;
       if (dot) dot.style.display = active ? 'inline-block' : 'none';
       if (btn) btn.style.borderColor = active ? '#6366f1' : '';
       if (btn) btn.style.color       = active ? '#6366f1' : '';
@@ -538,8 +522,6 @@
 
     function resetFilters() {
       document.querySelectorAll('.al-f-type-cb').forEach(function(cb) { cb.checked = false; });
-      var allRadio = document.querySelector('input[name="al-f-status"][value=""]');
-      if (allRadio) allRadio.checked = true;
       updateFilterDot();
       currentPage = 1;
       applyFilter();
@@ -567,7 +549,6 @@
     function applyFilter() {
       var q       = (document.getElementById('al-search-input').value || '').toLowerCase();
       var types   = getActiveTypeFilters();
-      var status  = getActiveStatusFilter();
       updateFilterDot();
 
       function matchesSearch(a) {
@@ -582,27 +563,21 @@
         return types.length === 0 || types.indexOf(a.type) >= 0;
       }
 
-      function matchesStatus(a) {
-        if (currentTab !== 'all') return true; // tab already implies status; don't double-filter
-        if (!status) return true;
-        return (a.status || '').toLowerCase() === status.toLowerCase();
-      }
-
       var filtered;
       if (currentTab === 'uploads') {
         filtered = uploadsList.filter(function(u) {
-          return matchesSearch(u) && matchesType(u) && matchesStatus(u);
+          return matchesSearch(u) && matchesType(u);
         });
       } else {
         filtered = activitiesList.filter(function(a) {
           var matchTab = currentTab === 'all' ||
             (currentTab === 'draft'     && a.status === 'Draft') ||
             (currentTab === 'published' && a.status === 'Published');
-          return matchTab && matchesSearch(a) && matchesType(a) && matchesStatus(a);
+          return matchTab && matchesSearch(a) && matchesType(a);
         });
         if (currentTab === 'all') {
           var filteredUploads = uploadsList.filter(function(u) {
-            return matchesSearch(u) && matchesType(u) && matchesStatus(u);
+            return matchesSearch(u) && matchesType(u);
           });
           filtered = filtered.concat(filteredUploads);
         }
