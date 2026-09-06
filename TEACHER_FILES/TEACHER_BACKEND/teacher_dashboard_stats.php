@@ -42,13 +42,13 @@ foreach ($countQueries as $q) {
     $stmt->close();
 }
 
-// Recent activities — gather from multiple sources then merge
+// Recent activities — Published/Draft activities only (not enrollments or
+// scores, which used to also feed this panel).
 $recent = [];
 
-// Activities created/published
 $stmt = $conn->prepare(
     "SELECT activity_title as title, status as sub, created_at as date
-     FROM teacher_activities WHERE teacher_id=? ORDER BY created_at DESC LIMIT 4"
+     FROM teacher_activities WHERE teacher_id=? ORDER BY created_at DESC LIMIT 8"
 );
 if ($stmt) {
     $stmt->bind_param("i", $teacher_id);
@@ -64,48 +64,7 @@ if ($stmt) {
     $stmt->close();
 }
 
-// Student enrollments
-$stmt = $conn->prepare(
-    "SELECT student_name, created_at as date FROM students WHERE teacher_id=? ORDER BY created_at DESC LIMIT 3"
-);
-if ($stmt) {
-    $stmt->bind_param("i", $teacher_id);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    while ($row = $res->fetch_assoc()) {
-        $recent[] = [
-            'title' => 'Enrolled: ' . $row['student_name'],
-            'type'  => 'enroll',
-            'date'  => $row['date']
-        ];
-    }
-    $stmt->close();
-}
-
-// Activity submissions / scores
-$stmt = $conn->prepare(
-    "SELECT s.student_name, lp.score, lp.created_at as date
-     FROM learner_progress lp
-     JOIN students s ON s.id = lp.student_id
-     WHERE lp.teacher_id=? ORDER BY lp.created_at DESC LIMIT 3"
-);
-if ($stmt) {
-    $stmt->bind_param("i", $teacher_id);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    while ($row = $res->fetch_assoc()) {
-        $recent[] = [
-            'title' => $row['student_name'] . ' scored ' . $row['score'] . '%',
-            'type'  => 'score',
-            'date'  => $row['date']
-        ];
-    }
-    $stmt->close();
-}
-
-// Sort by date descending, cap at 8
-usort($recent, function($a, $b) { return strcmp($b['date'], $a['date']); });
-$stats['recent_activities'] = array_slice($recent, 0, 8);
+$stats['recent_activities'] = $recent;
 
 // Per-student progress
 $stmt = $conn->prepare(
