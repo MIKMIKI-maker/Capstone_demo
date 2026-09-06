@@ -237,6 +237,27 @@
             <h2 class="admin-section-title">Security</h2>
           </div>
           <div class="admin-section-content">
+            <h3 class="admin-subsection-title">Change Password</h3>
+            <p class="admin-subsection-desc">If your password may have been exposed, change it here — 2FA blocks logins without your authenticator, but it doesn't replace rotating a compromised password.</p>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:18px 20px;max-width:340px;margin-bottom:28px;">
+              <div class="admin-form-group" style="margin-bottom:12px;">
+                <label>Current Password</label>
+                <input id="pwd-current" type="password" placeholder="Enter current password" style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:'Poppins',sans-serif;font-size:13px;" />
+              </div>
+              <div class="admin-form-group" style="margin-bottom:12px;">
+                <label>New Password</label>
+                <input id="pwd-new" type="password" placeholder="At least 8 characters" style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:'Poppins',sans-serif;font-size:13px;" />
+              </div>
+              <div class="admin-form-group" style="margin-bottom:14px;">
+                <label>Confirm New Password</label>
+                <input id="pwd-confirm" type="password" placeholder="Re-enter new password" style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:'Poppins',sans-serif;font-size:13px;" />
+              </div>
+              <div id="pwd-change-message" style="display:none;margin-bottom:10px;padding:10px 14px;border-radius:8px;font-size:12.5px;font-weight:500;"></div>
+              <button class="admin-btn-signin" style="width:auto;padding:10px 22px;" id="pwd-change-btn" type="button">Update Password</button>
+            </div>
+
+            <hr style="border:none;border-top:1px solid #e2e8f0;margin:0 0 24px;">
+
             <h3 class="admin-subsection-title">Two-Factor Authentication (2FA)</h3>
             <p class="admin-subsection-desc">Require a code from an authenticator app (Google Authenticator, Authy, etc.) in addition to your password when signing in.</p>
 
@@ -310,6 +331,65 @@
       if (tab === 'emaillog') loadEmailLog();
       if (tab === 'security') load2faStatus();
     }
+
+    /* ── Change Password (Security tab) ─────────────────────────────── */
+    document.getElementById('pwd-change-btn').addEventListener('click', function () {
+      var current = document.getElementById('pwd-current').value;
+      var newPwd  = document.getElementById('pwd-new').value;
+      var confirm = document.getElementById('pwd-confirm').value;
+      var msgEl = document.getElementById('pwd-change-message');
+
+      function showMsg(text, ok) {
+        msgEl.textContent = text;
+        msgEl.style.display = 'block';
+        msgEl.style.background = ok ? '#d1fae5' : '#fee2e2';
+        msgEl.style.color = ok ? '#065f46' : '#991b1b';
+      }
+
+      if (!current || !newPwd || !confirm) {
+        showMsg('All password fields are required.', false);
+        return;
+      }
+      if (newPwd !== confirm) {
+        showMsg('New passwords do not match.', false);
+        return;
+      }
+      if (newPwd.length < 8) {
+        showMsg('Password must be at least 8 characters.', false);
+        return;
+      }
+
+      var btn = document.getElementById('pwd-change-btn');
+      btn.disabled = true;
+      btn.textContent = 'Updating...';
+
+      var params = new URLSearchParams();
+      params.append('current_password', current);
+      params.append('new_password', newPwd);
+      params.append('confirm_password', confirm);
+
+      fetch('ADMIN_BACKEND/admin_change_password.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString()
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          showMsg(data.message, data.success);
+          if (data.success) {
+            document.getElementById('pwd-current').value = '';
+            document.getElementById('pwd-new').value = '';
+            document.getElementById('pwd-confirm').value = '';
+          }
+        })
+        .catch(function () {
+          showMsg('Network error. Please try again.', false);
+        })
+        .then(function () {
+          btn.disabled = false;
+          btn.textContent = 'Update Password';
+        });
+    });
 
     /* ── 2FA (Security tab) ───────────────────────────────────────── */
     function show2faState(state) {
