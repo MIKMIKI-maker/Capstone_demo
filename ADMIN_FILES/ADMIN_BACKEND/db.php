@@ -154,6 +154,16 @@ function getDatabaseConnection() {
         $conn->query("ALTER TABLE admin_accounts ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL");
     }
 
+    // TOTP-based 2FA for the Admin role. totp_secret is only meaningful once
+    // totp_enabled=1 — a generated-but-never-confirmed secret from an
+    // abandoned setup attempt is harmless sitting there unused.
+    $totp_col = $conn->query("SHOW COLUMNS FROM admin_accounts LIKE 'totp_secret'");
+    if ($totp_col && $totp_col->num_rows == 0) {
+        $conn->query("ALTER TABLE admin_accounts ADD COLUMN totp_secret VARCHAR(64) NULL DEFAULT NULL");
+        $conn->query("ALTER TABLE admin_accounts ADD COLUMN totp_enabled TINYINT(1) NOT NULL DEFAULT 0");
+        $conn->query("ALTER TABLE admin_accounts ADD COLUMN totp_backup_codes TEXT NULL DEFAULT NULL");
+    }
+
     // admin_activities log table
     $conn->query("CREATE TABLE IF NOT EXISTS admin_activities (
         id          INT AUTO_INCREMENT PRIMARY KEY,
