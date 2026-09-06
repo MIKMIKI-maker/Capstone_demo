@@ -114,56 +114,14 @@
       <!-- LEFT: Settings Menu -->
       <div class="admin-settings-menu">
         <p class="admin-settings-menu-label">SETTINGS</p>
-        <button class="admin-settings-tab active" onclick="switchTab('emaillog', this)" type="button">
-          <span class="admin-tab-icon"><i class="fa-solid fa-envelope"></i></span> Email Log
-        </button>
-        <button class="admin-settings-tab" onclick="switchTab('security', this)" type="button">
+        <button class="admin-settings-tab active" onclick="switchTab('security', this)" type="button">
           <span class="admin-tab-icon"><i class="fa-solid fa-shield-halved"></i></span> Security
         </button>
       </div>
       <!-- RIGHT: Settings Panel -->
       <div class="admin-settings-panel">
-        <!-- EMAIL LOG -->
-        <div class="admin-settings-section" id="admin-section-emaillog">
-          <div class="admin-section-header">
-            <span class="admin-section-dot"></span>
-            <h2 class="admin-section-title">Email Log</h2>
-          </div>
-          <div class="admin-section-content">
-            <h3 class="admin-subsection-title">Email Sending Activity</h3>
-            <p class="admin-subsection-desc">Gmail's free SMTP relay caps at 500 emails per rolling 24 hours — track usage here since Gmail itself has no dashboard for it.</p>
-            <div style="display:flex;gap:14px;margin:16px 0 22px;flex-wrap:wrap;">
-              <div style="flex:1;min-width:160px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:16px 20px;">
-                <div style="font-size:12px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:.04em;">Sent (last 24h)</div>
-                <div style="font-size:28px;font-weight:700;color:#1e3a8a;margin-top:4px;"><span id="email-log-sent">0</span> <span style="font-size:14px;font-weight:500;color:#64748b;">/ 500</span></div>
-              </div>
-              <div style="flex:1;min-width:160px;background:#fef2f2;border:1px solid #fecaca;border-radius:14px;padding:16px 20px;">
-                <div style="font-size:12px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.04em;">Failed (last 24h)</div>
-                <div style="font-size:28px;font-weight:700;color:#991b1b;margin-top:4px;" id="email-log-failed">0</div>
-              </div>
-            </div>
-            <div class="admin-user-access-table">
-              <div class="admin-uat-scroll">
-                <div class="admin-uat-head" style="grid-template-columns:1fr 1.4fr 90px 170px;">
-                  <span>RECIPIENT</span>
-                  <span>SUBJECT</span>
-                  <span>STATUS</span>
-                  <span>SENT AT</span>
-                </div>
-                <div class="admin-uat-rows-wrapper">
-                  <div id="email-log-rows">
-                    <div class="admin-uat-row admin-uat-empty-row">
-                      <div class="admin-uat-empty">Loading email log...</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="admin-uat-footer">Showing the last <strong id="email-log-count">0</strong> emails</div>
-            </div>
-          </div>
-        </div>
         <!-- SECURITY (2FA) -->
-        <div class="admin-settings-section" id="admin-section-security" style="display:none">
+        <div class="admin-settings-section" id="admin-section-security">
           <div class="admin-section-header">
             <span class="admin-section-dot"></span>
             <h2 class="admin-section-title">Security</h2>
@@ -233,9 +191,7 @@
     function switchTab(tab, el) {
       document.querySelectorAll('.admin-settings-tab').forEach(t => t.classList.remove('active'));
       el.classList.add('active');
-      document.getElementById('admin-section-emaillog').style.display = tab === 'emaillog' ? 'flex' : 'none';
       document.getElementById('admin-section-security').style.display = tab === 'security' ? 'flex' : 'none';
-      if (tab === 'emaillog') loadEmailLog();
     }
 
     /* ── Change Password (Security tab) ─────────────────────────────── */
@@ -335,35 +291,6 @@
         });
     });
 
-    function loadEmailLog() {
-      fetch('ADMIN_BACKEND/admin_email_log.php')
-        .then(function (r) { return r.json(); })
-        .then(function (data) {
-          if (!data.success) return;
-          document.getElementById('email-log-sent').textContent = data.sent_last_24h;
-          document.getElementById('email-log-failed').textContent = data.failed_last_24h;
-          document.getElementById('email-log-count').textContent = data.rows.length;
-
-          var wrap = document.getElementById('email-log-rows');
-          if (!data.rows.length) {
-            wrap.innerHTML = '<div class="admin-uat-row admin-uat-empty-row"><div class="admin-uat-empty">No emails sent yet.</div></div>';
-            return;
-          }
-          wrap.innerHTML = data.rows.map(function (row) {
-            var statusHtml = row.success
-              ? '<span style="color:#16a34a;font-weight:700;font-size:12px;">✓ Sent</span>'
-              : '<span style="color:#dc2626;font-weight:700;font-size:12px;cursor:help;" title="' + (row.error_message || '').replace(/"/g, '&quot;') + '">✗ Failed</span>';
-            return '<div class="admin-uat-row" style="grid-template-columns:1fr 1.4fr 90px 170px;">'
-              + '<span style="font-size:13px;">' + row.recipient_email + '</span>'
-              + '<span style="font-size:13px;color:#475569;">' + (row.subject || '—') + '</span>'
-              + '<span>' + statusHtml + '</span>'
-              + '<span style="font-size:12px;color:#94a3b8;">' + row.sent_at + '</span>'
-              + '</div>';
-          }).join('');
-        })
-        .catch(function () {});
-    }
-
   </script>
   <script>
     document.addEventListener("DOMContentLoaded", function () {
@@ -386,7 +313,6 @@
           }
         });
       });
-      loadEmailLog();
     });
   </script>
 <script>(function(){var _s=document.createElement('style');_s.textContent='.admin-notif-badge{display:none}';document.head.appendChild(_s);fetch('ADMIN_BACKEND/admin_notif_count.php').then(function(r){return r.json();}).then(function(d){if(d&&d.unread>0){var _b=document.querySelector('.admin-notif-badge');if(_b)_b.style.display='block';}}).catch(function(){});})();</script>
