@@ -188,18 +188,12 @@ function getDatabaseConnection() {
         INDEX idx_ip_time (ip_address, attempted_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-    // Seed default accounts
+    // Seed default admin account only — no demo Teacher/Student accounts
     $seed_check = $conn->query("SELECT COUNT(*) AS cnt FROM admin_accounts");
     if ($seed_check && $seed_check->fetch_assoc()['cnt'] == 0) {
-        $h_admin   = password_hash('Admin@123',   PASSWORD_DEFAULT);
-        $h_teacher = password_hash('Teacher@123', PASSWORD_DEFAULT);
-        $h_student = password_hash('Student@123', PASSWORD_DEFAULT);
+        $h_admin = password_hash('Admin@123', PASSWORD_DEFAULT);
         $conn->query("INSERT IGNORE INTO admin_accounts (admin_email, admin_password, first_name, last_name, school_name, role, status)
             VALUES ('admin@spedalm.edu.ph', '$h_admin', 'Admin', 'User', 'Mamatid Elementary School', 'admin', 'active')");
-        $conn->query("INSERT IGNORE INTO admin_accounts (admin_email, admin_password, first_name, last_name, school_name, role, status)
-            VALUES ('teacher@spedalm.edu.ph', '$h_teacher', 'Demo', 'Teacher', 'Mamatid Elementary School', 'teacher', 'active')");
-        $conn->query("INSERT IGNORE INTO admin_accounts (admin_email, admin_password, first_name, last_name, school_name, role, status, condition_info)
-            VALUES ('student@spedalm.edu.ph', '$h_student', 'Demo', 'Student', 'Mamatid Elementary School', 'student', 'active', 'ADHD')");
     }
 
     }

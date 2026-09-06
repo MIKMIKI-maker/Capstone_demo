@@ -345,28 +345,6 @@ function getTeacherDatabaseConnection() {
         FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-    // Seed default teacher only when table is empty
-    $t_seed_check = $conn->query("SELECT COUNT(*) AS cnt FROM teacher_accounts");
-    if ($t_seed_check && $t_seed_check->fetch_assoc()['cnt'] == 0) {
-        $h_teacher_seed = password_hash('Teacher@123', PASSWORD_DEFAULT);
-        $conn->query("INSERT IGNORE INTO teacher_accounts (teacher_email, teacher_password, first_name, last_name, school_name, status) VALUES ('teacher@spedalm.edu.ph', '$h_teacher_seed', 'Demo', 'Teacher', 'Mamatid Elementary School', 'active')");
-    }
-
-    // Seed default student record — linked to the default teacher above.
-    // We look up the teacher_accounts.id dynamically so auto_increment values don't matter.
-    $tRes = $conn->query("SELECT id FROM teacher_accounts WHERE teacher_email='teacher@spedalm.edu.ph' LIMIT 1");
-    if ($tRes && $tRow = $tRes->fetch_assoc()) {
-        $defaultTeacherId = (int)$tRow['id'];
-        // admin_account_id=0 is safe as a placeholder when the admin_accounts row isn't accessible here.
-        // The real admin_account_id (for student@spedalm.edu.ph) gets set on first login via the login script.
-        $conn->query("INSERT IGNORE INTO students (teacher_id, admin_account_id, student_name, disability_type, grade_level, status)
-            SELECT $defaultTeacherId, a.id, 'Demo Student', 'ADHD', 'Grade 1', 'active'
-            FROM admin_accounts a
-            WHERE a.admin_email = 'student@spedalm.edu.ph'
-            AND NOT EXISTS (SELECT 1 FROM students s WHERE s.admin_account_id = a.id)
-            LIMIT 1");
-    }
-
     }
 
     return $conn;
