@@ -109,6 +109,7 @@
   <div class="admin-right-panel">
     <form action="ADMIN_BACKEND/login_screen_submit.php" id="admin_screen_form_1" method="post" style="display: contents;">
       <div class="admin-login-box anim-scale-in">
+        <div id="admin-login-step-password">
         <div class="login-brand">
           <img alt="SPED ALM Logo" class="login-brand-logo" src="../ASSETS/logo.png" />
           <span class="login-brand-title">SPED ALM</span>
@@ -149,6 +150,32 @@
 
         <hr class="admin-divider" />
         <p class="admin-footer-note">Republic of the Philippines · Department of Education</p>
+        </div>
+
+        <!-- 2FA code-entry step — hidden until the password step returns
+             status:"need_2fa". Password is already verified at that point;
+             this step only exists to collect the authenticator code. -->
+        <div id="admin-login-step-2fa" style="display:none;">
+          <div class="login-brand">
+            <img alt="SPED ALM Logo" class="login-brand-logo" src="../ASSETS/logo.png" />
+            <span class="login-brand-title">SPED ALM</span>
+            <span class="login-brand-tagline">Two-Factor Authentication</span>
+          </div>
+          <div class="login-portal-badge">
+            <div class="login-portal-badge-icon-circle"><i class="fa-solid fa-mobile-screen-button"></i></div>
+            <div class="login-portal-badge-text">
+              <span class="login-portal-badge-title">Enter your authenticator code</span>
+              <span class="login-portal-badge-sub">Open your authenticator app to get your 6-digit code, or use a backup code.</span>
+            </div>
+          </div>
+          <div class="admin-form-group">
+            <label for="admin-2fa-code">6-Digit Code</label>
+            <input id="admin-2fa-code" placeholder="000000" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" style="letter-spacing:4px;font-size:20px;text-align:center;" />
+          </div>
+          <div id="login-2fa-error-msg" style="display:none;background:#fff5f5;border:1.5px solid #fca5a5;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-family:'Poppins',sans-serif;font-size:13px;color:#991b1b;line-height:1.6;"></div>
+          <button class="admin-btn-signin" type="button" id="admin-2fa-verify-btn">Verify <i class="fa-solid fa-arrow-right" style="font-size:14px;margin-left:4px;"></i></button>
+          <button type="button" id="admin-2fa-back-btn" style="background:none;border:none;color:#64748b;font-size:13px;margin-top:14px;cursor:pointer;width:100%;text-decoration:underline;">← Back to sign in</button>
+        </div>
       </div>
     </form>
   </div>
@@ -207,6 +234,40 @@
         });
       });
 
+      /* Shared by both the password step and the 2FA step — a successful
+         response from either one looks the same (admin_id, admin_name,
+         profile_photo), so completing the actual login only needs to live
+         in one place. */
+      function completeAdminLogin(jsonData, rememberEmail) {
+        if (rememberEmail !== null) {
+          if (rememberEmail) {
+            localStorage.setItem('sped_admin_remember_email', rememberEmail);
+          } else {
+            localStorage.removeItem('sped_admin_remember_email');
+          }
+        }
+        sessionStorage.clear();
+        sessionStorage.setItem('admin_id', jsonData.admin_id);
+        sessionStorage.setItem('teacher_name', jsonData.admin_name);
+        if (jsonData.profile_photo) {
+          sessionStorage.setItem('teacher_profile_pic', jsonData.profile_photo);
+        }
+        window.location.href = "Admin_dashboard.html";
+      }
+
+      function show2faStep() {
+        document.getElementById('admin-login-step-password').style.display = 'none';
+        document.getElementById('admin-login-step-2fa').style.display = 'block';
+        var codeInput = document.getElementById('admin-2fa-code');
+        codeInput.value = '';
+        codeInput.focus();
+      }
+
+      function showPasswordStep() {
+        document.getElementById('admin-login-step-2fa').style.display = 'none';
+        document.getElementById('admin-login-step-password').style.display = 'block';
+      }
+
       /* Handle login form submission */
       var loginForm = document.getElementById("admin_screen_form_1");
       if (loginForm) {
@@ -215,6 +276,7 @@
 
           var email = document.getElementById("admin-email").value;
           var password = document.getElementById("admin-password").value;
+          var remembered = document.getElementById('remember-me').checked ? email : '';
 
           /* Hide any previous error */
           var _errEl = document.getElementById('login-error-msg');
@@ -243,7 +305,9 @@
             try {
               var jsonData = JSON.parse(data);
 
-              if (jsonData.status === "success") {
+              if (jsonData.status === "need_2fa") {
+                show2faStep();
+              } else if (jsonData.status === "success") {
                 if (jsonData.role !== "admin") {
                   var wrongPortalEl = document.getElementById('login-error-msg');
                   if (wrongPortalEl) {
@@ -252,22 +316,7 @@
                   }
                   return;
                 }
-
-                /* Remember only the email, and only when the user opted in; never store plaintext passwords. */
-                if (document.getElementById('remember-me').checked) {
-                  localStorage.setItem('sped_admin_remember_email', email);
-                } else {
-                  localStorage.removeItem('sped_admin_remember_email');
-                }
-
-                sessionStorage.clear();
-                sessionStorage.setItem('admin_id', jsonData.admin_id);
-                sessionStorage.setItem('teacher_name', jsonData.admin_name);
-                if (jsonData.profile_photo) {
-                  sessionStorage.setItem('teacher_profile_pic', jsonData.profile_photo);
-                }
-
-                window.location.href = "Admin_dashboard.html";
+                completeAdminLogin(jsonData, remembered);
               } else {
                 var errEl = document.getElementById('login-error-msg');
                 if (errEl) {
@@ -295,6 +344,45 @@
             }
             console.error("Error:", error);
           });
+        });
+      }
+
+      /* Handle 2FA code verification */
+      var verify2faBtn = document.getElementById('admin-2fa-verify-btn');
+      if (verify2faBtn) {
+        verify2faBtn.addEventListener('click', function () {
+          var code = document.getElementById('admin-2fa-code').value;
+          var errEl = document.getElementById('login-2fa-error-msg');
+          if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+
+          fetch('ADMIN_BACKEND/admin_2fa_login_verify.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'code=' + encodeURIComponent(code)
+          })
+          .then(function (r) { return r.json(); })
+          .then(function (jsonData) {
+            if (jsonData.status === 'success') {
+              var rememberedEmail = document.getElementById('remember-me').checked ? document.getElementById('admin-email').value : '';
+              completeAdminLogin(jsonData, rememberedEmail);
+            } else if (errEl) {
+              errEl.textContent = jsonData.message || 'Incorrect code. Please try again.';
+              errEl.style.display = 'block';
+            }
+          })
+          .catch(function () {
+            if (errEl) { errEl.textContent = 'Unable to reach the login server. Please try again.'; errEl.style.display = 'block'; }
+          });
+        });
+      }
+
+      var back2faBtn = document.getElementById('admin-2fa-back-btn');
+      if (back2faBtn) back2faBtn.addEventListener('click', showPasswordStep);
+
+      var code2faInput = document.getElementById('admin-2fa-code');
+      if (code2faInput) {
+        code2faInput.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') { e.preventDefault(); verify2faBtn.click(); }
         });
       }
     });

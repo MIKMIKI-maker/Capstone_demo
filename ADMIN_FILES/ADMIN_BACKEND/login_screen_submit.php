@@ -139,7 +139,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
     }
 
-    $stmt = $conn->prepare("SELECT id, admin_password, first_name, last_name, role, COALESCE(profile_photo,'') AS profile_photo, COALESCE(is_deleted,0) AS is_deleted FROM admin_accounts WHERE admin_email = ?");
+    $stmt = $conn->prepare("SELECT id, admin_password, first_name, last_name, role, COALESCE(profile_photo,'') AS profile_photo, COALESCE(is_deleted,0) AS is_deleted, COALESCE(totp_enabled,0) AS totp_enabled FROM admin_accounts WHERE admin_email = ?");
     if (!$stmt) {
         echo json_encode(['status' => 'error', 'message' => 'Database query failed']);
         $conn->close();
@@ -176,6 +176,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             session_regenerate_id(true);
             $clr = $conn->prepare("DELETE FROM login_attempts WHERE email = ?");
             if ($clr) { $clr->bind_param("s", $email); $clr->execute(); $clr->close(); }
+
+            // 2FA only applies to the admin role. Password is correct, but the
+            // real session isn't granted yet — only a "pending" marker good
+            // for the one follow-up 2FA-code request, verified in
+            // admin_2fa_login_verify.php before any admin_* session var is set.
+            if ($row['role'] === 'admin' && !empty($row['totp_enabled'])) {
+                $_SESSION['pending_2fa_admin_id'] = $row['id'];
+                echo json_encode(['status' => 'need_2fa', 'message' => 'Enter your 2FA code']);
+                $stmt->close();
+                $conn->close();
+                exit;
+            }
 
             $_SESSION['admin_id']    = $row['id'];
             $_SESSION['admin_email'] = $email;
