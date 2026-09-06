@@ -37,6 +37,23 @@ if (!$conn) {
     exit;
 }
 
+// Separate lockout from the password step's login_attempts — a correct
+// password with a guessed/wrong 2FA code is tracked per-account here so a
+// leaked-but-unchanged password can't be paired with brute-forcing the
+// 6-digit code indefinitely.
+$MAX_ATTEMPTS = 5;
+$LOCKOUT_MINUTES = 5;
+$chk = $conn->prepare("SELECT COUNT(*) AS cnt FROM totp_attempts WHERE admin_id = ? AND attempted_at > DATE_SUB(NOW(), INTERVAL ? MINUTE)");
+$chk->bind_param("ii", $adminId, $LOCKOUT_MINUTES);
+$chk->execute();
+$chkRow = $chk->get_result()->fetch_assoc();
+$chk->close();
+if ($chkRow && (int)$chkRow['cnt'] >= $MAX_ATTEMPTS) {
+    echo json_encode(['status' => 'error', 'code' => 'too_many_attempts', 'message' => 'Too many incorrect codes. Please try again in ' . $LOCKOUT_MINUTES . ' minutes.']);
+    $conn->close();
+    exit;
+}
+
 $stmt = $conn->prepare("SELECT id, admin_email, first_name, last_name, role, COALESCE(profile_photo,'') AS profile_photo, totp_secret, totp_backup_codes FROM admin_accounts WHERE id = ? AND role = 'admin'");
 $stmt->bind_param("i", $adminId);
 $stmt->execute();
@@ -70,10 +87,17 @@ if (!$verified && $row['totp_backup_codes']) {
 }
 
 if (!$verified) {
+    $fail = $conn->prepare("INSERT INTO totp_attempts (admin_id) VALUES (?)");
+    if ($fail) { $fail->bind_param("i", $adminId); $fail->execute(); $fail->close(); }
+    $conn->query("DELETE FROM totp_attempts WHERE attempted_at < DATE_SUB(NOW(), INTERVAL 1 HOUR)");
+
     echo json_encode(['status' => 'error', 'message' => 'Incorrect code. Please try again.']);
     $conn->close();
     exit;
 }
+
+$clr = $conn->prepare("DELETE FROM totp_attempts WHERE admin_id = ?");
+if ($clr) { $clr->bind_param("i", $adminId); $clr->execute(); $clr->close(); }
 
 unset($_SESSION['pending_2fa_admin_id']);
 session_regenerate_id(true);

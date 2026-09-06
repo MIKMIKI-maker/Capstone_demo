@@ -198,6 +198,16 @@ function getDatabaseConnection() {
         INDEX idx_ip_time (ip_address, attempted_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+    // 2FA code rate-limiting — separate from login_attempts (password step)
+    // since a correct password with a wrong/guessed 2FA code is a different
+    // failure mode and shouldn't share the same counter as password guesses.
+    $conn->query("CREATE TABLE IF NOT EXISTS totp_attempts (
+        id           INT AUTO_INCREMENT PRIMARY KEY,
+        admin_id     INT NOT NULL,
+        attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_admin_time (admin_id, attempted_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
     // Seed default accounts
     $seed_check = $conn->query("SELECT COUNT(*) AS cnt FROM admin_accounts");
     if ($seed_check && $seed_check->fetch_assoc()['cnt'] == 0) {
