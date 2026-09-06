@@ -154,16 +154,6 @@ function getDatabaseConnection() {
         $conn->query("ALTER TABLE admin_accounts ADD COLUMN deleted_at TIMESTAMP NULL DEFAULT NULL");
     }
 
-    // TOTP-based 2FA for the Admin role. totp_secret is only meaningful once
-    // totp_enabled=1 — a generated-but-never-confirmed secret from an
-    // abandoned setup attempt is harmless sitting there unused.
-    $totp_col = $conn->query("SHOW COLUMNS FROM admin_accounts LIKE 'totp_secret'");
-    if ($totp_col && $totp_col->num_rows == 0) {
-        $conn->query("ALTER TABLE admin_accounts ADD COLUMN totp_secret VARCHAR(64) NULL DEFAULT NULL");
-        $conn->query("ALTER TABLE admin_accounts ADD COLUMN totp_enabled TINYINT(1) NOT NULL DEFAULT 0");
-        $conn->query("ALTER TABLE admin_accounts ADD COLUMN totp_backup_codes TEXT NULL DEFAULT NULL");
-    }
-
     // admin_activities log table
     $conn->query("CREATE TABLE IF NOT EXISTS admin_activities (
         id          INT AUTO_INCREMENT PRIMARY KEY,
@@ -198,16 +188,6 @@ function getDatabaseConnection() {
         INDEX idx_ip_time (ip_address, attempted_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-    // 2FA code rate-limiting — separate from login_attempts (password step)
-    // since a correct password with a wrong/guessed 2FA code is a different
-    // failure mode and shouldn't share the same counter as password guesses.
-    $conn->query("CREATE TABLE IF NOT EXISTS totp_attempts (
-        id           INT AUTO_INCREMENT PRIMARY KEY,
-        admin_id     INT NOT NULL,
-        attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_admin_time (admin_id, attempted_at)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-
     // Seed default accounts
     $seed_check = $conn->query("SELECT COUNT(*) AS cnt FROM admin_accounts");
     if ($seed_check && $seed_check->fetch_assoc()['cnt'] == 0) {
@@ -223,6 +203,37 @@ function getDatabaseConnection() {
     }
 
     }
+
+    // TOTP-based 2FA for the Admin role — deliberately OUTSIDE the
+    // $needsSetup gate above. That gate skips ~20 CREATE/ALTER queries on a
+    // remote DB once admin_accounts already exists, as a one-time-setup
+    // optimization — but that meant this later-added migration never ran
+    // at all against a database that predates it (existing production DB),
+    // breaking login for every role the moment login_screen_submit.php
+    // started selecting a totp_enabled column that was never added. A
+    // "column already exists" check is cheap enough to run unconditionally
+    // and is what should be used for schema changes added after the
+    // initial release, instead of relying on the $needsSetup skip.
+    // totp_secret is only meaningful once totp_enabled=1 — a generated-but-
+    // never-confirmed secret from an abandoned setup attempt is harmless
+    // sitting there unused.
+    $totp_col = $conn->query("SHOW COLUMNS FROM admin_accounts LIKE 'totp_secret'");
+    if ($totp_col && $totp_col->num_rows == 0) {
+        $conn->query("ALTER TABLE admin_accounts ADD COLUMN totp_secret VARCHAR(64) NULL DEFAULT NULL");
+        $conn->query("ALTER TABLE admin_accounts ADD COLUMN totp_enabled TINYINT(1) NOT NULL DEFAULT 0");
+        $conn->query("ALTER TABLE admin_accounts ADD COLUMN totp_backup_codes TEXT NULL DEFAULT NULL");
+    }
+
+    // 2FA code rate-limiting — separate from login_attempts (password step)
+    // since a correct password with a wrong/guessed 2FA code is a different
+    // failure mode and shouldn't share the same counter as password guesses.
+    // CREATE TABLE IF NOT EXISTS is cheap and safe to run unconditionally.
+    $conn->query("CREATE TABLE IF NOT EXISTS totp_attempts (
+        id           INT AUTO_INCREMENT PRIMARY KEY,
+        admin_id     INT NOT NULL,
+        attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_admin_time (admin_id, attempted_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
     return $conn;
 }
