@@ -120,7 +120,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             . "<div style=\"text-align:center;margin:0 0 24px;\"><a href=\"{$loginUrl}\" style=\"display:inline-block;background:#1e3a8a;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:10px;font-weight:700;font-size:14px;\">Log In to SPED ALM</a></div>"
             . "<p style=\"font-size:13px;color:#64748b;margin:0 0 20px;\">Please keep your account credentials confidential and secure. You may now log in to the SPED ALM System using the credentials provided above.</p>"
             . "<hr style=\"border:none;border-top:1px solid #e2e8f0;margin:0 0 16px;\">"
-            . "<p style=\"margin:0;\">Sincerely yours,<br>SPED ALM System</p>"
+            . "<p style=\"margin:0 0 16px;\">Sincerely yours,<br>SPED ALM System</p>"
+            // Real, identifiable sender info (institution name + address)
+            // is one of the signals spam filters use to tell a legitimate
+            // account-notification email apart from a phishing template
+            // that just says "here's a username and password" with nothing
+            // else behind it — this doesn't guarantee inbox placement (that
+            // mostly comes from the recipient marking a first email "Not
+            // Spam"), but it's a real, controllable signal.
+            . "<p style=\"font-size:11px;color:#94a3b8;text-align:center;margin:0;\">Mamatid Elementary School &middot; SPED Program &middot; Cabuyao, Laguna<br>If you did not expect this email, you can safely ignore it.</p>"
             . "</div>";
         send_email($email, $fullName, 'Your SPED ALM account has been created', $welcomeHtml);
 
