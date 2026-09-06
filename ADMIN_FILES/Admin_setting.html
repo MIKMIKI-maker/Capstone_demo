@@ -478,12 +478,33 @@
       var conditionText = account.condition_info ? account.condition_info : '—';
       var displayName = fullName || account.admin_email;
 
+      // Students: last_login only proves the account was opened once — it
+      // never proves the student actually did any work after that, and
+      // would sit unchanged forever. last_activity_taken (an actual
+      // submitted activity) is the real engagement signal for that role.
+      // Teacher/Admin still use last_login since "taking an activity"
+      // doesn't apply to them.
+      function fmtDate(s) {
+        if (!s) return null;
+        var d = new Date(s.replace(' ', 'T'));
+        if (isNaN(d)) return null;
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      }
+      var lastActiveText;
+      if (account.role === 'student') {
+        var lastActivity = fmtDate(account.last_activity_taken);
+        lastActiveText = lastActivity ? ('Activity: ' + lastActivity) : 'No activity yet';
+      } else {
+        var lastLogin = fmtDate(account.last_login);
+        lastActiveText = lastLogin ? ('Login: ' + lastLogin) : 'Never logged in';
+      }
+
       return '<div class="admin-uat-row">'
         + '<div class="admin-u-avatar" style="background:#1a3a8f">' + initials + '</div>'
         + '<span class="admin-uat-name"><span>' + displayName + '</span></span>'
         + '<span><span class="admin-badge ' + roleClass + '">' + account.role.charAt(0).toUpperCase() + account.role.slice(1) + '</span></span>'
         + '<span class="admin-text-muted">' + conditionText + '</span>'
-        + '<span class="admin-text-muted">—</span>'
+        + '<span class="admin-text-muted" style="font-size:11.5px;">' + lastActiveText + '</span>'
         + '<span><span class="' + statusClass + '">' + statusText + '</span></span>'
         + '</div>';
     }
