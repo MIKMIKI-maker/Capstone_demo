@@ -1,6 +1,12 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
+// This is a public endpoint (reachable without being logged in), so an
+// unhandled PHP error/warning here would print raw technical details
+// (file paths, DB structure) straight into the response body for anyone
+// to see. display_errors stays off; log_errors keeps them visible to
+// developers via the server's own error log instead.
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
+ini_set('log_errors', 1);
 error_reporting(E_ALL);
 
 ini_set('session.cookie_httponly', '1');
