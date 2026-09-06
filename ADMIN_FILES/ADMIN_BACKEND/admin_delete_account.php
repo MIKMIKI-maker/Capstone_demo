@@ -31,6 +31,30 @@ if (empty($ids)) {
     exit;
 }
 
+// Admin accounts are never deletable through this endpoint, regardless of
+// what the request asks for — this is the one role that must always keep
+// at least one working account, since it's the only role that can restore
+// a deleted account or manage everyone else. Checked here (not just hidden
+// in the UI) so it can't be bypassed by calling this endpoint directly.
+$placeholders = implode(',', array_fill(0, count($ids), '?'));
+$types        = str_repeat('i', count($ids));
+$roleCheckStmt = $conn->prepare("SELECT id FROM admin_accounts WHERE id IN ($placeholders) AND role = 'admin'");
+$roleCheckStmt->bind_param($types, ...$ids);
+$roleCheckStmt->execute();
+$adminIds = [];
+$roleCheckRes = $roleCheckStmt->get_result();
+while ($r = $roleCheckRes->fetch_assoc()) { $adminIds[] = (int)$r['id']; }
+$roleCheckStmt->close();
+
+if (!empty($adminIds)) {
+    $ids = array_values(array_diff($ids, $adminIds));
+    if (empty($ids)) {
+        echo json_encode(['success' => false, 'message' => 'Admin accounts cannot be deleted.']);
+        $conn->close();
+        exit;
+    }
+}
+
 $placeholders = implode(',', array_fill(0, count($ids), '?'));
 $types        = str_repeat('i', count($ids));
 
@@ -94,5 +118,9 @@ if ($ok && !empty($deletedNames)) {
 
 $conn->close();
 
-echo json_encode(['success' => true]);
+$response = ['success' => true];
+if (!empty($adminIds)) {
+    $response['message'] = 'Admin accounts cannot be deleted and were skipped. The other selected accounts were deleted.';
+}
+echo json_encode($response);
 ?>

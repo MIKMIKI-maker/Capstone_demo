@@ -1297,7 +1297,9 @@
             });
           });
           renderAccountTable(accountList);
-          renderDeleteList(accountList);
+          // Admin accounts can't be deleted (enforced server-side too, in
+          // admin_delete_account.php) — don't even offer them as an option.
+          renderDeleteList(accountList.filter(function (a) { return a.role !== 'admin'; }));
           clearDeleteSelection();
         })
         .catch(function () {
