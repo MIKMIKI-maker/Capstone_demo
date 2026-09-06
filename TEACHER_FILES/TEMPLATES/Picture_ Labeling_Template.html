@@ -1994,13 +1994,13 @@ loadPublishedForEditIfAny();
       else if (fs.webkitRequestFullscreen) fs.webkitRequestFullscreen();
       splash.remove();
       initActivityTheme();
+      document.body.classList.add('lbl-preview-only');
 
       renderSwatches(); syncDesignControls(); applyAppearance();
       renderItemsList(); renderDistractorTags();
       answers={}; suggestedMarks={}; checked=false; selectedWord=null;
       fsWords=buildWordBank();
       renderActivity(); renderSlideNav();
-      document.body.classList.add('lbl-preview-only');
       stageInner.style.opacity = '0';
       setTimeout(fitStageToScreen, 50);
 

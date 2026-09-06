@@ -1088,7 +1088,11 @@ function initActivityTheme(){
 
   function renderCategories(){
     const wrap = $("srtCategories"); wrap.innerHTML = "";
-    const categories = currentActivity().categories;
+    // Defensive: a published/saved activity that somehow lost its
+    // categories array (an old draft format, a partial save) would
+    // otherwise throw here and silently abort every render call after it —
+    // including the one that hides the editor panels in student mode.
+    const categories = currentActivity().categories || [];
     categories.forEach((cat, i)=>{
       const row = document.createElement("div"); row.className = "srt-cat-row";
 
@@ -2235,8 +2239,8 @@ function initActivityTheme(){
         splash.remove();
         initActivityTheme();
 
-        renderCategories(); renderItems(); renderSwatches(); syncDesignControls(); applyAppearance(); renderActivity(); renderSlideNav();
         document.body.classList.add('srt-preview-only');
+        renderCategories(); renderItems(); renderSwatches(); syncDesignControls(); applyAppearance(); renderActivity(); renderSlideNav();
         stageInner.style.opacity = "0";
         setTimeout(fitStageToScreen, 50);
 
