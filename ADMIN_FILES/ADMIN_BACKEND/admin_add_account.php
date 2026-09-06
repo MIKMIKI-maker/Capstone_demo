@@ -1,8 +1,10 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/csrf.php';
 require_once __DIR__ . '/admin_push_notification.php';
 require_once __DIR__ . '/../../MAILER/send_email.php';
 requireAdminSession();
+csrf_require_valid_token();
 
 $conn = getDatabaseConnection();
 if (!$conn) {

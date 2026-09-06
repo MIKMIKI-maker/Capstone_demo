@@ -1,7 +1,9 @@
 <?php
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/TOTP.php';
+require_once __DIR__ . '/csrf.php';
 requireAdminSession();
+csrf_require_valid_token();
 
 header('Content-Type: application/json');
 

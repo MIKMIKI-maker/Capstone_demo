@@ -712,6 +712,19 @@
     var deleteSelection = new Set();
     var _adminConfirmResolver = null;
 
+    // Fetched once on page load, sent back with every state-changing
+    // request below (add/edit/delete account, reset password) — see
+    // ADMIN_BACKEND/csrf.php for why a plain session cookie isn't enough
+    // on its own.
+    var _csrfToken = '';
+    function loadCsrfToken() {
+      return fetch('ADMIN_BACKEND/get_csrf_token.php')
+        .then(function (r) { return r.json(); })
+        .then(function (data) { if (data.success) _csrfToken = data.token; })
+        .catch(function () {});
+    }
+    loadCsrfToken();
+
     function showConfirmModal(message, okLabel, title) {
       document.getElementById('admin-confirm-title').textContent = title || 'Please confirm';
       document.getElementById('admin-confirm-msg').textContent = message;
@@ -1235,6 +1248,7 @@
     function saveEditUser() {
       var editForm = document.getElementById('admin_manage_user_form_1');
       var formData = new FormData(editForm);
+      formData.append('csrf_token', _csrfToken);
 
       // Close modal immediately
       hideModal('admin-modal-edit');
@@ -1263,6 +1277,7 @@
     function saveAddAccount() {
       var addForm = document.getElementById('admin_manage_user_form_2');
       var formData = new FormData(addForm);
+      formData.append('csrf_token', _csrfToken);
 
       // Close modal immediately
       hideModal('admin-modal-add');
@@ -1326,7 +1341,7 @@
 
         fetch('ADMIN_BACKEND/admin_delete_account.php', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': _csrfToken },
           body: JSON.stringify({ ids: Array.from(deleteSelection) })
         })
         .then(function (response) {
@@ -1416,6 +1431,7 @@
         return;
       }
       var formData = new FormData(resetForm);
+      formData.append('csrf_token', _csrfToken);
 
       // Close modal immediately
       hideModal('admin-modal-reset');

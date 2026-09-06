@@ -322,6 +322,19 @@
     </div>
   </main>
   <script>
+    // Fetched once on page load, sent back with every state-changing
+    // request below (change password, enable/disable 2FA) — see
+    // ADMIN_BACKEND/csrf.php for why a plain session cookie isn't enough
+    // on its own.
+    var _csrfToken = '';
+    function loadCsrfToken() {
+      return fetch('ADMIN_BACKEND/get_csrf_token.php')
+        .then(function (r) { return r.json(); })
+        .then(function (data) { if (data.success) _csrfToken = data.token; })
+        .catch(function () {});
+    }
+    loadCsrfToken();
+
     function switchTab(tab, el) {
       document.querySelectorAll('.admin-settings-tab').forEach(t => t.classList.remove('active'));
       el.classList.add('active');
@@ -367,6 +380,7 @@
       params.append('current_password', current);
       params.append('new_password', newPwd);
       params.append('confirm_password', confirm);
+      params.append('csrf_token', _csrfToken);
 
       fetch('ADMIN_BACKEND/admin_change_password.php', {
         method: 'POST',
@@ -440,6 +454,7 @@
 
       var params = new URLSearchParams();
       params.append('code', code);
+      params.append('csrf_token', _csrfToken);
 
       fetch('ADMIN_BACKEND/admin_2fa_setup_confirm.php', {
         method: 'POST',
@@ -474,6 +489,7 @@
 
       var params = new URLSearchParams();
       params.append('password', password);
+      params.append('csrf_token', _csrfToken);
 
       fetch('ADMIN_BACKEND/admin_2fa_disable.php', {
         method: 'POST',

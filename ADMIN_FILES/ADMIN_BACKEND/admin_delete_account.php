@@ -2,9 +2,14 @@
 error_reporting(0);
 ini_set('display_errors', 0);
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/csrf.php';
 require_once __DIR__ . '/admin_push_notification.php';
 require_once __DIR__ . '/../../TEACHER_FILES/TEACHER_BACKEND/db.php';
 requireAdminSession();
+// This endpoint's body is JSON (not a normal form post), so the token
+// arrives as a header instead of a $_POST field — csrf_require_valid_token()
+// checks both.
+csrf_require_valid_token();
 
 header('Content-Type: application/json');
 
