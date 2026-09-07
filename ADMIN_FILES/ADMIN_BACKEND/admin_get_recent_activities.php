@@ -23,12 +23,12 @@ $createTableSql = "CREATE TABLE IF NOT EXISTS admin_activities (
 )";
 $conn->query($createTableSql);
 
-// Get recent activities from admin_activities table (last 15) - only show teaching-related activity, not account/admin housekeeping
+// Get recent activities from admin_activities table (last 20) - only show teaching-related activity, not account/admin housekeeping
 $result = $conn->query("SELECT id, activity_type, user_type, user_name, user_email, action_detail, created_at
                         FROM admin_activities
                         WHERE activity_type IN ('Create Activity', 'Complete Activity', 'Save Draft', 'Material Uploaded', 'Material Deleted', 'Unpublish Activity', 'Delete Draft')
                         ORDER BY created_at DESC
-                        LIMIT 15");
+                        LIMIT 20");
 
 $activities = [];
 if ($result) {
@@ -45,10 +45,5 @@ if ($result) {
     }
 }
 
-// Sort all activities by created_at descending and return top 10
-usort($activities, function($a, $b) {
-    return strtotime($b['created_at']) - strtotime($a['created_at']);
-});
-
-echo json_encode(array_slice($activities, 0, 10));
+echo json_encode($activities);
 $conn->close();
