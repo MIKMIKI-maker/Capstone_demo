@@ -471,8 +471,8 @@
                 }
 
                 var learnerCell = a.grading
-                    ? esc(a.learner) + ' <span style="color:#64748b;font-size:11px;">(' + esc(a.grading) + ' Grading)</span>'
-                    : esc(a.learner);
+                    ? formatLearnerNames(a.learner) + ' <span style="color:#64748b;font-size:11px;">(' + esc(a.grading) + ' Grading)</span>'
+                    : formatLearnerNames(a.learner);
 
                 var _typeIcons = {Matching:'🔗',Sorting:'🗂️',Sequencing:'🔢',LetterID:'🔤',PictureLabeling:'🏷️',WrittenResponse:'✏️',CheckOrX:'✅',Tracing:'✍️',Upload:'📎'};
                 var _fallbackIcon = _typeIcons[a.type] || '🖼️';
@@ -681,6 +681,21 @@
         /* ── Helpers ── */
         function esc(str) {
             return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        // teacher_list_activities.php GROUP_CONCATs multi-student assignments as
+        // raw "Name|Condition, Name2|Condition2" — turn that into the same clean
+        // "Name (Condition)" look used everywhere else in the portal.
+        function formatLearnerNames(raw) {
+            if (!raw || raw === 'ALL') return 'ALL';
+            return raw.split(', ').map(function(entry) {
+                var parts = entry.split('|');
+                var name = esc(parts[0] || entry);
+                var condition = parts[1] ? esc(parts[1]) : '';
+                return condition
+                    ? name + ' <span style="color:#94a3b8;">(' + condition + ')</span>'
+                    : name;
+            }).join(', ');
         }
 
         function formatDate(str) {
