@@ -300,7 +300,14 @@
         var email = escapeHtml(user.admin_email || '—');
         var roleColor = user.role === 'admin' ? '#8b5cf6' : user.role === 'teacher' ? '#3b82f6' : '#10b981';
         var roleLabel = escapeHtml(user.role.charAt(0).toUpperCase() + user.role.slice(1));
-        var isActive = user.status === 'active';
+        // Matches Manage Users: "active" means currently online (seen
+        // within the last 2 minutes via the portal_guard.js heartbeat),
+        // not the stored `status` flag — that one only changes on
+        // login/explicit logout and stays "active" long after someone
+        // has closed the tab. MySQL datetime strings are UTC with no
+        // timezone marker, so 'Z' is appended before parsing.
+        var isActive = !!user.last_seen &&
+          (Date.now() - new Date(user.last_seen.replace(' ', 'T') + 'Z').getTime()) < 2 * 60 * 1000;
         var statusColor = isActive ? '#16a34a' : '#9ca3af';
         var statusLabel = isActive ? 'Active' : 'Inactive';
 
