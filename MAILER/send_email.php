@@ -68,6 +68,13 @@ function send_email(string $toEmail, string $toName, string $subject, string $ht
         $mail->Password   = SMTP_PASSWORD;
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = SMTP_PORT;
+        // Without this, a blocked/unreachable SMTP port (common on hosting
+        // free tiers) leaves this call hanging on PHPMailer's default socket
+        // timeout for a couple minutes - and every caller (e.g.
+        // admin_add_account.php) sends the email inline before responding,
+        // so the whole "Add Account" request would hang right along with it.
+        // Capping it here keeps every caller fast without touching each one.
+        $mail->Timeout    = 10;
 
         $mail->setFrom(SMTP_USER, SMTP_FROM_NAME);
         $mail->addAddress($toEmail, $toName);
