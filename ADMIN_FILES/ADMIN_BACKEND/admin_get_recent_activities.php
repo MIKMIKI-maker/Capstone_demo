@@ -24,15 +24,16 @@ $createTableSql = "CREATE TABLE IF NOT EXISTS admin_activities (
 $conn->query($createTableSql);
 
 // Get recent activities from admin_activities table (last 20) - only show teaching-related
-// activity, not account/admin housekeeping. LEFT JOINed to admin_accounts so a teacher
-// removed from Manage Users (is_deleted = 1) drops out of here too — but an unmatched
-// email (aa.is_deleted IS NULL) still shows, instead of silently disappearing the way an
-// INNER JOIN would for any pre-existing row whose email doesn't cleanly match.
+// activity, not account/admin housekeeping. INNER JOINed to admin_accounts (is_deleted = 0):
+// unlike Activity Library, every row here was logged by someone who had to be authenticated
+// against admin_accounts to perform the action in the first place - so a user_email with no
+// matching row today can only mean that account was since permanently deleted, never a
+// legacy/unsynced case. Safe to hide unmatched rows here (not safe in Activity Library,
+// where old teacher_accounts rows can predate admin_accounts syncing).
 $result = $conn->query("SELECT log.id, log.activity_type, log.user_type, log.user_name, log.user_email, log.action_detail, log.created_at
                         FROM admin_activities log
-                        LEFT JOIN admin_accounts aa ON aa.admin_email = log.user_email
+                        INNER JOIN admin_accounts aa ON aa.admin_email = log.user_email AND aa.is_deleted = 0
                         WHERE log.activity_type IN ('Create Activity', 'Complete Activity', 'Save Draft', 'Material Uploaded', 'Material Deleted', 'Unpublish Activity', 'Delete Draft')
-                          AND (aa.is_deleted IS NULL OR aa.is_deleted = 0)
                         ORDER BY log.created_at DESC
                         LIMIT 20");
 
