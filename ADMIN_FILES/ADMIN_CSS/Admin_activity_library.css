@@ -621,6 +621,19 @@ body { display: flex; }
   border-collapse: collapse;
 }
 
+/* Activity Title is the only column without a content-based width cap, so
+   with table-layout:auto it should be the one that absorbs the table's
+   slack — without this, auto-layout was handing that extra width to the
+   Actions column instead, leaving empty space next to the View button. */
+.al-table th:nth-child(2), .al-table td:nth-child(2),
+.al-table th:nth-child(3), .al-table td:nth-child(3),
+.al-table th:nth-child(4), .al-table td:nth-child(4),
+.al-table th:nth-child(5), .al-table td:nth-child(5),
+.al-table th:nth-child(6), .al-table td:nth-child(6) {
+  width: 1%;
+  white-space: nowrap;
+}
+
 .al-table thead tr { background: #fafaf8; border-bottom: 1.5px solid #f0ebe1; }
 
 .al-table th {
@@ -788,23 +801,6 @@ body { display: flex; }
 }
 
 .al-view-btn:hover { background: #EFF6FF; border-color: #1E3A8A; color: #1E3A8A; }
-
-.al-dots-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: 1px solid #e0dbd0;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #aaa;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background .2s;
-}
-
-.al-dots-btn:hover { background: #f7f4ee; color: #555; }
 
 /* ── Empty state ── */
 .al-empty-td { padding: 48px 20px !important; text-align: center; }

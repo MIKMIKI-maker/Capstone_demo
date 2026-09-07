@@ -23,11 +23,14 @@ $createTableSql = "CREATE TABLE IF NOT EXISTS admin_activities (
 )";
 $conn->query($createTableSql);
 
-// Get recent activities from admin_activities table (last 20) - only show teaching-related activity, not account/admin housekeeping
-$result = $conn->query("SELECT id, activity_type, user_type, user_name, user_email, action_detail, created_at
-                        FROM admin_activities
-                        WHERE activity_type IN ('Create Activity', 'Complete Activity', 'Save Draft', 'Material Uploaded', 'Material Deleted', 'Unpublish Activity', 'Delete Draft')
-                        ORDER BY created_at DESC
+// Get recent activities from admin_activities table (last 20) - only show teaching-related
+// activity, not account/admin housekeeping. Joined to admin_accounts (is_deleted = 0) so a
+// teacher removed from Manage Users drops out of here too, instead of lingering by name.
+$result = $conn->query("SELECT log.id, log.activity_type, log.user_type, log.user_name, log.user_email, log.action_detail, log.created_at
+                        FROM admin_activities log
+                        INNER JOIN admin_accounts aa ON aa.admin_email = log.user_email AND aa.is_deleted = 0
+                        WHERE log.activity_type IN ('Create Activity', 'Complete Activity', 'Save Draft', 'Material Uploaded', 'Material Deleted', 'Unpublish Activity', 'Delete Draft')
+                        ORDER BY log.created_at DESC
                         LIMIT 20");
 
 $activities = [];
