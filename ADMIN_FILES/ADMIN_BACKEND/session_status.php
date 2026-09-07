@@ -46,6 +46,18 @@ $authenticated = $row
 
 if (!$authenticated) {
     http_response_code(401);
+} else {
+    // portal_guard.js polls this endpoint on an interval while a page is
+    // open — piggybacking a last_seen refresh here gives Manage Users a
+    // real "currently online" signal (last_seen within the last couple of
+    // minutes) without touching the separate `status` flag that
+    // authentication above already depends on.
+    $touch = getDatabaseConnection();
+    if ($touch) {
+        $upd = $touch->prepare('UPDATE admin_accounts SET last_seen = NOW() WHERE id = ?');
+        if ($upd) { $upd->bind_param('i', $adminId); $upd->execute(); $upd->close(); }
+        $touch->close();
+    }
 }
 
 echo json_encode([

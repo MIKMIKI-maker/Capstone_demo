@@ -39,4 +39,13 @@
       checkSession();
     }
   });
+
+  // Re-checking on an interval (not just once per page load) also doubles
+  // as a heartbeat — session_status.php refreshes last_seen on every call,
+  // which is what Manage Users' "currently online" status is based on.
+  // Only while the tab is actually visible, so a background/minimized tab
+  // doesn't keep a user looking "online" indefinitely.
+  setInterval(function () {
+    if (document.visibilityState === 'visible') checkSession();
+  }, 60000);
 })();

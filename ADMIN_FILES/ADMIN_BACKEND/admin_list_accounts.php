@@ -38,6 +38,7 @@ $result = $conn->query("SELECT a.id, a.admin_email, a.first_name, a.last_name,
     COALESCE(a.parent_name, '') as parent_name,
     COALESCE(a.status, 'inactive') as status,
     a.last_login,
+    a.last_seen,
     COALESCE(a.created_at, NOW()) as created_at,
     COALESCE(a.profile_photo, '') as profile_photo,
     (SELECT MAX(sub.submitted_at) FROM activity_submissions sub

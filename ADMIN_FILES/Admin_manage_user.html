@@ -864,7 +864,7 @@
           + '<div class="admin-u-name">' + account.full_name + '</div>'
           + '<div class="admin-u-sub">' + account.role + (account.condition_info ? ' • ' + account.condition_info : '') + '</div>'
           + '</div>'
-          + '<span class="admin-badge admin-badge--blue admin-ml-auto">' + account.status + '</span>'
+          + '<span class="admin-badge admin-badge--blue admin-ml-auto">' + (isOnline(account) ? 'active' : 'inactive') + '</span>'
           + '</div>';
       }).join('');
     }
@@ -876,6 +876,20 @@
       return role === 'teacher' ? 'admin-badge--teacher'
            : role === 'student' ? 'admin-badge--student'
            : 'admin-badge--adminrole';
+    }
+
+    // The stored `status` column also gates session validity elsewhere
+    // (session_status.php) — repurposing it as a live indicator here would
+    // risk auto-logging out anyone idle for 2 minutes. Instead, "currently
+    // online" is computed separately from `last_seen`, which portal_guard.js
+    // refreshes on an interval on every page the account has open. MySQL
+    // datetime strings are UTC with no timezone marker, so 'Z' is appended
+    // before parsing — otherwise the Date constructor would misread them as
+    // already being in the browser's local time.
+    function isOnline(account) {
+      if (!account.last_seen) return false;
+      var lastSeenMs = new Date(account.last_seen.replace(' ', 'T') + 'Z').getTime();
+      return (Date.now() - lastSeenMs) < 2 * 60 * 1000;
     }
 
     function renderAccountTable(accounts) {
@@ -906,7 +920,9 @@
         var avatarStyle = account.profile_photo
           ? 'background:transparent;padding:0;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.12);'
           : 'background:' + _aBg + ';';
-        var statusClass = account.status === 'active' ? 'admin-badge--green' : 'admin-badge--inactive';
+        var _online = isOnline(account);
+        var statusClass = _online ? 'admin-badge--green' : 'admin-badge--inactive';
+        var statusText  = _online ? 'active' : 'inactive';
         return '<tr>'
           + '<td><div class="admin-user-cell">'
           + '<div class="admin-u-avatar" style="' + avatarStyle + '">' + avatarHtml + '</div>'
@@ -916,7 +932,7 @@
           + '</div></div></td>'
           + '<td><span class="admin-badge ' + _roleBadgeClass(account.role) + '">' + account.role + '</span></td>'
           + '<td><span class="admin-text-condition">' + escapeHtml(account.condition_info || '—') + '</span></td>'
-          + '<td><span class="admin-badge ' + statusClass + '">' + account.status + '</span></td>'
+          + '<td><span class="admin-badge ' + statusClass + '">' + statusText + '</span></td>'
           + '<td><button class="admin-btn-view" type="button" onclick="viewUser(' + account.id + ')"><i class="fa-regular fa-eye"></i> View</button></td>'
           + '<td><button class="admin-btn-edit" type="button" onclick="editUser(' + account.id + ')"><i class="fa-solid fa-pen"></i> Edit</button></td>'
           + '</tr>';
@@ -989,8 +1005,9 @@
       document.getElementById('tv-lastactive').textContent = fmtLastActive(account);
 
       var sb = document.getElementById('tv-status');
-      sb.textContent = account.status;
-      sb.className   = 'admin-badge ' + (account.status === 'active' ? 'admin-badge--green' : 'admin-badge--gray');
+      var tvOnline = isOnline(account);
+      sb.textContent = tvOnline ? 'active' : 'inactive';
+      sb.className   = 'admin-badge ' + (tvOnline ? 'admin-badge--green' : 'admin-badge--gray');
 
       // Reset student panel while loading
       document.getElementById('tv-student-count').textContent = '…';
@@ -1066,8 +1083,9 @@
       document.getElementById('sv-lastactive').textContent = fmtLastActive(account);
 
       var sb = document.getElementById('sv-status');
-      sb.textContent = account.status;
-      sb.className   = 'admin-badge ' + (account.status === 'active' ? 'admin-badge--green' : 'admin-badge--gray');
+      var svOnline = isOnline(account);
+      sb.textContent = svOnline ? 'active' : 'inactive';
+      sb.className   = 'admin-badge ' + (svOnline ? 'admin-badge--green' : 'admin-badge--gray');
 
       var loadingHtml = '<div class="admin-v2-no-data"><i class="fa-solid fa-spinner fa-spin"></i> Loading…</div>';
       document.getElementById('sv-teacher-content').innerHTML  = loadingHtml;
@@ -1161,8 +1179,9 @@
 
       document.getElementById('admin-vi-row-status').style.display = 'flex';
       var statusBadge = document.querySelector('#admin-vi-row-status .admin-badge');
-      statusBadge.textContent = account.status;
-      statusBadge.className   = 'admin-badge ' + (account.status === 'active' ? 'admin-badge--green' : 'admin-badge--gray');
+      var adminOnline = isOnline(account);
+      statusBadge.textContent = adminOnline ? 'active' : 'inactive';
+      statusBadge.className   = 'admin-badge ' + (adminOnline ? 'admin-badge--green' : 'admin-badge--gray');
 
       showModal('admin-modal-view');
     }
@@ -1261,9 +1280,10 @@
         var matchesRole = selectedRole === 'All Roles' || 
           account.role.toLowerCase() === selectedRole.toLowerCase();
 
-        // Status filter
-        var matchesStatus = selectedStatus === 'All Status' || 
-          account.status.toLowerCase() === selectedStatus.toLowerCase();
+        // Status filter — matches what's actually shown in the table
+        // (currently online, per last_seen), not the raw status flag.
+        var matchesStatus = selectedStatus === 'All Status' ||
+          (isOnline(account) ? 'active' : 'inactive') === selectedStatus.toLowerCase();
 
         return matchesSearch && matchesRole && matchesStatus;
       });
