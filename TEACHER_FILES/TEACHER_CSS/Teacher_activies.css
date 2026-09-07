@@ -103,10 +103,14 @@ tbody tr:hover { background: #FAFBFF; }
 .teacher-tag-id  { background: #FEF3C7; color: #B45309; }
 
 /* ── ACTION BUTTONS ── */
-.teacher-actions-cell { display: flex; gap: 8px; align-items: center; }
-.btn-view { display: inline-flex; align-items: center; gap: 6px; background: var(--white); border: 2px solid var(--accent); color: var(--accent); padding: 8px 18px; border-radius: 12px; font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; transition: var(--transition); }
+/* white-space:nowrap keeps these pill-shaped even when the Learner cell
+   grows long (multi-student "Name (Condition)" lists) — without it, auto
+   table layout steals width from Actions and wraps "View Submissions"
+   onto two lines, turning the pill into a squashed box. */
+.teacher-actions-cell { display: flex; gap: 8px; align-items: center; white-space: nowrap; }
+.btn-view { display: inline-flex; align-items: center; gap: 6px; background: var(--white); border: 2px solid var(--accent); color: var(--accent); padding: 8px 18px; border-radius: 12px; font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; transition: var(--transition); white-space: nowrap; }
 .btn-view:hover { background: #EFF6FF; }
-.btn-edit { display: inline-flex; align-items: center; gap: 6px; background: #0D47A1; color: #fff; border: none; padding: 8px 18px; border-radius: 12px; font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; transition: var(--transition); }
+.btn-edit { display: inline-flex; align-items: center; gap: 6px; background: #0D47A1; color: #fff; border: none; padding: 8px 18px; border-radius: 12px; font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; transition: var(--transition); white-space: nowrap; }
 .btn-edit:hover { background: #1565C0; }
 
 /* ── TABLE FOOTER / PAGINATION ── */
@@ -198,6 +202,7 @@ tbody tr:hover { background: #FAFBFF; }
     font-weight: 600;
     cursor: pointer;
     transition: var(--transition);
+    white-space: nowrap;
 }
 
 .btn-delete:hover { background: #FEE2E2; border-color: #FCA5A5; }
