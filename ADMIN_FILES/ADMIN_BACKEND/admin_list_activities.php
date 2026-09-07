@@ -28,7 +28,7 @@ $sql = "SELECT
 FROM teacher_activities ta
 LEFT JOIN teacher_accounts tc ON ta.teacher_id = tc.id
 ORDER BY ta.created_at DESC
-LIMIT 200";
+LIMIT 20";
 
 $result = $conn->query($sql);
 if ($result) {
