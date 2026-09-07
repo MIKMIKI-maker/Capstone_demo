@@ -26,14 +26,17 @@ $sql = "SELECT
     tc.first_name,
     tc.last_name
 FROM teacher_activities ta
-INNER JOIN teacher_accounts tc ON ta.teacher_id = tc.id
-INNER JOIN admin_accounts aa ON aa.admin_email = tc.teacher_email AND aa.is_deleted = 0
+LEFT JOIN teacher_accounts tc ON ta.teacher_id = tc.id
+LEFT JOIN admin_accounts aa ON aa.admin_email = tc.teacher_email
+WHERE aa.is_deleted IS NULL OR aa.is_deleted = 0
 ORDER BY ta.created_at DESC";
 
 $result = $conn->query($sql);
 if ($result) {
     while ($row = $result->fetch_assoc()) {
-        $created_by = $row['first_name'] . ' ' . $row['last_name'];
+        $created_by = ($row['first_name'] && $row['last_name'])
+            ? $row['first_name'] . ' ' . $row['last_name']
+            : 'Unknown';
 
         $activities[] = [
             'id'         => $row['id'],
