@@ -172,11 +172,11 @@
           </div>
           <div class="admin-section-content">
             <h3 class="admin-subsection-title">Email Sending Activity</h3>
-            <p class="admin-subsection-desc">Gmail's free SMTP relay caps at 500 emails per rolling 24 hours — track usage here since Gmail itself has no dashboard for it.</p>
+            <p class="admin-subsection-desc">Brevo's free tier caps at 300 emails per rolling 24 hours — track usage here, or on Brevo's own "Usage and plan" page.</p>
             <div style="display:flex;gap:14px;margin:16px 0 22px;flex-wrap:wrap;">
               <div style="flex:1;min-width:160px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:16px 20px;">
                 <div style="font-size:12px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:.04em;">Sent (last 24h)</div>
-                <div style="font-size:28px;font-weight:700;color:#1e3a8a;margin-top:4px;"><span id="email-log-sent">0</span> <span style="font-size:14px;font-weight:500;color:#64748b;">/ 500</span></div>
+                <div style="font-size:28px;font-weight:700;color:#1e3a8a;margin-top:4px;"><span id="email-log-sent">0</span> <span style="font-size:14px;font-weight:500;color:#64748b;">/ <span id="email-log-limit">300</span></span></div>
               </div>
               <div style="flex:1;min-width:160px;background:#fef2f2;border:1px solid #fecaca;border-radius:14px;padding:16px 20px;">
                 <div style="font-size:12px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.04em;">Failed (last 24h)</div>
@@ -507,6 +507,7 @@
           if (!data.success) return;
           document.getElementById('email-log-sent').textContent = data.sent_last_24h;
           document.getElementById('email-log-failed').textContent = data.failed_last_24h;
+          if (data.daily_limit) document.getElementById('email-log-limit').textContent = data.daily_limit;
           document.getElementById('email-log-count').textContent = data.rows.length;
 
           var wrap = document.getElementById('email-log-rows');

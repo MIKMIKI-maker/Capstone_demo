@@ -11,8 +11,8 @@ if (!$conn) {
     exit;
 }
 
-// Gmail's free-tier SMTP relay caps at 500 sends per rolling 24h window, with
-// no usage dashboard of its own — this is the only place that count is visible.
+// Brevo's free tier caps at 300 sends per rolling 24h window (visible on
+// Brevo's own "Usage and plan" page too, but this is the in-app view).
 $todayRes = $conn->query("SELECT COUNT(*) AS cnt FROM email_log WHERE success = 1 AND sent_at >= (NOW() - INTERVAL 1 DAY)");
 $sentLast24h = $todayRes ? (int)$todayRes->fetch_assoc()['cnt'] : 0;
 
@@ -37,7 +37,7 @@ echo json_encode([
     'success' => true,
     'sent_last_24h' => $sentLast24h,
     'failed_last_24h' => $failedLast24h,
-    'daily_limit' => 500,
+    'daily_limit' => 300,
     'rows' => $rows,
 ]);
 
