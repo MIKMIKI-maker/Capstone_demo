@@ -439,6 +439,17 @@
               } else if (jsonData.status === "need_password_change") {
                 document.getElementById('login_screen_form_1').style.display = 'none';
                 document.getElementById('force-pwd-form').style.display = '';
+              } else if (jsonData.status === "need_2fa" || jsonData.status === "need_2fa_setup") {
+                /* 2FA only exists for the Admin role — reaching either status
+                   here means these are Admin credentials typed into the
+                   Teacher/Student portal by mistake. This portal has no 2FA
+                   UI of its own, so point them to the right page instead of
+                   surfacing the raw "Enter your 2FA code" backend message. */
+                var wrongPortalEl = document.getElementById('login-error-msg');
+                if (wrongPortalEl) {
+                  wrongPortalEl.textContent = 'This portal is for teacher and student accounts. Please use the admin login page.';
+                  wrongPortalEl.style.display = 'block';
+                }
               } else {
                 var errEl = document.getElementById('login-error-msg');
                 if (errEl) {
