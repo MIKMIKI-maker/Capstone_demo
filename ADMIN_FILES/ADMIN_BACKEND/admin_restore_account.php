@@ -70,15 +70,50 @@ if ($action === 'restore') {
 // no longer restorable: flipping permanently_deleted=1 drops it out of the
 // Deleted Accounts trash, and it stays hidden everywhere else the same way
 // any is_deleted=1 row already does - nothing else needs to change for that.
+//
+// The email is also retired (prefixed with "deleted_<id>_") so the original
+// address is immediately free for a genuinely new account. Reusing the row
+// instead - resetting it and letting a new person log in with it - would
+// silently attach that new person to the old account's teacher_accounts.id,
+// resurfacing the previous owner's activities/uploads under the new name.
+// Retiring the email keeps the old row (and its history) permanently intact
+// under its own identity while the new account starts as an unrelated row.
 if ($action === 'permanent') {
+    $infoStmt = $conn->prepare(
+        "SELECT id, role, admin_email FROM admin_accounts
+         WHERE id IN ($placeholders) AND is_deleted = 1"
+    );
+    $infoStmt->bind_param($types, ...$ids);
+    $infoStmt->execute();
+    $res  = $infoStmt->get_result();
+    $rows = [];
+    while ($r = $res->fetch_assoc()) $rows[] = $r;
+    $infoStmt->close();
+
     $stmt = $conn->prepare(
-        "UPDATE admin_accounts SET permanently_deleted = 1
+        "UPDATE admin_accounts
+         SET permanently_deleted = 1, admin_email = CONCAT('deleted_', id, '_', admin_email)
          WHERE id IN ($placeholders) AND is_deleted = 1"
     );
     if (!$stmt) { echo json_encode(['success' => false, 'message' => 'Prepare failed']); $conn->close(); exit; }
     $stmt->bind_param($types, ...$ids);
     $ok = $stmt->execute();
     $stmt->close();
+
+    // Retire the matching teacher_accounts.teacher_email too, so it still
+    // matches the now-retired admin_accounts row (LEFT JOINed by email in
+    // Activity Library) instead of looking like an unmatched/legacy row.
+    $tconn = getTeacherDatabaseConnection();
+    if ($tconn) {
+        foreach ($rows as $r) {
+            if ($r['role'] !== 'teacher') continue;
+            $newEmail = 'deleted_' . $r['id'] . '_' . $r['admin_email'];
+            $rn = $tconn->prepare("UPDATE teacher_accounts SET teacher_email = ? WHERE teacher_email = ?");
+            if ($rn) { $rn->bind_param("ss", $newEmail, $r['admin_email']); $rn->execute(); $rn->close(); }
+        }
+        $tconn->close();
+    }
+
     $conn->close();
     echo json_encode(['success' => (bool)$ok]);
     exit;
