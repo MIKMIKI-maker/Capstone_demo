@@ -48,7 +48,7 @@ $recent = [];
 
 $stmt = $conn->prepare(
     "SELECT activity_title as title, status as sub, created_at as date
-     FROM teacher_activities WHERE teacher_id=? ORDER BY created_at DESC LIMIT 8"
+     FROM teacher_activities WHERE teacher_id=? ORDER BY created_at DESC LIMIT 20"
 );
 if ($stmt) {
     $stmt->bind_param("i", $teacher_id);
@@ -74,7 +74,7 @@ $stmt = $conn->prepare(
         (SELECT COUNT(*) FROM learner_progress lp WHERE lp.student_id = s.id AND lp.teacher_id = ?) AS activity_count
      FROM students s
      WHERE s.teacher_id = ?
-     ORDER BY last_score DESC, s.student_name
+     ORDER BY s.student_name ASC
      LIMIT 12"
 );
 if ($stmt) {

@@ -490,6 +490,17 @@ body {
 
 .teacher-plan-items li:hover { background: #FEF3C7; }
 
+.teacher-plan-items li.dragging { opacity: .4; }
+
+.teacher-plan-drag-handle {
+    cursor: grab;
+    color: #CBD5E1;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.teacher-plan-item-text { flex: 1; }
+
 .teacher-plan-item-del {
     background: none; border: none; cursor: pointer;
     color: #CBD5E1; font-size: 12px; line-height: 1;
@@ -521,6 +532,10 @@ body {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 18px;
+    /* Without this, grid stretches both panels to match whichever is
+       taller (usually Recent Activity) — My Tasks would show a wall of
+       empty space below a single task instead of hugging its content. */
+    align-items: start;
 }
 
 /* =====================

@@ -140,7 +140,7 @@
                         <div class="teacher-plan-grid">
                             <div class="teacher-plan-card">
                                 <span class="teacher-grading-badge badge-blue">First Grading</span>
-                                <ul class="teacher-plan-items" id="teacher-plan-First"></ul>
+                                <ul class="teacher-plan-items" id="teacher-plan-First" ondragover="planDragOver(event)" ondrop="planDrop(event,'First')"></ul>
                                 <div class="teacher-plan-add-row">
                                     <input class="teacher-plan-add-input" id="teacher-plan-input-First" placeholder="Add a focus area..." type="text" onkeydown="if(event.key==='Enter') addPlanItem('First')" />
                                     <button class="teacher-plan-add-btn" type="button" onclick="addPlanItem('First')">+</button>
@@ -148,7 +148,7 @@
                             </div>
                             <div class="teacher-plan-card">
                                 <span class="teacher-grading-badge badge-pink">Second Grading</span>
-                                <ul class="teacher-plan-items" id="teacher-plan-Second"></ul>
+                                <ul class="teacher-plan-items" id="teacher-plan-Second" ondragover="planDragOver(event)" ondrop="planDrop(event,'Second')"></ul>
                                 <div class="teacher-plan-add-row">
                                     <input class="teacher-plan-add-input" id="teacher-plan-input-Second" placeholder="Add a focus area..." type="text" onkeydown="if(event.key==='Enter') addPlanItem('Second')" />
                                     <button class="teacher-plan-add-btn" type="button" onclick="addPlanItem('Second')">+</button>
@@ -156,7 +156,7 @@
                             </div>
                             <div class="teacher-plan-card">
                                 <span class="teacher-grading-badge badge-orange">Third Grading</span>
-                                <ul class="teacher-plan-items" id="teacher-plan-Third"></ul>
+                                <ul class="teacher-plan-items" id="teacher-plan-Third" ondragover="planDragOver(event)" ondrop="planDrop(event,'Third')"></ul>
                                 <div class="teacher-plan-add-row">
                                     <input class="teacher-plan-add-input" id="teacher-plan-input-Third" placeholder="Add a focus area..." type="text" onkeydown="if(event.key==='Enter') addPlanItem('Third')" />
                                     <button class="teacher-plan-add-btn" type="button" onclick="addPlanItem('Third')">+</button>
@@ -351,12 +351,60 @@
                 var list = document.getElementById('teacher-plan-' + period);
                 var items = (plan && plan[period]) || [];
                 list.innerHTML = items.map(function(item) {
-                    return '<li>'
-                        + '<span>' + escHtml(item.text) + '</span>'
+                    return '<li draggable="true" data-id="' + item.id + '" ondragstart="planDragStart(event)" ondragend="planDragEnd(event)">'
+                        + '<span class="teacher-plan-drag-handle">⠿</span>'
+                        + '<span class="teacher-plan-item-text">' + escHtml(item.text) + '</span>'
                         + '<button class="teacher-plan-item-del" type="button" onclick="deletePlanItem(' + item.id + ',\'' + period + '\')" title="Remove">✕</button>'
                         + '</li>';
                 }).join('');
             });
+        }
+
+        // ── DRAG-TO-REORDER (Learning Activity Plan) ────────────────────
+        // Native HTML5 drag-and-drop, scoped to reordering within a single
+        // grading-period list — planDragOver bails out if the hovered list
+        // isn't the dragged item's own parent, so items can't hop between
+        // First/Second/Third by accident.
+        var _dragItem = null;
+
+        function planDragStart(e) {
+            _dragItem = e.currentTarget;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', _dragItem.dataset.id);
+            setTimeout(function() { _dragItem.classList.add('dragging'); }, 0);
+        }
+
+        function planDragOver(e) {
+            e.preventDefault();
+            if (!_dragItem) return;
+            var list = e.currentTarget;
+            if (list !== _dragItem.parentElement) return;
+            var after = e.target.closest('li');
+            if (!after || after === _dragItem) return;
+            var rect = after.getBoundingClientRect();
+            var before = (e.clientY - rect.top) < rect.height / 2;
+            list.insertBefore(_dragItem, before ? after : after.nextSibling);
+        }
+
+        function planDrop(e, period) {
+            e.preventDefault();
+            if (_dragItem) savePlanOrder(period);
+        }
+
+        function planDragEnd() {
+            if (_dragItem) _dragItem.classList.remove('dragging');
+            _dragItem = null;
+        }
+
+        function savePlanOrder(period) {
+            var list = document.getElementById('teacher-plan-' + period);
+            var ids = Array.prototype.map.call(list.querySelectorAll('li'), function(li) { return li.dataset.id; });
+            var tid = getCurrentTeacherId();
+            fetch('TEACHER_BACKEND/teacher_activity_plan.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'action=reorder&teacher_id=' + tid + '&grading_period=' + encodeURIComponent(period) + '&order=' + ids.join(',')
+            }).catch(function() {});
         }
 
         function addPlanItem(period) {

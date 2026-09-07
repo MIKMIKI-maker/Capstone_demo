@@ -89,6 +89,21 @@ switch ($action) {
         echo json_encode(['success' => true]);
         break;
 
+    case 'reorder':
+        $period = in_array($_POST['grading_period'] ?? '', ['First', 'Second', 'Third']) ? $_POST['grading_period'] : null;
+        $order = trim($_POST['order'] ?? '');
+        if (!$period || $order === '') { echo json_encode(['success' => false, 'message' => 'grading_period and order required']); break; }
+        $ids = array_filter(array_map('intval', explode(',', $order)));
+
+        $stmt = $conn->prepare("UPDATE teacher_activity_plan SET sort_order=? WHERE id=? AND teacher_id=? AND grading_period=?");
+        foreach (array_values($ids) as $i => $id) {
+            $stmt->bind_param("iiis", $i, $id, $teacher_id, $period);
+            $stmt->execute();
+        }
+        $stmt->close();
+        echo json_encode(['success' => true]);
+        break;
+
     default:
         echo json_encode(['success' => false, 'message' => 'Unknown action']);
 }
