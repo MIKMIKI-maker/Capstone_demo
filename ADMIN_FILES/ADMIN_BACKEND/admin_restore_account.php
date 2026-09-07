@@ -103,6 +103,19 @@ if ($action === 'permanent') {
 
     if ($tconn) $tconn->close();
 
+    // Erase this teacher's Recent Activity log entries too - teacher_activities
+    // rows are already gone via teacher_accounts' ON DELETE CASCADE above, and
+    // admin_activities has no such FK (it's a flat log table), so without this
+    // those rows would linger in the database forever, just hidden by the
+    // is_deleted filter on admin_get_recent_activities.php's join instead of
+    // actually being erased - inconsistent with what "permanent" means here.
+    if (!empty($teacherEmails)) {
+        $eph    = implode(',', array_fill(0, count($teacherEmails), '?'));
+        $etypes = str_repeat('s', count($teacherEmails));
+        $de = $conn->prepare("DELETE FROM admin_activities WHERE user_email IN ($eph)");
+        if ($de) { $de->bind_param($etypes, ...$teacherEmails); $de->execute(); $de->close(); }
+    }
+
     // Hard delete from admin_accounts (only soft-deleted rows)
     $delStmt = $conn->prepare(
         "DELETE FROM admin_accounts WHERE id IN ($placeholders) AND is_deleted = 1"
