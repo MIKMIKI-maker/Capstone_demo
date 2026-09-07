@@ -227,6 +227,17 @@ function getDatabaseConnection() {
         $conn->query("ALTER TABLE admin_accounts ADD COLUMN must_change_password TINYINT(1) NOT NULL DEFAULT 0");
     }
 
+    // "Permanent delete" no longer means DELETE FROM - the row (and every
+    // activity/upload/log that references it) stays in SQL for good, this
+    // just marks it as no longer restorable and drops it out of the Deleted
+    // Accounts trash. Every is_deleted-based filter (Activity Library,
+    // Recent Activity, Uploads) already hides is_deleted=1 rows regardless
+    // of this flag, so nothing else needs to change to keep that behavior.
+    $pd_col = $conn->query("SHOW COLUMNS FROM admin_accounts LIKE 'permanently_deleted'");
+    if ($pd_col && $pd_col->num_rows == 0) {
+        $conn->query("ALTER TABLE admin_accounts ADD COLUMN permanently_deleted TINYINT(1) NOT NULL DEFAULT 0");
+    }
+
     // 2FA code rate-limiting — separate from login_attempts (password step)
     // since a correct password with a wrong/guessed 2FA code is a different
     // failure mode and shouldn't share the same counter as password guesses.
