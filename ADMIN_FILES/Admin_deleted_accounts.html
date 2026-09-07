@@ -294,7 +294,10 @@
   function fmtDate(str) {
     if (!str) return '—';
     try {
-      var d = new Date(str);
+      // MySQL datetime strings are UTC but carry no timezone marker, so
+      // appending 'Z' keeps the Date constructor from treating them as
+      // already being in the browser's local time (PHT, off by 8 hours).
+      var d = new Date(str.replace(' ', 'T') + 'Z');
       return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
            + ' · '
            + d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});

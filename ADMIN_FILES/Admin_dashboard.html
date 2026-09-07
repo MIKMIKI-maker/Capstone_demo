@@ -432,7 +432,10 @@
         
         var userTypeDisplay = (activity.user_type || 'user').charAt(0).toUpperCase() + (activity.user_type || 'user').slice(1);
         
-        var date = new Date(activity.created_at);
+        // MySQL datetime strings are UTC but carry no timezone marker, so
+        // appending 'Z' keeps the Date constructor from treating them as
+        // already being in the browser's local time (PHT, off by 8 hours).
+        var date = new Date(activity.created_at.replace(' ', 'T') + 'Z');
         var formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
         html += `

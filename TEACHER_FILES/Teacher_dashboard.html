@@ -503,7 +503,7 @@
                     + '<span class="teacher-activity-dot ' + dc + '"></span>'
                     + '<div class="teacher-activity-text">'
                     + '<p class="teacher-activity-title">' + escHtml(a.title) + '</p>'
-                    + '<p class="teacher-activity-time">' + getTimeAgo(new Date(a.date)) + '</p>'
+                    + '<p class="teacher-activity-time">' + getTimeAgo(parseUtc(a.date)) + '</p>'
                     + '</div></div>';
             }).join('');
         }
@@ -718,6 +718,15 @@
         }
 
         // ── UTILITIES ────────────────────────────────────────────────────
+        // MySQL datetime strings ("YYYY-MM-DD HH:MM:SS") are UTC but carry no
+        // timezone marker, so the Date constructor would otherwise treat
+        // them as already being in the browser's local time — silently
+        // showing a UTC clock reading as if it were PHT (off by 8 hours).
+        function parseUtc(str) {
+            if (!str) return null;
+            return new Date(str.replace(' ', 'T') + 'Z');
+        }
+
         function getTimeAgo(date) {
             var now = new Date();
             var s = Math.floor((now - date) / 1000);

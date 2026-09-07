@@ -631,7 +631,7 @@
             } else {
                 notes.forEach(n => {
                     const dateStr = n.created_at
-                        ? new Date(n.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                        ? new Date(n.created_at.replace(' ', 'T') + 'Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                         : '';
                     html += `<div class="teacher-note-item">
                         <div class="teacher-note-text">${escHtml(n.note)}</div>

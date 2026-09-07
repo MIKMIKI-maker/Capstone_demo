@@ -268,7 +268,10 @@
             return labels[type] || 'Notice';
         }
         function timeAgo(ts) {
-            var d = new Date(ts.replace(' ', 'T'));
+            // MySQL datetime strings are UTC but carry no timezone marker,
+            // so appending 'Z' keeps the Date constructor from treating them
+            // as already being in the browser's local time (PHT).
+            var d = new Date(ts.replace(' ', 'T') + 'Z');
             var diff = Math.floor((Date.now() - d.getTime()) / 1000);
             if (diff < 60) return 'Just now';
             if (diff < 3600) return Math.floor(diff/60) + 'm ago';

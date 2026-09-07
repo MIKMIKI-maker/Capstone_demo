@@ -934,7 +934,10 @@
     function fmtLastActive(account) {
       function fmtDate(s) {
         if (!s) return null;
-        var d = new Date(s.replace(' ', 'T'));
+        // MySQL datetime strings are UTC but carry no timezone marker, so
+        // appending 'Z' keeps the Date constructor from treating them as
+        // already being in the browser's local time (PHT, off by 8 hours).
+        var d = new Date(s.replace(' ', 'T') + 'Z');
         if (isNaN(d)) return null;
         return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
       }
@@ -979,7 +982,7 @@
 
       if (account.created_at) {
         document.getElementById('tv-created').textContent =
-          new Date(account.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+          new Date(account.created_at.replace(' ', 'T') + 'Z').toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
       } else {
         document.getElementById('tv-created').textContent = '—';
       }
@@ -1056,7 +1059,7 @@
 
       if (account.created_at) {
         document.getElementById('sv-created').textContent =
-          new Date(account.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+          new Date(account.created_at.replace(' ', 'T') + 'Z').toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
       } else {
         document.getElementById('sv-created').textContent = '—';
       }
@@ -1149,7 +1152,7 @@
       setRow('admin-vi-row-role', account.role);
 
       if (account.created_at) {
-        setRow('admin-vi-row-created', new Date(account.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }));
+        setRow('admin-vi-row-created', new Date(account.created_at.replace(' ', 'T') + 'Z').toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }));
       } else {
         setRow('admin-vi-row-created', '');
       }

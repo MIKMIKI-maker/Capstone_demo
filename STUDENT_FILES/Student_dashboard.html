@@ -325,7 +325,10 @@
         // "Recent" = published within the last 7 days (use created_at from DB)
         var cutoff = Date.now() - 7 * 86400000;
         var recent = materials.filter(function(a) {
-          return a.created_at && (new Date(a.created_at).getTime() >= cutoff);
+          // MySQL datetime strings are UTC but carry no timezone marker, so
+          // appending 'Z' keeps the Date constructor from treating them as
+          // already being in the browser's local time (PHT).
+          return a.created_at && (new Date(a.created_at.replace(' ', 'T') + 'Z').getTime() >= cutoff);
         });
 
         if (recent.length === 0) {

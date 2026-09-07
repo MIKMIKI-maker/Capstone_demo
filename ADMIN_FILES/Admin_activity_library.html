@@ -370,7 +370,11 @@
     function formatDate(str) {
       if (!str) return { date: '—', time: '' };
       try {
-        var d = new Date(str);
+        // MySQL datetime strings ("YYYY-MM-DD HH:MM:SS") are UTC but carry no
+        // timezone marker, so the Date constructor would otherwise treat
+        // them as already being in the browser's local time — silently
+        // showing a UTC clock reading as if it were PHT (off by 8 hours).
+        var d = new Date(str.replace(' ', 'T') + 'Z');
         return {
           date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
           time: d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })

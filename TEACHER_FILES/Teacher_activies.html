@@ -700,7 +700,13 @@
 
         function formatDate(str) {
             try {
-                var d = new Date(str);
+                // Draft/publish timestamps saved via toISOString() already carry
+                // a 'T' and 'Z' and parse correctly as-is. Timestamps straight
+                // from the database (created_at, uploaded_at) are MySQL's
+                // "YYYY-MM-DD HH:MM:SS" — UTC, but with no timezone marker, so
+                // the Date constructor would otherwise misread them as already
+                // being in the browser's local time (off by 8 hours for PHT).
+                var d = new Date(str.indexOf('T') === -1 ? str.replace(' ', 'T') + 'Z' : str);
                 var datePart = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                 var timePart = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
                 return datePart + ' · ' + timePart;

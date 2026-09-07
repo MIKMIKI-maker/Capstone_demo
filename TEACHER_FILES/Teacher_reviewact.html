@@ -259,15 +259,19 @@ var _currentSub = null; // currently open submission
 
 /* ── Helpers ── */
 function esc(s){ var d=document.createElement('div');d.textContent=s||'';return d.innerHTML; }
+// MySQL datetime strings are UTC but carry no timezone marker, so appending
+// 'Z' keeps the Date constructor from treating them as already being in the
+// browser's local time (PHT, off by 8 hours).
+function parseUtc(s){ return new Date(s.indexOf('T') === -1 ? s.replace(' ', 'T') + 'Z' : s); }
 function fmtDate(s){
   if (!s) return '—';
-  var d = new Date(s);
+  var d = parseUtc(s);
   if (isNaN(d)) return s;
   return d.toLocaleDateString('en-PH', {month:'short',day:'numeric',year:'numeric'});
 }
 function fmtTime(s){
   if (!s) return '';
-  var d = new Date(s);
+  var d = parseUtc(s);
   if (isNaN(d)) return '';
   return ' at ' + d.toLocaleTimeString('en-PH', {hour:'2-digit',minute:'2-digit'});
 }
