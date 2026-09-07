@@ -186,6 +186,7 @@
           <label for="force-pwd-new">New Password</label>
           <div class="pwd-wrapper">
             <input id="force-pwd-new" placeholder="At least 8 characters" type="password" />
+            <button type="button" class="pwd-toggle force-pwd-toggle" tabindex="-1"><i class="fa-solid fa-eye"></i></button>
           </div>
         </div>
 
@@ -193,6 +194,7 @@
           <label for="force-pwd-confirm">Confirm New Password</label>
           <div class="pwd-wrapper">
             <input id="force-pwd-confirm" placeholder="Re-enter new password" type="password" />
+            <button type="button" class="pwd-toggle force-pwd-toggle" tabindex="-1"><i class="fa-solid fa-eye"></i></button>
           </div>
         </div>
 
@@ -264,6 +266,21 @@
           }
         });
       }
+
+      /* Show/hide toggle for the forced-password-change fields */
+      document.querySelectorAll(".force-pwd-toggle").forEach(function (btn) {
+        var input = btn.previousElementSibling;
+        btn.addEventListener("click", function () {
+          var icon = btn.querySelector("i");
+          if (input.type === "password") {
+            input.type = "text";
+            icon.className = "fa-solid fa-eye-slash";
+          } else {
+            input.type = "password";
+            icon.className = "fa-solid fa-eye";
+          }
+        });
+      });
 
       /* Clear previous session data to ensure fresh login */
       sessionStorage.clear();
