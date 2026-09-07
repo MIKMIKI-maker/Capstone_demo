@@ -1,18 +1,11 @@
 <?php
 require_once __DIR__ . '/mailer_config.php';
-require_once __DIR__ . '/PHPMailer/src/Exception.php';
-require_once __DIR__ . '/PHPMailer/src/PHPMailer.php';
-require_once __DIR__ . '/PHPMailer/src/SMTP.php';
-
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
 
 /**
- * Records every send attempt (success or failure) to email_log, since Gmail
- * gives no usage dashboard of its own for a regular SMTP account — this is
- * the only way to see how many of the 500/day quota have been used, or why
- * a particular send failed. Never lets a logging failure break the actual
- * email send — swallows its own errors.
+ * Records every send attempt (success or failure) to email_log, since Brevo's
+ * dashboard is a separate place from this app — this is the in-app record of
+ * what was sent and why a particular send failed.  Never lets a logging
+ * failure break the actual email send — swallows its own errors.
  */
 function _logEmailAttempt(string $toEmail, string $subject, bool $success, ?string $errorMessage): void {
     try {
@@ -42,15 +35,22 @@ function _logEmailAttempt(string $toEmail, string $subject, bool $success, ?stri
 }
 
 /**
- * Sends an HTML email via the configured SMTP account.
+ * Sends an HTML email via Brevo's transactional email HTTP API.
  * Returns true on success, false on failure — never throws, so a broken
- * mail server can't take down the caller's own request (the notification/
+ * mail provider can't take down the caller's own request (the notification/
  * enrollment still succeeds in the app even if the email fails to send).
+ *
+ * This replaced direct SMTP (PHPMailer) because Render's hosting blocks
+ * outbound SMTP entirely — every send timed out there ("Could not connect
+ * to SMTP host... Connection timed out"), regardless of how correct the
+ * credentials were. Brevo's API is a plain HTTPS POST, unaffected by that
+ * block, and worked identically in local Docker testing (which never had
+ * the SMTP-blocking problem to begin with).
  */
 function send_email(string $toEmail, string $toName, string $subject, string $htmlBody): bool {
-    if (!SMTP_USER || !SMTP_PASSWORD) {
-        error_log('send_email: SMTP_USER/SMTP_PASSWORD not configured — skipping email to ' . $toEmail);
-        _logEmailAttempt($toEmail, $subject, false, 'SMTP not configured');
+    if (!BREVO_API_KEY || !SMTP_USER) {
+        error_log('send_email: BREVO_API_KEY/SMTP_USER not configured — skipping email to ' . $toEmail);
+        _logEmailAttempt($toEmail, $subject, false, 'Email provider not configured');
         return false;
     }
     if (!filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
@@ -59,48 +59,57 @@ function send_email(string $toEmail, string $toName, string $subject, string $ht
         return false;
     }
 
-    $mail = new PHPMailer(true);
-    try {
-        $mail->isSMTP();
-        $mail->Host       = SMTP_HOST;
-        $mail->SMTPAuth   = true;
-        $mail->Username   = SMTP_USER;
-        $mail->Password   = SMTP_PASSWORD;
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port       = SMTP_PORT;
-        // Without this, a blocked/unreachable SMTP port (common on hosting
-        // free tiers) leaves this call hanging on PHPMailer's default socket
-        // timeout for a couple minutes - and every caller (e.g.
-        // admin_add_account.php) sends the email inline before responding,
-        // so the whole "Add Account" request would hang right along with it.
-        // Capping it here keeps every caller fast without touching each one.
-        $mail->Timeout    = 10;
+    $altBody = trim(strip_tags(str_replace(['<br>', '<br/>', '<br />'], "\n", $htmlBody)));
 
-        $mail->setFrom(SMTP_USER, SMTP_FROM_NAME);
-        $mail->addAddress($toEmail, $toName);
+    $payload = [
+        'sender'      => ['name' => SMTP_FROM_NAME, 'email' => SMTP_USER],
+        'to'          => [['email' => $toEmail, 'name' => $toName]],
+        'subject'     => $subject,
+        'htmlContent' => $htmlBody,
+        'textContent' => $altBody,
+    ];
 
-        // Gmail (and most mail clients) strip data: URI images out of HTML
-        // email bodies as a security measure — a base64-embedded <img> just
-        // renders broken. An inline CID attachment is the actual supported
-        // way to embed an image that doesn't depend on the recipient
-        // fetching it from a live server. Every current template references
-        // it as <img src="cid:sped_logo">.
-        $logoPath = __DIR__ . '/logo_email.png';
-        if (is_file($logoPath)) {
-            $mail->addEmbeddedImage($logoPath, 'sped_logo', 'logo.png');
-        }
+    $ch = curl_init('https://api.brevo.com/v3/smtp/email');
+    curl_setopt_array($ch, [
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => json_encode($payload),
+        CURLOPT_HTTPHEADER     => [
+            'accept: application/json',
+            'content-type: application/json',
+            'api-key: ' . BREVO_API_KEY,
+        ],
+        CURLOPT_RETURNTRANSFER => true,
+        // Bounds the worst case to a few seconds instead of PHP's default
+        // socket timeout — every caller (e.g. admin_add_account.php) sends
+        // inline before responding, so a slow/unreachable provider would
+        // otherwise hang the whole request right along with it.
+        CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_TIMEOUT        => 10,
+    ]);
+    $responseBody = curl_exec($ch);
+    $curlError    = curl_error($ch);
+    $httpCode     = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
 
-        $mail->isHTML(true);
-        $mail->Subject = $subject;
-        $mail->Body    = $htmlBody;
-        $mail->AltBody  = trim(strip_tags(str_replace(['<br>', '<br/>', '<br />'], "\n", $htmlBody)));
-
-        $mail->send();
-        _logEmailAttempt($toEmail, $subject, true, null);
-        return true;
-    } catch (Exception $e) {
-        error_log('send_email failed to ' . $toEmail . ': ' . $mail->ErrorInfo);
-        _logEmailAttempt($toEmail, $subject, false, $mail->ErrorInfo);
+    if ($responseBody === false) {
+        error_log('send_email failed to ' . $toEmail . ': ' . $curlError);
+        _logEmailAttempt($toEmail, $subject, false, $curlError ?: 'Network error contacting email provider');
         return false;
     }
+
+    // Brevo returns 201 with a messageId on success; anything else is a
+    // rejection (bad API key, unverified sender, invalid recipient, etc.)
+    // with the reason in the response body.
+    if ($httpCode >= 200 && $httpCode < 300) {
+        _logEmailAttempt($toEmail, $subject, true, null);
+        return true;
+    }
+
+    $decoded = json_decode($responseBody, true);
+    $errorMessage = is_array($decoded) && isset($decoded['message'])
+        ? $decoded['message']
+        : ('HTTP ' . $httpCode . ': ' . $responseBody);
+    error_log('send_email failed to ' . $toEmail . ': ' . $errorMessage);
+    _logEmailAttempt($toEmail, $subject, false, $errorMessage);
+    return false;
 }
