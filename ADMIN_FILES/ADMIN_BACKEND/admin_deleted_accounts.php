@@ -14,7 +14,7 @@ $result = $conn->query(
             deleted_at,
             COALESCE(profile_photo, '') AS profile_photo
      FROM admin_accounts
-     WHERE is_deleted = 1 AND permanently_deleted = 0
+     WHERE is_deleted = 1
      ORDER BY deleted_at DESC, id DESC"
 );
 

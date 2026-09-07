@@ -32,7 +32,7 @@ $types        = str_repeat('i', count($ids));
 if ($action === 'restore') {
     $stmt = $conn->prepare(
         "UPDATE admin_accounts SET is_deleted = 0, deleted_at = NULL, status = 'active'
-         WHERE id IN ($placeholders) AND is_deleted = 1 AND permanently_deleted = 0"
+         WHERE id IN ($placeholders) AND is_deleted = 1"
     );
     if (!$stmt) { echo json_encode(['success' => false, 'message' => 'Prepare failed']); $conn->close(); exit; }
     $stmt->bind_param($types, ...$ids);
@@ -63,21 +63,19 @@ if ($action === 'restore') {
 }
 
 // ── PERMANENT DELETE ──────────────────────────────────────────────────────────
-// Does NOT delete anything - the account row, and every activity/upload/log
-// that references it, stays in SQL for good (an audit trail, and undeleted
-// data can't accidentally be lost to a schema quirk like teacher_accounts'
-// ON DELETE CASCADE onto teacher_activities). "Permanent" here just means
-// no longer restorable: flipping permanently_deleted=1 drops it out of the
-// Deleted Accounts trash, and it stays hidden everywhere else the same way
-// any is_deleted=1 row already does - nothing else needs to change for that.
+// The account row itself is genuinely gone from admin_accounts - not a flag,
+// a real DELETE - so its email is immediately reusable for a new account.
 //
-// The email is also retired (prefixed with "deleted_<id>_") so the original
-// address is immediately free for a genuinely new account. Reusing the row
-// instead - resetting it and letting a new person log in with it - would
-// silently attach that new person to the old account's teacher_accounts.id,
-// resurfacing the previous owner's activities/uploads under the new name.
-// Retiring the email keeps the old row (and its history) permanently intact
-// under its own identity while the new account starts as an unrelated row.
+// teacher_accounts is deliberately NOT deleted: it has teacher_activities/
+// teacher_uploaded_materials pointing at it (teacher_activities via an
+// ON DELETE CASCADE FK), so removing it would silently erase that teacher's
+// activities/uploads along with the account - the data is meant to survive.
+// Instead it's marked status='inactive' (the signal Activity Library/Recent
+// Activity/Uploads now check directly - no more join to admin_accounts,
+// since that row won't exist to join to) and its email is retired
+// ("deleted_<id>_" prefix) so a brand new account using the same email gets
+// its own fresh teacher_accounts row instead of reattaching to this one and
+// resurfacing the old owner's history under the new name.
 if ($action === 'permanent') {
     $infoStmt = $conn->prepare(
         "SELECT id, role, admin_email FROM admin_accounts
@@ -90,30 +88,24 @@ if ($action === 'permanent') {
     while ($r = $res->fetch_assoc()) $rows[] = $r;
     $infoStmt->close();
 
-    $stmt = $conn->prepare(
-        "UPDATE admin_accounts
-         SET permanently_deleted = 1, admin_email = CONCAT('deleted_', id, '_', admin_email)
-         WHERE id IN ($placeholders) AND is_deleted = 1"
-    );
-    if (!$stmt) { echo json_encode(['success' => false, 'message' => 'Prepare failed']); $conn->close(); exit; }
-    $stmt->bind_param($types, ...$ids);
-    $ok = $stmt->execute();
-    $stmt->close();
-
-    // Retire the matching teacher_accounts.teacher_email too, so it still
-    // matches the now-retired admin_accounts row (LEFT JOINed by email in
-    // Activity Library) instead of looking like an unmatched/legacy row.
     $tconn = getTeacherDatabaseConnection();
     if ($tconn) {
         foreach ($rows as $r) {
             if ($r['role'] !== 'teacher') continue;
             $newEmail = 'deleted_' . $r['id'] . '_' . $r['admin_email'];
-            $rn = $tconn->prepare("UPDATE teacher_accounts SET teacher_email = ? WHERE teacher_email = ?");
+            $rn = $tconn->prepare("UPDATE teacher_accounts SET teacher_email = ?, status = 'inactive' WHERE teacher_email = ?");
             if ($rn) { $rn->bind_param("ss", $newEmail, $r['admin_email']); $rn->execute(); $rn->close(); }
         }
         $tconn->close();
     }
 
+    $delStmt = $conn->prepare(
+        "DELETE FROM admin_accounts WHERE id IN ($placeholders) AND is_deleted = 1"
+    );
+    if (!$delStmt) { echo json_encode(['success' => false, 'message' => 'Prepare failed']); $conn->close(); exit; }
+    $delStmt->bind_param($types, ...$ids);
+    $ok = $delStmt->execute();
+    $delStmt->close();
     $conn->close();
     echo json_encode(['success' => (bool)$ok]);
     exit;

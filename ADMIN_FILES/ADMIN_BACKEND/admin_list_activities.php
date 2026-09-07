@@ -28,7 +28,8 @@ $sql = "SELECT
 FROM teacher_activities ta
 LEFT JOIN teacher_accounts tc ON ta.teacher_id = tc.id
 LEFT JOIN admin_accounts aa ON aa.admin_email = tc.teacher_email
-WHERE aa.is_deleted IS NULL OR aa.is_deleted = 0
+WHERE (tc.status IS NULL OR tc.status = 'active')
+  AND (aa.is_deleted IS NULL OR aa.is_deleted = 0)
 ORDER BY ta.created_at DESC";
 
 $result = $conn->query($sql);
