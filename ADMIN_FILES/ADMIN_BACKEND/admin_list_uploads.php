@@ -24,6 +24,11 @@ $conn->query("CREATE TABLE IF NOT EXISTS teacher_uploaded_materials (
     uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP
 )");
 
+// Uploading requires an authenticated teacher session (requireTeacherId() in
+// teacher_upload_material.php), so a teacher_id with no matching, non-deleted
+// teacher_accounts/admin_accounts pair today can only mean that teacher was
+// since deleted - unlike Activity Library, there's no legacy/unsynced case
+// to protect against, so INNER JOIN is safe (and correct) here.
 $sql = "
     SELECT m.id, m.teacher_id, m.student_id, m.grading_period,
            m.title, m.description, m.file_name, m.file_original_name,
@@ -32,7 +37,8 @@ $sql = "
            CONCAT(tc.first_name, ' ', tc.last_name) AS teacher_name
     FROM teacher_uploaded_materials m
     LEFT JOIN students s ON s.id = m.student_id
-    LEFT JOIN teacher_accounts tc ON tc.id = m.teacher_id
+    INNER JOIN teacher_accounts tc ON tc.id = m.teacher_id
+    INNER JOIN admin_accounts aa ON aa.admin_email = tc.teacher_email AND aa.is_deleted = 0
     ORDER BY m.uploaded_at DESC
     LIMIT 200
 ";

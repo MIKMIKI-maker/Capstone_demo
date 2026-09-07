@@ -97,8 +97,31 @@ if ($action === 'permanent') {
     if (!empty($teacherEmails) && $tconn) {
         $tph    = implode(',', array_fill(0, count($teacherEmails), '?'));
         $ttypes = str_repeat('s', count($teacherEmails));
+
+        // teacher_uploaded_materials.teacher_id has no FK/cascade of its own
+        // (unlike teacher_activities' ON DELETE CASCADE) - capture the
+        // teacher_accounts ids before they're deleted below so their
+        // uploaded files' metadata doesn't linger as an orphaned row
+        // (dangling teacher_id, blank teacher name in Activity Library).
+        $teacherAccountIds = [];
+        $tidStmt = $tconn->prepare("SELECT id FROM teacher_accounts WHERE teacher_email IN ($tph)");
+        if ($tidStmt) {
+            $tidStmt->bind_param($ttypes, ...$teacherEmails);
+            $tidStmt->execute();
+            $tidRes = $tidStmt->get_result();
+            while ($r = $tidRes->fetch_assoc()) { $teacherAccountIds[] = (int)$r['id']; }
+            $tidStmt->close();
+        }
+
         $dt = $tconn->prepare("DELETE FROM teacher_accounts WHERE teacher_email IN ($tph)");
         if ($dt) { $dt->bind_param($ttypes, ...$teacherEmails); $dt->execute(); $dt->close(); }
+
+        if (!empty($teacherAccountIds)) {
+            $mph    = implode(',', array_fill(0, count($teacherAccountIds), '?'));
+            $mtypes = str_repeat('i', count($teacherAccountIds));
+            $dm = $tconn->prepare("DELETE FROM teacher_uploaded_materials WHERE teacher_id IN ($mph)");
+            if ($dm) { $dm->bind_param($mtypes, ...$teacherAccountIds); $dm->execute(); $dm->close(); }
+        }
     }
 
     if ($tconn) $tconn->close();
