@@ -218,6 +218,15 @@ function getDatabaseConnection() {
         $conn->query("ALTER TABLE admin_accounts ADD COLUMN totp_backup_codes TEXT NULL DEFAULT NULL");
     }
 
+    // Teacher/Student accounts are created by an Admin who knows the password
+    // (a role default like "Teacher@123", or one they typed themselves) -
+    // this flag forces a change on that first login so the account's real
+    // owner is the only one who knows the password going forward.
+    $mcp_col = $conn->query("SHOW COLUMNS FROM admin_accounts LIKE 'must_change_password'");
+    if ($mcp_col && $mcp_col->num_rows == 0) {
+        $conn->query("ALTER TABLE admin_accounts ADD COLUMN must_change_password TINYINT(1) NOT NULL DEFAULT 0");
+    }
+
     // 2FA code rate-limiting — separate from login_attempts (password step)
     // since a correct password with a wrong/guessed 2FA code is a different
     // failure mode and shouldn't share the same counter as password guesses.

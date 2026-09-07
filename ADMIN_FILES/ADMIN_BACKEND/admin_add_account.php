@@ -60,15 +60,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     $schoolName = 'Mamatid Elementary School';
     $status = 'inactive';
+    // Teacher/Student accounts start with a password the Admin set or a role
+    // default - force a change on first login so the account's real owner
+    // is the only one who knows it afterward.
+    $mustChangePassword = in_array($role, ['teacher', 'student'], true) ? 1 : 0;
 
-    $stmt = $conn->prepare("INSERT INTO admin_accounts (admin_email, admin_password, first_name, last_name, school_name, role, condition_info, status, assigned_teacher_id, parent_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt = $conn->prepare("INSERT INTO admin_accounts (admin_email, admin_password, first_name, last_name, school_name, role, condition_info, status, assigned_teacher_id, parent_name, must_change_password) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     if (!$stmt) {
         echo json_encode(['success' => false, 'message' => 'Database prepare failed']);
         $conn->close();
         exit;
     }
 
-    $stmt->bind_param("ssssssssis", $email, $password, $firstName, $lastName, $schoolName, $role, $condition, $status, $assigned_teacher_id, $parent_name_val);
+    $stmt->bind_param("ssssssssisi", $email, $password, $firstName, $lastName, $schoolName, $role, $condition, $status, $assigned_teacher_id, $parent_name_val, $mustChangePassword);
 
     if ($stmt->execute()) {
         // If the role is 'teacher', also create/update in teacher_accounts

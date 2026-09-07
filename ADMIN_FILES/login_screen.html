@@ -161,6 +161,48 @@
         <p class="admin-footer-note">Republic of the Philippines · Department of Education</p>
       </div>
     </form>
+
+    <!-- Shown instead of the login form when the account still has an
+         Admin-set password (role default or typed) and must replace it
+         before reaching its dashboard - see admin_force_password_change.php. -->
+    <form id="force-pwd-form" style="display:none;">
+      <div class="admin-login-box anim-scale-in">
+        <div class="login-brand">
+          <img alt="SPED ALM Logo" class="login-brand-logo" src="../ASSETS/logo.png" />
+          <span class="login-brand-title">SPED ALM</span>
+          <span class="login-brand-sub">ALTERNATIVE LEARNING MATERIAL GENERATOR</span>
+          <span class="login-brand-tagline">Set a new password to continue</span>
+        </div>
+
+        <div class="login-info-box">
+          <i class="fa-solid fa-circle-info"></i>
+          <div>
+            <strong>One-time setup</strong>
+            <p>Your account was created with a temporary password. Choose a new one only you know.</p>
+          </div>
+        </div>
+
+        <div class="admin-form-group">
+          <label for="force-pwd-new">New Password</label>
+          <div class="pwd-wrapper">
+            <input id="force-pwd-new" placeholder="At least 8 characters" type="password" />
+          </div>
+        </div>
+
+        <div class="admin-form-group">
+          <label for="force-pwd-confirm">Confirm New Password</label>
+          <div class="pwd-wrapper">
+            <input id="force-pwd-confirm" placeholder="Re-enter new password" type="password" />
+          </div>
+        </div>
+
+        <div id="force-pwd-error" style="display:none;background:#fff5f5;border:1.5px solid #fca5a5;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-family:'Poppins',sans-serif;font-size:13px;color:#991b1b;line-height:1.6;"></div>
+        <button class="admin-btn-signin" type="submit">Set Password &amp; Continue <i class="fa-solid fa-arrow-right" style="font-size:14px;margin-left:4px;"></i></button>
+
+        <hr class="admin-divider" />
+        <p class="admin-footer-note">Republic of the Philippines · Department of Education</p>
+      </div>
+    </form>
   </div>
 
   <!-- Modal placed outside panels so position:fixed covers full viewport correctly -->
@@ -288,6 +330,57 @@
         }, 1000);
       }
 
+      /* Shared by the normal login success path and the forced
+         password-change completion - both return the exact same
+         {status:"success", role, admin_id, ...} shape. */
+      function handleLoginSuccess(jsonData) {
+        /* Remember only the email; never store plaintext passwords. */
+        var rememberedEmail = document.getElementById("admin-email").value;
+        if (rememberedEmail) localStorage.setItem('sped_remember_email', rememberedEmail);
+        localStorage.removeItem('sped_remember_pass');
+
+        /* Clear all old session data */
+        sessionStorage.clear();
+
+        if (jsonData.role === "student") {
+          /* Clear previous student's localStorage data so a new student
+             starts clean and never sees another user's activity records. */
+          localStorage.removeItem('student_progress');
+          localStorage.removeItem('student_profile');
+          localStorage.removeItem('student_notifications');
+          /* Student login — store student-specific keys */
+          sessionStorage.setItem('student_id', jsonData.admin_id);
+          sessionStorage.setItem('student_name', jsonData.admin_name);
+          sessionStorage.setItem('student_record_id', jsonData.student_record_id || '');
+          sessionStorage.setItem('teacher_id', jsonData.teacher_id || '');
+          sessionStorage.setItem('student_condition', jsonData.student_condition || '');
+          sessionStorage.setItem('student_grade', jsonData.student_grade || '');
+          /* Seed profile photo so all student pages show it immediately */
+          if (jsonData.profile_photo) {
+            try { localStorage.setItem('student_profile', JSON.stringify({ photo: jsonData.profile_photo })); } catch(e) {}
+          }
+          window.location.href = "../STUDENT_FILES/Student_dashboard.html";
+        } else if (jsonData.role === "teacher") {
+          /* Teacher login */
+          sessionStorage.setItem('admin_id', jsonData.admin_id);
+          sessionStorage.setItem('teacher_name', jsonData.admin_name);
+          sessionStorage.setItem('teacher_id', jsonData.teacher_id || '1');
+          sessionStorage.setItem('teacher_section', jsonData.teacher_section || '');
+          /* Seed profile photo so teacher portal shows it immediately */
+          if (jsonData.profile_photo) {
+            sessionStorage.setItem('teacher_profile_pic', jsonData.profile_photo);
+          }
+          window.location.href = "../TEACHER_FILES/Teacher_dashboard.html";
+        } else {
+          /* This portal only serves teacher and student accounts. */
+          var portalErrEl = document.getElementById('login-error-msg');
+          if (portalErrEl) {
+            portalErrEl.textContent = 'This portal is for teacher and student accounts. Please use the admin login page.';
+            portalErrEl.style.display = 'block';
+          }
+        }
+      }
+
       /* Handle login form submission */
       var loginForm = document.getElementById("login_screen_form_1");
       if (loginForm) {
@@ -325,50 +418,10 @@
               var jsonData = JSON.parse(data);
               
               if (jsonData.status === "success") {
-                /* Remember only the email; never store plaintext passwords. */
-                localStorage.setItem('sped_remember_email', email);
-                localStorage.removeItem('sped_remember_pass');
-
-                /* Clear all old session data */
-                sessionStorage.clear();
-
-                if (jsonData.role === "student") {
-                  /* Clear previous student's localStorage data so a new student
-                     starts clean and never sees another user's activity records. */
-                  localStorage.removeItem('student_progress');
-                  localStorage.removeItem('student_profile');
-                  localStorage.removeItem('student_notifications');
-                  /* Student login — store student-specific keys */
-                  sessionStorage.setItem('student_id', jsonData.admin_id);
-                  sessionStorage.setItem('student_name', jsonData.admin_name);
-                  sessionStorage.setItem('student_record_id', jsonData.student_record_id || '');
-                  sessionStorage.setItem('teacher_id', jsonData.teacher_id || '');
-                  sessionStorage.setItem('student_condition', jsonData.student_condition || '');
-                  sessionStorage.setItem('student_grade', jsonData.student_grade || '');
-                  /* Seed profile photo so all student pages show it immediately */
-                  if (jsonData.profile_photo) {
-                    try { localStorage.setItem('student_profile', JSON.stringify({ photo: jsonData.profile_photo })); } catch(e) {}
-                  }
-                  window.location.href = "../STUDENT_FILES/Student_dashboard.html";
-                } else if (jsonData.role === "teacher") {
-                  /* Teacher login */
-                  sessionStorage.setItem('admin_id', jsonData.admin_id);
-                  sessionStorage.setItem('teacher_name', jsonData.admin_name);
-                  sessionStorage.setItem('teacher_id', jsonData.teacher_id || '1');
-                  sessionStorage.setItem('teacher_section', jsonData.teacher_section || '');
-                  /* Seed profile photo so teacher portal shows it immediately */
-                  if (jsonData.profile_photo) {
-                    sessionStorage.setItem('teacher_profile_pic', jsonData.profile_photo);
-                  }
-                  window.location.href = "../TEACHER_FILES/Teacher_dashboard.html";
-                } else {
-                  /* This portal only serves teacher and student accounts. */
-                  var portalErrEl = document.getElementById('login-error-msg');
-                  if (portalErrEl) {
-                    portalErrEl.textContent = 'This portal is for teacher and student accounts. Please use the admin login page.';
-                    portalErrEl.style.display = 'block';
-                  }
-                }
+                handleLoginSuccess(jsonData);
+              } else if (jsonData.status === "need_password_change") {
+                document.getElementById('login_screen_form_1').style.display = 'none';
+                document.getElementById('force-pwd-form').style.display = '';
               } else {
                 var errEl = document.getElementById('login-error-msg');
                 if (errEl) {
@@ -399,6 +452,59 @@
             }
             console.error("Error:", error);
           });
+        });
+      }
+
+      /* Handle forced first-login password change */
+      var forcePwdForm = document.getElementById("force-pwd-form");
+      if (forcePwdForm) {
+        forcePwdForm.addEventListener("submit", function (e) {
+          e.preventDefault();
+
+          var newPwd = document.getElementById("force-pwd-new").value;
+          var confirmPwd = document.getElementById("force-pwd-confirm").value;
+          var errEl = document.getElementById('force-pwd-error');
+          errEl.style.display = 'none';
+
+          if (!newPwd || !confirmPwd) {
+            errEl.textContent = 'Both password fields are required.';
+            errEl.style.display = 'block';
+            return;
+          }
+          if (newPwd !== confirmPwd) {
+            errEl.textContent = 'Passwords do not match.';
+            errEl.style.display = 'block';
+            return;
+          }
+          if (newPwd.length < 8) {
+            errEl.textContent = 'Password must be at least 8 characters.';
+            errEl.style.display = 'block';
+            return;
+          }
+
+          var btn = forcePwdForm.querySelector('.admin-btn-signin');
+          btn.disabled = true;
+
+          fetch("ADMIN_BACKEND/admin_force_password_change.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: "new_password=" + encodeURIComponent(newPwd) + "&confirm_password=" + encodeURIComponent(confirmPwd)
+          })
+            .then(function (r) { return r.json(); })
+            .then(function (jsonData) {
+              if (jsonData.status === "success") {
+                handleLoginSuccess(jsonData);
+              } else {
+                errEl.textContent = jsonData.message || 'Could not set new password. Please try again.';
+                errEl.style.display = 'block';
+                btn.disabled = false;
+              }
+            })
+            .catch(function () {
+              errEl.textContent = 'Network error. Please try again.';
+              errEl.style.display = 'block';
+              btn.disabled = false;
+            });
         });
       }
     });
