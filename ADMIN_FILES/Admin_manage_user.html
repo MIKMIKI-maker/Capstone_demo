@@ -511,9 +511,8 @@
           <div class="admin-reset-card" id="admin-edit-reset-wrap">
             <div>
               <div class="admin-reset-title">🔑 Reset Password</div>
-              <div class="admin-reset-desc">Generate a temporary password for this user. They will be prompted to change
-                it upon
-                next login.</div>
+              <div class="admin-reset-desc">Set a new password for this user. It takes effect immediately — they
+                won't be asked to change it again on login.</div>
             </div>
             <button class="admin-btn-reset" onclick="showResetPasswordModal()" type="button">Reset
               Password</button>
@@ -685,18 +684,19 @@
           </div>
           <div class="admin-reset-warning-card">
             <span>⚠️</span>
-            <p>This will generate a temporary password for this user. Make sure to give the new password directly to the
-              user.</p>
+            <p>This sets the user's password immediately — no forced change on next login. Make sure to give the new
+              password directly to the user.</p>
           </div>
           <div class="admin-field-group" style="margin-bottom:6px">
-            <label>Temporary Password</label>
+            <label>New Password</label>
             <div class="admin-temp-pass-wrap">
               <input class="admin-temp-pass-input" name="enter_temporary_password"
-                placeholder="Enter temporary password..." type="text" required minlength="8" />
+                placeholder="Enter new password..." type="text" required minlength="8" />
               <span class="admin-copy-icon">⧉</span>
             </div>
           </div>
-          <p class="admin-pass-note">The user will be required to change this password upon their next login.</p>
+          <p class="admin-pass-note">This becomes their real password right away — it's not a one-time/temporary
+            password like the one used when the account was first created.</p>
         </div>
         <hr class="admin-reset-divider" />
         <div class="admin-modal-footer-row">
@@ -1479,7 +1479,7 @@
       var resetForm = document.getElementById('admin_manage_user_form_3');
       var pwInput = resetForm.querySelector('[name="enter_temporary_password"]');
       if (!pwInput.value.trim() || pwInput.value.trim().length < 8) {
-        showMuToast('Please enter a temporary password (at least 8 characters).', true);
+        showMuToast('Please enter a new password (at least 8 characters).', true);
         return;
       }
       var formData = new FormData(resetForm);
@@ -1498,7 +1498,7 @@
         if (result.success) {
           // Reload data after successful reset
           loadAccounts();
-          showMuToast('Password reset! Temporary password: ' + result.temp_password, false, 6000);
+          showMuToast('Password reset! New password: ' + result.temp_password, false, 6000);
         } else {
           showMuToast(result.message || 'Could not reset password.', true);
           showModal('admin-modal-reset');

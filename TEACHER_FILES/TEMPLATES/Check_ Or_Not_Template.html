@@ -2,12 +2,14 @@
 <html lang="en">
 <head>
 <script src="../../ASSETS/portal_guard.js?v=2" data-portal-role="teacher,student" data-status-path="../../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../../ADMIN_FILES/login_screen.html?session=expired"></script>
+<script src="../../ASSETS/teacher_portal.js?v=5"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SPED ALM — Check or X Template Generator</title>
 <link rel="icon" type="image/png" href="../../ASSETS/logo.png" />
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 <script>
 /* Happy activity sound effects (synthesized — no external audio files needed) */
@@ -501,6 +503,8 @@ function initActivityTheme(){
 
   /* ===== PRINTABLE WORKSHEET (Generate Printable button / PDF via browser print) ===== */
   .chk-print-area{ display:none; }
+  .chk-print-area.chk-pdf-capture{ display:block; position:fixed; left:-99999px; top:0; background:#fff; }
+  .chk-print-area.chk-pdf-capture .chk-print-page{ width:794px; height:1123px; padding:32px; box-sizing:border-box; background:#fff; display:flex; flex-direction:column; }
   .chk-print-page{ font-family:'Poppins',sans-serif; color:#243a5e; }
   .chk-print-head{ text-align:center; margin-bottom:10px; }
   .chk-print-head h2{ font-size:21px; font-weight:700; margin:0 0 4px; }
@@ -580,6 +584,7 @@ function initActivityTheme(){
     <div class="chk-top-actions">
       <button class="chk-btn chk-btn--help" id="chkHelpBtn" type="button">❓ Help</button>
       <button class="chk-btn chk-btn--print" id="chkPrintBtn" type="button">🖨️ Generate Printable</button>
+      <button class="chk-btn chk-btn--ghost" id="chkPdfBtn" type="button">⬇️ Download PDF</button>
       <button class="chk-btn chk-btn--ghost" id="chkPreviewBtn" type="button">👁 Preview</button>
       <button class="chk-btn chk-btn--ghost" id="chkDraftBtn" type="button">💾 Save Draft</button>
       <button class="chk-btn chk-btn--pub" id="chkPubBtn" type="button">🌐 Publish</button>
@@ -1585,8 +1590,44 @@ function initActivityTheme(){
     $("chkPrintArea").innerHTML = buildPrintPages();
     setTimeout(function(){ window.print(); }, 60);
   }
+  function downloadAsPdf(){
+    var area = $("chkPrintArea");
+    area.innerHTML = buildPrintPages();
+    area.classList.add("chk-pdf-capture");
+    var pageEls = Array.prototype.slice.call(area.querySelectorAll(".chk-print-page"));
+    if (!pageEls.length) { area.classList.remove("chk-pdf-capture"); area.innerHTML = ""; return; }
+    window.showToast("Generating PDF…", "success", 4000);
+    var JsPdfCtor = window.jspdf && window.jspdf.jsPDF;
+    var pdf = null;
+    var chain = Promise.resolve();
+    pageEls.forEach(function(pageEl){
+      chain = chain.then(function(){
+        return html2canvas(pageEl, { scale:2, useCORS:true, backgroundColor:"#ffffff" });
+      }).then(function(canvas){
+        var imgData = canvas.toDataURL("image/jpeg", 0.92);
+        var pageWmm = 210, pageHmm = 297;
+        var imgWmm = pageWmm, imgHmm = canvas.height * imgWmm / canvas.width;
+        if (imgHmm > pageHmm) { imgHmm = pageHmm; imgWmm = canvas.width * imgHmm / canvas.height; }
+        if (!pdf) pdf = new JsPdfCtor({ orientation:"portrait", unit:"mm", format:"a4" });
+        else pdf.addPage();
+        pdf.addImage(imgData, "JPEG", (pageWmm - imgWmm) / 2, 0, imgWmm, imgHmm);
+      });
+    });
+    chain.then(function(){
+      area.classList.remove("chk-pdf-capture");
+      area.innerHTML = "";
+      var name = ((state.activities[0] && state.activities[0].title) || "activity").replace(/[^\w\-]+/g, "_");
+      pdf.save(name + ".pdf");
+    }).catch(function(err){
+      area.classList.remove("chk-pdf-capture");
+      area.innerHTML = "";
+      window.showToast("Could not generate the PDF. Please try again.", "error", 4500);
+      console.error(err);
+    });
+  }
   window.addEventListener("afterprint", function(){ $("chkPrintArea").innerHTML = ""; });
   $("chkPrintBtn").addEventListener("click", generatePrintable);
+  $("chkPdfBtn").addEventListener("click", downloadAsPdf);
 
   function saveDraft() {
     var draftId = new URLSearchParams(location.search).get('draft_id') || ('draft_' + Date.now());
@@ -1611,7 +1652,7 @@ function initActivityTheme(){
       history.replaceState(null, '', '?draft_id=' + encodeURIComponent(draftId));
       flash($('chkDraftBtn'), '✓ Draft Saved!');
       setTimeout(function(){ window.location.href = '../Teacher_activies.html'; }, 700);
-    } catch(e) { alert('Storage full – could not save draft.'); }
+    } catch(e) { window.showToast('Storage full – could not save draft.', 'error', 4500); }
   }
 
   /* ── In-progress autosave: survives an accidental refresh before the
@@ -1809,10 +1850,10 @@ function initActivityTheme(){
 
   function confirmPublish() {
     var deadline = $("chkDeadlineInput").value;
-    if (!deadline) { alert("Please set a deadline date before publishing."); return; }
+    if (!deadline) { window.showToast("Please set a deadline date before publishing.", 'error', 4500); return; }
     var _today = new Date();
     var _todayStr = _today.getFullYear() + '-' + String(_today.getMonth()+1).padStart(2,'0') + '-' + String(_today.getDate()).padStart(2,'0');
-    if (deadline < _todayStr) { alert("Deadline can't be in the past — please choose today or a later date."); return; }
+    if (deadline < _todayStr) { window.showToast("Deadline can't be in the past — please choose today or a later date.", 'error', 4500); return; }
     var domain = document.querySelector('input[name="chkDomain"]:checked').value;
     var firstTitle = (state.activities[0] && state.activities[0].title) || 'Untitled Activity';
     compressThumb(state.thumb, function(smallThumb) {
@@ -1827,7 +1868,7 @@ function initActivityTheme(){
       }
       _idb.save('pub_data_' + _editingPub.id, JSON.parse(JSON.stringify(state)), function(err){ if(err) console.warn('IDB save failed:',err); });
       _editingPub._saved = true;
-      var _finishEdit = function(){ closePublishModal(); window.location.href = '../Teacher_activies.html'; };
+      var _finishEdit = function(){ try{ sessionStorage.setItem('activity_flash_toast', 'Activity updated!'); }catch(e){} closePublishModal(); window.location.href = '../Teacher_activies.html'; };
       if (_editingPub.db_activity_id && _editingPub.teacherId) {
         var fdU = new FormData();
         fdU.append('teacher_id', _editingPub.teacherId);
@@ -1840,13 +1881,13 @@ function initActivityTheme(){
           .then(function(r){ return r.json(); })
           .then(function(d){
             if (d && d.success === false) {
-              alert('Save failed: ' + (d.message || 'Unknown error') + '\nPlease try again.');
+              window.showToast('Save failed: ' + (d.message || 'Unknown error') + ' Please try again.', 'error', 4500);
               return;
             }
             _finishEdit();
           })
           .catch(function(){
-            alert('Could not reach the server to save this activity. Please check your connection and try again.');
+            window.showToast('Could not reach the server to save this activity. Please check your connection and try again.', 'error', 4500);
           });
       } else {
         _finishEdit();
@@ -1869,7 +1910,7 @@ function initActivityTheme(){
     var existing = [];
     try { existing = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
     existing.push(pub);
-    try { localStorage.setItem('published_activities', JSON.stringify(existing)); } catch(e){ alert('Storage full – try clearing old drafts first.'); return; }
+    try { localStorage.setItem('published_activities', JSON.stringify(existing)); } catch(e){ window.showToast('Storage full – try clearing old drafts first.', 'error', 4500); return; }
     _idb.save('pub_data_' + pub.id, JSON.parse(JSON.stringify(state)), function(err){
       if (err) console.warn('IDB save failed:', err);
     });
@@ -1903,13 +1944,14 @@ function initActivityTheme(){
         var acts = []; try { acts = JSON.parse(localStorage.getItem('published_activities')||'[]'); } catch(e){}
         var i = acts.findIndex(function(a){ return a.id === _pubRef.id; });
         if (i >= 0) { acts[i].db_activity_id = d.activity_id; try { localStorage.setItem('published_activities', JSON.stringify(acts)); } catch(e){} }
+        try{ sessionStorage.setItem('activity_flash_toast', 'Activity published!'); }catch(e){}
         closePublishModal();
         window.location.href = '../Teacher_activies.html';
       } else {
-        alert('Publish failed: ' + (d.message || 'Unknown error') + '\nPlease try again.');
+        window.showToast('Publish failed: ' + (d.message || 'Unknown error') + ' Please try again.', 'error', 4500);
       }
     }).catch(function(){
-      alert('Could not reach the server to publish this activity. Please check your connection and try again.');
+      window.showToast('Could not reach the server to publish this activity. Please check your connection and try again.', 'error', 4500);
     });
     }); // end compressThumb
   }

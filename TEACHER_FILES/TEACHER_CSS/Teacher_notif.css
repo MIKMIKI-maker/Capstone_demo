@@ -630,6 +630,7 @@ body {
 .tn-struggle-emoji { font-size: 22px; flex-shrink: 0; width: 28px; text-align: center; }
 .tn-struggle-emoji--text { font-size: 11px; font-weight: 700; color: #7f1d1d; width: auto; min-width: 44px; white-space: nowrap; }
 .tn-struggle-thumb { width: 32px; height: 32px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+.tn-struggle-inline-thumb { width: 18px; height: 18px; object-fit: cover; border-radius: 4px; vertical-align: middle; margin: 0 2px; }
 .tn-struggle-text { min-width: 0; flex: 1; }
 .tn-struggle-main { display: block; font-size: 12.5px; color: #7f1d1d; line-height: 1.4; }
 .tn-struggle-main b { color: #b91c1c; }

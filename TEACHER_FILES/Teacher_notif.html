@@ -472,11 +472,21 @@
                         var _iconHtml = item.img
                             ? '<img src="' + item.img + '" class="tn-struggle-thumb" alt="">'
                             : '<span class="tn-struggle-emoji' + (_isIcon ? '' : ' tn-struggle-emoji--text') + '">' + escHtml(_lbl) + '</span>';
+                        // A wrongly-picked or correct answer that was itself a picture (not an
+                        // emoji) arrives here as a compressed data-URL thumbnail — show it as an
+                        // actual inline image instead of dumping the raw data-URL as escaped text.
+                        function _isImgData(s){ return typeof s === 'string' && s.indexOf('data:image') === 0; }
+                        var _thoughtHtml = _isImgData(item.thought)
+                            ? '<img src="' + item.thought + '" class="tn-struggle-inline-thumb" alt="">'
+                            : '<b>' + escHtml(item.thought || '') + '</b>';
+                        var _correctHtml = _isImgData(item.correct)
+                            ? '<img src="' + item.correct + '" class="tn-struggle-inline-thumb" alt="">'
+                            : escHtml(item.correct || '');
                         chipsWrap.innerHTML += '<div class="tn-struggle-item">'
                             + _iconHtml
                             + '<span class="tn-struggle-text">'
-                            +   '<span class="tn-struggle-main">' + (item.thought ? 'Keeps placing this in <b>' + escHtml(item.thought) + '</b>' : 'Repeatedly got this wrong') + '</span>'
-                            +   (item.correct ? '<span class="tn-struggle-correct">Correct: ' + escHtml(item.correct) + '</span>' : '')
+                            +   '<span class="tn-struggle-main">' + (item.thought ? 'Keeps placing this in ' + _thoughtHtml : 'Repeatedly got this wrong') + '</span>'
+                            +   (item.correct ? '<span class="tn-struggle-correct">Correct: ' + _correctHtml + '</span>' : '')
                             + '</span>'
                             + '</div>';
                     });
