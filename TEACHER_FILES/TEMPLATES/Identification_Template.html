@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <script src="../../ASSETS/portal_guard.js?v=2" data-portal-role="teacher,student" data-status-path="../../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../../ADMIN_FILES/login_screen.html?session=expired"></script>
+<script src="../../ASSETS/teacher_portal.js?v=5"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SPED ALM — Beginning Letter Template Generator</title>
@@ -1602,7 +1603,7 @@ function initActivityTheme(){
       history.replaceState(null, '', '?draft_id=' + encodeURIComponent(draftId));
       flash($('bglDraftBtn'), '✓ Draft Saved!');
       setTimeout(function(){ window.location.href = '../Teacher_activies.html'; }, 700);
-    } catch(e) { alert('Storage full – could not save draft.'); }
+    } catch(e) { window.showToast('Storage full – could not save draft.', 'error', 4500); }
   }
 
   /* ── Load Draft from localStorage if ?draft_id= in URL ── */
@@ -1779,10 +1780,10 @@ function initActivityTheme(){
 
   function confirmPublish() {
     var deadline = $("bglDeadlineInput").value;
-    if (!deadline) { alert("Please set a deadline date before publishing."); return; }
+    if (!deadline) { window.showToast("Please set a deadline date before publishing.", 'error', 4500); return; }
     var _today = new Date();
     var _todayStr = _today.getFullYear() + '-' + String(_today.getMonth()+1).padStart(2,'0') + '-' + String(_today.getDate()).padStart(2,'0');
-    if (deadline < _todayStr) { alert("Deadline can't be in the past — please choose today or a later date."); return; }
+    if (deadline < _todayStr) { window.showToast("Deadline can't be in the past — please choose today or a later date.", 'error', 4500); return; }
     var domain = document.querySelector('input[name="bglDomain"]:checked').value;
     var firstTitle = (state.activities[0] && state.activities[0].title) || 'Untitled Activity';
     compressThumb(state.thumb, function(smallThumb) {
@@ -1810,13 +1811,13 @@ function initActivityTheme(){
           .then(function(r){ return r.json(); })
           .then(function(d){
             if (d && d.success === false) {
-              alert('Save failed: ' + (d.message || 'Unknown error') + '\nPlease try again.');
+              window.showToast('Save failed: ' + (d.message || 'Unknown error') + ' Please try again.', 'error', 4500);
               return;
             }
             _finishEdit();
           })
           .catch(function(){
-            alert('Could not reach the server to save this activity. Please check your connection and try again.');
+            window.showToast('Could not reach the server to save this activity. Please check your connection and try again.', 'error', 4500);
           });
       } else {
         _finishEdit();
@@ -1839,7 +1840,7 @@ function initActivityTheme(){
     var existing = [];
     try { existing = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
     existing.push(pub);
-    try { localStorage.setItem('published_activities', JSON.stringify(existing)); } catch(e){ alert('Storage full – try clearing old drafts first.'); return; }
+    try { localStorage.setItem('published_activities', JSON.stringify(existing)); } catch(e){ window.showToast('Storage full – try clearing old drafts first.', 'error', 4500); return; }
     _idb.save('pub_data_' + pub.id, JSON.parse(JSON.stringify(state)), function(err){
       if (err) console.warn('IDB save failed:', err);
     });
@@ -1877,10 +1878,10 @@ function initActivityTheme(){
         closePublishModal();
         window.location.href = '../Teacher_activies.html';
       } else {
-        alert('Publish failed: ' + (d.message || 'Unknown error') + '\nPlease try again.');
+        window.showToast('Publish failed: ' + (d.message || 'Unknown error') + ' Please try again.', 'error', 4500);
       }
     }).catch(function(){
-      alert('Could not reach the server to publish this activity. Please check your connection and try again.');
+      window.showToast('Could not reach the server to publish this activity. Please check your connection and try again.', 'error', 4500);
     });
     }); // end compressThumb
   }
