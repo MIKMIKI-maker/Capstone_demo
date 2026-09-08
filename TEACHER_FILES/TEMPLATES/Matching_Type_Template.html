@@ -1912,7 +1912,7 @@ function initActivityTheme(){
       }
       _idb.save('pub_data_' + _editingPub.id, JSON.parse(JSON.stringify(state)), function(err){ if(err) console.warn('IDB save failed:',err); });
       _editingPub._saved = true;
-      var _finishEdit = function(){ closePublishModal(); window.location.href = '../Teacher_activies.html'; };
+      var _finishEdit = function(){ try{ sessionStorage.setItem('activity_flash_toast', 'Activity updated!'); }catch(e){} closePublishModal(); window.location.href = '../Teacher_activies.html'; };
       if (_editingPub.db_activity_id && _editingPub.teacherId) {
         var fdU = new FormData();
         fdU.append('teacher_id', _editingPub.teacherId);
@@ -1981,6 +1981,7 @@ function initActivityTheme(){
         var acts = []; try { acts = JSON.parse(localStorage.getItem('published_activities')||'[]'); } catch(e){}
         var i = acts.findIndex(function(a){ return a.id === _pubRef.id; });
         if (i >= 0) { acts[i].db_activity_id = d.activity_id; try { localStorage.setItem('published_activities', JSON.stringify(acts)); } catch(e){} }
+        try{ sessionStorage.setItem('activity_flash_toast', 'Activity published!'); }catch(e){}
         closePublishModal();
         window.location.href = '../Teacher_activies.html';
       } else {

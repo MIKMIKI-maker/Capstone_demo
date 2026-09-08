@@ -747,6 +747,11 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
+            var _flashToast = sessionStorage.getItem('activity_flash_toast');
+            if (_flashToast) {
+                sessionStorage.removeItem('activity_flash_toast');
+                window.showToast(_flashToast);
+            }
             loadSidebar();
             loadActivities();
             document.getElementById('teacher-searchInput').addEventListener('input', filterTable);
