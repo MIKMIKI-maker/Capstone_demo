@@ -480,15 +480,16 @@ function initActivityTheme(){
   .seq-print-head h2{ font-size:21px; font-weight:700; margin:0 0 4px; }
   .seq-print-objective{ font-size:13.5px; font-style:italic; color:#5d7299; font-weight:600; }
   .seq-print-sub{ font-size:12.5px; color:#5d7299; font-weight:500; margin-top:4px; }
+  .seq-print-pagenum{ font-size:11.5px; color:#94a3b8; font-weight:600; margin-top:4px; }
   .seq-print-divider{ margin:14px 0 22px; display:flex; flex-direction:column; gap:22px; }
   .seq-print-divider .seq-print-rule{ border-top:2.5px solid #94a3b8; }
   .seq-print-divider .seq-print-rule-dash{ border-top:2.5px dashed #94a3b8; }
-  .seq-print-footer{ margin-top:auto; padding-top:14px; border-top:1.5px solid #cbd5e1; font-size:11.5px; }
+  .seq-print-footer{ margin-top:auto; padding-top:14px; border-top:1.5px solid #cbd5e1; font-size:11.5px; break-inside:avoid; page-break-inside:avoid; }
   .seq-print-footer-label{ font-weight:700; }
   .seq-print-checks{ display:flex; flex-wrap:wrap; gap:16px; margin-top:8px; }
   .seq-print-checks label{ display:flex; align-items:center; gap:6px; }
   .seq-print-box{ width:13px; height:13px; border:1.5px solid #64748b; border-radius:3px; display:inline-block; }
-  .seq-print-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:22px 24px; flex:1; }
+  .seq-print-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:22px 24px; }
   .seq-print-item{ border:2px solid #cbd5e1; border-radius:16px; padding:16px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; break-inside:avoid; page-break-inside:avoid; }
   .seq-print-item img{ max-width:100%; max-height:120px; object-fit:contain; }
   .seq-print-item .seq-print-emoji{ font-size:64px; line-height:1; }
@@ -500,8 +501,7 @@ function initActivityTheme(){
     body *{ visibility:hidden; }
     .seq-print-area, .seq-print-area *{ visibility:visible; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .seq-print-area{ display:block; position:absolute; left:0; top:0; width:100%; margin:0; padding:0; }
-    .seq-print-page{ page-break-after:always; padding:6mm 8mm; min-height:100vh; display:flex; flex-direction:column; box-sizing:border-box; }
-    .seq-print-page:last-child{ page-break-after:auto; }
+    .seq-print-page{ page-break-after:always; padding:6mm 8mm; box-sizing:border-box; }
     @page{ margin:8mm; size:auto; }
   }
 
@@ -891,6 +891,7 @@ function initActivityTheme(){
       <div class="seq-publish-field">
         <label for="seqDeadlineInput">📅 Deadline</label>
         <input type="date" id="seqDeadlineInput" />
+        <script>document.getElementById('seqDeadlineInput').min = new Date().toISOString().slice(0,10);</script>
         <div class="seq-publish-hint">Choose the last day the activity can still be submitted.</div>
       </div>
       <div class="seq-modal-actions">
@@ -1201,7 +1202,9 @@ function initActivityTheme(){
   }
   document.addEventListener("click", ()=> document.querySelectorAll(".seq-pop").forEach(p=> p.classList.remove("show")));
 
+  var SEQ_MAX_STEPS = 30;
   $("seqAddItem").addEventListener("click", ()=>{
+    if (currentActivity().steps.length >= SEQ_MAX_STEPS) { alert("Limit reached: up to " + SEQ_MAX_STEPS + " steps per slide (keeps the printable worksheet readable)."); return; }
     currentActivity().steps.push({ img:null, emoji:"⭐", label:"" });
     renderItems(); renderActivity();
   });
@@ -1672,27 +1675,48 @@ function initActivityTheme(){
       + '<label><span class="seq-print-box"></span> Independent</label>'
       + '</div></div>';
   }
+  // The grid fits a known, roughly-fixed number of step cards per printed
+  // page (assuming a normal portrait page ~3 cards wide) before the browser
+  // would spill the rest onto an unlabeled continuation page. Chunking
+  // explicitly here means every page is labeled, and the "Pupils
+  // Performance Checklist" footer (previously emitted once per SLIDE,
+  // landing wherever that slide's flex box happened to overflow) lands on
+  // the true last page only.
+  function chunkArray(arr, size){ var out=[]; for (var i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size)); return out; }
+  var SEQ_STEPS_PER_PAGE = 9;
   function buildPrintPages(){
-    var pages = "";
-    state.activities.forEach(function(activity, slideIdx){
+    var slidePlans = state.activities.map(function(activity){
       var order = shuffle(activity.steps.map(function(_, i){ return i; }));
-      var stepsHtml = order.map(function(i){
-        var step = activity.steps[i];
-        var visual = step.img
-          ? '<img src="'+escAttr(step.img)+'" alt="">'
-          : '<span class="seq-print-emoji">'+printEscape(step.emoji || "?")+'</span>';
-        var label = step.label ? '<span class="seq-print-label">'+printEscape(step.label)+'</span>' : '';
-        return '<div class="seq-print-item">'+visual+label+'<span class="seq-print-numbox"></span></div>';
-      }).join("");
-      pages += '<div class="seq-print-page">'
-        + '<div class="seq-print-head"><h2>'+printEscape(activity.title)+'</h2>'
-        + '<div class="seq-print-objective">('+printEscape(toPrintInstruction(activity.instruction))+')</div>'
-        + (state.activities.length > 1 ? '<div class="seq-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+' — '+(DIFFICULTY_LABELS[slideIdx]||"")+'</div>' : '')
-        + '</div>'
-        + '<div class="seq-print-divider"><div class="seq-print-rule"></div><div class="seq-print-rule-dash"></div><div class="seq-print-rule"></div></div>'
-        + '<div class="seq-print-grid">'+stepsHtml+'</div>'
-        + printChecklistHtml()
-        + '</div>';
+      return { activity: activity, chunks: chunkArray(order, SEQ_STEPS_PER_PAGE) };
+    });
+    var totalPages = slidePlans.reduce(function(sum, p){ return sum + p.chunks.length; }, 0);
+
+    var pages = "";
+    var pageNum = 0;
+    slidePlans.forEach(function(plan, slideIdx){
+      var activity = plan.activity;
+      plan.chunks.forEach(function(orderIdxs, chunkIdx){
+        pageNum++;
+        var isLastPageOverall = (slideIdx === slidePlans.length - 1) && (chunkIdx === plan.chunks.length - 1);
+        var stepsHtml = orderIdxs.map(function(i){
+          var step = activity.steps[i];
+          var visual = step.img
+            ? '<img src="'+escAttr(step.img)+'" alt="">'
+            : '<span class="seq-print-emoji">'+printEscape(step.emoji || "?")+'</span>';
+          var label = step.label ? '<span class="seq-print-label">'+printEscape(step.label)+'</span>' : '';
+          return '<div class="seq-print-item">'+visual+label+'<span class="seq-print-numbox"></span></div>';
+        }).join("");
+        pages += '<div class="seq-print-page"'+(isLastPageOverall ? ' style="page-break-after:auto; display:flex; flex-direction:column; min-height:100vh;"' : '')+'>'
+          + '<div class="seq-print-head"><h2>'+printEscape(activity.title)+'</h2>'
+          + '<div class="seq-print-objective">('+printEscape(toPrintInstruction(activity.instruction))+')</div>'
+          + (state.activities.length > 1 ? '<div class="seq-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+' — '+(DIFFICULTY_LABELS[slideIdx]||"")+'</div>' : '')
+          + (totalPages > 1 ? '<div class="seq-print-pagenum">Page '+pageNum+' of '+totalPages+'</div>' : '')
+          + '</div>'
+          + (chunkIdx === 0 ? '<div class="seq-print-divider"><div class="seq-print-rule"></div><div class="seq-print-rule-dash"></div><div class="seq-print-rule"></div></div>' : '')
+          + '<div class="seq-print-grid">'+stepsHtml+'</div>'
+          + (isLastPageOverall ? printChecklistHtml() : '')
+          + '</div>';
+      });
     });
     return pages;
   }
@@ -1757,6 +1781,26 @@ function initActivityTheme(){
   }
 
   /* ── Load Draft from localStorage if ?draft_id= in URL ── */
+  /* ── In-progress autosave: survives an accidental refresh before the
+     teacher clicks Save Draft/Publish. Keyed per exact URL (including any
+     draft_id/edit_pub_id), so a fresh blank editor, a resumed draft, and a
+     resumed published-activity edit each get their own slot and never mix. ── */
+  function autoSaveKey(){ return 'sped_autosave_' + location.pathname + location.search; }
+  function autoSaveState(){
+    try { sessionStorage.setItem(autoSaveKey(), JSON.stringify(state)); } catch(e) {}
+  }
+  function restoreAutoSaveIfAny(){
+    try {
+      var saved = sessionStorage.getItem(autoSaveKey());
+      if (!saved) return;
+      Object.assign(state, JSON.parse(saved));
+      refreshSlideUI(); syncDesignControls(); applyAppearance(); renderActivity();
+    } catch(e) {}
+  }
+  window.addEventListener('pagehide', autoSaveState);
+  window.addEventListener('beforeunload', autoSaveState);
+  setInterval(autoSaveState, 8000);
+
   function loadDraftIfAny() {
     var draftId = new URLSearchParams(location.search).get('draft_id');
     if (!draftId) return;
@@ -1791,6 +1835,10 @@ function initActivityTheme(){
       refreshSlideUI();
       syncDesignControls();
       applyAppearance();
+      // Re-overlay any in-progress autosave now that the server's copy has
+      // landed — it arrives asynchronously, so without this a refreshed,
+      // unsaved edit would get clobbered back to the last saved version.
+      restoreAutoSaveIfAny();
       $("seqPubBtn").textContent = '💾 Save Changes';
       var banner = document.createElement('div');
       banner.style.cssText = 'background:#fff7e6;border:1.5px solid #f5c563;color:#92620a;font-weight:700;font-size:13px;padding:10px 14px;border-radius:10px;margin-bottom:12px;';
@@ -2025,6 +2073,7 @@ function initActivityTheme(){
    * 9. INIT
    * ------------------------------------------------------------- */
 
+  restoreAutoSaveIfAny();
   renderItems();
   renderSwatches();
   syncDesignControls();

@@ -525,17 +525,18 @@ function initActivityTheme(){
   .wrt-print-head h2{ font-size:21px; font-weight:700; margin:0 0 4px; }
   .wrt-print-objective{ font-size:13.5px; font-style:italic; color:#5d7299; font-weight:600; }
   .wrt-print-sub{ font-size:12.5px; color:#5d7299; font-weight:500; margin-top:4px; }
+  .wrt-print-pagenum{ font-size:11.5px; color:#94a3b8; font-weight:600; margin-top:4px; }
   .wrt-print-divider{ margin:14px 0 20px; display:flex; flex-direction:column; gap:22px; }
   .wrt-print-divider .wrt-print-rule{ border-top:2.5px solid #94a3b8; }
   .wrt-print-divider .wrt-print-rule-dash{ border-top:2.5px dashed #94a3b8; }
   .wrt-print-example{ border:2px dashed #7b6ef0; border-radius:14px; padding:14px 18px; display:flex; align-items:center; gap:16px; margin-bottom:24px; }
   .wrt-print-example .wrt-print-ex-tag{ font-size:12px; font-weight:800; color:#5546c4; text-transform:uppercase; }
-  .wrt-print-footer{ margin-top:auto; padding-top:14px; border-top:1.5px solid #cbd5e1; font-size:11.5px; }
+  .wrt-print-footer{ margin-top:auto; padding-top:14px; border-top:1.5px solid #cbd5e1; font-size:11.5px; break-inside:avoid; page-break-inside:avoid; }
   .wrt-print-footer-label{ font-weight:700; }
   .wrt-print-checks{ display:flex; flex-wrap:wrap; gap:16px; margin-top:8px; }
   .wrt-print-checks label{ display:flex; align-items:center; gap:6px; }
   .wrt-print-box{ width:13px; height:13px; border:1.5px solid #64748b; border-radius:3px; display:inline-block; }
-  .wrt-print-grid{ display:grid; grid-template-columns:1fr 1fr; gap:24px 32px; flex:1; }
+  .wrt-print-grid{ display:grid; grid-template-columns:1fr 1fr; gap:24px 32px; }
   .wrt-print-item{ border:2px solid #cbd5e1; border-radius:16px; padding:20px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; break-inside:avoid; page-break-inside:avoid; }
   .wrt-print-item img{ max-width:100%; max-height:150px; object-fit:contain; }
   .wrt-print-item .wrt-print-emoji{ font-size:84px; line-height:1; }
@@ -546,8 +547,7 @@ function initActivityTheme(){
     body *{ visibility:hidden; }
     .wrt-print-area, .wrt-print-area *{ visibility:visible; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .wrt-print-area{ display:block; position:absolute; left:0; top:0; width:100%; margin:0; padding:0; }
-    .wrt-print-page{ page-break-after:always; padding:6mm 8mm; min-height:100vh; display:flex; flex-direction:column; box-sizing:border-box; }
-    .wrt-print-page:last-child{ page-break-after:auto; }
+    .wrt-print-page{ page-break-after:always; padding:6mm 8mm; box-sizing:border-box; }
     @page{ margin:8mm; size:auto; }
   }
   /* ── SPOTLIGHT TOUR ── */
@@ -822,6 +822,7 @@ function initActivityTheme(){
       <div class="wrt-publish-field">
         <label for="wrtDeadlineInput">📅 Deadline</label>
         <input type="date" id="wrtDeadlineInput" />
+        <script>document.getElementById('wrtDeadlineInput').min = new Date().toISOString().slice(0,10);</script>
         <div class="wrt-publish-hint">Choose the last day the activity can still be submitted.</div>
       </div>
       <div class="wrt-modal-actions">
@@ -1180,7 +1181,9 @@ function initActivityTheme(){
   }
   document.addEventListener("click", ()=> document.querySelectorAll(".wrt-pop").forEach(p=> p.classList.remove("show")));
 
+  var WRT_MAX_ITEMS = 30;
   $("wrtAddItem").addEventListener("click", ()=>{
+    if (currentActivity().items.length >= WRT_MAX_ITEMS) { alert("Limit reached: up to " + WRT_MAX_ITEMS + " items per slide (keeps the printable worksheet readable)."); return; }
     currentActivity().items.push({ img:null, imgType:"upload", emoji:"⭐", correct: currentActivity().answerMode==="letter" ? "a" : "", variations:"" });
     renderItems(); renderActivity();
   });
@@ -1648,9 +1651,25 @@ function initActivityTheme(){
       + '<label><span class="wrt-print-box"></span> Independent</label>'
       + '</div></div>';
   }
+  // The 2-column card grid means each printed page fits a known, fixed
+  // number of items before the browser would spill the rest onto an
+  // unlabeled continuation page. Chunking explicitly here means every page
+  // is labeled, and the "Pupils Performance Checklist" footer (previously
+  // emitted once per SLIDE, landing wherever that slide's flex box happened
+  // to overflow) lands on the true last page only. The example box only
+  // repeats on the first page of a slide.
+  function chunkArray(arr, size){ var out=[]; for (var i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size)); return out; }
+  var WRT_ITEMS_PER_PAGE = 4;
   function buildPrintPages(){
+    var slidePlans = state.activities.map(function(activity){
+      return { activity: activity, chunks: chunkArray(activity.items, WRT_ITEMS_PER_PAGE) };
+    });
+    var totalPages = slidePlans.reduce(function(sum, p){ return sum + p.chunks.length; }, 0);
+
     var pages = "";
-    state.activities.forEach(function(activity, slideIdx){
+    var pageNum = 0;
+    slidePlans.forEach(function(plan, slideIdx){
+      var activity = plan.activity;
       var exampleHtml = "";
       if (activity.example) {
         var ex = activity.example;
@@ -1660,22 +1679,27 @@ function initActivityTheme(){
         exampleHtml = '<div class="wrt-print-example"><span class="wrt-print-ex-tag">Example</span>'+exVisual
           + '<span style="font-weight:800;">→ '+printEscape(ex.correct || "")+'</span></div>';
       }
-      var itemsHtml = activity.items.map(function(it){
-        var visual = it.img
-          ? '<img src="'+escAttr(it.img)+'" alt="">'
-          : '<span class="wrt-print-emoji">'+printEscape(it.emoji || "?")+'</span>';
-        return '<div class="wrt-print-item">'+visual+'<div class="wrt-print-blank"></div></div>';
-      }).join("");
-      pages += '<div class="wrt-print-page">'
-        + '<div class="wrt-print-head"><h2>'+printEscape(activity.title)+'</h2>'
-        + '<div class="wrt-print-objective">('+printEscape(toPrintInstruction(activity.instruction))+')</div>'
-        + (state.activities.length > 1 ? '<div class="wrt-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+' — '+(DIFFICULTY_LABELS[slideIdx]||"")+'</div>' : '')
-        + '</div>'
-        + '<div class="wrt-print-divider"><div class="wrt-print-rule"></div><div class="wrt-print-rule-dash"></div><div class="wrt-print-rule"></div></div>'
-        + exampleHtml
-        + '<div class="wrt-print-grid">'+itemsHtml+'</div>'
-        + printChecklistHtml()
-        + '</div>';
+      plan.chunks.forEach(function(chunkItems, chunkIdx){
+        pageNum++;
+        var isLastPageOverall = (slideIdx === slidePlans.length - 1) && (chunkIdx === plan.chunks.length - 1);
+        var itemsHtml = chunkItems.map(function(it){
+          var visual = it.img
+            ? '<img src="'+escAttr(it.img)+'" alt="">'
+            : '<span class="wrt-print-emoji">'+printEscape(it.emoji || "?")+'</span>';
+          return '<div class="wrt-print-item">'+visual+'<div class="wrt-print-blank"></div></div>';
+        }).join("");
+        pages += '<div class="wrt-print-page"'+(isLastPageOverall ? ' style="page-break-after:auto; display:flex; flex-direction:column; min-height:100vh;"' : '')+'>'
+          + '<div class="wrt-print-head"><h2>'+printEscape(activity.title)+'</h2>'
+          + '<div class="wrt-print-objective">('+printEscape(toPrintInstruction(activity.instruction))+')</div>'
+          + (state.activities.length > 1 ? '<div class="wrt-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+' — '+(DIFFICULTY_LABELS[slideIdx]||"")+'</div>' : '')
+          + (totalPages > 1 ? '<div class="wrt-print-pagenum">Page '+pageNum+' of '+totalPages+'</div>' : '')
+          + '</div>'
+          + (chunkIdx === 0 ? '<div class="wrt-print-divider"><div class="wrt-print-rule"></div><div class="wrt-print-rule-dash"></div><div class="wrt-print-rule"></div></div>' : '')
+          + (chunkIdx === 0 ? exampleHtml : "")
+          + '<div class="wrt-print-grid">'+itemsHtml+'</div>'
+          + (isLastPageOverall ? printChecklistHtml() : '')
+          + '</div>';
+      });
     });
     return pages;
   }
@@ -1709,6 +1733,26 @@ function initActivityTheme(){
       setTimeout(function(){ window.location.href = '../Teacher_activies.html'; }, 700);
     } catch(e) { alert('Storage full – could not save draft.'); }
   }
+  /* ── In-progress autosave: survives an accidental refresh before the
+     teacher clicks Save Draft/Publish. Keyed per exact URL (including any
+     draft_id/edit_pub_id), so a fresh blank editor, a resumed draft, and a
+     resumed published-activity edit each get their own slot and never mix. ── */
+  function autoSaveKey(){ return 'sped_autosave_' + location.pathname + location.search; }
+  function autoSaveState(){
+    try { sessionStorage.setItem(autoSaveKey(), JSON.stringify(state)); } catch(e) {}
+  }
+  function restoreAutoSaveIfAny(){
+    try {
+      var saved = sessionStorage.getItem(autoSaveKey());
+      if (!saved) return;
+      Object.assign(state, JSON.parse(saved));
+      refreshSlideUI(); syncDesignControls(); applyAppearance(); renderActivity();
+    } catch(e) {}
+  }
+  window.addEventListener('pagehide', autoSaveState);
+  window.addEventListener('beforeunload', autoSaveState);
+  setInterval(autoSaveState, 8000);
+
   function loadDraftIfAny() {
     var draftId = new URLSearchParams(location.search).get('draft_id');
     if (!draftId) return;
@@ -1742,6 +1786,10 @@ function initActivityTheme(){
       refreshSlideUI();
       syncDesignControls();
       applyAppearance();
+      // Re-overlay any in-progress autosave now that the server's copy has
+      // landed — it arrives asynchronously, so without this a refreshed,
+      // unsaved edit would get clobbered back to the last saved version.
+      restoreAutoSaveIfAny();
       $("wrtPubBtn").textContent = '💾 Save Changes';
       var banner = document.createElement('div');
       banner.style.cssText = 'background:#fff7e6;border:1.5px solid #f5c563;color:#92620a;font-weight:700;font-size:13px;padding:10px 14px;border-radius:10px;margin-bottom:12px;';
@@ -1999,6 +2047,7 @@ function initActivityTheme(){
    * 8. INIT
    * ------------------------------------------------------------- */
 
+  restoreAutoSaveIfAny();
   syncModeSeg();
   renderExampleEditor();
   renderItems();

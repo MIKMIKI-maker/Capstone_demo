@@ -499,25 +499,27 @@ function initActivityTheme(){
   .srt-print-head h2{ font-size:21px; font-weight:700; margin:0 0 4px; }
   .srt-print-objective{ font-size:13.5px; font-style:italic; color:#5d7299; font-weight:600; }
   .srt-print-sub{ font-size:12.5px; color:#5d7299; font-weight:500; margin-top:4px; }
+  .srt-print-pagenum{ font-size:11.5px; color:#94a3b8; font-weight:600; margin-top:4px; }
   .srt-print-divider{ margin:14px 0 18px; display:flex; flex-direction:column; gap:22px; }
   .srt-print-divider .srt-print-rule{ border-top:2.5px solid #94a3b8; }
   .srt-print-divider .srt-print-rule-dash{ border-top:2.5px dashed #94a3b8; }
-  .srt-print-footer{ margin-top:auto; padding-top:14px; border-top:1.5px solid #cbd5e1; font-size:11.5px; }
+  .srt-print-footer{ margin-top:auto; padding-top:14px; border-top:1.5px solid #cbd5e1; font-size:11.5px; break-inside:avoid; page-break-inside:avoid; }
   .srt-print-footer-label{ font-weight:700; }
   .srt-print-checks{ display:flex; flex-wrap:wrap; gap:16px; margin-top:8px; }
   .srt-print-checks label{ display:flex; align-items:center; gap:6px; }
   .srt-print-box{ width:13px; height:13px; border:1.5px solid #64748b; border-radius:3px; display:inline-block; }
-  .srt-print-cats{ display:flex; gap:20px; margin-bottom:26px; flex:1.3; }
+  .srt-print-cats{ display:flex; gap:20px; margin-bottom:26px; }
   .srt-print-cat{ flex:1; border:2px dashed #cbb8f3; border-radius:18px; padding:16px; display:flex; flex-direction:column; align-items:center; break-inside:avoid; page-break-inside:avoid; }
   .srt-print-cat-icon{ margin-bottom:6px; }
   .srt-print-cat-icon img{ max-width:100%; max-height:44px; object-fit:contain; }
   .srt-print-cat-icon .srt-print-cat-emoji{ font-size:32px; line-height:1; }
   .srt-print-cat-name{ font-weight:700; font-size:18px; color:#243a5e; margin-bottom:8px; }
+  .srt-print-cat-spacer{ width:100%; }
   /* No min-height:0 here — that let this grid get squeezed shorter than its
      items' natural size whenever there wasn't quite enough room left on the
      page, shrinking every item box instead of just flowing extra items onto
      the next printed page (which the html/body print fix above now allows). */
-  .srt-print-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:18px 20px; flex:1; align-content:center; }
+  .srt-print-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:18px 20px; }
   .srt-print-item{ border:1.5px dashed #94a3b8; border-radius:12px; padding:14px; display:flex; align-items:center; justify-content:center; min-height:96px; break-inside:avoid; page-break-inside:avoid; }
   .srt-print-item img{ max-width:100%; max-height:78px; object-fit:contain; }
   .srt-print-item .srt-print-emoji{ font-size:50px; line-height:1; }
@@ -527,8 +529,7 @@ function initActivityTheme(){
     body *{ visibility:hidden; }
     .srt-print-area, .srt-print-area *{ visibility:visible; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .srt-print-area{ display:block; position:absolute; left:0; top:0; width:100%; margin:0; padding:0; }
-    .srt-print-page{ page-break-after:always; padding:6mm 8mm; min-height:100vh; display:flex; flex-direction:column; box-sizing:border-box; }
-    .srt-print-page:last-child{ page-break-after:auto; }
+    .srt-print-page{ page-break-after:always; padding:6mm 8mm; box-sizing:border-box; }
     @page{ margin:8mm; size:auto; }
   }
 
@@ -876,6 +877,7 @@ function initActivityTheme(){
       <div class="srt-publish-field">
         <label for="srtDeadlineInput">📅 Deadline</label>
         <input type="date" id="srtDeadlineInput" />
+        <script>document.getElementById('srtDeadlineInput').min = new Date().toISOString().slice(0,10);</script>
         <div class="srt-publish-hint">Choose the last day the activity can still be submitted.</div>
       </div>
       <div class="srt-modal-actions">
@@ -1280,7 +1282,9 @@ function initActivityTheme(){
     });
   }
 
+  var SRT_MAX_ITEMS = 30;
   $("srtAddItem").addEventListener("click", ()=>{
+    if (currentActivity().items.length >= SRT_MAX_ITEMS) { alert("Limit reached: up to " + SRT_MAX_ITEMS + " items per slide (keeps the printable worksheet readable)."); return; }
     currentActivity().items.push({ img:null, emoji:"⭐", name:"", category:0 });
     renderItems(); renderActivity();
   });
@@ -1802,34 +1806,80 @@ function initActivityTheme(){
   // viewport, see the html/body print fix above) simply gains more rows —
   // and spills onto another printed page if it needs to — as items are
   // added. Boxes never shrink to force everything onto one page.
+  // The grid fits a known, roughly-fixed number of items per printed page
+  // (assuming a normal portrait page ~4 items wide) before the browser
+  // would spill the rest onto an unlabeled continuation page. Chunking
+  // explicitly here means every page is labeled, and the "Pupils
+  // Performance Checklist" footer (previously emitted once per SLIDE,
+  // landing wherever that slide's flex box happened to overflow) lands on
+  // the true last page only. The category headers repeat on every page so
+  // students can still see where each item belongs regardless of which
+  // page they're working from.
+  function chunkArray(arr, size){ var out=[]; for (var i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size)); return out; }
+  // Kept low on purpose: the category boxes below are now sized to actually
+  // fit that many cut-out items (see buildCatsHtml), so a big per-page limit
+  // would make a lopsided page's box absurdly tall. 8 keeps every box a
+  // sane, printable height even in the worst case (all 8 in one category).
+  var SRT_ITEMS_PER_PAGE = 8;
   function buildPrintPages(){
+    var slidePlans = state.activities.map(function(activity){
+      var order = shuffle(activity.items.map(function(_, i){ return i; }));
+      return { activity: activity, chunks: chunkArray(order, SRT_ITEMS_PER_PAGE) };
+    });
+    var totalPages = slidePlans.reduce(function(sum, p){ return sum + p.chunks.length; }, 0);
+
     var pages = "";
-    state.activities.forEach(function(activity, slideIdx){
-      var catsHtml = activity.categories.map(function(c){
+    var pageNum = 0;
+    // Students physically cut out each printed item box (see .srt-print-item
+    // below: 96px tall, 18px row gap) and glue it inside the matching
+    // category box — so that box must actually be tall enough to hold that
+    // many real cut-outs, not just look proportionally bigger. We estimate
+    // how many cut-outs fit per row in a box this width (splitting the same
+    // ~4-column page width evenly across however many categories there
+    // are), then size the box for that many rows, plus a little allowance.
+    var SRT_ITEM_UNIT_H = 96, SRT_ITEM_UNIT_GAP = 18, SRT_GRID_COLS_ESTIMATE = 4, SRT_CAT_ALLOWANCE = 24;
+    function buildCatsHtml(activity, itemIdxs){
+      var counts = activity.categories.map(function(){ return 0; });
+      itemIdxs.forEach(function(i){
+        var cat = activity.items[i].category;
+        if (typeof cat === "number" && counts[cat] !== undefined) counts[cat]++;
+      });
+      var itemsPerRow = Math.max(1, Math.floor(SRT_GRID_COLS_ESTIMATE / activity.categories.length));
+      return activity.categories.map(function(c, ci){
         var catVisual = c.img
           ? '<img src="'+escAttr(c.img)+'" alt="">'
           : (c.icon ? '<span class="srt-print-cat-emoji">'+printEscape(c.icon)+'</span>' : '');
         var catIcon = catVisual ? '<div class="srt-print-cat-icon">'+catVisual+'</div>' : '';
-        return '<div class="srt-print-cat">'+catIcon+'<div class="srt-print-cat-name">'+printEscape(c.name)+'</div></div>';
+        var rows = Math.max(1, Math.ceil((counts[ci] || 0) / itemsPerRow));
+        var spacerHeight = rows * (SRT_ITEM_UNIT_H + SRT_ITEM_UNIT_GAP) + SRT_CAT_ALLOWANCE;
+        return '<div class="srt-print-cat">'+catIcon+'<div class="srt-print-cat-name">'+printEscape(c.name)+'</div>'
+          + '<div class="srt-print-cat-spacer" style="height:'+spacerHeight+'px"></div></div>';
       }).join("");
-      var order = shuffle(activity.items.map(function(_, i){ return i; }));
-      var itemsHtml = order.map(function(i){
-        var it = activity.items[i];
-        var visual = it.img
-          ? '<img src="'+escAttr(it.img)+'" alt="">'
-          : '<span class="srt-print-emoji">'+printEscape(it.emoji || "?")+'</span>';
-        return '<div class="srt-print-item">'+visual+'</div>';
-      }).join("");
-      pages += '<div class="srt-print-page">'
-        + '<div class="srt-print-head"><h2>'+printEscape(activity.title)+'</h2>'
-        + '<div class="srt-print-objective">('+printEscape(toPrintInstruction(activity.instruction))+')</div>'
-        + (state.activities.length > 1 ? '<div class="srt-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+' — '+(DIFFICULTY_LABELS[slideIdx]||"")+'</div>' : '')
-        + '</div>'
-        + '<div class="srt-print-divider"><div class="srt-print-rule"></div><div class="srt-print-rule-dash"></div><div class="srt-print-rule"></div></div>'
-        + '<div class="srt-print-cats">'+catsHtml+'</div>'
-        + '<div class="srt-print-grid">'+itemsHtml+'</div>'
-        + printChecklistHtml()
-        + '</div>';
+    }
+    slidePlans.forEach(function(plan, slideIdx){
+      var activity = plan.activity;
+      plan.chunks.forEach(function(orderIdxs, chunkIdx){
+        pageNum++;
+        var isLastPageOverall = (slideIdx === slidePlans.length - 1) && (chunkIdx === plan.chunks.length - 1);
+        var itemsHtml = orderIdxs.map(function(i){
+          var it = activity.items[i];
+          var visual = it.img
+            ? '<img src="'+escAttr(it.img)+'" alt="">'
+            : '<span class="srt-print-emoji">'+printEscape(it.emoji || "?")+'</span>';
+          return '<div class="srt-print-item">'+visual+'</div>';
+        }).join("");
+        pages += '<div class="srt-print-page"'+(isLastPageOverall ? ' style="page-break-after:auto; display:flex; flex-direction:column; min-height:100vh;"' : '')+'>'
+          + '<div class="srt-print-head"><h2>'+printEscape(activity.title)+'</h2>'
+          + '<div class="srt-print-objective">('+printEscape(toPrintInstruction(activity.instruction))+')</div>'
+          + (state.activities.length > 1 ? '<div class="srt-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+' — '+(DIFFICULTY_LABELS[slideIdx]||"")+'</div>' : '')
+          + (totalPages > 1 ? '<div class="srt-print-pagenum">Page '+pageNum+' of '+totalPages+'</div>' : '')
+          + '</div>'
+          + (chunkIdx === 0 ? '<div class="srt-print-divider"><div class="srt-print-rule"></div><div class="srt-print-rule-dash"></div><div class="srt-print-rule"></div></div>' : '')
+          + '<div class="srt-print-cats">'+buildCatsHtml(activity, orderIdxs)+'</div>'
+          + '<div class="srt-print-grid">'+itemsHtml+'</div>'
+          + (isLastPageOverall ? printChecklistHtml() : '')
+          + '</div>';
+      });
     });
     return pages;
   }
@@ -1885,6 +1935,26 @@ function initActivityTheme(){
   }
 
   /* ── Load Draft from localStorage if ?draft_id= in URL ── */
+  /* ── In-progress autosave: survives an accidental refresh before the
+     teacher clicks Save Draft/Publish. Keyed per exact URL (including any
+     draft_id/edit_pub_id), so a fresh blank editor, a resumed draft, and a
+     resumed published-activity edit each get their own slot and never mix. ── */
+  function autoSaveKey(){ return 'sped_autosave_' + location.pathname + location.search; }
+  function autoSaveState(){
+    try { sessionStorage.setItem(autoSaveKey(), JSON.stringify(state)); } catch(e) {}
+  }
+  function restoreAutoSaveIfAny(){
+    try {
+      var saved = sessionStorage.getItem(autoSaveKey());
+      if (!saved) return;
+      Object.assign(state, JSON.parse(saved));
+      refreshSlideUI(); syncDesignControls(); applyAppearance(); renderActivity();
+    } catch(e) {}
+  }
+  window.addEventListener('pagehide', autoSaveState);
+  window.addEventListener('beforeunload', autoSaveState);
+  setInterval(autoSaveState, 8000);
+
   function loadDraftIfAny() {
     var draftId = new URLSearchParams(location.search).get('draft_id');
     if (!draftId) return;
@@ -1919,6 +1989,10 @@ function initActivityTheme(){
       refreshSlideUI();
       syncDesignControls();
       applyAppearance();
+      // Re-overlay any in-progress autosave now that the server's copy has
+      // landed — it arrives asynchronously, so without this a refreshed,
+      // unsaved edit would get clobbered back to the last saved version.
+      restoreAutoSaveIfAny();
       $("srtPubBtn").textContent = '💾 Save Changes';
       var banner = document.createElement('div');
       banner.style.cssText = 'background:#fff7e6;border:1.5px solid #f5c563;color:#92620a;font-weight:700;font-size:13px;padding:10px 14px;border-radius:10px;margin-bottom:12px;';
@@ -2181,6 +2255,7 @@ function initActivityTheme(){
    * 9. INIT
    * ------------------------------------------------------------- */
 
+  restoreAutoSaveIfAny();
   renderCategories();
   renderItems();
   renderSwatches();

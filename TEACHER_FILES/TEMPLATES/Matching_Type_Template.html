@@ -507,17 +507,18 @@ function initActivityTheme(){
   .mtg-print-head h2{ font-size:21px; font-weight:700; margin:0 0 4px; }
   .mtg-print-objective{ font-size:13.5px; font-style:italic; color:#5d7299; font-weight:600; }
   .mtg-print-sub{ font-size:12.5px; color:#5d7299; font-weight:500; margin-top:4px; }
+  .mtg-print-pagenum{ font-size:11.5px; color:#94a3b8; font-weight:600; margin-top:4px; }
   .mtg-print-divider{ margin:14px 0 22px; display:flex; flex-direction:column; gap:22px; }
   .mtg-print-divider .mtg-print-rule{ border-top:2.5px solid #94a3b8; }
   .mtg-print-divider .mtg-print-rule-dash{ border-top:2.5px dashed #94a3b8; }
-  .mtg-print-footer{ margin-top:auto; padding-top:14px; border-top:1.5px solid #cbd5e1; font-size:11.5px; }
+  .mtg-print-footer{ margin-top:auto; padding-top:14px; border-top:1.5px solid #cbd5e1; font-size:11.5px; break-inside:avoid; page-break-inside:avoid; }
   .mtg-print-footer-label{ font-weight:700; }
   .mtg-print-checks{ display:flex; flex-wrap:wrap; gap:16px; margin-top:8px; }
   .mtg-print-checks label{ display:flex; align-items:center; gap:6px; }
   .mtg-print-box{ width:13px; height:13px; border:1.5px solid #64748b; border-radius:3px; display:inline-block; }
-  .mtg-print-grid{ display:flex; justify-content:space-between; gap:230px; flex:1; }
+  .mtg-print-grid{ display:flex; justify-content:space-between; gap:230px; }
   .mtg-print-col{ flex:1; display:flex; flex-direction:column; gap:22px; }
-  .mtg-print-item{ position:relative; border:2px solid #cbd5e1; border-radius:14px; padding:16px 10px; flex:1;
+  .mtg-print-item{ position:relative; border:2px solid #cbd5e1; border-radius:14px; padding:16px 10px;
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; min-height:130px;
     break-inside:avoid; page-break-inside:avoid; }
   .mtg-print-item img{ max-width:100%; max-height:120px; object-fit:contain; }
@@ -532,9 +533,7 @@ function initActivityTheme(){
     body *{ visibility:hidden; }
     .mtg-print-area, .mtg-print-area *{ visibility:visible; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .mtg-print-area{ display:block; position:absolute; left:0; top:0; width:100%; margin:0; padding:0; }
-    .mtg-print-page{ page-break-after:always; padding:6mm 8mm; min-height:100vh; display:flex; flex-direction:column; box-sizing:border-box; }
-    .mtg-print-page:last-child{ page-break-after:auto; }
-    .mtg-print-page .mtg-print-grid{ flex:1; }
+    .mtg-print-page{ page-break-after:always; padding:6mm 8mm; box-sizing:border-box; }
     @page{ margin:8mm; size:auto; }
   }
   /* ── SPOTLIGHT TOUR ── */
@@ -834,6 +833,7 @@ function initActivityTheme(){
       <div class="mtg-publish-field">
         <label for="mtgDeadlineInput">📅 Deadline</label>
         <input type="date" id="mtgDeadlineInput" />
+        <script>document.getElementById('mtgDeadlineInput').min = new Date().toISOString().slice(0,10);</script>
         <div class="mtg-publish-hint">Choose the last day the activity can still be submitted.</div>
       </div>
       <div class="mtg-modal-actions">
@@ -1128,7 +1128,9 @@ function initActivityTheme(){
   }
   document.addEventListener("click", ()=> document.querySelectorAll(".mtg-pop").forEach(p=> p.classList.remove("show")));
 
+  var MTG_MAX_ITEMS = 30;
   $("mtgAddItem").addEventListener("click", ()=>{
+    if (currentActivity().items.length >= MTG_MAX_ITEMS) { alert("Limit reached: up to " + MTG_MAX_ITEMS + " pairs per slide (keeps the printable worksheet readable)."); return; }
     currentActivity().items.push({ left:{img:null,emoji:"⭐"}, right:{img:null,emoji:"⭐"} });
     renderItems(); renderActivity();
   });
@@ -1636,21 +1638,50 @@ function initActivityTheme(){
       + '<label><span class="mtg-print-box"></span> Independent</label>'
       + '</div></div>';
   }
+  // Pairs are always the same fixed size when printed (see .mtg-print-item
+  // above), so a page can only fit so many rows before printing would
+  // overflow onto the next physical sheet. Rather than let the browser
+  // silently spill items onto an unlabeled continuation page (which used to
+  // strand the "Pupils Performance Checklist" footer mid-worksheet — it was
+  // emitted once per SLIDE, landing wherever that slide's flex box happened
+  // to overflow), we chunk each slide's rows into explicit pages ourselves
+  // so every physical page is labeled and the checklist can be placed on
+  // the true last page only.
+  function chunkArray(arr, size){ var out=[]; for (var i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size)); return out; }
+  var MTG_PAIRS_PER_PAGE = 5;
   function buildPrintPages(){
-    var pages = "";
-    state.activities.forEach(function(activity, slideIdx){
+    var slidePlans = state.activities.map(function(activity){
       var order = shuffle(activity.items.map(function(_, i){ return i; }));
-      var leftHtml = activity.items.map(function(it){ return printSideBox(it.left, "left"); }).join("");
-      var rightHtml = order.map(function(i){ return printSideBox(activity.items[i].right, "right"); }).join("");
-      pages += '<div class="mtg-print-page">'
-        + '<div class="mtg-print-head"><h2>'+printEscape(activity.title)+'</h2>'
-        + '<div class="mtg-print-objective">('+printEscape(toPrintInstruction(activity.instruction))+')</div>'
-        + (state.activities.length > 1 ? '<div class="mtg-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+' — '+(DIFFICULTY_LABELS[slideIdx]||"")+'</div>' : '')
-        + '</div>'
-        + '<div class="mtg-print-divider"><div class="mtg-print-rule"></div><div class="mtg-print-rule-dash"></div><div class="mtg-print-rule"></div></div>'
-        + '<div class="mtg-print-grid"><div class="mtg-print-col">'+leftHtml+'</div><div class="mtg-print-col">'+rightHtml+'</div></div>'
-        + printChecklistHtml()
-        + '</div>';
+      var rowChunks = chunkArray(activity.items.map(function(_, i){ return i; }), MTG_PAIRS_PER_PAGE);
+      return { activity: activity, order: order, rowChunks: rowChunks };
+    });
+    var totalPages = slidePlans.reduce(function(sum, p){ return sum + p.rowChunks.length; }, 0);
+
+    var pages = "";
+    var pageNum = 0;
+    slidePlans.forEach(function(plan, slideIdx){
+      var activity = plan.activity, order = plan.order;
+      plan.rowChunks.forEach(function(rowIdxs, chunkIdx){
+        pageNum++;
+        var isLastPageOverall = (slideIdx === slidePlans.length - 1) && (chunkIdx === plan.rowChunks.length - 1);
+        var leftHtml = rowIdxs.map(function(i){ return printSideBox(activity.items[i].left, "left"); }).join("");
+        var rightHtml = rowIdxs.map(function(i){ return printSideBox(activity.items[order[i]].right, "right"); }).join("");
+        // The last page is a known, self-contained page (we chunked items
+        // ourselves so it's guaranteed to fit), so it's safe to flex-pin its
+        // footer to the physical bottom of that one page — unlike before,
+        // when the footer sat inside a single tall box spanning however
+        // many pages a slide's items happened to overflow onto.
+        pages += '<div class="mtg-print-page"'+(isLastPageOverall ? ' style="page-break-after:auto; display:flex; flex-direction:column; min-height:100vh;"' : '')+'>'
+          + '<div class="mtg-print-head"><h2>'+printEscape(activity.title)+'</h2>'
+          + '<div class="mtg-print-objective">('+printEscape(toPrintInstruction(activity.instruction))+')</div>'
+          + (state.activities.length > 1 ? '<div class="mtg-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+' — '+(DIFFICULTY_LABELS[slideIdx]||"")+'</div>' : '')
+          + (totalPages > 1 ? '<div class="mtg-print-pagenum">Page '+pageNum+' of '+totalPages+'</div>' : '')
+          + '</div>'
+          + (chunkIdx === 0 ? '<div class="mtg-print-divider"><div class="mtg-print-rule"></div><div class="mtg-print-rule-dash"></div><div class="mtg-print-rule"></div></div>' : '')
+          + '<div class="mtg-print-grid"><div class="mtg-print-col">'+leftHtml+'</div><div class="mtg-print-col">'+rightHtml+'</div></div>'
+          + (isLastPageOverall ? printChecklistHtml() : '')
+          + '</div>';
+      });
     });
     return pages;
   }
@@ -1705,6 +1736,26 @@ function initActivityTheme(){
     } catch(e) { alert('Storage full – could not save draft.'); }
   }
 
+  /* ── In-progress autosave: survives an accidental refresh before the
+     teacher clicks Save Draft/Publish. Keyed per exact URL (including any
+     draft_id/edit_pub_id), so a fresh blank editor, a resumed draft, and a
+     resumed published-activity edit each get their own slot and never mix. ── */
+  function autoSaveKey(){ return 'sped_autosave_' + location.pathname + location.search; }
+  function autoSaveState(){
+    try { sessionStorage.setItem(autoSaveKey(), JSON.stringify(state)); } catch(e) {}
+  }
+  function restoreAutoSaveIfAny(){
+    try {
+      var saved = sessionStorage.getItem(autoSaveKey());
+      if (!saved) return;
+      Object.assign(state, JSON.parse(saved));
+      refreshSlideUI(); syncDesignControls(); applyAppearance(); renderActivity();
+    } catch(e) {}
+  }
+  window.addEventListener('pagehide', autoSaveState);
+  window.addEventListener('beforeunload', autoSaveState);
+  setInterval(autoSaveState, 8000);
+
   /* ── Load Draft from localStorage if ?draft_id= in URL ── */
   function loadDraftIfAny() {
     var draftId = new URLSearchParams(location.search).get('draft_id');
@@ -1740,6 +1791,10 @@ function initActivityTheme(){
       refreshSlideUI();
       syncDesignControls();
       applyAppearance();
+      // Re-overlay any in-progress autosave now that the server's copy has
+      // landed — it arrives asynchronously, so without this a refreshed,
+      // unsaved edit would get clobbered back to the last saved version.
+      restoreAutoSaveIfAny();
       $("mtgPubBtn").textContent = '💾 Save Changes';
       var banner = document.createElement('div');
       banner.style.cssText = 'background:#fff7e6;border:1.5px solid #f5c563;color:#92620a;font-weight:700;font-size:13px;padding:10px 14px;border-radius:10px;margin-bottom:12px;';
@@ -1997,6 +2052,7 @@ function initActivityTheme(){
    * 8. INIT
    * ------------------------------------------------------------- */
 
+  restoreAutoSaveIfAny();
   renderItems();
   renderSwatches();
   syncDesignControls();
