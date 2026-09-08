@@ -100,14 +100,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $clr = $conn->prepare("DELETE FROM login_attempts WHERE email = ?");
             if ($clr) { $clr->bind_param("s", $email); $clr->execute(); $clr->close(); }
 
-            // TEMP: 2FA disabled for testing — block commented out below, not deleted. Re-enable by uncommenting.
             // 2FA is mandatory for every admin account. Password is correct,
             // but the real session isn't granted yet — only a "pending"
             // marker good for the one follow-up request, verified in
             // admin_2fa_login_verify.php (already has 2FA) or
             // admin_2fa_setup_confirm.php (first-time setup) before any
             // admin_* session var is set.
-            /*
             if ($row['role'] === 'admin') {
                 if (!empty($row['totp_enabled'])) {
                     $_SESSION['pending_2fa_admin_id'] = $row['id'];
@@ -120,7 +118,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $conn->close();
                 exit;
             }
-            */
 
             // Teacher/Student accounts start on a password the Admin set or
             // a role default ("Teacher@123"/"Student@123") - block the real
