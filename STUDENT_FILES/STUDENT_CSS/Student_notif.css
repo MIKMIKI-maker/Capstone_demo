@@ -153,6 +153,18 @@ body {
 .student-delete-btn:hover { background: #fee2e2; }
 
 
+/* ---- Pagination ---- */
+.student-notif-pagination { display:flex; align-items:center; justify-content:center; gap:16px; margin-top:18px; }
+.student-page-btn {
+  cursor:pointer; border:none; padding:9px 18px; border-radius:999px;
+  background:#fff; color:var(--blue); font-family:var(--font-head); font-weight:700; font-size:13px;
+  box-shadow:0 3px 8px rgba(36,58,94,.08); transition:transform .1s ease;
+}
+.student-page-btn:hover:not(:disabled) { transform:translateY(-1px); }
+.student-page-btn:disabled { opacity:.4; cursor:default; box-shadow:none; }
+.student-page-info { font-size:13px; color:var(--ink-soft); font-weight:600; }
+
+
 /* ---- Empty state ---- */
 .student-notif-empty {
   display:flex; flex-direction:column; align-items:center; gap:8px;

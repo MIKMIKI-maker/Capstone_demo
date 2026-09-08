@@ -3,8 +3,8 @@
 <html lang="en">
 
 <head>
-    <script src="../ASSETS/portal_guard.js" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
-    <script src="../ASSETS/teacher_portal.js?v=2"></script>
+    <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
+    <script src="../ASSETS/teacher_portal.js?v=5"></script>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
@@ -563,7 +563,15 @@
                     fetch('TEACHER_BACKEND/teacher_delete_activity.php', {
                         method: 'POST',
                         body: new URLSearchParams({ teacher_id: _tid, activity_id: dbId })
-                    }).catch(function(){});
+                    })
+                        .then(function(r) { return r.json(); })
+                        .then(function(d) {
+                            if (d && d.success) window.showToast('Draft deleted.');
+                            else window.showToast((d && d.message) || 'Could not delete draft.', 'error');
+                        })
+                        .catch(function() { window.showToast('Network error. Could not delete draft.', 'error'); });
+                } else {
+                    window.showToast('Draft deleted.');
                 }
                 loadActivities();
             });
@@ -598,8 +606,16 @@
                     fetch('TEACHER_BACKEND/teacher_delete_activity.php', {
                         method: 'POST',
                         body: new URLSearchParams({ teacher_id: _tid, activity_id: dbId })
-                    }).finally(function(){ loadActivities(); });
+                    })
+                        .then(function(r) { return r.json(); })
+                        .then(function(d) {
+                            if (d && d.success) window.showToast('Activity unpublished.');
+                            else window.showToast((d && d.message) || 'Could not unpublish activity.', 'error');
+                        })
+                        .catch(function() { window.showToast('Network error. Could not unpublish activity.', 'error'); })
+                        .finally(function(){ loadActivities(); });
                 } else {
+                    window.showToast('Activity unpublished.');
                     loadActivities();
                 }
             });
@@ -613,8 +629,14 @@
                 fetch('TEACHER_BACKEND/teacher_delete_activity.php', {
                     method: 'POST',
                     body: new URLSearchParams({ teacher_id: _tid, activity_id: dbId })
-                }).then(function() { loadActivities(); })
-                  .catch(function() { loadActivities(); });
+                })
+                    .then(function(r) { return r.json(); })
+                    .then(function(d) {
+                        if (d && d.success) window.showToast('Activity unpublished.');
+                        else window.showToast((d && d.message) || 'Could not unpublish activity.', 'error');
+                        loadActivities();
+                    })
+                    .catch(function() { window.showToast('Network error. Could not unpublish activity.', 'error'); loadActivities(); });
             });
         }
 
@@ -625,8 +647,14 @@
                 fetch('TEACHER_BACKEND/teacher_delete_activity.php', {
                     method: 'POST',
                     body: new URLSearchParams({ teacher_id: _tid, activity_id: dbId })
-                }).then(function() { loadActivities(); })
-                  .catch(function() { loadActivities(); });
+                })
+                    .then(function(r) { return r.json(); })
+                    .then(function(d) {
+                        if (d && d.success) window.showToast('Draft deleted.');
+                        else window.showToast((d && d.message) || 'Could not delete draft.', 'error');
+                        loadActivities();
+                    })
+                    .catch(function() { window.showToast('Network error. Could not delete draft.', 'error'); loadActivities(); });
             });
         }
 
@@ -638,7 +666,7 @@
         function loadUploads() {
             var _tid = sessionStorage.getItem('teacher_id') || '';
             if (!_tid) { applyTabAndFilter(); return; }
-            fetch('TEACHER_BACKEND/teacher_list_uploads.php?teacher_id=' + encodeURIComponent(_tid))
+            fetch('TEACHER_BACKEND/teacher_list_uploads.php?teacher_id=' + encodeURIComponent(_tid) + '&_t=' + Date.now(), { cache: 'no-store' })
                 .then(function(r) { return r.json(); })
                 .then(function(res) {
                     var uploads = (res.uploads || []).map(function(u) {
@@ -670,8 +698,13 @@
                 fd.append('upload_id', uploadId);
                 fd.append('teacher_id', _tid);
                 fetch('TEACHER_BACKEND/teacher_delete_upload.php', { method: 'POST', body: fd })
-                    .then(function() { loadActivities(); })
-                    .catch(function() { loadActivities(); });
+                    .then(function(r) { return r.json(); })
+                    .then(function(d) {
+                        if (d && d.success) window.showToast('File deleted.');
+                        else window.showToast((d && d.message) || 'Could not delete file.', 'error');
+                        loadActivities();
+                    })
+                    .catch(function() { window.showToast('Network error. Could not delete file.', 'error'); loadActivities(); });
             });
         }
 
@@ -717,6 +750,13 @@
             loadSidebar();
             loadActivities();
             document.getElementById('teacher-searchInput').addEventListener('input', filterTable);
+            // Auto-refresh so activities/uploads added elsewhere show up
+            // without a manual reload — skipped while the delete/unpublish
+            // confirm dialog is open.
+            window.startAutoRefresh(loadActivities, 5000, function () {
+                var overlay = document.getElementById('confirmModalOverlay');
+                return !!(overlay && overlay.classList.contains('show'));
+            });
         });
 
         /* ── Styled confirm dialog (replaces native confirm() popups). Returns

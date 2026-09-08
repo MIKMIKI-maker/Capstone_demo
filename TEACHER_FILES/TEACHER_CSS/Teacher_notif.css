@@ -514,6 +514,32 @@ body {
 .teacher-empty-state i { font-size: 36px; color: #CBD5E1; margin-bottom: 12px; display: block; }
 
 /* =====================
+   PAGINATION
+===================== */
+.teacher-notif-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 16px;
+}
+.teacher-page-btn {
+    border: 1px solid #CBD5E1;
+    background: var(--white);
+    color: var(--sidebar-bg);
+    font-weight: 600;
+    font-size: 13px;
+    padding: 8px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: var(--transition);
+    font-family: 'Poppins', sans-serif;
+}
+.teacher-page-btn:hover:not(:disabled) { background: var(--accent-light); }
+.teacher-page-btn:disabled { opacity: .4; cursor: default; }
+.teacher-page-info { font-size: 13px; color: var(--muted); font-weight: 500; }
+
+/* =====================
    NOTIFICATION DETAIL MODAL
 ===================== */
 .tn-modal-overlay {

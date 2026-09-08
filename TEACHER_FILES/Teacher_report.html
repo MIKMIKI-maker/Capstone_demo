@@ -3,8 +3,8 @@
 <html lang="en">
 
 <head>
-    <script src="../ASSETS/portal_guard.js" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
-    <script src="../ASSETS/teacher_portal.js?v=2"></script>
+    <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
+    <script src="../ASSETS/teacher_portal.js?v=5"></script>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
@@ -343,7 +343,7 @@
 
         function loadReports() {
             // Use auto-report endpoint for richer, real DB data
-            fetch('TEACHER_BACKEND/teacher_auto_report.php?teacher_id=' + TEACHER_ID)
+            fetch('TEACHER_BACKEND/teacher_auto_report.php?teacher_id=' + TEACHER_ID + '&_t=' + Date.now(), { cache: 'no-store' })
                 .then(function(r) { return r.json(); })
                 .then(function(d) {
                     if (!d.success) return;
@@ -534,6 +534,12 @@
             document.getElementById('gradingStudent').addEventListener('change', function() { if (this.value) openGradingReport(this.value); });
             document.getElementById('saveGradingReport').addEventListener('click', saveGradingReport);
             document.getElementById('printGradingReport').addEventListener('click', printGradingReport);
+            // Skip a tick while the teacher is focused on an input/textarea/
+            // select (e.g. mid-edit in the grading report panel).
+            window.startAutoRefresh(loadReports, 5000, function () {
+                var ae = document.activeElement;
+                return !!(ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT'));
+            });
         });
     </script>
 <script>(function(){var _id=sessionStorage.getItem('admin_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>

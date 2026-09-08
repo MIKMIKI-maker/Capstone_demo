@@ -24,6 +24,14 @@ if (!$teacher_id || !$activity_id || !$activity_title) {
     exit;
 }
 
+// This endpoint saves edits to an already-published activity (see the
+// re-lock/notify below) — block a deadline that's already in the past here
+// too (client already checks this, but a direct POST could skip it).
+if ($deadline !== null && $deadline < date('Y-m-d')) {
+    echo json_encode(['success' => false, 'message' => "Deadline can't be in the past — please choose today or a later date."]);
+    exit;
+}
+
 $conn = getTeacherDatabaseConnection();
 if (!$conn) {
     echo json_encode(['success' => false, 'message' => 'Database connection failed']);

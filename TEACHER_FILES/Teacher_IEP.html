@@ -3,8 +3,8 @@
 <html lang="en">
 
 <head>
-    <script src="../ASSETS/portal_guard.js" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
-    <script src="../ASSETS/teacher_portal.js?v=2"></script>
+    <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
+    <script src="../ASSETS/teacher_portal.js?v=5"></script>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
@@ -274,7 +274,7 @@
         }
 
         function loadLearners() {
-            fetch('TEACHER_BACKEND/teacher_list_learners.php?teacher_id=' + TEACHER_ID)
+            fetch('TEACHER_BACKEND/teacher_list_learners.php?teacher_id=' + TEACHER_ID + '&_t=' + Date.now(), { cache: 'no-store' })
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
                     allLearners = (data || []).map(function(s) {
@@ -360,20 +360,10 @@
             sessionStorage.setItem('selected_learner_id', '');
         }
 
+        // Thin wrapper over the shared toast in teacher_portal.js — kept so the
+        // existing call sites below don't need rewriting.
         function showIepToast(message, type) {
-            var old = document.querySelector('.iep-toast');
-            if (old) old.remove();
-            var t = document.createElement('div');
-            t.className = 'iep-toast iep-toast--' + (type || 'warning');
-            var icon = type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation';
-            t.innerHTML = '<i class="fa-solid ' + icon + '"></i><span></span>';
-            t.querySelector('span').textContent = message;
-            document.body.appendChild(t);
-            requestAnimationFrame(function () { t.classList.add('show'); });
-            setTimeout(function () {
-                t.classList.remove('show');
-                setTimeout(function () { t.remove(); }, 300);
-            }, 3000);
+            window.showToast(message, type || 'warning');
         }
 
         function goGenerate() {
@@ -493,12 +483,14 @@
                         msg.textContent = 'Upload failed: ' + (failed[0].message || 'Unknown error');
                         msg.style.display = 'block';
                         btn.disabled = false; btn.textContent = 'Upload';
+                        showIepToast(msg.textContent, 'error');
                     }
                 })
                 .catch(function() {
                     msg.textContent = 'Network error. Please try again.';
                     msg.style.display = 'block';
                     btn.disabled = false; btn.textContent = 'Upload';
+                    showIepToast(msg.textContent, 'error');
                 });
         }
 
@@ -510,6 +502,12 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadSidebar();
             loadLearners();
+            // Skip a tick while the upload modal is open, so it can't disturb
+            // the in-progress upload form underneath it.
+            window.startAutoRefresh(loadLearners, 5000, function () {
+                var modal = document.getElementById('iepUploadModal');
+                return !!(modal && getComputedStyle(modal).display !== 'none');
+            });
         });
     </script>
 <script>(function(){var _id=sessionStorage.getItem('admin_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>

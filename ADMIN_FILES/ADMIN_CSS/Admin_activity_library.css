@@ -305,7 +305,10 @@ body { display: flex; }
   box-shadow: 0 2px 8px rgba(0,0,0,.05);
   border: 1px solid #f0ebe1;
   min-width: 0;
+  cursor: pointer;
+  transition: box-shadow .15s ease, border-color .15s ease, transform .1s ease;
 }
+.al-stat-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,.09); transform: translateY(-1px); }
 
 .al-stat-icon-wrap {
   width: 40px;

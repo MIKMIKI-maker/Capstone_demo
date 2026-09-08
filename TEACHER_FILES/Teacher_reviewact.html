@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="../ASSETS/teacher_portal.js?v=2"></script>
+  <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
+  <script src="../ASSETS/teacher_portal.js?v=5"></script>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
   <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
@@ -512,17 +513,18 @@ function saveAssessment() {
         if (final !== '') _students[idx].score = parseInt(final);
       }
       renderStudents();
+      window.showToast('Assessment saved!');
       setTimeout(function(){ closeModal(); }, 700);
     } else {
       btn.disabled = false;
       btn.textContent = '💾 Save Assessment';
-      alert(d.message || 'Failed to save. Please try again.');
+      window.showToast(d.message || 'Failed to save. Please try again.', 'error');
     }
   })
   .catch(function(){
     btn.disabled = false;
     btn.textContent = '💾 Save Assessment';
-    alert('Network error. Please try again.');
+    window.showToast('Network error. Please try again.', 'error');
   });
 }
 

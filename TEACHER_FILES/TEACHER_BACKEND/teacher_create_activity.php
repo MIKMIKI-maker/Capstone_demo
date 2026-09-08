@@ -40,6 +40,14 @@ if (!$teacher_id || !$activity_title) {
     exit;
 }
 
+// A published activity with a deadline already in the past would be
+// visible/assigned to students but immediately un-submittable — block it
+// here too (client already checks this, but a direct POST could skip it).
+if ($status === 'published' && $deadline !== null && $deadline < date('Y-m-d')) {
+    echo json_encode(['success' => false, 'message' => "Deadline can't be in the past — please choose today or a later date."]);
+    exit;
+}
+
 // Connect to teacher database
 $teacher_conn = getTeacherDatabaseConnection();
 if (!$teacher_conn) {

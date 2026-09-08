@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-  <script src="../ASSETS/portal_guard.js" data-portal-role="student" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
+  <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="student" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
@@ -17,7 +17,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&amp;display=swap"
     rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
-  <script src="../ASSETS/student_portal.js?v=2" defer></script>
+  <script src="../ASSETS/student_portal.js?v=5" defer></script>
 </head>
 
 <body>
@@ -112,6 +112,8 @@
     </div>
     <!-- NOTIFICATIONS LIST -->
     <div class="student-notif-list" id="student-notifList"></div>
+    <!-- PAGINATION -->
+    <div class="student-notif-pagination" id="student-notif-pagination"></div>
   </main>
 
   <!-- NOTIFICATION DETAIL MODAL -->
@@ -170,6 +172,8 @@
     })();
 
     var currentTab = 'all';
+    var PAGE_SIZE = 10;
+    var currentPage = 1;
 
     var EMPTY_HTML =
       '<div class="student-notif-empty">' +
@@ -259,20 +263,40 @@
       else openNotifDetailModal(notif);
     }
 
-    function renderNotifs(notifs) {
+    function getFilteredIndices() {
+      var indices = [];
+      for (var i = 0; i < _cachedNotifs.length; i++) {
+        if (currentTab === 'unread' && _cachedNotifs[i].isRead) continue;
+        indices.push(i);
+      }
+      return indices;
+    }
+
+    function renderNotifs() {
       var list = document.getElementById('student-notifList')
               || document.querySelector('.student-notif-list');
       if (!list) return;
-      if (notifs.length === 0) {
+      var indices = getFilteredIndices();
+      if (indices.length === 0) {
         list.innerHTML = EMPTY_HTML;
+        renderPagination(1);
         return;
       }
-      var html = notifs.map(function(n, i) {
+      var totalPages = Math.max(1, Math.ceil(indices.length / PAGE_SIZE));
+      if (currentPage > totalPages) currentPage = totalPages;
+      var start = (currentPage - 1) * PAGE_SIZE;
+      var pageIndices = indices.slice(start, start + PAGE_SIZE);
+
+      var html = pageIndices.map(function(i) {
+        var n = _cachedNotifs[i];
         var ic = notifIcon(n.type);
         var unreadCls = n.isRead ? '' : ' unread';
         var rowClick = ' onclick="openNotif(' + i + ')"';
+        var iconHtml = n.thumb
+          ? '<img src="' + n.thumb + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">'
+          : ic.icon;
         return '<div class="notif-item' + unreadCls + ' notif-item--clickable" data-idx="' + i + '"' + rowClick + '>' +
-          '<div class="student-notif-icon ' + ic.cls + '">' + ic.icon + '</div>' +
+          '<div class="student-notif-icon ' + ic.cls + '">' + iconHtml + '</div>' +
           '<div class="student-notif-body" style="flex:1;min-width:0;">' +
             '<div class="student-notif-row1">' +
               '<span class="student-notif-title">' + escapeHtml(n.title) + '</span>' +
@@ -289,6 +313,22 @@
           '</div>';
       }).join('');
       list.innerHTML = html;
+      renderPagination(totalPages);
+    }
+
+    function renderPagination(totalPages) {
+      var el = document.getElementById('student-notif-pagination');
+      if (!el) return;
+      if (totalPages <= 1) { el.innerHTML = ''; return; }
+      el.innerHTML =
+        '<button class="student-page-btn" type="button" ' + (currentPage === 1 ? 'disabled' : '') + ' onclick="goToPage(' + (currentPage - 1) + ')">‹ Prev</button>' +
+        '<span class="student-page-info">Page ' + currentPage + ' of ' + totalPages + '</span>' +
+        '<button class="student-page-btn" type="button" ' + (currentPage === totalPages ? 'disabled' : '') + ' onclick="goToPage(' + (currentPage + 1) + ')">Next ›</button>';
+    }
+
+    function goToPage(p) {
+      currentPage = p;
+      renderNotifs();
     }
 
     var _cachedNotifs = [];
@@ -305,7 +345,7 @@
         var raw = JSON.parse(localStorage.getItem(_lsKey('cache')) || '[]');
         _cachedNotifs = Array.isArray(raw) ? raw : [];
       } catch(e) { _cachedNotifs = []; }
-      renderNotifs(_cachedNotifs);
+      renderNotifs();
       recount();
     }
 
@@ -334,11 +374,12 @@
           type:      n.type  || 'message',
           isRead:    !!n.read,
           createdAt: n.time  || null,
-          from:      n.from  || null
+          from:      n.from  || null,
+          thumb:     n.thumb || null
         };
       });
       try { localStorage.setItem(_lsKey('cache'), JSON.stringify(_cachedNotifs)); } catch(e) {}
-      renderNotifs(_cachedNotifs);
+      renderNotifs();
       recount();
     }
 
@@ -388,26 +429,19 @@
     }
 
     function recount() {
-      var n = document.querySelectorAll('.notif-item.unread').length;
+      var n = _cachedNotifs.filter(function(x) { return !x.isRead; }).length;
       var uc = document.getElementById('student-unreadCount');
       var ut = document.getElementById('student-unreadTab');
       if (uc) uc.textContent = n + ' unread notification' + (n === 1 ? '' : 's');
       if (ut) ut.textContent = 'Unread (' + n + ')';
-      applyFilter();
-    }
-
-    function applyFilter() {
-      document.querySelectorAll('.notif-item').forEach(function(el) {
-        var hide = (currentTab === 'unread' && !el.classList.contains('unread'));
-        el.style.display = hide ? 'none' : 'flex';
-      });
     }
 
     function switchTab(btn, tab) {
       document.querySelectorAll('.student-ftab').forEach(function(b) { b.classList.remove('student-active'); });
       btn.classList.add('student-active');
       currentTab = tab;
-      applyFilter();
+      currentPage = 1;
+      renderNotifs();
     }
 
     // Direct teacher messages have a numeric DB id (student_notifications.id).
@@ -430,18 +464,21 @@
           fd.append('teacher_id', tid);
           fd.append('student_id', srid);
           fd.append('notif_id', notif.id);
-          fetch('../TEACHER_FILES/TEACHER_BACKEND/teacher_notify_student.php', { method: 'POST', body: fd }).catch(function(){});
+          fetch('../TEACHER_FILES/TEACHER_BACKEND/teacher_notify_student.php', { method: 'POST', body: fd })
+            .then(function(r) { return r.json(); })
+            .then(function(d) { if (!d || !d.success) window.showToast((d && d.message) || 'Could not mark as read.', 'error'); })
+            .catch(function() { window.showToast('Network error. Could not mark as read.', 'error'); });
         } else if (!_isDbId(notif.id)) {
           var fd2 = new FormData();
           fd2.append('student_id', srid);
           fd2.append('notif_key', notif.id);
-          fetch('STUDENT_BACKEND/student_mark_notification_read.php', { method: 'POST', body: fd2 }).catch(function(){});
+          fetch('STUDENT_BACKEND/student_mark_notification_read.php', { method: 'POST', body: fd2 })
+            .then(function(r) { return r.json(); })
+            .then(function(d) { if (!d || !d.success) window.showToast((d && d.message) || 'Could not mark as read.', 'error'); })
+            .catch(function() { window.showToast('Network error. Could not mark as read.', 'error'); });
         }
       }
-      var item = btn.closest('.notif-item');
-      item.classList.remove('unread');
-      btn.textContent = 'Read';
-      btn.disabled = true;
+      renderNotifs();
       recount();
     }
 
@@ -456,32 +493,31 @@
         fd.append('action', 'mark_read');
         fd.append('teacher_id', tid);
         fd.append('student_id', srid);
-        fetch('../TEACHER_FILES/TEACHER_BACKEND/teacher_notify_student.php', { method: 'POST', body: fd }).catch(function(){});
 
         var fd2 = new FormData();
         fd2.append('student_id', srid);
         fd2.append('teacher_id', tid);
         fd2.append('notif_key', 'all');
-        fetch('STUDENT_BACKEND/student_mark_notification_read.php', { method: 'POST', body: fd2 }).catch(function(){});
+
+        Promise.all([
+          fetch('../TEACHER_FILES/TEACHER_BACKEND/teacher_notify_student.php', { method: 'POST', body: fd }).then(function(r) { return r.json(); }).catch(function() { return { success: false }; }),
+          fetch('STUDENT_BACKEND/student_mark_notification_read.php', { method: 'POST', body: fd2 }).then(function(r) { return r.json(); }).catch(function() { return { success: false }; })
+        ]).then(function(results) {
+          if (results.every(function(d) { return d && d.success; })) window.showToast('All notifications marked as read.');
+          else window.showToast('Could not mark all notifications as read.', 'error');
+        });
       }
-      document.querySelectorAll('.notif-item.unread').forEach(function(el) { el.classList.remove('unread'); });
-      document.querySelectorAll('.mark-read-btn').forEach(function(btn) { btn.textContent = 'Read'; btn.disabled = true; });
+      renderNotifs();
       recount();
     }
 
     function deleteOne(idx, btn) {
       var notif = _cachedNotifs[idx];
       if (!notif) return;
-      // Optimistic: remove from DOM immediately
-      var item = btn ? btn.closest('.notif-item') : null;
-      if (item) item.remove();
       _cachedNotifs.splice(idx, 1);
       try { localStorage.setItem(_lsKey('cache'), JSON.stringify(_cachedNotifs)); } catch(e) {}
+      renderNotifs();
       recount();
-      if (!_cachedNotifs.length) {
-        var list = document.getElementById('student-notifList') || document.querySelector('.student-notif-list');
-        if (list) list.innerHTML = EMPTY_HTML;
-      }
       if (notif.id) {
         var srid = sessionStorage.getItem('student_record_id');
         if (srid && _isDbId(notif.id)) {
@@ -489,14 +525,26 @@
           var fd = new FormData();
           fd.append('notif_id', notif.id);
           fd.append('student_id', srid);
-          fetch('STUDENT_BACKEND/student_delete_notification.php', { method: 'POST', body: fd }).catch(function() {});
+          fetch('STUDENT_BACKEND/student_delete_notification.php', { method: 'POST', body: fd })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+              if (d && d.success) window.showToast('Notification deleted.');
+              else window.showToast((d && d.message) || 'Could not delete notification.', 'error');
+            })
+            .catch(function() { window.showToast('Network error. Could not delete notification.', 'error'); });
         } else if (srid && !_isDbId(notif.id)) {
           // Note/assigned-activity notification — no delete concept, mark it read instead
           // so it doesn't come back as unread (and re-inflate the badge) on the next refresh
           var fd2 = new FormData();
           fd2.append('student_id', srid);
           fd2.append('notif_key', notif.id);
-          fetch('STUDENT_BACKEND/student_mark_notification_read.php', { method: 'POST', body: fd2 }).catch(function() {});
+          fetch('STUDENT_BACKEND/student_mark_notification_read.php', { method: 'POST', body: fd2 })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+              if (d && d.success) window.showToast('Notification deleted.');
+              else window.showToast((d && d.message) || 'Could not delete notification.', 'error');
+            })
+            .catch(function() { window.showToast('Network error. Could not delete notification.', 'error'); });
         }
       }
     }
@@ -509,18 +557,23 @@
         localStorage.setItem(_lsKey('cache'), '[]');
         localStorage.setItem(_lsKey('cleared_at'), now);
       } catch(e) {}
-      var list = document.getElementById('student-notifList') || document.querySelector('.student-notif-list');
-      if (list) list.innerHTML = EMPTY_HTML;
-      var uc = document.getElementById('student-unreadCount');
-      var ut = document.getElementById('student-unreadTab');
-      if (uc) uc.textContent = '0 unread notifications';
-      if (ut) ut.textContent = 'Unread (0)';
+      currentPage = 1;
+      renderNotifs();
+      recount();
       // Permanently delete direct notifications from server
       var srid = sessionStorage.getItem('student_record_id');
       if (srid) {
         var fd = new FormData();
         fd.append('student_id', srid);
-        fetch('STUDENT_BACKEND/student_clear_notifications.php', { method: 'POST', body: fd }).catch(function() {});
+        fetch('STUDENT_BACKEND/student_clear_notifications.php', { method: 'POST', body: fd })
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            if (d && d.success) window.showToast('All notifications cleared.');
+            else window.showToast((d && d.message) || 'Could not clear notifications.', 'error');
+          })
+          .catch(function() { window.showToast('Network error. Could not clear notifications.', 'error'); });
+      } else {
+        window.showToast('All notifications cleared.');
       }
     }
 
@@ -528,10 +581,14 @@
 
     // Wait for DOM to be fully ready before touching any elements
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', function() { _initFromCache(); loadNotifs(); });
+      document.addEventListener('DOMContentLoaded', function() {
+        _initFromCache(); loadNotifs();
+        window.startAutoRefresh(loadNotifs, 5000);
+      });
     } else {
       _initFromCache();
       loadNotifs();
+      window.startAutoRefresh(loadNotifs, 5000);
     }
   </script>
 <script>(function(){var _id=sessionStorage.getItem('student_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>

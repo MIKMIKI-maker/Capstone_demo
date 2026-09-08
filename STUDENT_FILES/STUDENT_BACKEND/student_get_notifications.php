@@ -91,7 +91,7 @@ if ($stmt) {
 
 // 3. Newly published activities (not yet completed) as notifications
 $stmt2 = $conn->prepare("
-    SELECT a.id AS activity_id, a.activity_title, a.activity_type, a.created_at,
+    SELECT a.id AS activity_id, a.activity_title, a.activity_type, a.created_at, a.content_json,
            r.id AS read_id
     FROM teacher_activities a
         INNER JOIN activity_assignments aa ON aa.activity_id = a.id AND aa.student_id = ?
@@ -108,6 +108,19 @@ if ($stmt2) {
     if ($acts) {
         while ($row = $acts->fetch_assoc()) {
             $type_label = $row['activity_type'] ? ' (' . $row['activity_type'] . ')' : '';
+            // content_json is the full editor state, which includes each
+            // item's image as a base64 data URI (activities[0].items[0].imageData)
+            // — reuse the first item's image as the notification's preview.
+            // Capped so an oversized upload can't bloat this response; the
+            // notification just falls back to its usual icon in that case.
+            $thumb = null;
+            $content = json_decode($row['content_json'] ?? '', true);
+            if (is_array($content)) {
+                $img = $content['activities'][0]['items'][0]['imageData'] ?? null;
+                if (is_string($img) && strpos($img, 'data:image') === 0 && strlen($img) < 300000) {
+                    $thumb = $img;
+                }
+            }
             $notifications[] = [
                 'id'    => 'activity_' . $row['activity_id'],
                 'type'  => 'new_activity',
@@ -115,6 +128,7 @@ if ($stmt2) {
                 'text'  => 'Your teacher added "' . $row['activity_title'] . '"' . $type_label . ' to your materials.',
                 'time'  => $row['created_at'],
                 'read'  => $row['read_id'] !== null,
+                'thumb' => $thumb,
             ];
         }
     }

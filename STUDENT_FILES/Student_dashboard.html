@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-  <script src="../ASSETS/portal_guard.js" data-portal-role="student" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
+  <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="student" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
   <title>SPED ALM - Student Dashboard</title>
@@ -17,7 +17,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&amp;display=swap"
     rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
-  <script src="../ASSETS/student_portal.js?v=2" defer></script>
+  <script src="../ASSETS/student_portal.js?v=5" defer></script>
 </head>
 
 <body>
@@ -149,6 +149,16 @@
     </div>
   </div>
 </section>
+    <!-- RECENT NOTIFICATIONS -->
+    <section style="background:#fff;border-radius:20px;box-shadow:0 8px 20px rgba(36,58,94,.07);padding:16px 20px;margin-bottom:18px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <h3 style="font-family:'Fredoka','Poppins',sans-serif;font-size:15px;font-weight:700;color:#243a5e;margin:0;">🔔 Recent Notifications</h3>
+        <a href="Student_notif.html" style="font-size:12px;font-weight:700;color:#2f6fed;text-decoration:none;">View all →</a>
+      </div>
+      <div id="student-dash-recent-notifs" style="display:flex;flex-direction:column;gap:8px;">
+        <p style="color:#94a3b8;font-size:13px;margin:0;">Loading…</p>
+      </div>
+    </section>
     <!-- STORIES / READING -->
     <section class="student-stories-row">
       <button class="student-story-bubble" onclick="openStoryViewer()" type="button">
@@ -480,13 +490,13 @@
 
             // Fetch teacher-uploaded materials (files/links) for the "All Materials" tab —
             // a separate data source from the game-type activities below.
-            fetch('STUDENT_BACKEND/student_get_uploaded_materials.php')
+            fetch('STUDENT_BACKEND/student_get_uploaded_materials.php?_t=' + Date.now(), { cache: 'no-store' })
               .then(function(r) { return r.json(); })
               .then(function(md) { renderUploadedMaterials(md.files || []); })
               .catch(function() { renderUploadedMaterials([]); });
 
             // Fetch assigned activities from DB
-            fetch('STUDENT_BACKEND/student_get_materials.php?student_record_id=' + encodeURIComponent(srid) + '&teacher_id=' + encodeURIComponent(tid))
+            fetch('STUDENT_BACKEND/student_get_materials.php?student_record_id=' + encodeURIComponent(srid) + '&teacher_id=' + encodeURIComponent(tid) + '&_t=' + Date.now(), { cache: 'no-store' })
               .then(function(r) { return r.json(); })
               .then(function(d) {
                 if (!d.enrolled || !d.success) {
@@ -571,10 +581,52 @@
         document.getElementById('student-panel-' + panel).style.display = 'flex';
       }
 
+      function timeAgoD(str) {
+        if (!str) return '';
+        var d = new Date(str.indexOf('T') === -1 ? str.replace(' ', 'T') + 'Z' : str);
+        var s = Math.floor((Date.now() - d.getTime()) / 1000);
+        if (s < 60) return 'just now';
+        if (s < 3600) return Math.floor(s / 60) + 'm ago';
+        if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+        return Math.floor(s / 86400) + 'd ago';
+      }
+
+      function loadRecentNotifsWidget() {
+        var container = document.getElementById('student-dash-recent-notifs');
+        if (!container) return;
+        var srid = sessionStorage.getItem('student_record_id');
+        var tid  = sessionStorage.getItem('teacher_id');
+        if (!srid || !tid) { container.innerHTML = '<p style="color:#94a3b8;font-size:13px;margin:0;">No notifications yet.</p>'; return; }
+        fetch('STUDENT_BACKEND/student_get_notifications.php?student_record_id=' + srid + '&teacher_id=' + tid + '&_t=' + Date.now(), { cache: 'no-store' })
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            var list = (d && d.success && d.notifications) ? d.notifications.slice(0, 5) : [];
+            if (!list.length) {
+              container.innerHTML = '<p style="color:#94a3b8;font-size:13px;margin:0;">No notifications yet.</p>';
+              return;
+            }
+            container.innerHTML = list.map(function(n) {
+              return '<a href="Student_notif.html" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:12px;text-decoration:none;background:' + (n.read ? 'transparent' : '#f8fbff') + ';">' +
+                '<span style="font-size:13px;font-weight:' + (n.read ? '500' : '700') + ';color:#243a5e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escD(n.title) + '</span>' +
+                '<span style="font-size:11px;color:#94a3b8;flex-shrink:0;">' + timeAgoD(n.time) + '</span>' +
+              '</a>';
+            }).join('');
+          })
+          .catch(function() {
+            container.innerHTML = '<p style="color:#94a3b8;font-size:13px;margin:0;">Couldn\'t load notifications.</p>';
+          });
+      }
+
       document.addEventListener('visibilitychange', function(){ if (!document.hidden) loadDashboard(); });
       loadDashboard();
-      // Recheck enrollment while the dashboard remains open so assignments appear without relogin.
-      setInterval(function(){ if (!document.hidden) loadDashboard(); }, 10000);
+      // Recheck enrollment while the dashboard remains open so assignments appear without
+      // relogin. Deferred to DOMContentLoaded because student_portal.js loads with `defer`
+      // — it may not have run yet at this point in parsing, so window.startAutoRefresh
+      // might not exist.
+      document.addEventListener('DOMContentLoaded', function () {
+        loadRecentNotifsWidget();
+        window.startAutoRefresh(function () { loadDashboard(); loadRecentNotifsWidget(); }, 5000);
+      });
 
     </script>
   </main>

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="../../ASSETS/portal_guard.js?v=2" data-portal-role="teacher,student" data-status-path="../../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../../ADMIN_FILES/login_screen.html?session=expired"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SPED ALM — Matching Type Template Generator</title>
@@ -527,6 +528,7 @@ function initActivityTheme(){
   .mtg-print-dot-right{ left:-10px; }
 
   @media print{
+    html, body{ height:auto !important; overflow:visible !important; }
     body *{ visibility:hidden; }
     .mtg-print-area, .mtg-print-area *{ visibility:visible; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .mtg-print-area{ display:block; position:absolute; left:0; top:0; width:100%; margin:0; padding:0; }
@@ -1597,6 +1599,18 @@ function initActivityTheme(){
   function printEscape(s){
     var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML;
   }
+  // Reword the on-screen (drag) instruction into paper-appropriate wording —
+  // this is a matching activity (drag one item onto its pair), so "drag"
+  // becomes "draw a line to" and tap/click becomes "circle".
+  function toPrintInstruction(s){
+    if (!s) return s;
+    return String(s)
+      .replace(/drag\s+(and\s+drop\s+)?/gi, 'draw a line to ')
+      .replace(/\bdrop\b/gi, 'match')
+      .replace(/\btap\b/gi, 'circle')
+      .replace(/\bclick\b/gi, 'circle')
+      .replace(/\bselect\b/gi, 'circle');
+  }
   // printEscape() does not escape quote characters, so it is not safe inside an
   // HTML attribute (e.g. src="..."). Use this for any teacher-entered value
   // placed inside an attribute, so a value like `x" onerror="...` can't break out.
@@ -1630,7 +1644,7 @@ function initActivityTheme(){
       var rightHtml = order.map(function(i){ return printSideBox(activity.items[i].right, "right"); }).join("");
       pages += '<div class="mtg-print-page">'
         + '<div class="mtg-print-head"><h2>'+printEscape(activity.title)+'</h2>'
-        + '<div class="mtg-print-objective">('+printEscape(activity.instruction)+')</div>'
+        + '<div class="mtg-print-objective">('+printEscape(toPrintInstruction(activity.instruction))+')</div>'
         + (state.activities.length > 1 ? '<div class="mtg-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+' — '+(DIFFICULTY_LABELS[slideIdx]||"")+'</div>' : '')
         + '</div>'
         + '<div class="mtg-print-divider"><div class="mtg-print-rule"></div><div class="mtg-print-rule-dash"></div><div class="mtg-print-rule"></div></div>'
@@ -1876,6 +1890,9 @@ function initActivityTheme(){
   function confirmPublish() {
     var deadline = $("mtgDeadlineInput").value;
     if (!deadline) { alert("Please set a deadline date before publishing."); return; }
+    var _today = new Date();
+    var _todayStr = _today.getFullYear() + '-' + String(_today.getMonth()+1).padStart(2,'0') + '-' + String(_today.getDate()).padStart(2,'0');
+    if (deadline < _todayStr) { alert("Deadline can't be in the past — please choose today or a later date."); return; }
 
     var assignedIds = [];
     try { assignedIds = JSON.parse(sessionStorage.getItem('selected_learner_ids') || '[]'); } catch(e) {}

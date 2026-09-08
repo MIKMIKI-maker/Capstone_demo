@@ -3,8 +3,8 @@
 <html lang="en">
 
 <head>
-    <script src="../ASSETS/portal_guard.js" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
-    <script src="../ASSETS/teacher_portal.js?v=2"></script>
+    <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
+    <script src="../ASSETS/teacher_portal.js?v=5"></script>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
@@ -158,6 +158,8 @@
             <!-- FOOTER COUNT — backend: update count -->
             <div class="teacher-notif-footer" id="teacher-notif-footer">
                 <!-- backend: e.g. Showing 0 of 0 notifications --></div>
+            <!-- PAGINATION -->
+            <div class="teacher-notif-pagination" id="teacher-notif-pagination"></div>
         </main>
     </div><!-- /teacher-app-wrapper -->
 
@@ -187,6 +189,8 @@
         var TEACHER_ID = parseInt(sessionStorage.getItem('teacher_id') || '1');
         var allNotifications = [];
         var currentTab = 'all';
+        var PAGE_SIZE = 10;
+        var currentPage = 1;
 
         /* ── Sidebar profile ── */
         function _applyTeacherPhoto(pic) {
@@ -226,7 +230,7 @@
             var alreadySeeded = !!localStorage.getItem(seedKey);
 
             var doList = function() {
-                return fetch(_base + '?action=list&teacher_id=' + TEACHER_ID + '&limit=50')
+                return fetch(_base + '?action=list&teacher_id=' + TEACHER_ID + '&limit=50&_t=' + Date.now(), { cache: 'no-store' })
                     .then(function(r) { return r.json(); })
                     .then(function(data) {
                         allNotifications = data.notifications || [];
@@ -291,12 +295,18 @@
                 container.innerHTML = '';
                 if (empty) { container.appendChild(empty); empty.style.display = ''; }
                 footer.textContent = 'Showing 0 of 0 notifications';
+                renderPagination(1);
                 return;
             }
             if (empty) empty.style.display = 'none';
 
+            var totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+            if (currentPage > totalPages) currentPage = totalPages;
+            var start = (currentPage - 1) * PAGE_SIZE;
+            var pageList = list.slice(start, start + PAGE_SIZE);
+
             var html = '';
-            list.forEach(function(n) {
+            pageList.forEach(function(n) {
                 var readClass = n.is_read ? ' read' : '';
                 var isUrgent = n.notification_type === 'scaffold';
                 var isMild = n.notification_type === 'scaffold_hint';
@@ -320,7 +330,23 @@
                     + '</div>';
             });
             container.innerHTML = html;
-            footer.textContent = 'Showing ' + list.length + ' of ' + allNotifications.length + ' notifications';
+            footer.textContent = 'Showing ' + pageList.length + ' of ' + list.length + ' notifications';
+            renderPagination(totalPages);
+        }
+
+        function renderPagination(totalPages) {
+            var el = document.getElementById('teacher-notif-pagination');
+            if (!el) return;
+            if (totalPages <= 1) { el.innerHTML = ''; return; }
+            el.innerHTML =
+                '<button class="teacher-page-btn" type="button" ' + (currentPage === 1 ? 'disabled' : '') + ' onclick="goToPage(' + (currentPage - 1) + ')">‹ Prev</button>' +
+                '<span class="teacher-page-info">Page ' + currentPage + ' of ' + totalPages + '</span>' +
+                '<button class="teacher-page-btn" type="button" ' + (currentPage === totalPages ? 'disabled' : '') + ' onclick="goToPage(' + (currentPage + 1) + ')">Next ›</button>';
+        }
+
+        function goToPage(p) {
+            currentPage = p;
+            renderAll();
         }
 
         function escHtml(str) {
@@ -332,6 +358,7 @@
             document.querySelectorAll('.teacher-tab-btn').forEach(function(b) { b.classList.remove('active'); });
             btn.classList.add('active');
             currentTab = type;
+            currentPage = 1;
             renderAll();
         }
 
@@ -344,7 +371,10 @@
             fd.append('action', 'mark_read');
             fd.append('teacher_id', TEACHER_ID);
             fd.append('notification_id', id);
-            fetch('TEACHER_BACKEND/teacher_manage_notifications.php', { method: 'POST', body: fd }).catch(function(){});
+            fetch('TEACHER_BACKEND/teacher_manage_notifications.php', { method: 'POST', body: fd })
+                .then(function(r) { return r.json(); })
+                .then(function(d) { if (!d || !d.success) window.showToast((d && d.message) || 'Could not mark as read.', 'error'); })
+                .catch(function() { window.showToast('Network error. Could not mark as read.', 'error'); });
         }
 
         /* ── Dismiss single ── */
@@ -355,7 +385,13 @@
             fd.append('action', 'delete');
             fd.append('teacher_id', TEACHER_ID);
             fd.append('notification_id', id);
-            fetch('TEACHER_BACKEND/teacher_manage_notifications.php', { method: 'POST', body: fd }).catch(function(){});
+            fetch('TEACHER_BACKEND/teacher_manage_notifications.php', { method: 'POST', body: fd })
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    if (d && d.success) window.showToast('Notification deleted.');
+                    else window.showToast((d && d.message) || 'Could not delete notification.', 'error');
+                })
+                .catch(function() { window.showToast('Network error. Could not delete notification.', 'error'); });
         }
 
         /* ── Mark all read ── */
@@ -365,7 +401,13 @@
             var fd = new URLSearchParams();
             fd.append('action', 'mark_all_read');
             fd.append('teacher_id', TEACHER_ID);
-            fetch('TEACHER_BACKEND/teacher_manage_notifications.php', { method: 'POST', body: fd }).catch(function(){});
+            fetch('TEACHER_BACKEND/teacher_manage_notifications.php', { method: 'POST', body: fd })
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    if (d && d.success) window.showToast('All notifications marked as read.');
+                    else window.showToast((d && d.message) || 'Could not mark notifications as read.', 'error');
+                })
+                .catch(function() { window.showToast('Network error. Could not mark notifications as read.', 'error'); });
         }
 
         /* ── Clear all ── */
@@ -377,7 +419,13 @@
             var fd = new URLSearchParams();
             fd.append('action', 'clear_all');
             fd.append('teacher_id', TEACHER_ID);
-            fetch('TEACHER_BACKEND/teacher_manage_notifications.php', { method: 'POST', body: fd }).catch(function(){});
+            fetch('TEACHER_BACKEND/teacher_manage_notifications.php', { method: 'POST', body: fd })
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    if (d && d.success) window.showToast('All notifications cleared.');
+                    else window.showToast((d && d.message) || 'Could not clear notifications.', 'error');
+                })
+                .catch(function() { window.showToast('Network error. Could not clear notifications.', 'error'); });
         }
 
         /* ── Detail modal ── */
@@ -495,16 +543,20 @@
                     if (d.success) {
                         status.style.color = '#16a34a';
                         status.textContent = d.message || 'Notification sent!';
+                        window.showToast(d.message || 'Notification sent!');
                         document.getElementById('notif-title-input').value = '';
                         document.getElementById('notif-msg-input').value = '';
                         setTimeout(function() { status.textContent = ''; }, 3000);
+                        loadNotifications();
                     } else {
                         status.style.color = '#dc2626';
                         status.textContent = d.message || 'Failed to send.';
+                        window.showToast(d.message || 'Failed to send.', 'error');
                     }
                 }).catch(function() {
                     status.style.color = '#dc2626';
                     status.textContent = 'Network error. Please try again.';
+                    window.showToast('Network error. Please try again.', 'error');
                 });
         }
 
@@ -513,7 +565,7 @@
             loadNotifications();
             loadStudentDropdown();
             // Auto-refresh every 30 seconds so new notifications appear without reloading
-            setInterval(loadNotifications, 30000);
+            window.startAutoRefresh(loadNotifications, 5000);
         });
     </script>
 <script>(function(){var _id=sessionStorage.getItem('admin_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>

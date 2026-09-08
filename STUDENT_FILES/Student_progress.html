@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-    <script src="../ASSETS/portal_guard.js" data-portal-role="student" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
+    <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="student" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>SPED ALM - My Progress</title>
@@ -15,7 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&amp;display=swap"
         rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
-    <script src="../ASSETS/student_portal.js?v=2" defer></script>
+    <script src="../ASSETS/student_portal.js?v=5" defer></script>
 </head>
 
 <body>
@@ -220,7 +220,7 @@
 
         if (!srid || !tid) { renderProgressUI([], 0, 0); return; }
 
-        fetch('STUDENT_BACKEND/student_get_progress.php?student_record_id=' + encodeURIComponent(srid) + '&teacher_id=' + encodeURIComponent(tid))
+        fetch('STUDENT_BACKEND/student_get_progress.php?student_record_id=' + encodeURIComponent(srid) + '&teacher_id=' + encodeURIComponent(tid) + '&_t=' + Date.now(), { cache: 'no-store' })
             .then(function(r){ return r.json(); })
             .then(function(d) {
                 if (!d.success) { renderProgressUI([], 0, 0, []); return; }
@@ -422,6 +422,11 @@
 
     document.addEventListener('visibilitychange', function(){ if (!document.hidden) loadProgress(); });
     loadProgress();
+    // Deferred to DOMContentLoaded because student_portal.js loads with
+    // `defer` — it may not have run yet at this point in parsing.
+    document.addEventListener('DOMContentLoaded', function () {
+      window.startAutoRefresh(loadProgress, 5000);
+    });
     </script>
 <script>(function(){var _id=sessionStorage.getItem('student_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>
 <script>(function(){var _s=document.createElement('style');_s.textContent='.student-notif-badge{display:none!important}.student-notif-badge.has-notifs{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:50%;background:#ef4444;color:#fff;font-size:9px;font-weight:700;display:flex!important;align-items:center;justify-content:center;padding:0 2px;border:2px solid #fff}';document.head.appendChild(_s);var sid=sessionStorage.getItem('student_record_id')||'';var tid=sessionStorage.getItem('teacher_id')||'';if(!sid||!tid)return;fetch('STUDENT_BACKEND/student_notif_count.php?student_id='+encodeURIComponent(sid)+'&teacher_id='+encodeURIComponent(tid)).then(function(r){return r.json();}).then(function(d){var cnt=d&&d.unread>0?d.unread:0;if(cnt>0){var b=document.querySelector('.student-notif-badge');if(b){b.textContent=cnt>9?'9+':cnt;b.classList.add('has-notifs');}}}).catch(function(){});})();</script>

@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-  <script src="../ASSETS/portal_guard.js" data-portal-role="student" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
+  <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="student" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
   <title>SPED ALM - My Materials</title>
@@ -15,7 +15,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&amp;display=swap"
     rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
-  <script src="../ASSETS/student_portal.js?v=2" defer></script>
+  <script src="../ASSETS/student_portal.js?v=5" defer></script>
 </head>
 
 <body>
@@ -287,7 +287,13 @@
           (file.description ? '<div style="font-size:12px;color:#166534;margin-top:2px;">' + esc(file.description) + '</div>' : '') +
           '<div style="font-size:11px;color:#4ade80;margin-top:4px;">' + subText + '</div>' +
         '</div>' +
-        '<a href="' + url + '" target="_blank" rel="noopener" style="flex-shrink:0;padding:8px 16px;background:#16a34a;color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">' + (isLink ? 'Open 🔗' : 'Open 📂') + '</a>' +
+        '<div style="display:flex;gap:8px;flex-shrink:0;">' +
+          // download works reliably for same-origin uploads; a cross-origin
+          // (Cloudinary) URL still opens/saves per the browser's own rules —
+          // not something this attribute can force across origins.
+          (isLink ? '' : '<a href="' + url + '" download="' + esc(file.file_original_name || file.title) + '" style="padding:8px 14px;background:#fff;color:#16a34a;border:1.5px solid #16a34a;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">⬇ Download</a>') +
+          '<a href="' + url + '" target="_blank" rel="noopener" style="padding:8px 16px;background:#16a34a;color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">' + (isLink ? 'Open 🔗' : 'Open 📂') + '</a>' +
+        '</div>' +
       '</div>';
     }
 
@@ -410,7 +416,7 @@
             }).catch(function() {});
 
           // Load assigned activities first, then uploaded files
-          fetch('STUDENT_BACKEND/student_get_materials.php?student_record_id=' + srid + '&teacher_id=' + tid)
+          fetch('STUDENT_BACKEND/student_get_materials.php?student_record_id=' + srid + '&teacher_id=' + tid + '&_t=' + Date.now(), { cache: 'no-store' })
             .then(function(r) { return r.json(); })
             .then(function(d) {
               if (!d.enrolled || !d.success) {
@@ -419,7 +425,7 @@
               }
               // Render activities immediately, then also fetch uploaded files
               renderFromData(d.materials, d.completed, d.in_progress, d.new, []);
-              fetch('STUDENT_BACKEND/student_get_uploaded_materials.php?student_id=' + encodeURIComponent(srid))
+              fetch('STUDENT_BACKEND/student_get_uploaded_materials.php?student_id=' + encodeURIComponent(srid) + '&_t=' + Date.now(), { cache: 'no-store' })
                 .then(function(r) { return r.json(); })
                 .then(function(fd) {
                   if (fd.files && fd.files.length > 0) {
@@ -479,6 +485,13 @@
     });
 
     loadMaterials();
+    // Also poll periodically so a new activity/material appears without the
+    // student needing to switch tabs and back. Deferred to DOMContentLoaded
+    // because student_portal.js loads with `defer` — it may not have run yet
+    // at this point in parsing, so window.startAutoRefresh might not exist.
+    document.addEventListener('DOMContentLoaded', function () {
+      window.startAutoRefresh(loadMaterials, 5000);
+    });
   </script>
 <script>(function(){var _id=sessionStorage.getItem('student_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>
 <script>(function(){var _s=document.createElement('style');_s.textContent='.student-notif-badge{display:none!important}.student-notif-badge.has-notifs{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:50%;background:#ef4444;color:#fff;font-size:9px;font-weight:700;display:flex!important;align-items:center;justify-content:center;padding:0 2px;border:2px solid #fff}';document.head.appendChild(_s);var sid=sessionStorage.getItem('student_record_id')||'';var tid=sessionStorage.getItem('teacher_id')||'';if(!sid||!tid)return;fetch('STUDENT_BACKEND/student_notif_count.php?student_id='+encodeURIComponent(sid)+'&teacher_id='+encodeURIComponent(tid)).then(function(r){return r.json();}).then(function(d){var cnt=d&&d.unread>0?d.unread:0;if(cnt>0){var b=document.querySelector('.student-notif-badge');if(b){b.textContent=cnt>9?'9+':cnt;b.classList.add('has-notifs');}}}).catch(function(){});})();</script>

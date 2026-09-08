@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="../../ASSETS/portal_guard.js?v=2" data-portal-role="teacher,student" data-status-path="../../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../../ADMIN_FILES/login_screen.html?session=expired"></script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>SPED ALM — Picture Labeling Template Generator</title>
@@ -535,6 +536,7 @@ body.lbl-preview-only .lbl-exit-float{display:flex;}
 .lbl-print-blank{ width:85%; border-bottom:2px solid #94a3b8; height:30px; }
 
 @media print{
+  html, body{ height:auto !important; overflow:visible !important; }
   body *{ visibility:hidden; }
   .lbl-print-area, .lbl-print-area *{ visibility:visible; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   .lbl-print-area{ display:block; position:absolute; left:0; top:0; width:100%; margin:0; padding:0; }
@@ -1677,6 +1679,18 @@ function flash(button, text){
 function printEscape(s){
   var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML;
 }
+// Reword the on-screen (drag/tap) instruction into paper-appropriate wording
+// for the printable worksheet — this is a labeling activity (drag a word
+// onto a picture), so "drag" becomes "write" and tap/click becomes "circle".
+function toPrintInstruction(s){
+  if (!s) return s;
+  return String(s)
+    .replace(/drag\s+(and\s+drop\s+)?/gi, 'write ')
+    .replace(/\bdrop\b/gi, 'match')
+    .replace(/\btap\b/gi, 'circle')
+    .replace(/\bclick\b/gi, 'circle')
+    .replace(/\bselect\b/gi, 'circle');
+}
 // printEscape() does not escape quote characters, so it is not safe inside an
 // HTML attribute (e.g. src="..."). Use this for any teacher-entered value
 // placed inside an attribute, so a value like `x" onerror="...` can't break out.
@@ -1705,7 +1719,7 @@ function buildPrintPages(){
     }).join("");
     pages += '<div class="lbl-print-page">'
       + '<div class="lbl-print-head"><h2>'+printEscape(activity.title)+'</h2>'
-      + '<div class="lbl-print-objective">('+printEscape(activity.instruction)+')</div>'
+      + '<div class="lbl-print-objective">('+printEscape(toPrintInstruction(activity.instruction))+')</div>'
       + (state.activities.length > 1 ? '<div class="lbl-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+' — '+(DIFFICULTY_LABELS[slideIdx]||"")+'</div>' : '')
       + '</div>'
       + '<div class="lbl-print-divider"><div class="lbl-print-rule"></div><div class="lbl-print-rule-dash"></div><div class="lbl-print-rule"></div></div>'
@@ -1780,6 +1794,9 @@ function compressItemThumb(dataURL){
 function confirmPublish(){
   var deadline = $('lblDeadlineInput').value;
   if(!deadline){ alert('Please set a deadline date before publishing.'); return; }
+  var _today = new Date();
+  var _todayStr = _today.getFullYear() + '-' + String(_today.getMonth()+1).padStart(2,'0') + '-' + String(_today.getDate()).padStart(2,'0');
+  if (deadline < _todayStr) { alert("Deadline can't be in the past — please choose today or a later date."); return; }
   var domain = document.querySelector('input[name="lblDomain"]:checked').value;
   var firstTitle = (state.activities[0] && state.activities[0].title) || 'Untitled Activity';
   compressThumb(state.thumb, function(smallThumb){

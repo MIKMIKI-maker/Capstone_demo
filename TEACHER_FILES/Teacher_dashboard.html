@@ -3,8 +3,8 @@
 <html lang="en">
 
 <head>
-    <script src="../ASSETS/portal_guard.js" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
-    <script src="../ASSETS/teacher_portal.js?v=2"></script>
+    <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
+    <script src="../ASSETS/teacher_portal.js?v=5"></script>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
@@ -128,6 +128,16 @@
                         <span class="teacher-stat-number" id="dashboard-assigned-learners">0</span>
                         <span class="teacher-stat-label">Assigned Learners</span>
                     </div>
+                </div>
+            </section>
+            <!-- RECENT NOTIFICATIONS -->
+            <section style="background:#fff;border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,.05);border:1px solid #edf2f7;padding:18px 22px;margin-bottom:20px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                    <h3 style="font-family:'Poppins',sans-serif;font-size:15px;font-weight:700;color:#1e3a8a;margin:0;">🔔 Recent Notifications</h3>
+                    <a href="Teacher_notif.html" style="font-size:12px;font-weight:600;color:#2563eb;text-decoration:none;">View all →</a>
+                </div>
+                <div id="teacher-dash-recent-notifs" style="display:flex;flex-direction:column;gap:8px;">
+                    <p style="color:#94a3b8;font-size:13px;margin:0;">Loading…</p>
                 </div>
             </section>
             <!-- DASHBOARD GRID -->
@@ -336,6 +346,15 @@
             loadTeacherProfile();
             loadDashboardStats();
             loadActivityPlan();
+            loadRecentNotifsWidget();
+            // Auto-refresh dashboard stats so new activity/tasks/progress show
+            // up without a manual reload — skipped while the tasks modal or
+            // the mobile panel modal is open.
+            window.startAutoRefresh(function () { loadDashboardStats(); loadRecentNotifsWidget(); }, 5000, function () {
+                var tm = document.getElementById('tasks-modal');
+                var mpm = document.getElementById('mobile-panel-modal');
+                return !!((tm && tm.classList.contains('open')) || (mpm && mpm.classList.contains('open')));
+            });
         });
 
         function loadActivityPlan() {
@@ -404,7 +423,9 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: 'action=reorder&teacher_id=' + tid + '&grading_period=' + encodeURIComponent(period) + '&order=' + ids.join(',')
-            }).catch(function() {});
+            }).then(function(r) { return r.json(); })
+              .then(function(d) { if (!d || !d.success) window.showToast((d && d.message) || 'Could not save the new order.', 'error'); })
+              .catch(function() { window.showToast('Network error. Could not save the new order.', 'error'); });
         }
 
         function addPlanItem(period) {
@@ -418,8 +439,12 @@
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: 'action=create&teacher_id=' + tid + '&grading_period=' + encodeURIComponent(period) + '&item_text=' + encodeURIComponent(text)
             }).then(function(r) { return r.json(); })
-              .then(function() { loadActivityPlan(); })
-              .catch(function() {});
+              .then(function(d) {
+                  if (d && d.success) window.showToast('Plan item added.');
+                  else window.showToast((d && d.message) || 'Could not add plan item.', 'error');
+                  loadActivityPlan();
+              })
+              .catch(function() { window.showToast('Network error. Could not add plan item.', 'error'); });
         }
 
         function deletePlanItem(itemId) {
@@ -429,8 +454,12 @@
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: 'action=delete&teacher_id=' + tid + '&item_id=' + itemId
             }).then(function(r) { return r.json(); })
-              .then(function() { loadActivityPlan(); })
-              .catch(function() {});
+              .then(function(d) {
+                  if (d && d.success) window.showToast('Plan item deleted.');
+                  else window.showToast((d && d.message) || 'Could not delete plan item.', 'error');
+                  loadActivityPlan();
+              })
+              .catch(function() { window.showToast('Network error. Could not delete plan item.', 'error'); });
         }
 
         function loadTeacherProfile() {
@@ -477,7 +506,7 @@
 
         function loadDashboardStats() {
             var teacherId = getCurrentTeacherId();
-            fetch('TEACHER_BACKEND/teacher_dashboard_stats.php?teacher_id=' + teacherId)
+            fetch('TEACHER_BACKEND/teacher_dashboard_stats.php?teacher_id=' + teacherId + '&_t=' + Date.now(), { cache: 'no-store' })
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
                     document.getElementById('dashboard-assigned-learners').textContent = data.assigned_learners || 0;
@@ -575,7 +604,12 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: body
-            }).then(function() { loadDashboardStats(); }).catch(function() {});
+            }).then(function(r) { return r.json(); })
+              .then(function(d) {
+                  if (!d || !d.success) window.showToast((d && d.message) || 'Could not update task.', 'error');
+                  loadDashboardStats();
+              })
+              .catch(function() { window.showToast('Network error. Could not update task.', 'error'); });
         }
 
         // ── MOBILE PANEL TILES (Recent Activity / Student Progress) ───────
@@ -680,8 +714,12 @@
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: 'action=create&task_text=' + encodeURIComponent(text) + '&teacher_id=' + tid
             }).then(function(r) { return r.json(); })
-              .then(function() { loadTasks(currentTaskFilter); })
-              .catch(function() {});
+              .then(function(d) {
+                  if (d && d.success) window.showToast('Task added.');
+                  else window.showToast((d && d.message) || 'Could not add task.', 'error');
+                  loadTasks(currentTaskFilter);
+              })
+              .catch(function() { window.showToast('Network error. Could not add task.', 'error'); });
         }
 
         function toggleTask(taskId, newDone) {
@@ -691,8 +729,11 @@
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: 'action=toggle&task_id=' + taskId + '&is_done=' + newDone + '&teacher_id=' + tid
             }).then(function(r) { return r.json(); })
-              .then(function() { loadTasks(currentTaskFilter); })
-              .catch(function() {});
+              .then(function(d) {
+                  if (!d || !d.success) window.showToast((d && d.message) || 'Could not update task.', 'error');
+                  loadTasks(currentTaskFilter);
+              })
+              .catch(function() { window.showToast('Network error. Could not update task.', 'error'); });
         }
 
         function deleteTask(taskId) {
@@ -702,8 +743,12 @@
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: 'action=delete&task_id=' + taskId + '&teacher_id=' + tid
             }).then(function(r) { return r.json(); })
-              .then(function() { loadTasks(currentTaskFilter); })
-              .catch(function() {});
+              .then(function(d) {
+                  if (d && d.success) window.showToast('Task deleted.');
+                  else window.showToast((d && d.message) || 'Could not delete task.', 'error');
+                  loadTasks(currentTaskFilter);
+              })
+              .catch(function() { window.showToast('Network error. Could not delete task.', 'error'); });
         }
 
         function clearDoneTasks() {
@@ -713,8 +758,12 @@
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: 'action=clear_done&teacher_id=' + tid
             }).then(function(r) { return r.json(); })
-              .then(function() { loadTasks(currentTaskFilter); })
-              .catch(function() {});
+              .then(function(d) {
+                  if (d && d.success) window.showToast('Completed tasks cleared.');
+                  else window.showToast((d && d.message) || 'Could not clear completed tasks.', 'error');
+                  loadTasks(currentTaskFilter);
+              })
+              .catch(function() { window.showToast('Network error. Could not clear completed tasks.', 'error'); });
         }
 
         // ── UTILITIES ────────────────────────────────────────────────────
@@ -740,6 +789,31 @@
             return String(str || '')
                 .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
                 .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        /* ── Recent Notifications widget ── */
+        function loadRecentNotifsWidget() {
+            var container = document.getElementById('teacher-dash-recent-notifs');
+            if (!container) return;
+            var tid = getCurrentTeacherId();
+            fetch('TEACHER_BACKEND/teacher_manage_notifications.php?action=list&teacher_id=' + tid + '&limit=5&_t=' + Date.now(), { cache: 'no-store' })
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    var list = (d && d.success && d.notifications) ? d.notifications.slice(0, 5) : [];
+                    if (!list.length) {
+                        container.innerHTML = '<p style="color:#94a3b8;font-size:13px;margin:0;">No notifications yet.</p>';
+                        return;
+                    }
+                    container.innerHTML = list.map(function(n) {
+                        return '<a href="Teacher_notif.html" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:9px;text-decoration:none;background:' + (n.is_read ? 'transparent' : '#f0f6ff') + ';">' +
+                            '<span style="font-size:13px;font-weight:' + (n.is_read ? '500' : '700') + ';color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escHtml(n.title) + '</span>' +
+                            '<span style="font-size:11px;color:#94a3b8;flex-shrink:0;">' + getTimeAgo(parseUtc(n.created_at)) + '</span>' +
+                        '</a>';
+                    }).join('');
+                })
+                .catch(function() {
+                    container.innerHTML = '<p style="color:#94a3b8;font-size:13px;margin:0;">Couldn\'t load notifications.</p>';
+                });
         }
     </script>
 <script>(function(){var _id=sessionStorage.getItem('admin_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>

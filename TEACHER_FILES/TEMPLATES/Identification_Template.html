@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="../../ASSETS/portal_guard.js?v=2" data-portal-role="teacher,student" data-status-path="../../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../../ADMIN_FILES/login_screen.html?session=expired"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SPED ALM — Beginning Letter Template Generator</title>
@@ -529,6 +530,7 @@ function initActivityTheme(){
   .bgl-print-choice{ width:48px; height:48px; border:2px solid #94a3b8; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:700; }
 
   @media print{
+    html, body{ height:auto !important; overflow:visible !important; }
     body *{ visibility:hidden; }
     .bgl-print-area, .bgl-print-area *{ visibility:visible; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .bgl-print-area{ display:block; position:absolute; left:0; top:0; width:100%; margin:0; padding:0; }
@@ -1520,6 +1522,15 @@ function initActivityTheme(){
   function printEscape(s){
     var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML;
   }
+  // Reword the on-screen (tap/select the letter) instruction into
+  // paper-appropriate wording — tap/click/select becomes "circle".
+  function toPrintInstruction(s){
+    if (!s) return s;
+    return String(s)
+      .replace(/\btap\b/gi, 'circle')
+      .replace(/\bclick\b/gi, 'circle')
+      .replace(/\bselect\b/gi, 'circle');
+  }
   // printEscape() does not escape quote characters, so it is not safe inside an
   // HTML attribute (e.g. src="..."). Use this for any teacher-entered value
   // placed inside an attribute, so a value like `x" onerror="...` can't break out.
@@ -1550,7 +1561,7 @@ function initActivityTheme(){
       }).join("");
       pages += '<div class="bgl-print-page">'
         + '<div class="bgl-print-head"><h2>'+printEscape(activity.title)+'</h2>'
-        + '<div class="bgl-print-objective">('+printEscape(activity.instruction)+')</div>'
+        + '<div class="bgl-print-objective">('+printEscape(toPrintInstruction(activity.instruction))+')</div>'
         + (state.activities.length > 1 ? '<div class="bgl-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+' — '+(DIFFICULTY_LABELS[slideIdx]||"")+'</div>' : '')
         + '</div>'
         + '<div class="bgl-print-divider"><div class="bgl-print-rule"></div><div class="bgl-print-rule-dash"></div><div class="bgl-print-rule"></div></div>'
@@ -1769,6 +1780,9 @@ function initActivityTheme(){
   function confirmPublish() {
     var deadline = $("bglDeadlineInput").value;
     if (!deadline) { alert("Please set a deadline date before publishing."); return; }
+    var _today = new Date();
+    var _todayStr = _today.getFullYear() + '-' + String(_today.getMonth()+1).padStart(2,'0') + '-' + String(_today.getDate()).padStart(2,'0');
+    if (deadline < _todayStr) { alert("Deadline can't be in the past — please choose today or a later date."); return; }
     var domain = document.querySelector('input[name="bglDomain"]:checked').value;
     var firstTitle = (state.activities[0] && state.activities[0].title) || 'Untitled Activity';
     compressThumb(state.thumb, function(smallThumb) {

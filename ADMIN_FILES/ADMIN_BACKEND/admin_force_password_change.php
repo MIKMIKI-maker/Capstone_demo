@@ -11,6 +11,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) session_start();
 
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/login_helpers.php';
+require_once __DIR__ . '/password_policy.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
@@ -58,6 +59,13 @@ $stmt->close();
 if (!$row || !empty($row['is_deleted'])) {
     unset($_SESSION['pending_pwd_change_id'], $_SESSION['pending_pwd_change_role']);
     echo json_encode(['status' => 'error', 'message' => 'Account not found. Please log in again.']);
+    $conn->close();
+    exit;
+}
+
+$violation = passwordPolicyViolation($newPassword, $row['first_name'] ?? '', $row['last_name'] ?? '');
+if ($violation) {
+    echo json_encode(['status' => 'error', 'message' => $violation]);
     $conn->close();
     exit;
 }

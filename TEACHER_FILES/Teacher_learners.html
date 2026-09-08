@@ -3,8 +3,8 @@
 <html lang="en">
 
 <head>
-    <script src="../ASSETS/portal_guard.js" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
-    <script src="../ASSETS/teacher_portal.js?v=2"></script>
+    <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
+    <script src="../ASSETS/teacher_portal.js?v=5"></script>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
@@ -319,6 +319,11 @@
             document.getElementById('teacher-addModal').addEventListener('click', function(e) {
                 if (e.target === this) closeModal();
             });
+            // Skip a tick while the enroll modal is open, so it can't reset
+            // the in-progress enrollment form underneath it.
+            window.startAutoRefresh(function () { loadLearners(); loadStats(); }, 5000, function () {
+                return !document.getElementById('teacher-addModal').classList.contains('hidden');
+            });
         });
 
         // Reload list when teacher switches back to this tab (picks up admin deletions in real time)
@@ -328,7 +333,7 @@
 
         /* ── Stats ── */
         function loadStats() {
-            fetch('TEACHER_BACKEND/teacher_stats.php?teacher_id=' + TEACHER_ID)
+            fetch('TEACHER_BACKEND/teacher_stats.php?teacher_id=' + TEACHER_ID + '&_t=' + Date.now(), { cache: 'no-store' })
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
                     document.getElementById('total-students').textContent = data.total_students || 0;
@@ -344,7 +349,7 @@
 
         /* ── Learners table ── */
         function loadLearners() {
-            fetch('TEACHER_BACKEND/teacher_list_learners.php?teacher_id=' + TEACHER_ID)
+            fetch('TEACHER_BACKEND/teacher_list_learners.php?teacher_id=' + TEACHER_ID + '&_t=' + Date.now(), { cache: 'no-store' })
                 .then(function(r) { return r.json(); })
                 .then(function(data) { allStudents = data; renderTable(data); })
                 .catch(function(){});
@@ -526,13 +531,14 @@
                         closeModal();
                         loadLearners();
                         loadStats();
+                        window.showToast('Student enrolled successfully!');
                     } else {
-                        alert('Error: ' + (data.message || 'Failed to enroll student'));
+                        window.showToast(data.message || 'Failed to enroll student.', 'error');
                         btn.disabled = false;
                         btn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Enroll Student';
                     }
                 }).catch(function() {
-                    alert('Failed to enroll student. Please try again.');
+                    window.showToast('Failed to enroll student. Please try again.', 'error');
                     btn.disabled = false;
                     btn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Enroll Student';
                 });

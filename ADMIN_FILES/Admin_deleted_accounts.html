@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="../ASSETS/portal_guard.js" data-portal-role="admin" data-status-path="ADMIN_BACKEND/session_status.php" data-login-path="admin_screen.html?session=expired"></script>
+  <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="admin" data-status-path="ADMIN_BACKEND/session_status.php" data-login-path="admin_screen.html?session=expired"></script>
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <link rel="icon" type="image/png" href="../ASSETS/logo.png"/>
@@ -11,7 +11,7 @@
   <link href="ADMIN_CSS/admin_responsive.css" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Nunito:wght@400;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet"/>
-  <script src="../ASSETS/admin_portal.js?v=2"></script>
+  <script src="../ASSETS/admin_portal.js?v=5"></script>
   <style>
     .da-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px;}
     .da-search-wrap{flex:1;min-width:200px;position:relative;}
@@ -259,20 +259,10 @@
     if (_adminConfirmResolver) { _adminConfirmResolver(result); _adminConfirmResolver = null; }
   }
 
+  // Thin wrapper over the shared toast in admin_portal.js — kept so the
+  // existing call sites below (boolean isError) don't need rewriting.
   function showMuToast(message, isError, durationMs) {
-    var old = document.querySelector('.admin-mu-toast');
-    if (old) old.remove();
-    var t = document.createElement('div');
-    t.className = 'admin-mu-toast' + (isError ? ' admin-mu-toast--error' : '');
-    var icon = isError ? 'fa-circle-exclamation' : 'fa-circle-check';
-    t.innerHTML = '<i class="fa-solid ' + icon + '"></i><span></span>';
-    t.querySelector('span').textContent = message;
-    document.body.appendChild(t);
-    requestAnimationFrame(function () { t.classList.add('show'); });
-    setTimeout(function () {
-      t.classList.remove('show');
-      setTimeout(function () { t.remove(); }, 300);
-    }, durationMs || 3000);
+    window.showToast(message, isError ? 'error' : 'success', durationMs);
   }
 
   /* ── Avatar colour by role ── */
@@ -306,7 +296,7 @@
 
   /* ── Load deleted accounts ── */
   function loadDeletedAccounts() {
-    fetch('ADMIN_BACKEND/admin_deleted_accounts.php')
+    fetch('ADMIN_BACKEND/admin_deleted_accounts.php?_t=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.json(); })
       .then(function(data){
         deletedList = data || [];
@@ -452,7 +442,18 @@
   })();
 
   /* ── Init ── */
-  document.addEventListener('DOMContentLoaded', loadDeletedAccounts);
+  document.addEventListener('DOMContentLoaded', function () {
+    loadDeletedAccounts();
+    // Skip a tick while a modal is open or a row is checked, so it can't
+    // clobber an in-progress restore/permanent-delete selection.
+    window.startAutoRefresh(loadDeletedAccounts, 5000, function () {
+      var overlays = document.querySelectorAll('.admin-modal-overlay');
+      for (var i = 0; i < overlays.length; i++) {
+        if (getComputedStyle(overlays[i]).display !== 'none') return true;
+      }
+      return !!document.querySelector('.da-cb:checked');
+    });
+  });
 </script>
 <script>(function(){var _s=document.createElement('style');_s.textContent='.admin-notif-badge{display:none}';document.head.appendChild(_s);fetch('ADMIN_BACKEND/admin_notif_count.php').then(function(r){return r.json();}).then(function(d){if(d&&d.unread>0){var _b=document.querySelector('.admin-notif-badge');if(_b)_b.style.display='block';}}).catch(function(){});})();</script>
 </body>

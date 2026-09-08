@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/csrf.php';
+require_once __DIR__ . '/password_policy.php';
 requireAdminSession();
 csrf_require_valid_token();
 
@@ -36,7 +37,7 @@ if (!$conn) {
     exit;
 }
 
-$stmt = $conn->prepare("SELECT admin_password FROM admin_accounts WHERE id = ?");
+$stmt = $conn->prepare("SELECT admin_password, first_name, last_name FROM admin_accounts WHERE id = ?");
 $stmt->bind_param("i", $adminId);
 $stmt->execute();
 $row = $stmt->get_result()->fetch_assoc();
@@ -44,6 +45,13 @@ $stmt->close();
 
 if (!$row || !password_verify($current_password, $row['admin_password'])) {
     echo json_encode(['success' => false, 'message' => 'Current password is incorrect']);
+    $conn->close();
+    exit;
+}
+
+$violation = passwordPolicyViolation($new_password, $row['first_name'] ?? '', $row['last_name'] ?? '');
+if ($violation) {
+    echo json_encode(['success' => false, 'message' => $violation]);
     $conn->close();
     exit;
 }

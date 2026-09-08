@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="../../ASSETS/portal_guard.js?v=2" data-portal-role="teacher,student" data-status-path="../../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../../ADMIN_FILES/login_screen.html?session=expired"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SPED ALM — Written Response Template Generator</title>
@@ -541,6 +542,7 @@ function initActivityTheme(){
   .wrt-print-blank{ width:75%; border-bottom:2px solid #94a3b8; height:30px; }
 
   @media print{
+    html, body{ height:auto !important; overflow:visible !important; }
     body *{ visibility:hidden; }
     .wrt-print-area, .wrt-print-area *{ visibility:visible; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .wrt-print-area{ display:block; position:absolute; left:0; top:0; width:100%; margin:0; padding:0; }
@@ -1623,6 +1625,12 @@ function initActivityTheme(){
   function printEscape(s){
     var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML;
   }
+  // Reword the on-screen (type an answer) instruction into paper-appropriate
+  // wording — "type" becomes "write".
+  function toPrintInstruction(s){
+    if (!s) return s;
+    return String(s).replace(/\btype\b/gi, 'write');
+  }
   // printEscape() does not escape quote characters, so it is not safe inside an
   // HTML attribute (e.g. src="..."). Use this for any teacher-entered value
   // placed inside an attribute, so a value like `x" onerror="...` can't break out.
@@ -1660,7 +1668,7 @@ function initActivityTheme(){
       }).join("");
       pages += '<div class="wrt-print-page">'
         + '<div class="wrt-print-head"><h2>'+printEscape(activity.title)+'</h2>'
-        + '<div class="wrt-print-objective">('+printEscape(activity.instruction)+')</div>'
+        + '<div class="wrt-print-objective">('+printEscape(toPrintInstruction(activity.instruction))+')</div>'
         + (state.activities.length > 1 ? '<div class="wrt-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+' — '+(DIFFICULTY_LABELS[slideIdx]||"")+'</div>' : '')
         + '</div>'
         + '<div class="wrt-print-divider"><div class="wrt-print-rule"></div><div class="wrt-print-rule-dash"></div><div class="wrt-print-rule"></div></div>'
@@ -1885,6 +1893,9 @@ function initActivityTheme(){
   function confirmPublish() {
     var deadline = $("wrtDeadlineInput").value;
     if (!deadline) { alert("Please set a deadline date before publishing."); return; }
+    var _today = new Date();
+    var _todayStr = _today.getFullYear() + '-' + String(_today.getMonth()+1).padStart(2,'0') + '-' + String(_today.getDate()).padStart(2,'0');
+    if (deadline < _todayStr) { alert("Deadline can't be in the past — please choose today or a later date."); return; }
     var domain = document.querySelector('input[name="wrtDomain"]:checked').value;
     var firstTitle = (state.activities[0] && state.activities[0].title) || 'Untitled Activity';
     compressThumb(state.thumb, function(smallThumb) {

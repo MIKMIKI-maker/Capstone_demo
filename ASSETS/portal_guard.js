@@ -6,6 +6,11 @@
 
   if (!role || !loginPath || !statusPath) return;
 
+  // Some pages (the activity template editors, opened by a teacher in edit
+  // mode and by a student in play mode) are shared between two roles —
+  // data-portal-role="teacher,student" lists every role allowed on that page.
+  var allowedRoles = role.split(',').map(function (r) { return r.trim(); }).filter(Boolean);
+
   var redirecting = false;
 
   function goToLogin() {
@@ -24,7 +29,7 @@
       return response.json().then(function (result) {
         if (response.status === 401 || result.authenticated === false) goToLogin();
         if (!response.ok) throw new Error('Session check temporarily unavailable');
-        if (result.role !== role) goToLogin();
+        if (allowedRoles.indexOf(result.role) === -1) goToLogin();
         return result;
       });
     }).catch(function () {

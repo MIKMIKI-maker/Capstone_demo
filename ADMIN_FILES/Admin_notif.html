@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="../ASSETS/portal_guard.js" data-portal-role="admin" data-status-path="ADMIN_BACKEND/session_status.php" data-login-path="admin_screen.html?session=expired"></script>
+  <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="admin" data-status-path="ADMIN_BACKEND/session_status.php" data-login-path="admin_screen.html?session=expired"></script>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
@@ -12,7 +12,7 @@
   <link href="ADMIN_CSS/admin_responsive.css" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Nunito:wght@400;600;700;800;900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
-  <script src="../ASSETS/admin_portal.js?v=2"></script>
+  <script src="../ASSETS/admin_portal.js?v=5"></script>
 </head>
 <body>
 
@@ -94,6 +94,9 @@
   <!-- NOTIFICATION LIST -->
   <div class="admin-notif-list" id="admin-notif-list"></div>
 
+  <!-- PAGINATION -->
+  <div class="admin-notif-pagination" id="admin-notif-pagination"></div>
+
 </main>
 
 <script>
@@ -108,6 +111,8 @@
 
   var notificationsList = [];
   var currentTab = 'all';
+  var PAGE_SIZE = 10;
+  var currentPage = 1;
 
   var EMPTY_HTML =
     '<div class="admin-notif-empty">' +
@@ -184,8 +189,27 @@
     var list = currentTab === 'unread'
       ? notificationsList.filter(function(n) { return !n.read; })
       : notificationsList;
-    renderList(list);
+    var totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+    if (currentPage > totalPages) currentPage = totalPages;
+    var start = (currentPage - 1) * PAGE_SIZE;
+    renderList(list.slice(start, start + PAGE_SIZE));
+    renderPagination(totalPages);
     recount();
+  }
+
+  function renderPagination(totalPages) {
+    var el = document.getElementById('admin-notif-pagination');
+    if (!el) return;
+    if (totalPages <= 1) { el.innerHTML = ''; return; }
+    el.innerHTML =
+      '<button class="ani-page-btn" type="button" ' + (currentPage === 1 ? 'disabled' : '') + ' onclick="goToPage(' + (currentPage - 1) + ')">‹ Prev</button>' +
+      '<span class="ani-page-info">Page ' + currentPage + ' of ' + totalPages + '</span>' +
+      '<button class="ani-page-btn" type="button" ' + (currentPage === totalPages ? 'disabled' : '') + ' onclick="goToPage(' + (currentPage + 1) + ')">Next ›</button>';
+  }
+
+  function goToPage(p) {
+    currentPage = p;
+    applyFilter();
   }
 
   function markReadOne(id, btn) {
@@ -205,14 +229,23 @@
     recount();
     if (id) {
       var fd = new FormData(); fd.append('notif_id', id);
-      fetch('ADMIN_BACKEND/admin_mark_one_read.php', { method: 'POST', body: fd }).catch(function() {});
+      fetch('ADMIN_BACKEND/admin_mark_one_read.php', { method: 'POST', body: fd })
+        .then(function(r) { return r.json(); })
+        .then(function(d) { if (!d || !d.success) window.showToast(d && d.message || 'Could not mark as read.', 'error'); })
+        .catch(function() { window.showToast('Network error. Could not mark as read.', 'error'); });
     }
   }
 
   function markAllRead() {
     notificationsList = notificationsList.map(function(n) { n.read = true; return n; });
     applyFilter();
-    fetch('ADMIN_BACKEND/admin_mark_notifications_read.php', { method: 'POST' }).catch(function() {});
+    fetch('ADMIN_BACKEND/admin_mark_notifications_read.php', { method: 'POST' })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d && d.success) window.showToast('All notifications marked as read.');
+        else window.showToast((d && d.message) || 'Could not mark notifications as read.', 'error');
+      })
+      .catch(function() { window.showToast('Network error. Could not mark notifications as read.', 'error'); });
   }
 
   function deleteOne(id, btn) {
@@ -228,18 +261,30 @@
     if (id) {
       var fd = new FormData();
       fd.append('notif_id', id);
-      fetch('ADMIN_BACKEND/admin_delete_notification.php', { method: 'POST', body: fd }).catch(function() {});
+      fetch('ADMIN_BACKEND/admin_delete_notification.php', { method: 'POST', body: fd })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d && d.success) window.showToast('Notification deleted.');
+          else window.showToast((d && d.message) || 'Could not delete notification.', 'error');
+        })
+        .catch(function() { window.showToast('Network error. Could not delete notification.', 'error'); });
     }
   }
 
   function clearAll() {
     notificationsList = [];
     applyFilter();
-    fetch('ADMIN_BACKEND/admin_clear_notifications.php', { method: 'POST' }).catch(function() {});
+    fetch('ADMIN_BACKEND/admin_clear_notifications.php', { method: 'POST' })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d && d.success) window.showToast('All notifications cleared.');
+        else window.showToast((d && d.message) || 'Could not clear notifications.', 'error');
+      })
+      .catch(function() { window.showToast('Network error. Could not clear notifications.', 'error'); });
   }
 
   function loadNotifications() {
-    fetch('ADMIN_BACKEND/admin_list_notifications.php')
+    fetch('ADMIN_BACKEND/admin_list_notifications.php?_t=' + Date.now(), { cache: 'no-store' })
       .then(function(r) { return r.json(); })
       .then(function(data) {
         notificationsList = Array.isArray(data) ? data : [];
@@ -270,12 +315,14 @@
     /* Tab buttons */
     document.getElementById('tab-all').addEventListener('click', function() {
       currentTab = 'all';
+      currentPage = 1;
       document.getElementById('tab-all').classList.add('active');
       document.getElementById('tab-unread').classList.remove('active');
       applyFilter();
     });
     document.getElementById('tab-unread').addEventListener('click', function() {
       currentTab = 'unread';
+      currentPage = 1;
       document.getElementById('tab-unread').classList.add('active');
       document.getElementById('tab-all').classList.remove('active');
       applyFilter();
@@ -286,7 +333,7 @@
     document.getElementById('btn-clear-all').addEventListener('click', clearAll);
 
     loadNotifications();
-    setInterval(loadNotifications, 30000);
+    window.startAutoRefresh(loadNotifications, 5000);
   });
 </script>
 </body>

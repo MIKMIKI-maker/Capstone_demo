@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-  <script src="../ASSETS/portal_guard.js" data-portal-role="admin" data-status-path="ADMIN_BACKEND/session_status.php" data-login-path="admin_screen.html?session=expired"></script>
+  <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="admin" data-status-path="ADMIN_BACKEND/session_status.php" data-login-path="admin_screen.html?session=expired"></script>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
   <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
@@ -15,7 +15,7 @@
     href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;family=Nunito:wght@400;600;700;800;900&amp;family=Inter:wght@400;500;600&amp;display=swap"
     rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
-  <script src="../ASSETS/admin_portal.js?v=2"></script>
+  <script src="../ASSETS/admin_portal.js?v=5"></script>
 </head>
 
 <body>
@@ -114,7 +114,7 @@
 
     <!-- ── STATS ROW ── -->
     <div class="al-stats-row">
-      <div class="al-stat-card">
+      <div class="al-stat-card" id="al-stat-card-templates" onclick="document.getElementById('al-tpl-modal').style.display='flex'" role="button" tabindex="0">
         <div class="al-stat-icon-wrap al-si-blue">
           <i class="fa-solid fa-layer-group"></i>
         </div>
@@ -124,7 +124,7 @@
           <span class="al-stat-sub">Template types available</span>
         </div>
       </div>
-      <div class="al-stat-card">
+      <div class="al-stat-card" id="al-stat-card-drafts" onclick="focusTab('draft')" role="button" tabindex="0">
         <div class="al-stat-icon-wrap al-si-purple">
           <i class="fa-solid fa-pen-to-square"></i>
         </div>
@@ -134,7 +134,7 @@
           <span class="al-stat-sub">Created by teachers</span>
         </div>
       </div>
-      <div class="al-stat-card">
+      <div class="al-stat-card" id="al-stat-card-published" onclick="focusTab('published')" role="button" tabindex="0">
         <div class="al-stat-icon-wrap al-si-green">
           <i class="fa-solid fa-circle-check"></i>
         </div>
@@ -144,7 +144,7 @@
           <span class="al-stat-sub">Ready for learners</span>
         </div>
       </div>
-      <div class="al-stat-card">
+      <div class="al-stat-card" id="al-stat-card-teachers" onclick="focusTab('all')" role="button" tabindex="0">
         <div class="al-stat-icon-wrap al-si-amber">
           <i class="fa-solid fa-user-group"></i>
         </div>
@@ -154,7 +154,7 @@
           <span class="al-stat-sub">Using the system</span>
         </div>
       </div>
-      <div class="al-stat-card">
+      <div class="al-stat-card" id="al-stat-card-uploads" onclick="focusTab('uploads')" role="button" tabindex="0">
         <div class="al-stat-icon-wrap al-si-teal">
           <i class="fa-solid fa-paperclip"></i>
         </div>
@@ -466,6 +466,12 @@
       document.getElementById('stat-published').textContent = published;
       document.getElementById('stat-teachers').textContent  = teachers;
       document.getElementById('stat-uploads').textContent   = uploadsList.length;
+    }
+
+    /* ── Stat card click → jump to the matching tab in the table below ── */
+    function focusTab(tab) {
+      switchTab(tab);
+      document.querySelector('.al-acts-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     /* ── Update template cards ── */
@@ -799,7 +805,7 @@
       });
 
       // Poll every 5 s so new teacher drafts/publishes appear within seconds
-      setInterval(loadActivities, 5000);
+      window.startAutoRefresh(loadActivities, 5000);
 
       document.querySelectorAll('.admin-signout-btn').forEach(function(btn) {
         btn.addEventListener('click', function(e) {

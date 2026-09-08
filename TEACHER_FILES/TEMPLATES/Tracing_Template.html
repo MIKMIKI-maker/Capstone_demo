@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="../../ASSETS/portal_guard.js?v=2" data-portal-role="teacher,student" data-status-path="../../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../../ADMIN_FILES/login_screen.html?session=expired"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SPED ALM — Tracing Template Generator</title>
@@ -483,6 +484,7 @@ function initActivityTheme(){
   .trc-print-blank-line{ border-top:2px solid #cbd5e1; margin-top:4px; }
 
   @media print{
+    html, body{ height:auto !important; overflow:visible !important; }
     body *{ visibility:hidden; }
     .trc-print-area, .trc-print-area *{ visibility:visible; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .trc-print-area{ display:block; position:absolute; left:0; top:0; width:100%; margin:0; padding:0; }
@@ -1896,6 +1898,9 @@ function initActivityTheme(){
   function confirmPublish() {
     var deadline = $("trcDeadlineInput").value;
     if (!deadline) { alert("Please set a deadline date before publishing."); return; }
+    var _today = new Date();
+    var _todayStr = _today.getFullYear() + '-' + String(_today.getMonth()+1).padStart(2,'0') + '-' + String(_today.getDate()).padStart(2,'0');
+    if (deadline < _todayStr) { alert("Deadline can't be in the past — please choose today or a later date."); return; }
     var domain = document.querySelector('input[name="trcDomain"]:checked').value;
     var firstTitle = (state.activities[0] && state.activities[0].title) || 'Untitled Activity';
     compressThumb(state.thumb, function(smallThumb) {

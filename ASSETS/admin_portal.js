@@ -14,6 +14,92 @@
     document.head.appendChild(style);
   }
 
+  // Shared floating success/failure toast for every admin page — replaces
+  // the old copy-pasted showMuToast() (Admin_manage_user.html /
+  // Admin_deleted_accounts.html) with one definition everyone calls.
+  var TOAST_ICONS = { success: 'fa-circle-check', warning: 'fa-triangle-exclamation', error: 'fa-circle-xmark' };
+
+  function applyToastStyle() {
+    if (document.getElementById('admin-toast-style')) return;
+    var style = document.createElement('style');
+    style.id = 'admin-toast-style';
+    style.textContent =
+      '.admin-toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(20px);display:flex;align-items:center;gap:10px;background:#fff;color:#1e2a3a;padding:14px 22px;border-radius:14px;font-family:"Poppins",sans-serif;font-weight:600;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.15);border-left:4px solid #16a34a;opacity:0;transition:opacity .25s ease,transform .25s ease;z-index:99999;pointer-events:none;max-width:90vw}' +
+      '.admin-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}' +
+      '.admin-toast--warning{border-left-color:#F59E0B}' +
+      '.admin-toast--error{border-left-color:#ef4444}' +
+      '.admin-toast i{font-size:16px;color:#16a34a}' +
+      '.admin-toast--warning i{color:#F59E0B}' +
+      '.admin-toast--error i{color:#ef4444}';
+    document.head.appendChild(style);
+  }
+
+  function showToast(message, type, durationMs) {
+    applyToastStyle();
+    type = (type === 'warning' || type === 'error') ? type : 'success';
+    var old = document.querySelector('.admin-toast');
+    if (old) old.remove();
+    var t = document.createElement('div');
+    t.className = 'admin-toast' + (type !== 'success' ? ' admin-toast--' + type : '');
+    var icon = document.createElement('i');
+    icon.className = 'fa-solid ' + TOAST_ICONS[type];
+    var span = document.createElement('span');
+    span.textContent = message;
+    t.appendChild(icon);
+    t.appendChild(span);
+    document.body.appendChild(t);
+    requestAnimationFrame(function () { t.classList.add('show'); });
+    window.setTimeout(function () {
+      t.classList.remove('show');
+      window.setTimeout(function () { t.remove(); }, 300);
+    }, durationMs || 3200);
+  }
+  window.showToast = showToast;
+
+  // Small "Refreshing…" pill shown briefly on every auto-refresh tick, so
+  // the periodic reload is visible instead of silently swapping data in.
+  function applyRefreshIndicatorStyle() {
+    if (document.getElementById('admin-refresh-indicator-style')) return;
+    var style = document.createElement('style');
+    style.id = 'admin-refresh-indicator-style';
+    style.textContent =
+      '.admin-refresh-indicator{position:fixed;top:14px;left:50%;transform:translateX(-50%) translateY(-12px);display:flex;align-items:center;gap:8px;background:#fff;color:#1e3a8a;padding:7px 16px;border-radius:999px;font-family:"Poppins",sans-serif;font-weight:600;font-size:12px;box-shadow:0 6px 18px rgba(0,0,0,.12);opacity:0;transition:opacity .2s ease,transform .2s ease;z-index:99998;pointer-events:none}' +
+      '.admin-refresh-indicator.show{opacity:1;transform:translateX(-50%) translateY(0)}' +
+      '.admin-refresh-indicator i{font-size:12px;animation:adminRefreshSpin 0.8s linear infinite}' +
+      '@keyframes adminRefreshSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}';
+    document.head.appendChild(style);
+  }
+
+  function showRefreshIndicator() {
+    applyRefreshIndicatorStyle();
+    var el = document.getElementById('admin-refresh-indicator');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'admin-refresh-indicator';
+      el.className = 'admin-refresh-indicator';
+      el.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i><span>Refreshing…</span>';
+      document.body.appendChild(el);
+    }
+    el.classList.add('show');
+    window.clearTimeout(el._hideTimer);
+    el._hideTimer = window.setTimeout(function () { el.classList.remove('show'); }, 1200);
+  }
+
+  // Shared polling helper so list pages (accounts, activities, etc.) pick up
+  // additions from elsewhere without a manual refresh. Pauses while the tab
+  // is hidden, and lets each page supply a guard so a tick doesn't clobber
+  // in-progress work (an open modal, a checked bulk-select checkbox).
+  function startAutoRefresh(fn, intervalMs, guardFn) {
+    if (typeof fn !== 'function') return;
+    return window.setInterval(function () {
+      if (document.hidden) return;
+      if (typeof guardFn === 'function' && guardFn()) return;
+      showRefreshIndicator();
+      fn();
+    }, intervalMs || 20000);
+  }
+  window.startAutoRefresh = startAutoRefresh;
+
   function updateBadge() {
     fetch('ADMIN_BACKEND/admin_notif_count.php', {
       credentials: 'same-origin',

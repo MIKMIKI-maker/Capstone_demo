@@ -2,6 +2,7 @@
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/csrf.php';
 require_once __DIR__ . '/admin_push_notification.php';
+require_once __DIR__ . '/password_policy.php';
 require_once __DIR__ . '/../../MAILER/send_email.php';
 requireAdminSession();
 csrf_require_valid_token();
@@ -33,7 +34,20 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $condition = trim($_POST['grade_level']);
     }
     $defaults = ['admin' => 'Admin@123', 'teacher' => 'Teacher@123', 'student' => 'Student@123'];
-    $raw_password = isset($_POST['enter_password']) && trim($_POST['enter_password']) !== '' ? trim($_POST['enter_password']) : ($defaults[$role] ?? 'Teacher@123');
+    $customPasswordInput = isset($_POST['enter_password']) ? trim($_POST['enter_password']) : '';
+    $raw_password = $customPasswordInput !== '' ? $customPasswordInput : ($defaults[$role] ?? 'Teacher@123');
+
+    // Only a custom (admin-typed) password is checked against the policy —
+    // the role defaults above are pre-approved system passwords.
+    if ($customPasswordInput !== '') {
+        $violation = passwordPolicyViolation($customPasswordInput, $firstName, $lastName);
+        if ($violation) {
+            echo json_encode(['success' => false, 'message' => $violation]);
+            $conn->close();
+            exit;
+        }
+    }
+
     $password = password_hash($raw_password, PASSWORD_DEFAULT);
     $assigned_teacher_id = ($role === 'student' && !empty($_POST['assigned_teacher_id'])) ? intval($_POST['assigned_teacher_id']) : 0;
     $parent_name_val = ($role === 'student' && isset($_POST['enter_parent_name'])) ? trim($_POST['enter_parent_name']) : '';

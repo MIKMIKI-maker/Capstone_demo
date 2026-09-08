@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-  <script src="../ASSETS/portal_guard.js" data-portal-role="admin" data-status-path="ADMIN_BACKEND/session_status.php" data-login-path="admin_screen.html?session=expired"></script>
+  <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="admin" data-status-path="ADMIN_BACKEND/session_status.php" data-login-path="admin_screen.html?session=expired"></script>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
   <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
@@ -15,7 +15,7 @@
     href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;family=Nunito:wght@400;600;700;800;900&amp;family=Inter:wght@400;500;600&amp;display=swap"
     rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
-  <script src="../ASSETS/admin_portal.js?v=2"></script>
+  <script src="../ASSETS/admin_portal.js?v=5"></script>
 </head>
 
 <body>
@@ -104,6 +104,16 @@
         </a>
       </div>
     </header>
+    <!-- RECENT NOTIFICATIONS -->
+    <section style="background:#fff;border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,.05);border:1px solid #f0ebe1;padding:18px 22px;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <h3 style="font-family:'Poppins',sans-serif;font-size:15px;font-weight:700;color:#1e3a8a;margin:0;">🔔 Recent Notifications</h3>
+        <a href="Admin_notif.html" style="font-size:12px;font-weight:600;color:#2563eb;text-decoration:none;">View all →</a>
+      </div>
+      <div id="admin-dash-recent-notifs" style="display:flex;flex-direction:column;gap:8px;">
+        <p style="color:#94a3b8;font-size:13px;margin:0;">Loading…</p>
+      </div>
+    </section>
     <!-- STAT CARDS -->
     <section class="admin-stats-grid">
       <div class="admin-stat-card anim-fade-up anim-d1">
@@ -229,13 +239,20 @@
       updateDashboardStats();
       loadUserOverview();
       loadRecentActivities();
+      loadRecentNotifsWidget();
+      window.startAutoRefresh(function () {
+        updateDashboardStats();
+        loadUserOverview();
+        loadRecentActivities();
+        loadRecentNotifsWidget();
+      }, 5000);
       document.addEventListener('visibilitychange', function() {
         if (!document.hidden) loadRecentActivities();
       });
     });
 
     function updateDashboardStats() {
-      fetch('ADMIN_BACKEND/admin_stats.php')
+      fetch('ADMIN_BACKEND/admin_stats.php?_t=' + Date.now(), { cache: 'no-store' })
         .then(function (response) { return response.json(); })
         .then(function (stats) {
           var totalTeachers  = parseInt(stats.teachers         || 0);
@@ -268,7 +285,7 @@
     }
 
     function loadUserOverview() {
-      fetch('ADMIN_BACKEND/admin_list_accounts.php')
+      fetch('ADMIN_BACKEND/admin_list_accounts.php?_t=' + Date.now(), { cache: 'no-store' })
         .then(function (response) { return response.json(); })
         .then(function (users) {
           displayUserOverview(users);
@@ -339,7 +356,7 @@
     }
 
     function loadRecentActivities() {
-      fetch('ADMIN_BACKEND/admin_get_recent_activities.php')
+      fetch('ADMIN_BACKEND/admin_get_recent_activities.php?_t=' + Date.now(), { cache: 'no-store' })
         .then(function (response) { return response.json(); })
         .then(function (activities) {
           displayRecentActivities(activities);
@@ -358,6 +375,39 @@
       return String(text).replace(/[&<>"']/g, function(m) {
         return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m];
       });
+    }
+
+    function _dashTimeAgo(timestamp) {
+      if (!timestamp) return '';
+      var d = new Date(timestamp.replace(' ', 'T') + 'Z');
+      var s = Math.floor((Date.now() - d.getTime()) / 1000);
+      if (s < 60) return 'just now';
+      if (s < 3600) return Math.floor(s / 60) + 'm ago';
+      if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+      return Math.floor(s / 86400) + 'd ago';
+    }
+
+    function loadRecentNotifsWidget() {
+      var container = document.getElementById('admin-dash-recent-notifs');
+      if (!container) return;
+      fetch('ADMIN_BACKEND/admin_list_notifications.php?_t=' + Date.now(), { cache: 'no-store' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          var list = (Array.isArray(data) ? data : []).slice(0, 5);
+          if (!list.length) {
+            container.innerHTML = '<p style="color:#94a3b8;font-size:13px;margin:0;">No notifications yet.</p>';
+            return;
+          }
+          container.innerHTML = list.map(function(n) {
+            return '<a href="Admin_notif.html" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:9px;text-decoration:none;background:' + (n.read ? 'transparent' : '#f0f6ff') + ';">' +
+              '<span style="font-size:13px;font-weight:' + (n.read ? '500' : '700') + ';color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(n.title) + '</span>' +
+              '<span style="font-size:11px;color:#94a3b8;flex-shrink:0;">' + _dashTimeAgo(n.timestamp) + '</span>' +
+            '</a>';
+          }).join('');
+        })
+        .catch(function() {
+          container.innerHTML = '<p style="color:#94a3b8;font-size:13px;margin:0;">Couldn\'t load notifications.</p>';
+        });
     }
 
     function displayRecentActivities(activities) {

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/db.php';
+require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/password_policy.php';
 require_once __DIR__ . '/student_auth.php';
 
 header('Content-Type: application/json');
@@ -31,7 +32,7 @@ if (!$conn) {
 }
 
 // Verify current password
-$stmt = $conn->prepare("SELECT admin_password FROM admin_accounts WHERE id = ? AND role = 'student'");
+$stmt = $conn->prepare("SELECT admin_password, first_name, last_name FROM admin_accounts WHERE id = ? AND role = 'student'");
 $stmt->bind_param("i", $admin_account_id);
 $stmt->execute();
 $row = $stmt->get_result()->fetch_assoc();
@@ -48,6 +49,13 @@ $match  = password_verify($current_pw, $stored)
        || (!str_starts_with($stored, '$2y$') && $current_pw === $stored);
 if (!$match) {
     echo json_encode(['success' => false, 'message' => 'Current password is incorrect']);
+    $conn->close();
+    exit;
+}
+
+$violation = passwordPolicyViolation($new_pw, $row['first_name'] ?? '', $row['last_name'] ?? '');
+if ($violation) {
+    echo json_encode(['success' => false, 'message' => $violation]);
     $conn->close();
     exit;
 }

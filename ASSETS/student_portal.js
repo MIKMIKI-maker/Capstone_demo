@@ -1,6 +1,82 @@
 (function () {
   'use strict';
 
+  // Shared floating success/failure toast for every student page (matches
+  // the look of the page-local showToast() already in Student_settings.html,
+  // extended with warning/error color variants).
+  function applyToastStyle() {
+    if (document.getElementById('student-toast-style')) return;
+    var style = document.createElement('style');
+    style.id = 'student-toast-style';
+    style.textContent =
+      '.student-toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(20px);background:#19a87c;color:#fff;padding:14px 28px;border-radius:16px;font-family:"Fredoka","Poppins",sans-serif;font-weight:700;font-size:15px;box-shadow:0 8px 24px rgba(15,117,86,.35);opacity:0;transition:opacity .3s ease,transform .3s ease;z-index:99999;pointer-events:none;max-width:90vw}' +
+      '.student-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}' +
+      '.student-toast--warning{background:#ffc34d;color:#5c3d00;box-shadow:0 8px 24px rgba(210,146,15,.35)}' +
+      '.student-toast--error{background:#ff8a5b;color:#fff;box-shadow:0 8px 24px rgba(196,84,37,.35)}';
+    document.head.appendChild(style);
+  }
+
+  function showToast(message, type, durationMs) {
+    applyToastStyle();
+    type = (type === 'warning' || type === 'error') ? type : 'success';
+    var old = document.querySelector('.student-toast');
+    if (old) old.remove();
+    var t = document.createElement('div');
+    t.className = 'student-toast' + (type !== 'success' ? ' student-toast--' + type : '');
+    t.textContent = message;
+    document.body.appendChild(t);
+    requestAnimationFrame(function () { t.classList.add('show'); });
+    window.setTimeout(function () {
+      t.classList.remove('show');
+      window.setTimeout(function () { t.remove(); }, 350);
+    }, durationMs || 3200);
+  }
+  window.showToast = showToast;
+
+  // Small "Refreshing…" pill shown briefly on every auto-refresh tick, so
+  // the periodic reload is visible instead of silently swapping data in.
+  function applyRefreshIndicatorStyle() {
+    if (document.getElementById('student-refresh-indicator-style')) return;
+    var style = document.createElement('style');
+    style.id = 'student-refresh-indicator-style';
+    style.textContent =
+      '.student-refresh-indicator{position:fixed;top:14px;left:50%;transform:translateX(-50%) translateY(-12px);display:flex;align-items:center;gap:8px;background:#fff;color:#1b4fb8;padding:8px 18px;border-radius:999px;font-family:"Fredoka","Poppins",sans-serif;font-weight:700;font-size:12px;box-shadow:0 6px 18px rgba(36,58,94,.15);opacity:0;transition:opacity .2s ease,transform .2s ease;z-index:99998;pointer-events:none}' +
+      '.student-refresh-indicator.show{opacity:1;transform:translateX(-50%) translateY(0)}' +
+      '.student-refresh-indicator i{font-size:12px;animation:studentRefreshSpin 0.8s linear infinite}' +
+      '@keyframes studentRefreshSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}';
+    document.head.appendChild(style);
+  }
+
+  function showRefreshIndicator() {
+    applyRefreshIndicatorStyle();
+    var el = document.getElementById('student-refresh-indicator');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'student-refresh-indicator';
+      el.className = 'student-refresh-indicator';
+      el.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i><span>Refreshing…</span>';
+      document.body.appendChild(el);
+    }
+    el.classList.add('show');
+    window.clearTimeout(el._hideTimer);
+    el._hideTimer = window.setTimeout(function () { el.classList.remove('show'); }, 1200);
+  }
+
+  // Shared polling helper so list pages (materials, dashboard, etc.) pick up
+  // additions from elsewhere without a manual refresh. Pauses while the tab
+  // is hidden, and lets each page supply a guard so a tick doesn't clobber
+  // in-progress work.
+  function startAutoRefresh(fn, intervalMs, guardFn) {
+    if (typeof fn !== 'function') return;
+    return window.setInterval(function () {
+      if (document.hidden) return;
+      if (typeof guardFn === 'function' && guardFn()) return;
+      showRefreshIndicator();
+      fn();
+    }, intervalMs || 20000);
+  }
+  window.startAutoRefresh = startAutoRefresh;
+
   // Every STUDENT_FILES page (and student_responsive.css) collapses
   // .student-sidebar into a wrapped horizontal strip at 900px — the nav
   // items, avatar and sign-out button all squeeze into a few awkward rows

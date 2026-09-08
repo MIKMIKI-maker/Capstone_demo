@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/teacher_auth.php';
+require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/password_policy.php';
 
 header('Content-Type: application/json');
 
@@ -193,8 +194,8 @@ function changePassword($conn, $teacher_id) {
         return;
     }
 
-    // Get teacher email to look up admin_accounts
-    $email_stmt = $conn->prepare("SELECT teacher_email FROM teacher_accounts WHERE id=?");
+    // Get teacher email + name to look up admin_accounts and check the password policy
+    $email_stmt = $conn->prepare("SELECT teacher_email, first_name, last_name FROM teacher_accounts WHERE id=?");
     $email_stmt->bind_param("i", $teacher_id);
     $email_stmt->execute();
     $email_row = $email_stmt->get_result()->fetch_assoc();
@@ -202,6 +203,12 @@ function changePassword($conn, $teacher_id) {
 
     if (!$email_row) {
         echo json_encode(['success' => false, 'message' => 'Teacher not found']);
+        return;
+    }
+
+    $violation = passwordPolicyViolation($new_password, $email_row['first_name'] ?? '', $email_row['last_name'] ?? '');
+    if ($violation) {
+        echo json_encode(['success' => false, 'message' => $violation]);
         return;
     }
 
