@@ -9,6 +9,7 @@
 <link rel="icon" type="image/png" href="../../ASSETS/logo.png" />
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 <script>
 /* Happy activity sound effects (synthesized — no external audio files needed) */
@@ -521,6 +522,8 @@ function initActivityTheme(){
 
   /* ===== PRINTABLE WORKSHEET (Generate Printable button / PDF via browser print) ===== */
   .wrt-print-area{ display:none; }
+  .wrt-print-area.wrt-pdf-capture{ display:block; position:fixed; left:-99999px; top:0; background:#fff; }
+  .wrt-print-area.wrt-pdf-capture .wrt-print-page{ width:794px; height:1123px; padding:32px; box-sizing:border-box; background:#fff; display:flex; flex-direction:column; }
   .wrt-print-page{ font-family:'Poppins',sans-serif; color:#243a5e; }
   .wrt-print-head{ text-align:center; margin-bottom:10px; }
   .wrt-print-head h2{ font-size:21px; font-weight:700; margin:0 0 4px; }
@@ -547,7 +550,7 @@ function initActivityTheme(){
     body *{ visibility:hidden; }
     .wrt-print-area, .wrt-print-area *{ visibility:visible; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .wrt-print-area{ display:block; position:absolute; left:0; top:0; width:100%; margin:0; padding:0; }
-    .wrt-print-page{ page-break-after:always; padding:6mm 8mm; min-height:100vh; display:flex; flex-direction:column; box-sizing:border-box; }
+    .wrt-print-page{ page-break-after:always; padding:6mm 8mm; display:flex; flex-direction:column; box-sizing:border-box; }
     .wrt-print-page:last-child{ page-break-after:auto; }
     @page{ margin:8mm; size:auto; }
   }
@@ -580,6 +583,7 @@ function initActivityTheme(){
     <div class="wrt-top-actions">
       <button class="wrt-btn wrt-btn--help" id="wrtHelpBtn" type="button">❓ Help</button>
       <button class="wrt-btn wrt-btn--print" id="wrtPrintBtn" type="button">🖨️ Generate Printable</button>
+      <button class="wrt-btn wrt-btn--ghost" id="wrtPdfBtn" type="button">⬇️ Download PDF</button>
       <button class="wrt-btn wrt-btn--ghost" id="wrtPreviewBtn" type="button">👁 Preview</button>
       <button class="wrt-btn wrt-btn--ghost" id="wrtDraftBtn" type="button">💾 Save Draft</button>
       <button class="wrt-btn wrt-btn--pub" id="wrtPubBtn" type="button">🌐 Publish</button>
@@ -1684,8 +1688,44 @@ function initActivityTheme(){
     $("wrtPrintArea").innerHTML = buildPrintPages();
     setTimeout(function(){ window.print(); }, 60);
   }
+  function downloadAsPdf(){
+    var area = $("wrtPrintArea");
+    area.innerHTML = buildPrintPages();
+    area.classList.add("wrt-pdf-capture");
+    var pageEls = Array.prototype.slice.call(area.querySelectorAll(".wrt-print-page"));
+    if (!pageEls.length) { area.classList.remove("wrt-pdf-capture"); area.innerHTML = ""; return; }
+    window.showToast("Generating PDF…", "success", 4000);
+    var JsPdfCtor = window.jspdf && window.jspdf.jsPDF;
+    var pdf = null;
+    var chain = Promise.resolve();
+    pageEls.forEach(function(pageEl){
+      chain = chain.then(function(){
+        return html2canvas(pageEl, { scale:2, useCORS:true, backgroundColor:"#ffffff" });
+      }).then(function(canvas){
+        var imgData = canvas.toDataURL("image/jpeg", 0.92);
+        var pageWmm = 210, pageHmm = 297;
+        var imgWmm = pageWmm, imgHmm = canvas.height * imgWmm / canvas.width;
+        if (imgHmm > pageHmm) { imgHmm = pageHmm; imgWmm = canvas.width * imgHmm / canvas.height; }
+        if (!pdf) pdf = new JsPdfCtor({ orientation:"portrait", unit:"mm", format:"a4" });
+        else pdf.addPage();
+        pdf.addImage(imgData, "JPEG", (pageWmm - imgWmm) / 2, 0, imgWmm, imgHmm);
+      });
+    });
+    chain.then(function(){
+      area.classList.remove("wrt-pdf-capture");
+      area.innerHTML = "";
+      var name = ((state.activities[0] && state.activities[0].title) || "activity").replace(/[^\w\-]+/g, "_");
+      pdf.save(name + ".pdf");
+    }).catch(function(err){
+      area.classList.remove("wrt-pdf-capture");
+      area.innerHTML = "";
+      window.showToast("Could not generate the PDF. Please try again.", "error", 4500);
+      console.error(err);
+    });
+  }
   window.addEventListener("afterprint", function(){ $("wrtPrintArea").innerHTML = ""; });
   $("wrtPrintBtn").addEventListener("click", generatePrintable);
+  $("wrtPdfBtn").addEventListener("click", downloadAsPdf);
 
   function saveDraft() {
     var draftId = new URLSearchParams(location.search).get('draft_id') || ('draft_' + Date.now());
