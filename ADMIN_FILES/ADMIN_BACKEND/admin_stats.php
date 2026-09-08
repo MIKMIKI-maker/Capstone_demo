@@ -41,7 +41,15 @@ if ($tconn) {
 
     $stats['total_activities'] = 0;
     $stats['published_activities'] = 0;
-    $ar = $tconn->query("SELECT COUNT(*) AS total, SUM(status='published') AS published FROM teacher_activities");
+    // Matches Activity Library's own filter (admin_list_activities.php) so
+    // the two totals agree instead of counting different things — activities
+    // whose teacher is deactivated/removed are excluded from both.
+    $ar = $tconn->query("SELECT COUNT(*) AS total, SUM(ta.status='published') AS published
+        FROM teacher_activities ta
+        LEFT JOIN teacher_accounts tc ON ta.teacher_id = tc.id
+        LEFT JOIN admin_accounts aa ON aa.admin_email = tc.teacher_email
+        WHERE (tc.status IS NULL OR tc.status = 'active')
+          AND (aa.is_deleted IS NULL OR aa.is_deleted = 0)");
     if ($ar) {
         $arow = $ar->fetch_assoc();
         $stats['total_activities']     = (int)($arow['total']     ?? 0);

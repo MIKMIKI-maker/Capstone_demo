@@ -750,7 +750,6 @@ body { display: flex; }
 .al-teacher-wrap { display: flex; flex-direction: column; gap: 1px; }
 .al-teacher-name { font-size: 13px; font-weight: 600; color: #1a1a2e; }
 .al-teacher-role { font-size: 11.5px; color: #aaa; }
-.al-teacher-inactive-tag { color: #dc2626; font-weight: 600; }
 
 /* Status */
 .al-status {

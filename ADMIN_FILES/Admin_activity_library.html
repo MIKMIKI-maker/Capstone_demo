@@ -400,7 +400,6 @@
               type:        a.type        || '—',
               teacherName: a.creator     || '—',
               teacherRole: a.role        || 'SPED Teacher',
-              creatorInactive: !!a.creator_inactive,
               focus:       a.focus       || '—',
               category:    a.category    || '—',
               status:      (a.status || '').toLowerCase() === 'draft' ? 'Draft' : 'Published',
@@ -700,7 +699,7 @@
           +     '<span class="al-teacher-av">' + esc(ini) + '</span>'
           +     '<span class="al-teacher-wrap">'
           +       '<span class="al-teacher-name">' + esc(a.teacherName) + '</span>'
-          +       '<span class="al-teacher-role">' + esc(a.teacherRole) + (a.creatorInactive ? ' <span class="al-teacher-inactive-tag">(Inactive)</span>' : '') + '</span>'
+          +       '<span class="al-teacher-role">' + esc(a.teacherRole) + '</span>'
           +     '</span>'
           +   '</div>'
           + '</td>'
