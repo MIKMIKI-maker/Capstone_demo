@@ -24,7 +24,9 @@ $sql = "SELECT
     ta.created_at,
     ta.deadline,
     tc.first_name,
-    tc.last_name
+    tc.last_name,
+    tc.status AS teacher_status,
+    aa.is_deleted
 FROM teacher_activities ta
 LEFT JOIN teacher_accounts tc ON ta.teacher_id = tc.id
 LEFT JOIN admin_accounts aa ON aa.admin_email = tc.teacher_email
@@ -37,6 +39,16 @@ if ($result) {
             ? $row['first_name'] . ' ' . $row['last_name']
             : 'Unknown';
 
+        // A teacher whose account was deactivated or permanently deleted still
+        // keeps their real activities listed here (see the join above), but
+        // the admin needs a visible cue that this creator isn't a current,
+        // active account - otherwise their name can look like it belongs to
+        // whatever unrelated current user happens to share it.
+        $creatorInactive = !(
+            ($row['teacher_status'] === null || $row['teacher_status'] === 'active')
+            && empty($row['is_deleted'])
+        );
+
         $activities[] = [
             'id'         => $row['id'],
             'title'      => $row['title'],
@@ -48,6 +60,7 @@ if ($result) {
             'status'     => ucfirst($row['status'] ?: 'draft'),
             'creator'    => $created_by,
             'created_by' => $created_by,
+            'creator_inactive' => $creatorInactive,
             'created_at' => $row['created_at'],
             'deadline'   => $row['deadline']
         ];
