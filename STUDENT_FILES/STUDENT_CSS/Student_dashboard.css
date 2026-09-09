@@ -791,6 +791,34 @@ body {
 .student-story-ring img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #fff; display: block; }
 .student-story-label { font-family: var(--font-head); font-weight: 700; font-size: 12px; color: var(--ink); text-align: center; max-width: 88px; }
 
+/* "Wash Hands" bubble — same ring shape as the story bubble, but a cute
+   emoji on a white disc instead of a photo thumbnail (no extra image
+   asset needed), in its own gradient so it reads as a different kind of
+   item at a glance. */
+.student-story-ring--video { background: linear-gradient(135deg, #60a5fa, #34d399, #a78bfa); }
+.student-story-emoji { width: 100%; height: 100%; border-radius: 50%; background: #fff; border: 3px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 32px; }
+
+/* Wash Hands video modal — a simple rounded video player instead of the
+   full story-slide viewer above (native <video> controls handle
+   play/pause/scrub, no custom progress bar needed). */
+.student-video-viewer { position: fixed; inset: 0; z-index: 100000; background: rgba(10, 14, 26, .92); display: none; align-items: center; justify-content: center; padding: 20px; }
+.student-video-viewer.show { display: flex; }
+.student-video-frame { position: relative; width: min(92vw, 520px); background: #fff; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+.student-video-topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 16px; background: linear-gradient(135deg, #60a5fa, #34d399); }
+.student-video-title-txt { font-family: var(--font-head); font-weight: 700; font-size: 15px; color: #fff; }
+.student-video-close { flex: none; width: 30px; height: 30px; border-radius: 50%; border: none; background: rgba(255,255,255,.3); color: #fff; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.student-video-close:hover { background: rgba(255,255,255,.45); }
+.student-video-el { display: block; width: 100%; max-height: 70vh; background: #000; object-fit: contain; }
+
+/* Landscape (phone rotated, or just a short/wide window) — the video's
+   own frame is genuinely landscape-shaped, so a width capped for
+   portrait leaves it tiny; widen the frame and let the video claim
+   most of the viewport height instead. */
+@media (orientation: landscape) and (max-height: 560px) {
+  .student-video-frame { width: min(90vw, 860px); }
+  .student-video-el { max-height: 82vh; }
+}
+
 .student-story-viewer { position: fixed; inset: 0; z-index: 100000; background: rgba(10, 14, 26, .92); display: none; align-items: center; justify-content: center; }
 .student-story-viewer.show { display: flex; }
 .student-story-frame { position: relative; width: min(94vw, 480px); height: min(92vh, 854px); background: #111; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
