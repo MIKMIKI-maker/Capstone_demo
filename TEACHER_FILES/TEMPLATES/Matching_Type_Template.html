@@ -498,8 +498,56 @@ function initActivityTheme(){
     .mtg-top{ padding:12px 14px; gap:10px; }
     .mtg-top h1{ font-size:17px; }
     .mtg-back-btn{ order:-1; flex-basis:100%; justify-content:center; }
-    .mtg-top-actions{ width:100%; margin-left:0; justify-content:center; }
-    .mtg-btn{ flex:1 1 auto; justify-content:center; font-size:12.5px; padding:9px 10px; }
+    /* 2-per-row grid instead of organic flex-wrap, so the 6 action
+       buttons (Help / Generate Printable / Download PDF / Preview /
+       Save Draft / Publish) line up in even rows instead of leaving
+       one stranded alone on its own row. */
+    .mtg-top-actions{ width:100%; margin-left:0; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .mtg-btn{ justify-content:center; font-size:12.5px; padding:9px 10px; width:100%; }
+
+    /* Cards + their contents: shrink so panels read cleaner on a phone
+       width instead of feeling boxy/cramped, same shrink-in-place
+       approach used across the rest of the portal on mobile. */
+    .mtg-card{ padding:12px; }
+    .mtg-card + .mtg-card{ margin-top:12px; }
+    .mtg-step{ font-size:11px; margin-bottom:9px; }
+    .mtg-slidebar button{ width:26px; height:26px; font-size:12px; }
+    .mtg-slide-label{ font-size:12px; }
+    .mtg-type{ padding:10px; gap:9px; }
+    .mtg-type-ic{ width:34px; height:34px; font-size:17px; }
+    .mtg-type b{ font-size:14px; }
+    .mtg-type-desc{ font-size:11.5px; margin-top:9px; }
+    .mtg-item-row{ padding:7px 0; gap:6px; }
+    .mtg-thumb{ height:40px; font-size:20px; }
+    .mtg-side-name{ font-size:10px; padding:4px 5px; }
+    .mtg-media-tabs button{ font-size:8.5px; padding:2.5px 0; }
+
+    /* ACTIVITY STAGE (what the student actually matches) — everything
+       inside .mtg-stage is sized in em units off its own font-size, so
+       shrinking that one value scales the title/instructions/items/
+       buttons together automatically, same proportions as desktop,
+       instead of a phone-specific redesign. .mtg-match's 110px gap is a
+       fixed px value (not em) sized for a wide desktop stage to leave
+       room for the connecting lines between the two columns — on a
+       phone that alone can exceed the whole available width. The
+       connecting lines (drawn via getBoundingClientRect on the actual
+       dots, not a hardcoded gap assumption) adapt to whatever gap ends
+       up in place automatically. */
+    .mtg-stage{ font-size:20px; padding:14px 10px; }
+    .mtg-match{ gap:64px; }
+    .mtg-pitem{ padding:7px; }
+    .mtg-stage-controls{ margin-top:14px; }
+  }
+
+  /* Real student/preview mode centers the stage's content vertically in
+     a full 100vh box (justify-content:center) — fine on desktop where
+     the activity is usually tall enough to fill most of that height,
+     but on a phone the content can be much shorter relative to 100vh,
+     leaving an empty gap above (and below) it instead of the activity
+     actually using the screen. Anchoring to the top on mobile uses
+     that space instead of centering into empty air. */
+  @media (max-width:640px){
+    body.mtg-preview-only .mtg-stage{ justify-content:flex-start; padding-top:26px; }
   }
 
   /* ===== PRINTABLE WORKSHEET (Generate Printable button / PDF via browser print) ===== */
