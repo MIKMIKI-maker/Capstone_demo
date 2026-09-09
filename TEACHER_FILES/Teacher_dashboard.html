@@ -12,8 +12,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap"
         rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
-    <link href="TEACHER_CSS/Teacher_dashboard.css?v=12" rel="stylesheet" />
-    <link href="TEACHER_CSS/teacher_responsive.css?v=67" rel="stylesheet" />
+    <link href="TEACHER_CSS/Teacher_dashboard.css?v=14" rel="stylesheet" />
+    <link href="TEACHER_CSS/teacher_responsive.css?v=75" rel="stylesheet" />
 </head>
 
 <body>
@@ -128,16 +128,6 @@
                         <span class="teacher-stat-number" id="dashboard-assigned-learners">0</span>
                         <span class="teacher-stat-label">Assigned Learners</span>
                     </div>
-                </div>
-            </section>
-            <!-- RECENT NOTIFICATIONS -->
-            <section style="background:#fff;border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,.05);border:1px solid #edf2f7;padding:18px 22px;margin-bottom:20px;">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-                    <h3 style="font-family:'Poppins',sans-serif;font-size:15px;font-weight:700;color:#1e3a8a;margin:0;">🔔 Recent Notifications</h3>
-                    <a href="Teacher_notif.html" style="font-size:12px;font-weight:600;color:#2563eb;text-decoration:none;">View all →</a>
-                </div>
-                <div id="teacher-dash-recent-notifs" style="display:flex;flex-direction:column;gap:8px;">
-                    <p style="color:#94a3b8;font-size:13px;margin:0;">Loading…</p>
                 </div>
             </section>
             <!-- DASHBOARD GRID -->
@@ -322,8 +312,8 @@
                 // nowrap span — otherwise a line-wrap could break right
                 // between them (the space after the icon is a valid wrap
                 // point), leaving the pin icon stranded on its own line.
-                document.getElementById('teacher-greeting-sub').innerHTML = dateStr + ' · ' + timeStr + ' (PHST)'
-                    + (school ? ' · <span style="white-space:nowrap;"><i class="fa-solid fa-location-dot"></i> ' + shortenSchoolName(school) + '</span>' : '');
+                document.getElementById('teacher-greeting-sub').innerHTML = dateStr + ' · ' + timeStr
+                    + (school ? '<br><span style="white-space:nowrap;"><i class="fa-solid fa-location-dot"></i> ' + shortenSchoolName(school) + '</span>' : '');
             } else {
                 document.getElementById('teacher-greeting-sub').textContent = school
                     ? dateStr + ' · ' + timeStr + ' · ' + school
@@ -346,11 +336,10 @@
             loadTeacherProfile();
             loadDashboardStats();
             loadActivityPlan();
-            loadRecentNotifsWidget();
             // Auto-refresh dashboard stats so new activity/tasks/progress show
             // up without a manual reload — skipped while the tasks modal or
             // the mobile panel modal is open.
-            window.startAutoRefresh(function () { loadDashboardStats(); loadRecentNotifsWidget(); }, 5000, function () {
+            window.startAutoRefresh(function () { loadDashboardStats(); }, 5000, function () {
                 var tm = document.getElementById('tasks-modal');
                 var mpm = document.getElementById('mobile-panel-modal');
                 return !!((tm && tm.classList.contains('open')) || (mpm && mpm.classList.contains('open')));
@@ -491,8 +480,8 @@
                     var dateStr = now.toLocaleDateString('en-US', opts);
                     var timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Singapore' });
                     if (window.innerWidth <= 640) {
-                        document.getElementById('teacher-greeting-sub').innerHTML = dateStr + ' · ' + timeStr + ' (PHST)'
-                            + (t.schoolName ? ' · <span style="white-space:nowrap;"><i class="fa-solid fa-location-dot"></i> ' + shortenSchoolName(t.schoolName) + '</span>' : '');
+                        document.getElementById('teacher-greeting-sub').innerHTML = dateStr + ' · ' + timeStr
+                            + (t.schoolName ? '<br><span style="white-space:nowrap;"><i class="fa-solid fa-location-dot"></i> ' + shortenSchoolName(t.schoolName) + '</span>' : '');
                     } else {
                         document.getElementById('teacher-greeting-sub').textContent = t.schoolName
                             ? dateStr + ' · ' + timeStr + ' · ' + t.schoolName
@@ -791,30 +780,6 @@
                 .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         }
 
-        /* ── Recent Notifications widget ── */
-        function loadRecentNotifsWidget() {
-            var container = document.getElementById('teacher-dash-recent-notifs');
-            if (!container) return;
-            var tid = getCurrentTeacherId();
-            fetch('TEACHER_BACKEND/teacher_manage_notifications.php?action=list&teacher_id=' + tid + '&limit=5&_t=' + Date.now(), { cache: 'no-store' })
-                .then(function(r) { return r.json(); })
-                .then(function(d) {
-                    var list = (d && d.success && d.notifications) ? d.notifications.slice(0, 5) : [];
-                    if (!list.length) {
-                        container.innerHTML = '<p style="color:#94a3b8;font-size:13px;margin:0;">No notifications yet.</p>';
-                        return;
-                    }
-                    container.innerHTML = list.map(function(n) {
-                        return '<a href="Teacher_notif.html" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:9px;text-decoration:none;background:' + (n.is_read ? 'transparent' : '#f0f6ff') + ';">' +
-                            '<span style="font-size:13px;font-weight:' + (n.is_read ? '500' : '700') + ';color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escHtml(n.title) + '</span>' +
-                            '<span style="font-size:11px;color:#94a3b8;flex-shrink:0;">' + getTimeAgo(parseUtc(n.created_at)) + '</span>' +
-                        '</a>';
-                    }).join('');
-                })
-                .catch(function() {
-                    container.innerHTML = '<p style="color:#94a3b8;font-size:13px;margin:0;">Couldn\'t load notifications.</p>';
-                });
-        }
     </script>
 <script>(function(){var _id=sessionStorage.getItem('admin_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>
 <script>(function(){var _s=document.createElement('style');_s.textContent='.teacher-notif-badge{display:none!important}.teacher-notif-badge.has-notifs{position:absolute;top:4px;right:4px;min-width:16px;height:16px;border-radius:50%;background:#ef4444;color:#fff;font-size:9px;font-weight:700;display:flex!important;align-items:center;justify-content:center;padding:0 2px;border:2px solid #fff}';document.head.appendChild(_s);var tid=sessionStorage.getItem('teacher_id')||'';if(!tid)return;fetch('TEACHER_BACKEND/teacher_manage_notifications.php?action=get_unread_count&teacher_id='+encodeURIComponent(tid)).then(function(r){return r.json();}).then(function(d){var cnt=d&&d.unread_count>0?d.unread_count:0;if(cnt>0){var b=document.querySelector('.teacher-notif-badge');if(b){b.textContent=cnt>9?'9+':cnt;b.classList.add('has-notifs');}}}).catch(function(){});})();</script>

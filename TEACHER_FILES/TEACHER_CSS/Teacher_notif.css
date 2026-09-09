@@ -314,6 +314,16 @@ body {
     transition: var(--transition);
 }
 .teacher-clear-all-btn:hover { color: var(--red); }
+.teacher-clear-all-btn:disabled { opacity: .4; cursor: not-allowed; }
+.teacher-clear-all-btn:disabled:hover { color: var(--muted); }
+.teacher-mark-all-btn:disabled { opacity: .4; cursor: not-allowed; }
+.teacher-mark-all-btn:disabled:hover { background: var(--orange); transform: none; box-shadow: none; }
+
+/* Mobile-only trigger for the "Send Notification" modal — the card
+   itself stays the source of truth (moved into the modal on open, see
+   Teacher_notif.html JS), this button is just its phone-width entry
+   point. Hidden on desktop, where the card is inline as normal. */
+.teacher-send-notif-trigger { display: none; }
 
 .teacher-mark-all-btn {
     padding: 10px 22px;

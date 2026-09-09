@@ -12,8 +12,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap"
         rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
-    <link href="TEACHER_CSS/Teacher_notif.css" rel="stylesheet" />
-    <link href="TEACHER_CSS/teacher_responsive.css?v=67" rel="stylesheet" />
+    <link href="TEACHER_CSS/Teacher_notif.css?v=1" rel="stylesheet" />
+    <link href="TEACHER_CSS/teacher_responsive.css?v=75" rel="stylesheet" />
 </head>
 
 <body>
@@ -112,17 +112,21 @@
                         type="button">Unread (<!-- backend -->)</button>
                 </div>
                 <div class="teacher-filter-actions">
-                    <button class="teacher-clear-all-btn" onclick="clearAll()" type="button">Clear All</button>
-                    <button class="teacher-mark-all-btn" onclick="markAllRead()" type="button">Mark All as Read</button>
+                    <button class="teacher-clear-all-btn" id="teacherClearAllBtn" onclick="clearAll()" type="button">Clear All</button>
+                    <button class="teacher-mark-all-btn" id="teacherMarkAllBtn" onclick="markAllRead()" type="button">Mark All as Read</button>
                 </div>
             </div>
             <!-- SEND NOTIFICATION TO STUDENT -->
-            <div style="background:#fff;border-radius:14px;border:1px solid #e8ecf4;padding:20px 22px;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,.04);">
+            <!-- Mobile-only trigger — opens the card below inside a modal
+                 instead of it sitting inline and eating up phone-screen
+                 space. Hidden on desktop, where the card just stays inline. -->
+            <button class="teacher-send-notif-trigger" id="teacherSendNotifTrigger" type="button">📢 Send Notification to Student</button>
+            <div class="teacher-send-notif-card" id="teacherSendNotifCard" style="background:#fff;border-radius:14px;border:1px solid #e8ecf4;padding:20px 22px;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,.04);">
               <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
                 <span style="font-size:20px;">📢</span>
                 <h3 style="font-family:'Poppins',sans-serif;font-size:15px;font-weight:700;color:#1e3a8a;margin:0;">Send Notification to Student</h3>
               </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+              <div class="teacher-send-notif-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
                 <select id="notif-student-select" style="padding:9px 12px;border:1px solid #dde3f0;border-radius:9px;font-size:13px;font-family:'Poppins',sans-serif;color:#333;background:#f8faff;">
                   <option value="">Broadcast to all students</option>
                 </select>
@@ -135,8 +139,8 @@
               </div>
               <input id="notif-title-input" placeholder="Notification title…" type="text" style="width:100%;padding:9px 12px;border:1px solid #dde3f0;border-radius:9px;font-size:13px;font-family:'Poppins',sans-serif;margin-bottom:8px;box-sizing:border-box;" />
               <textarea id="notif-msg-input" placeholder="Write your message here…" rows="2" style="width:100%;padding:9px 12px;border:1px solid #dde3f0;border-radius:9px;font-size:13px;font-family:'Poppins',sans-serif;resize:vertical;box-sizing:border-box;margin-bottom:10px;"></textarea>
-              <div style="display:flex;align-items:center;gap:10px;">
-                <button onclick="sendStudentNotif()" type="button" style="padding:9px 22px;background:#1e3a8a;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:600;font-family:'Poppins',sans-serif;cursor:pointer;">Send</button>
+              <div class="teacher-send-notif-actions" style="display:flex;align-items:center;gap:10px;">
+                <button class="teacher-send-btn" onclick="sendStudentNotif()" type="button" style="padding:9px 22px;background:#1e3a8a;color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:600;font-family:'Poppins',sans-serif;cursor:pointer;">Send</button>
                 <span id="notif-send-status" style="font-size:12px;color:#16a34a;font-family:'Poppins',sans-serif;"></span>
               </div>
             </div>
@@ -162,6 +166,15 @@
             <div class="teacher-notif-pagination" id="teacher-notif-pagination"></div>
         </main>
     </div><!-- /teacher-app-wrapper -->
+
+    <!-- SEND NOTIFICATION MODAL (mobile only — the .teacher-send-notif-card
+         node itself is moved in here on open and moved back on close, so
+         its inputs/IDs stay singular instead of being duplicated) -->
+    <div class="tn-modal-overlay" id="teacherSendNotifOverlay">
+        <div class="tn-modal-card single-col" id="teacherSendNotifModalCard">
+            <button class="tn-modal-close" id="teacherSendNotifCloseBtn" type="button">✖</button>
+        </div>
+    </div>
 
     <!-- NOTIFICATION DETAIL MODAL -->
     <div class="tn-modal-overlay" id="tnModalOverlay">
@@ -290,6 +303,15 @@
             var container = document.getElementById('teacher-notifList');
             var empty = document.getElementById('teacher-emptyState');
             var footer = document.getElementById('teacher-notif-footer');
+
+            // Clear All / Mark All as Read do nothing useful with an empty
+            // tray — disable + fade them instead of leaving two dead-looking
+            // but clickable buttons.
+            var hasAny = allNotifications.length > 0;
+            var clearBtn = document.getElementById('teacherClearAllBtn');
+            var markBtn = document.getElementById('teacherMarkAllBtn');
+            if (clearBtn) clearBtn.disabled = !hasAny;
+            if (markBtn) markBtn.disabled = !hasAny;
 
             if (!list.length) {
                 container.innerHTML = '';
@@ -506,6 +528,34 @@
         document.getElementById('tnModalOverlay').addEventListener('click', function(e) {
             if (e.target === this) closeDetailModal();
         });
+
+        /* ── Send Notification card → modal on mobile ── */
+        (function() {
+            var card = document.getElementById('teacherSendNotifCard');
+            var trigger = document.getElementById('teacherSendNotifTrigger');
+            var overlay = document.getElementById('teacherSendNotifOverlay');
+            var modalCard = document.getElementById('teacherSendNotifModalCard');
+            var closeBtn = document.getElementById('teacherSendNotifCloseBtn');
+            if (!card || !trigger || !overlay || !modalCard || !closeBtn) return;
+            // Remember where the card actually lives so closing the modal
+            // can put it back exactly where it was, instead of duplicating
+            // the form (which would duplicate its input IDs too).
+            var homeParent = card.parentNode, homeNext = card.nextSibling;
+
+            function openSendModal() {
+                modalCard.appendChild(card);
+                card.classList.add('teacher-send-notif-card--in-modal');
+                overlay.classList.add('show');
+            }
+            function closeSendModal() {
+                overlay.classList.remove('show');
+                card.classList.remove('teacher-send-notif-card--in-modal');
+                homeParent.insertBefore(card, homeNext);
+            }
+            trigger.addEventListener('click', openSendModal);
+            closeBtn.addEventListener('click', closeSendModal);
+            overlay.addEventListener('click', function(e) { if (e.target === overlay) closeSendModal(); });
+        })();
 
         /* ── Load students into send-notif dropdown ── */
         function loadStudentDropdown() {
