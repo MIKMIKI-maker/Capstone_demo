@@ -103,15 +103,6 @@ body {
 .student-page-title { font-family: var(--font-head); font-weight: 700; font-size: 32px; line-height: 1; }
 .student-page-sub { margin-top: 6px; color: var(--ink-soft); font-weight: 500; font-size: 14px; }
 .student-page-header-right { display: flex; align-items: center; gap: 12px; }
-.student-export-btn {
-  cursor: pointer; border: none;
-  padding: 13px 20px; border-radius: var(--r-md);
-  background: var(--blue); color: #fff;
-  font-family: var(--font-head); font-weight: 700; font-size: 15px;
-  box-shadow: 0 5px 0 var(--blue-dark);
-  transition: transform .08s ease, box-shadow .08s ease;
-}
-.student-export-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--blue-dark); }
 .student-notif-btn {
   position: relative; width: 50px; height: 50px; flex: none;
   border-radius: 16px; display: flex; align-items: center; justify-content: center;
@@ -146,6 +137,10 @@ body {
   box-shadow: 0 6px 0 var(--blue-dark); overflow: hidden;
 }
 .student-ov-info { flex: 1; min-width: 160px; }
+/* Unwrapped on desktop — avatar+info become direct flex items of
+   .student-overview-card, exactly as if this wrapper weren't there.
+   Only made a real flex box on mobile (see the media query below). */
+.student-ov-header-group { display: contents; }
 .student-ov-name { font-family: var(--font-head); font-weight: 700; font-size: 22px; color: var(--ink); }
 .student-ov-chips { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
 .student-chip {
@@ -155,6 +150,11 @@ body {
 .student-chip--blue { background: #e7f0ff; color: var(--blue); }
 .student-chip--gray { background: #eef1f6; color: var(--ink-soft); }
 .student-ov-divider { width: 1px; height: 90px; background: rgba(36, 58, 94, .10); }
+/* Unwrapped on desktop — its 2 dividers + 2 stats become direct flex
+   items of .student-overview-card, exactly as if this wrapper weren't
+   there at all. Only made a real flex box on mobile (see the media
+   query below) so the two circles are forced to wrap as one unit. */
+.student-ov-stats-group { display: contents; }
 
 .student-ov-stat { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .student-circle-wrap { position: relative; width: 80px; height: 80px; }
@@ -205,6 +205,33 @@ body {
   max-width: 320px; color: var(--ink-soft); font-weight: 500; font-size: 14px; line-height: 1.4;
 }
 
+/* Mobile-only trigger for the Teacher's Notes modal — the card itself
+   stays the source of truth (moved into the modal on open, see the
+   page's JS), this button is just its phone-width entry point. Hidden
+   on desktop, where the card is inline as normal. */
+.student-notes-trigger { display: none; }
+
+/* Generic small modal (progress page) — overlay + centered card,
+   reused for the Teacher's Notes modal. */
+.pg-modal-overlay {
+  position: fixed; inset: 0; background: rgba(15, 23, 42, .45);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; padding: 20px;
+}
+.pg-modal-overlay.show { display: flex; }
+.pg-modal-card {
+  background: #fff; border-radius: 18px; max-width: 420px; width: 100%;
+  max-height: 82vh; overflow-y: auto; position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+}
+.pg-modal-close {
+  position: absolute; top: 14px; right: 14px; z-index: 2;
+  width: 30px; height: 30px; border-radius: 50%; border: none;
+  background: #f1f5f9; color: #64748b; font-size: 15px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.pg-modal-close:hover { background: #e2e8f0; color: #1e293b; }
+
 
 /* ---- Activity history ---- */
 .student-history-card {
@@ -252,9 +279,56 @@ body {
   .student-sidebar-nav { flex-direction: row; flex-wrap: wrap; margin: 0; }
   .student-sidebar-footer { flex-direction: row; margin: 0 0 0 auto; }
   .student-content-grid { grid-template-columns: 1fr; }
-  .student-overview-card { justify-content: center; text-align: center; }
+  /* Same left/right split as desktop — avatar+name hugging the left
+     edge, both circles hugging the right edge, with one gap between
+     the two clusters (not one even gap between every single item) —
+     just shrunk hard to actually fit a phone width. header-group and
+     stats-group are real flex rows here (not unwrapped), so each
+     cluster's own items stay snug while space-between only pushes the
+     2 clusters themselves apart. */
+  .student-overview-card {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+    gap: 10px;
+    padding: 14px 12px;
+  }
+  .student-ov-header-group { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .student-ov-stats-group { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
   .student-ov-divider { display: none; }
+  .student-ov-stat { gap: 2px; min-width: 0; text-align: center; }
+  .student-ov-avatar { width: 40px; height: 40px; font-size: 12px; flex-shrink: 0; box-shadow: 0 3px 0 var(--blue-dark); }
+  .student-ov-info { flex: 0 1 auto; min-width: 0; }
+  .student-ov-name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .student-ov-chips { justify-content: flex-start; margin-top: 3px; gap: 3px; flex-wrap: wrap; }
+  .student-chip { padding: 3px 8px; font-size: 9px; }
+  /* The <svg> has explicit width/height="80" HTML attributes (needed
+     for its stroke-dasharray math) — resizing the wrapper div alone
+     doesn't shrink an svg with its own explicit attributes. */
+  .student-circle-wrap { width: 40px; height: 40px; flex-shrink: 0; }
+  .student-circle-wrap svg { width: 100%; height: 100%; }
+  .student-circle-num { font-size: 11px; }
+  .student-circle-denom { font-size: 6px; }
+  .student-ov-stat-label { font-size: 7.5px; line-height: 1.15; }
+  .student-ov-stat-sub { font-size: 6.5px; }
   .student-main { padding: 20px; }
+
+  /* Teacher's Notes: card only shows inline once moved into the modal
+     (JS adds --in-modal on open); otherwise the phone-width entry
+     point is .student-notes-trigger. */
+  .student-notes-card { display: none; }
+  .student-notes-card.student-notes-card--in-modal { display: block; }
+  .student-notes-trigger {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; margin-bottom: 16px; padding: 13px 14px;
+    background: #fff; color: var(--ink); border: 1.5px solid #e2e8f0; border-radius: 14px;
+    font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    box-shadow: 0 6px 16px rgba(36, 58, 94, .07); cursor: pointer;
+  }
+  #studentNotesModalCard { padding: 40px 20px 20px; }
 
   /* .student-history-card already has overflow-x:auto, but the table
      itself had no min-width — with none of its own, the browser's table
@@ -283,7 +357,7 @@ body {
    print-to-PDF, same approach as the worksheet "Generate Printable".
    ============================================================ */
 @media print {
-  .student-sidebar, .student-export-btn, .student-notif-btn, #spedLoading { display: none !important; }
+  .student-sidebar, .student-notif-btn, #spedLoading { display: none !important; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   body { display: block; height: auto; overflow: visible; background: #fff; }
   .student-main { height: auto; overflow: visible; padding: 0; }

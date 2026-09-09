@@ -366,9 +366,61 @@ body.student-fullview .student-main { padding: 28px 44px; }
   }
   .student-sidebar-nav { flex-direction: row; flex-wrap: wrap; margin: 0; }
   .student-sidebar-footer { flex-direction: row; margin: 0 0 0 auto; }
-  .student-stat-cards { grid-template-columns: 1fr; }
-  .student-cheer { flex-direction: column; text-align: center; }
   .student-main { padding: 20px; }
+
+  /* Shrunk enough that the trailing star stays on the same line as
+     the subtitle text instead of wrapping onto its own line below. */
+  .student-page-sub { font-size: 13px; }
+  .student-sub-star { font-size: 13px; }
+
+  /* Keep every remaining section's exact desktop layout (search+tabs
+     on one row, 3 stat cards side by side, 3-across material cards,
+     cheer banner as one row) — just shrink padding/fonts/sizes in
+     place instead of restacking into single columns. */
+  /* !important: .student-reading-card's own unconditional base rule
+     (display:flex) is declared LATER in this file, further down past
+     this media block — with equal specificity, source order wins
+     regardless of which one is inside a media query, so without
+     !important that later rule kept re-showing the card here. */
+  .student-fullview-btn,
+  .student-reading-card { display: none !important; }
+
+  .student-filter-row { flex-wrap: nowrap; gap: 8px; }
+  .student-search-box { flex: 1; min-width: 0; padding: 8px 10px; }
+  .student-search-box input { min-width: 0; font-size: 11px; }
+  .student-filter-tabs { flex-shrink: 0; gap: 4px; }
+  .student-ftab { padding: 7px 10px; font-size: 10.5px; }
+
+  /* !important: student_responsive.css (loaded after this file) has its
+     own generic .student-stat-cards rule collapsing it to 2 columns —
+     this page keeps all 3 side by side like desktop, just shrunk. */
+  .student-stat-cards { grid-template-columns: repeat(3, 1fr) !important; gap: 8px; }
+  .student-stat-card { padding: 10px 8px; gap: 6px; }
+  .student-stat-icon { width: 28px; height: 28px; border-radius: 8px; font-size: 13px; }
+  .student-stat-number { font-size: 17px; }
+  .student-stat-label { font-size: 8px; margin-top: 1px; }
+  .student-stat-card::after { width: 40px; height: 40px; right: 8px; }
+
+  /* 2 per row instead of 3 — 3-across read as too tiny/cramped on a
+     phone, so this trades exact desktop column-count for readability. */
+  .student-material-list { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .student-material-card { padding: 10px; border-radius: 14px; }
+  .student-mat-badge { top: 8px; left: 8px; padding: 3px 9px; font-size: 9px; }
+  .student-mat-star { top: 8px; right: 8px; font-size: 15px; }
+  .student-mat-card-thumb { font-size: 26px; margin-bottom: 6px; border-radius: 10px; }
+  .student-mat-card-title { font-size: 13px; }
+  .student-mat-card-tag { font-size: 10px; }
+  .student-mat-progress { gap: 5px; margin: 5px 0; }
+  .student-mat-progress-bar { height: 6px; }
+  .student-mat-progress-pct { font-size: 10px; }
+  .student-mat-card-btn { padding: 8px 0; font-size: 12px; border-radius: 9px; }
+
+  .student-cheer { padding: 10px 12px; gap: 8px; }
+  .student-cheer-panda, .student-cheer-rainbow { font-size: 26px; }
+  .student-cheer-bubble { padding: 6px 9px; gap: 0; }
+  .student-cheer-bubble strong { font-size: 10px; }
+  .student-cheer-bubble span { font-size: 8.5px; }
+  .student-cheer-text { font-size: 11px; }
 }
 
 
@@ -450,7 +502,3 @@ body.student-fullview .student-main { padding: 28px 44px; }
 .student-story-cf-dot { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.35); cursor: pointer; border: none; padding: 0; transition: width .2s ease, background .2s ease; }
 .student-story-cf-dot.active { background: #fff; width: 22px; border-radius: 5px; }
 
-@media (max-width: 640px) {
-  .student-reading-card { flex-wrap: wrap; }
-  .student-reading-btn { width: 100%; }
-}

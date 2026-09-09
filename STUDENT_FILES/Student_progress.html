@@ -7,15 +7,15 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>SPED ALM - My Progress</title>
     <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
-    <link href="STUDENT_CSS/Student_progress.css?v=3" rel="stylesheet" />
-    <link href="STUDENT_CSS/student_responsive.css?v=5" rel="stylesheet" />
+    <link href="STUDENT_CSS/Student_progress.css?v=16" rel="stylesheet" />
+    <link href="STUDENT_CSS/student_responsive.css?v=6" rel="stylesheet" />
     <link
         href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;family=Nunito:wght@400;600;700;800;900&amp;display=swap"
         rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&amp;display=swap"
         rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
-    <script src="../ASSETS/student_portal.js?v=5" defer></script>
+    <script src="../ASSETS/student_portal.js?v=7" defer></script>
 </head>
 
 <body>
@@ -97,7 +97,6 @@
                 <p class="student-page-sub">Generated Date: —  ·  School Year: 2025–2026</p>
             </div>
             <div class="student-page-header-right">
-                <button class="student-export-btn" type="button" onclick="exportProgressPdf()">⬇ Export PDF</button>
                 <a class="student-notif-btn" href="Student_notif.html">
                     <i class="fa-regular fa-bell"></i>
                     <span class="student-notif-badge"></span>
@@ -106,46 +105,61 @@
         </header>
         <!-- STUDENT OVERVIEW CARD -->
         <div class="student-overview-card">
-            <div class="student-ov-avatar" id="progOvAvatar">JS</div>
-            <div class="student-ov-info">
-                <div class="student-ov-name">—</div>
-                <div class="student-ov-chips">
-                    <span class="student-chip student-chip--blue">—</span>
-                    <span class="student-chip student-chip--gray">—</span>
-                </div>
-            </div>
-            <div class="student-ov-divider"></div>
-            <!-- Overall Progress circle -->
-            <div class="student-ov-stat">
-                <div class="student-circle-wrap">
-                    <svg height="80" viewBox="0 0 80 80" width="80">
-                        <circle class="student-circle-track" cx="40" cy="40" r="32"></circle>
-                        <circle class="student-circle-fill student-circle-fill--blue" cx="40" cy="40" r="32"
-                            stroke-dasharray="201" stroke-dashoffset="201"></circle>
-                    </svg>
-                    <div class="student-circle-text">
-                        <span class="student-circle-num">—</span>
-                        <span class="student-circle-denom">/100</span>
+            <!-- Same display:contents-on-desktop / real-flex-on-mobile
+                 trick as .student-ov-stats-group below, so the card
+                 becomes exactly 2 stacked row-blocks on mobile
+                 (avatar+name, then the stats) — align-items:center on
+                 the card centers each block by its own width against
+                 the same axis, which lines them up precisely instead
+                 of leaving each flex-wrap "line" to center by its own
+                 unrelated content width. -->
+            <div class="student-ov-header-group">
+                <div class="student-ov-avatar" id="progOvAvatar">JS</div>
+                <div class="student-ov-info">
+                    <div class="student-ov-name">—</div>
+                    <div class="student-ov-chips">
+                        <span class="student-chip student-chip--blue">—</span>
+                        <span class="student-chip student-chip--gray">—</span>
                     </div>
                 </div>
-                <div class="student-ov-stat-label">Overall Progress</div>
-                <div class="student-ov-stat-sub">avg score</div>
             </div>
-            <div class="student-ov-divider"></div>
-            <!-- Activities Completed circle -->
-            <div class="student-ov-stat">
-                <div class="student-circle-wrap">
-                    <svg height="80" viewBox="0 0 80 80" width="80">
-                        <circle class="student-circle-track" cx="40" cy="40" r="32"></circle>
-                        <circle class="student-circle-fill student-circle-fill--green" cx="40" cy="40" r="32"
-                            stroke-dasharray="201" stroke-dashoffset="201"></circle>
-                    </svg>
-                    <div class="student-circle-text">
-                        <span class="student-circle-num">—</span>
-                        <span class="student-circle-denom">/—</span>
+            <!-- display:contents on desktop (flat row, exactly as before);
+                 a real flex row on mobile so both circles always wrap
+                 together as one unit instead of splitting apart. -->
+            <div class="student-ov-stats-group">
+                <div class="student-ov-divider"></div>
+                <!-- Overall Progress circle -->
+                <div class="student-ov-stat">
+                    <div class="student-circle-wrap">
+                        <svg height="80" viewBox="0 0 80 80" width="80">
+                            <circle class="student-circle-track" cx="40" cy="40" r="32"></circle>
+                            <circle class="student-circle-fill student-circle-fill--blue" cx="40" cy="40" r="32"
+                                stroke-dasharray="201" stroke-dashoffset="201"></circle>
+                        </svg>
+                        <div class="student-circle-text">
+                            <span class="student-circle-num">—</span>
+                            <span class="student-circle-denom">/100</span>
+                        </div>
                     </div>
+                    <div class="student-ov-stat-label">Overall Progress</div>
+                    <div class="student-ov-stat-sub">avg score</div>
                 </div>
-                <div class="student-ov-stat-label">Activities Completed</div>
+                <div class="student-ov-divider"></div>
+                <!-- Activities Completed circle -->
+                <div class="student-ov-stat">
+                    <div class="student-circle-wrap">
+                        <svg height="80" viewBox="0 0 80 80" width="80">
+                            <circle class="student-circle-track" cx="40" cy="40" r="32"></circle>
+                            <circle class="student-circle-fill student-circle-fill--green" cx="40" cy="40" r="32"
+                                stroke-dasharray="201" stroke-dashoffset="201"></circle>
+                        </svg>
+                        <div class="student-circle-text">
+                            <span class="student-circle-num">—</span>
+                            <span class="student-circle-denom">/—</span>
+                        </div>
+                    </div>
+                    <div class="student-ov-stat-label">Activities Completed</div>
+                </div>
             </div>
         </div>
         <!-- CONTENT GRID -->
@@ -165,7 +179,11 @@
                 </div>
             </div>
             <!-- Teacher's Notes -->
-            <div class="student-notes-card">
+            <!-- Mobile-only trigger — opens the card below inside a modal
+                 instead of it sitting inline and eating up phone-screen
+                 space. Hidden on desktop, where the card just stays inline. -->
+            <button class="student-notes-trigger" id="studentNotesTrigger" type="button">📝 Teacher's Notes / Recommendations</button>
+            <div class="student-notes-card" id="studentNotesCard">
                 <div class="student-notes-title">Teacher's Notes / Recommendations</div>
                 <div class="student-notes-empty">
                     <div class="student-notes-empty-icon">📝</div>
@@ -200,7 +218,44 @@
         </div>
     </main>
 
+    <!-- TEACHER'S NOTES MODAL (mobile only — the .student-notes-card node
+         itself is moved in here on open and moved back on close, so its
+         content/IDs stay singular instead of being duplicated) -->
+    <div class="pg-modal-overlay" id="studentNotesOverlay">
+        <div class="pg-modal-card" id="studentNotesModalCard">
+            <button class="pg-modal-close" id="studentNotesCloseBtn" type="button">✖</button>
+        </div>
+    </div>
+
     <script>
+    /* ── Teacher's Notes card → modal on mobile ── */
+    (function() {
+        var card = document.getElementById('studentNotesCard');
+        var trigger = document.getElementById('studentNotesTrigger');
+        var overlay = document.getElementById('studentNotesOverlay');
+        var modalCard = document.getElementById('studentNotesModalCard');
+        var closeBtn = document.getElementById('studentNotesCloseBtn');
+        if (!card || !trigger || !overlay || !modalCard || !closeBtn) return;
+        // Remember where the card actually lives so closing the modal can
+        // put it back exactly where it was, instead of duplicating its
+        // content (which would duplicate any IDs inside it too).
+        var homeParent = card.parentNode, homeNext = card.nextSibling;
+
+        function openNotesModal() {
+            modalCard.appendChild(card);
+            card.classList.add('student-notes-card--in-modal');
+            overlay.classList.add('show');
+        }
+        function closeNotesModal() {
+            overlay.classList.remove('show');
+            card.classList.remove('student-notes-card--in-modal');
+            homeParent.insertBefore(card, homeNext);
+        }
+        trigger.addEventListener('click', openNotesModal);
+        closeBtn.addEventListener('click', closeNotesModal);
+        overlay.addEventListener('click', function(e) { if (e.target === overlay) closeNotesModal(); });
+    })();
+
     function fmtDate(iso) {
         if (!iso) return '—';
         return new Date(iso).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
@@ -353,20 +408,6 @@
         // Date
         document.querySelector('.student-page-sub').textContent =
             'Generated: ' + new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) + '  ·  School Year: 2025–2026';
-    }
-
-    // "Export PDF" uses the browser's print-to-PDF (same approach as the
-    // worksheet "Generate Printable" buttons) — no external library needed.
-    function exportProgressPdf() {
-        var name = (document.querySelector('.student-ov-name') || {}).textContent || 'Student';
-        var dateStr = new Date().toISOString().slice(0, 10);
-        var prevTitle = document.title;
-        document.title = name.trim() + ' - Progress Report - ' + dateStr;
-        window.addEventListener('afterprint', function restoreTitle() {
-            document.title = prevTitle;
-            window.removeEventListener('afterprint', restoreTitle);
-        });
-        window.print();
     }
 
     function escStr(s) {

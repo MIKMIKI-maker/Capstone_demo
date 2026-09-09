@@ -654,37 +654,23 @@ body {
     font-size: 10.5px;
   }
 
-  /* align-items:center is the base (row-layout) rule, meant to vertically
-     center .student-progress-left/-right as row siblings on desktop —
-     harmless there since align-items only affects the CROSS axis (height)
-     in a row. But flex-direction:column below flips the cross axis to
-     WIDTH, so that same center inherited unintentionally shrink-wrapped
-     both children to their own content width instead of the full banner
-     — the progress bar was never actually filling/scaling with the
-     available width, just sized to whatever the label text needed.
-     stretch here (mobile-only) is what makes the bar genuinely fluid. */
+  /* Keep the exact same left-label+bar / right-badge row layout as
+     desktop instead of restacking into a centered column — just
+     shrink padding/fonts/sizes in place so it fits a phone width. */
   .student-progress-banner {
-    flex-direction: column;
-    align-items: stretch;
-    text-align: center;
+    padding: 16px 16px;
+    gap: 10px;
   }
-  /* Just the left half (where the bar lives) — .student-progress-right
-     (the trophy badge) stays shrink-wrapped/centered as it already was. */
-  .student-progress-left {
-    width: 100%;
-  }
-
-  /* Bar + "x/100" text stay inline as long as there's room, but wrap the
-     text onto its own line instead of squeezing the bar past a readable
-     width once the row gets too tight for both. */
-  .student-progress-bar-wrap {
-    flex-wrap: wrap;
-    justify-content: center;
-    row-gap: 6px;
-  }
-  .student-progress-bar {
-    min-width: 60px;
-  }
+  .student-progress-label { font-size: 9.5px; }
+  .student-progress-msg { font-size: 11px; margin-bottom: 8px; }
+  .student-progress-bar-wrap { gap: 8px; }
+  .student-progress-bar { height: 13px; }
+  .student-progress-text { font-size: 10px; }
+  .student-progress-stars { gap: 4px; margin-top: 10px; }
+  .student-progress-stars span { font-size: 18px; }
+  .student-star-badge { padding: 7px 10px; gap: 5px; border-radius: 11px; }
+  .student-star-icon { font-size: 13px; }
+  .student-star-label { font-size: 10.5px; }
 
   .student-main {
     padding: 20px;
@@ -699,18 +685,39 @@ body {
     text-align: center;
   }
 
-  /* ASSETS/student_notif_position.js moves the notif bell out of this row
-     at this same breakpoint, so .student-topbar-left (star + greeting) is
-     effectively the only thing left in .student-topbar — center it as a
-     unit, then center the star+text within it, then center the greeting/
-     date text itself so it stays centered even when it wraps. */
+  /* .student-notif-btn is pulled out of normal flow by
+     ASSETS/student_portal.js (position:absolute, floated to the
+     corner), so .student-topbar-left (star + greeting) is effectively
+     the only thing left in .student-topbar on a phone.
+     The star needs to sit beside "Hello, Cj!" specifically, not beside
+     the whole star+h1+p block — the subtitle line ("Wednesday,
+     September 9, 2026 · Non-Graded Pipit") is much wider than "Hello,
+     Cj!", so centering (star + a div containing both lines) as one
+     unit put the star off to the side of where the short greeting
+     text itself visually centers. display:contents "unwraps" that
+     inner div so its h1/p become direct flex items alongside the
+     star; giving the <p> flex-basis:100% forces it onto its own line,
+     so flex-wrap ends up with line 1 = star+h1 (centered together,
+     star genuinely beside "Hello, Cj!") and line 2 = the subtitle
+     (centered on its own, full-width line below). */
   .student-topbar {
     justify-content: center;
     text-align: center;
   }
   .student-topbar-left {
-    justify-content: center;
+    width: 100% !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 6px 10px !important;
+    /* Nudges the centered star+greeting (and subtitle line under it)
+       slightly left of dead-center — padding-right without a matching
+       padding-left shrinks the space "center" is measured against on
+       the right side only. */
+    padding-right: 28px !important;
   }
+  .student-topbar-left > div { display: contents; }
+  .student-greeting-sub { flex-basis: 100%; }
 }
 
 @media (max-width: 480px) {
