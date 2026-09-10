@@ -4,7 +4,7 @@
 
 <head>
     <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
-    <script src="../ASSETS/teacher_portal.js?v=5"></script>
+    <script src="../ASSETS/teacher_portal.js?v=7"></script>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
@@ -12,8 +12,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap"
         rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
-    <link href="TEACHER_CSS/Teacher_dashboard.css?v=12" rel="stylesheet" />
-    <link href="TEACHER_CSS/teacher_responsive.css?v=67" rel="stylesheet" />
+    <link href="TEACHER_CSS/Teacher_dashboard.css?v=14" rel="stylesheet" />
+    <link href="TEACHER_CSS/teacher_responsive.css?v=75" rel="stylesheet" />
 </head>
 
 <body>
@@ -312,8 +312,8 @@
                 // nowrap span — otherwise a line-wrap could break right
                 // between them (the space after the icon is a valid wrap
                 // point), leaving the pin icon stranded on its own line.
-                document.getElementById('teacher-greeting-sub').innerHTML = dateStr + ' · ' + timeStr + ' (PHST)'
-                    + (school ? ' · <span style="white-space:nowrap;"><i class="fa-solid fa-location-dot"></i> ' + shortenSchoolName(school) + '</span>' : '');
+                document.getElementById('teacher-greeting-sub').innerHTML = dateStr + ' · ' + timeStr
+                    + (school ? '<br><span style="white-space:nowrap;"><i class="fa-solid fa-location-dot"></i> ' + shortenSchoolName(school) + '</span>' : '');
             } else {
                 document.getElementById('teacher-greeting-sub').textContent = school
                     ? dateStr + ' · ' + timeStr + ' · ' + school
@@ -480,8 +480,8 @@
                     var dateStr = now.toLocaleDateString('en-US', opts);
                     var timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Singapore' });
                     if (window.innerWidth <= 640) {
-                        document.getElementById('teacher-greeting-sub').innerHTML = dateStr + ' · ' + timeStr + ' (PHST)'
-                            + (t.schoolName ? ' · <span style="white-space:nowrap;"><i class="fa-solid fa-location-dot"></i> ' + shortenSchoolName(t.schoolName) + '</span>' : '');
+                        document.getElementById('teacher-greeting-sub').innerHTML = dateStr + ' · ' + timeStr
+                            + (t.schoolName ? '<br><span style="white-space:nowrap;"><i class="fa-solid fa-location-dot"></i> ' + shortenSchoolName(t.schoolName) + '</span>' : '');
                     } else {
                         document.getElementById('teacher-greeting-sub').textContent = t.schoolName
                             ? dateStr + ' · ' + timeStr + ' · ' + t.schoolName

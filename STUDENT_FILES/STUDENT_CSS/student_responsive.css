@@ -21,7 +21,12 @@ table { display: block; max-width: 100%; overflow-x: auto; }
 }
 
 @media (max-width: 900px) {
-  body { flex-direction: column; height: auto; overflow-y: auto; }
+  /* min-height (not height) so body's gradient background still fills
+     the full screen even when the page's actual content is shorter
+     than the viewport — height:auto alone stops painting the
+     background right at the content's own height, leaving the
+     browser's plain white canvas showing below it. */
+  body { flex-direction: column; height: auto; min-height: 100vh; overflow-y: auto; }
 
   .student-main { height: auto; overflow-y: visible; padding: 20px; }
 

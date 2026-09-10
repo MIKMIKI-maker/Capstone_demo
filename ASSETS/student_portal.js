@@ -77,6 +77,121 @@
   }
   window.startAutoRefresh = startAutoRefresh;
 
+  // Real-time-ish "important event" popup — a stacked toast in the top-right
+  // corner (like a desktop chat app's incoming-message popup), distinct from
+  // showToast() above (a single bottom-center confirmation for the student's
+  // OWN actions, e.g. finishing an activity). This one is for things the
+  // TEACHER does in the background — a note/recommendation on the progress
+  // report, a direct message, or publishing a new activity — that the
+  // student should notice even if they never open the Notifications page
+  // themselves.
+  function applyNotifPopupStyle() {
+    if (document.getElementById('student-notifpop-style')) return;
+    var style = document.createElement('style');
+    style.id = 'student-notifpop-style';
+    style.textContent =
+      '.student-notifpop-stack{position:fixed;top:20px;right:20px;z-index:100000;display:flex;flex-direction:column;gap:12px;max-width:360px;width:calc(100vw - 40px)}' +
+      '.student-notifpop{position:relative;display:flex;align-items:flex-start;gap:13px;background:#fff;color:#243a5e;padding:16px 18px;border-radius:20px;font-family:"Fredoka","Poppins",sans-serif;box-shadow:0 16px 40px rgba(36,58,94,.28),0 0 0 1px rgba(47,111,237,.12);cursor:pointer;opacity:0;transform:translateX(60px) scale(.9);transition:opacity .35s ease,transform .45s cubic-bezier(.34,1.56,.64,1);overflow:hidden}' +
+      '.student-notifpop::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:linear-gradient(180deg,#60a5fa,#2f6fed)}' +
+      '.student-notifpop.show{opacity:1;transform:translateX(0) scale(1);animation:studentNotifpopWiggle .5s ease .45s}' +
+      '@keyframes studentNotifpopWiggle{0%,100%{transform:translateX(0) scale(1)}30%{transform:translateX(-4px) scale(1.015)}60%{transform:translateX(2px) scale(1)}}' +
+      '.student-notifpop-icon{flex:none;position:relative;width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#60a5fa,#2f6fed);display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 4px 10px rgba(47,111,237,.4)}' +
+      '.student-notifpop-icon::after{content:"";position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 0 rgba(47,111,237,.5);animation:studentNotifpopPulse 1.8s ease-out 3}' +
+      '@keyframes studentNotifpopPulse{0%{box-shadow:0 0 0 0 rgba(47,111,237,.5)}100%{box-shadow:0 0 0 14px rgba(47,111,237,0)}}' +
+      '.student-notifpop-body{min-width:0;flex:1;padding-top:1px;padding-right:14px}' +
+      '.student-notifpop-tag{display:table;font-size:9.5px;font-weight:800;letter-spacing:.06em;color:#1b4fb8;background:#eaf2ff;padding:2px 7px;border-radius:6px;text-transform:uppercase;margin-bottom:6px}' +
+      '.student-notifpop-title{display:block;font-weight:700;font-size:14px;margin-bottom:3px;line-height:1.3}' +
+      '.student-notifpop-msg{display:block;font-size:12.5px;color:#5d7299;line-height:1.45}' +
+      '.student-notifpop-close{position:absolute;top:10px;right:10px;flex:none;background:#eef3fb;border:none;border-radius:50%;width:20px;height:20px;color:#7d92b8;font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}' +
+      '.student-notifpop-close:hover{background:#dde8fb;color:#243a5e}';
+    document.head.appendChild(style);
+  }
+
+  function showNotifPopup(title, message, icon, onClick) {
+    applyNotifPopupStyle();
+    var stack = document.getElementById('student-notifpop-stack');
+    if (!stack) {
+      stack = document.createElement('div');
+      stack.id = 'student-notifpop-stack';
+      stack.className = 'student-notifpop-stack';
+      document.body.appendChild(stack);
+    }
+    var pop = document.createElement('div');
+    pop.className = 'student-notifpop';
+    pop.innerHTML = '<span class="student-notifpop-icon">' + (icon || '🔔') + '</span>' +
+      '<span class="student-notifpop-body"><span class="student-notifpop-tag">New!</span>' +
+      '<span class="student-notifpop-title"></span>' +
+      '<span class="student-notifpop-msg"></span></span>' +
+      '<button type="button" class="student-notifpop-close">&times;</button>';
+    pop.querySelector('.student-notifpop-title').textContent = title;
+    pop.querySelector('.student-notifpop-msg').textContent = message;
+    function dismiss() {
+      pop.classList.remove('show');
+      window.setTimeout(function () { pop.remove(); }, 250);
+    }
+    pop.addEventListener('click', function (e) {
+      if (e.target.closest('.student-notifpop-close')) { dismiss(); return; }
+      if (typeof onClick === 'function') onClick();
+    });
+    pop.querySelector('.student-notifpop-close').addEventListener('click', function (e) { e.stopPropagation(); dismiss(); });
+    stack.appendChild(pop);
+    requestAnimationFrame(function () { pop.classList.add('show'); });
+    window.setTimeout(dismiss, 8000);
+  }
+
+  // Popping the SAME note/message again every poll would be spammy — track
+  // which notification IDs have already been shown as a popup (not the same
+  // as "read" — the student might pop it, dismiss it, and still open the
+  // Notifications page later) in localStorage so each one only interrupts
+  // once, surviving navigation between student pages.
+  function getPoppedIds() {
+    try { return JSON.parse(localStorage.getItem('student_popped_notif_ids') || '[]'); } catch (e) { return []; }
+  }
+  function markPopped(ids) {
+    var seen = getPoppedIds();
+    ids.forEach(function (id) { if (seen.indexOf(id) === -1) seen.push(id); });
+    if (seen.length > 200) seen = seen.slice(seen.length - 200);
+    try { localStorage.setItem('student_popped_notif_ids', JSON.stringify(seen)); } catch (e) {}
+  }
+
+  function pollStudentNotifs() {
+    var srid = sessionStorage.getItem('student_record_id') || '';
+    if (!srid) return;
+    fetch('STUDENT_BACKEND/student_get_notifications.php?_t=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.success || !Array.isArray(d.notifications)) return;
+        var popped = getPoppedIds();
+        var toPop = d.notifications.filter(function (n) {
+          return !n.read && popped.indexOf(n.id) === -1;
+        });
+        if (!toPop.length) return;
+        markPopped(toPop.map(function (n) { return n.id; }));
+        toPop.reverse().forEach(function (n) {
+          var icon = n.type === 'new_activity' ? '📚'
+            : String(n.id).indexOf('note_') === 0 ? '📝' : '💬';
+          // A newly-published activity is more useful landing the student
+          // straight in My Materials (where they'd actually open it) than
+          // the Notifications list.
+          var dest = n.type === 'new_activity' ? 'Student_mymaterials.html' : 'Student_notif.html';
+          showNotifPopup(n.title || 'New message', n.text || '', icon, function () {
+            window.location.href = dest;
+          });
+        });
+      })
+      .catch(function () {});
+  }
+
+  function initNotifPolling() {
+    pollStudentNotifs();
+    window.setInterval(function () {
+      if (document.hidden) return;
+      pollStudentNotifs();
+    }, 20000);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initNotifPolling);
+  else initNotifPolling();
+
   // Every STUDENT_FILES page (and student_responsive.css) collapses
   // .student-sidebar into a wrapped horizontal strip at 900px — the nav
   // items, avatar and sign-out button all squeeze into a few awkward rows

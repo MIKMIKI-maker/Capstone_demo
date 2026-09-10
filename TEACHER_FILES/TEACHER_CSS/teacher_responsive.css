@@ -247,7 +247,12 @@ img, video, canvas { max-width: 100%; height: auto; }
 
 /* ---------- Phone ---------- */
 @media (max-width: 640px) {
-  .teacher-topbar { flex-wrap: wrap; gap: 12px; }
+  /* Desktop's .teacher-topbar carries margin-bottom:22px meant for the
+     space before the content below it — on mobile the <hr class="teacher-divider">
+     sits right after it, so that same 22px reads as a big gap above the
+     line itself. Shrink it here instead of touching the divider's own
+     margin, which doesn't move the text. */
+  .teacher-topbar { flex-wrap: wrap; gap: 12px; margin-bottom: 6px; }
   /* Scoped to .teacher-topbar specifically — .teacher-topbar-right and
      .teacher-topbar-title-group are reused by Teacher_mylearners.html's
      DIFFERENT topbar (.teacher-progress-topbar, back-button + title +
@@ -258,7 +263,7 @@ img, video, canvas { max-width: 100%; height: auto; }
   .teacher-topbar-actions,
   .teacher-topbar .teacher-topbar-title-group { width: 100%; }
   .teacher-main-content, .teacher-main { padding: 14px; }
-  .teacher-greeting { font-size: 17px; }
+  .teacher-greeting { font-size: 20px; }
 
   /* Keep the "Mikylla De Leon / Special Education Teacher" card and the
      "Assigned Learners" stat side by side even on a phone instead of
@@ -300,6 +305,7 @@ img, video, canvas { max-width: 100%; height: auto; }
      Teacher_mylearners.html's non-wrapping .teacher-progress-topbar. */
   .teacher-topbar .teacher-topbar-left {
     width: 100%;
+    padding-left: 8px;
   }
   .teacher-greeting-sub { line-height: 1.9; }
   .teacher-greeting-sub i { color: var(--pink); font-size: 13px; }
@@ -499,6 +505,49 @@ img, video, canvas { max-width: 100%; height: auto; }
   .teacher-grading-evidence strong { font-size: 9px; margin-top: 2px; }
   .teacher-generator-actions { gap: 6px; margin-top: 10px; }
   .btn-action { padding: 7px 10px; font-size: 9.5px; gap: 4px; }
+
+  /* Teacher_notif.html — filter tabs go equal-width instead of
+     hugging their own text, Clear All / Mark All stay one compact row
+     and fade out when there's nothing to act on (JS toggles
+     :disabled on an empty tray), the "Send Notification" card's two
+     selects stack into one column with a full-width Send button, and
+     the empty-state block — whose base CSS has padding:72px 24px
+     (Teacher_notif.css), fine on a tall desktop panel — is pulled in
+     tight under the card instead of leaving a huge dead gap before
+     "No notifications" ever showed up. The footer counter just goes
+     shorter/subtler, its text stays as-is. */
+  .teacher-filter-tabs { display: flex; width: 100%; gap: 6px; }
+  .teacher-tab-btn { flex: 1 1 0; padding: 7px 8px; font-size: 11.5px; text-align: center; white-space: nowrap; }
+  .teacher-filter-actions { width: 100%; gap: 10px; }
+  .teacher-clear-all-btn { font-size: 11.5px; }
+  .teacher-mark-all-btn { padding: 7px 14px; font-size: 11.5px; }
+
+  /* The card itself only shows inline once it's been moved into the
+     mobile modal (JS adds --in-modal on open); otherwise the phone-
+     width entry point is .teacher-send-notif-trigger below. */
+  .teacher-send-notif-card { display: none; padding: 14px 16px !important; margin-bottom: 10px !important; }
+  .teacher-send-notif-card.teacher-send-notif-card--in-modal { display: block; }
+  .teacher-send-notif-card h3 { font-size: 13px !important; }
+  .teacher-send-notif-row { grid-template-columns: 1fr !important; }
+  .teacher-send-notif-actions { flex-wrap: wrap !important; }
+  .teacher-send-btn { width: 100% !important; padding: 11px 18px !important; font-size: 13.5px !important; text-align: center; }
+
+  .teacher-send-notif-trigger {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; margin-bottom: 14px; padding: 12px 14px;
+    background: #1e3a8a; color: #fff; border: none; border-radius: 12px;
+    font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer;
+  }
+  #teacherSendNotifModalCard { padding: 18px 18px 16px; }
+
+  .teacher-empty-state { padding: 22px 20px !important; }
+  .teacher-empty-icon { width: 48px !important; height: 48px !important; margin-bottom: 10px !important; }
+  .teacher-empty-icon i { font-size: 20px !important; }
+  .teacher-empty-title { font-size: 14px !important; }
+  .teacher-empty-desc { font-size: 12px !important; }
+
+  .teacher-notif-footer { padding: 8px !important; font-size: 10.5px !important; }
 
   /* Teacher_settings.html's "Password & Security" card is already a
      flex row (icon+text left, button right) on desktop — nothing kept

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <script src="../../ASSETS/portal_guard.js?v=2" data-portal-role="teacher,student" data-status-path="../../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../../ADMIN_FILES/login_screen.html?session=expired"></script>
-<script src="../../ASSETS/teacher_portal.js?v=5"></script>
+<script src="../../ASSETS/teacher_portal.js?v=7"></script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>SPED ALM — Picture Labeling Template Generator</title>
@@ -513,8 +513,50 @@ body.lbl-preview-only .lbl-exit-float{display:flex;}
   .lbl-top{padding:12px 14px;gap:10px;}
   .lbl-top h1{font-size:17px;}
   .lbl-back-btn{order:-1;flex-basis:100%;justify-content:center;}
-  .lbl-top-actions{width:100%;margin-left:0;justify-content:center;}
-  .lbl-btn{flex:1 1 auto;justify-content:center;font-size:12.5px;padding:9px 10px;}
+  /* 2-per-row grid instead of organic flex-wrap, so the action buttons
+     line up in even rows instead of leaving one stranded alone on its
+     own row. */
+  .lbl-top-actions{width:100%;margin-left:0;display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .lbl-btn{justify-content:center;font-size:12.5px;padding:9px 10px;width:100%;}
+
+  /* Cards + their contents: shrink so panels read cleaner on a phone
+     width instead of feeling boxy/cramped. */
+  .lbl-card{padding:12px;}
+  .lbl-card+.lbl-card{margin-top:12px;}
+  .lbl-step{font-size:11px;margin-bottom:9px;}
+  .lbl-slidebar button{width:26px;height:26px;font-size:12px;}
+  .lbl-slide-label{font-size:12px;}
+  .lbl-type{padding:10px;gap:9px;}
+  .lbl-type-ic{width:34px;height:34px;font-size:17px;}
+  .lbl-type b{font-size:14px;}
+  .lbl-type-desc{font-size:11.5px;margin-top:9px;}
+  .lbl-item-card{padding:10px;}
+  .lbl-img-upload{height:70px;font-size:11px;}
+  .lbl-media-tabs button{font-size:8.5px;padding:3px 2px;}
+
+  /* .lbl-pic-frame/.lbl-pic-slot are fixed px (only scaled by the
+     teacher's own --img-scale setting, not the stage font-size) sized
+     for a wide desktop stage — shrunk directly here so more pictures
+     still fit per row on a phone instead of 1-2. Deliberately NOT also
+     touching .lbl-stage's font-size here — that cascades to every
+     em-based child (title/instructions/chips) and, combined with real
+     student/preview mode's min-height:100vh + justify-content:center,
+     shrinking the natural content height that much left a large empty
+     gap above/below it instead of actually filling the phone screen. */
+  .lbl-grid{gap:14px 10px;}
+  .lbl-pic-frame{width:calc(78px * var(--img-scale,1));height:calc(68px * var(--img-scale,1));}
+  .lbl-pic-slot{width:78px;}
+}
+
+/* Real student/preview mode centers the stage's content vertically in a
+   full 100vh box (justify-content:center) — fine on desktop where the
+   activity is usually tall enough to fill most of that height, but on a
+   phone the content can be much shorter relative to 100vh, leaving an
+   empty gap above (and below) it instead of the activity actually using
+   the screen. Anchoring to the top on mobile uses that space instead of
+   centering into empty air. */
+@media (max-width:640px){
+  body.lbl-preview-only .lbl-stage{justify-content:flex-start;padding-top:26px;}
 }
 
 /* ===== PRINTABLE WORKSHEET (Generate Printable button / PDF via browser print) ===== */

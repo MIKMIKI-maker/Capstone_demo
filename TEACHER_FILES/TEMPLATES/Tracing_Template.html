@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <script src="../../ASSETS/portal_guard.js?v=2" data-portal-role="teacher,student" data-status-path="../../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../../ADMIN_FILES/login_screen.html?session=expired"></script>
-<script src="../../ASSETS/teacher_portal.js?v=5"></script>
+<script src="../../ASSETS/teacher_portal.js?v=7"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SPED ALM — Tracing Template Generator</title>
@@ -205,13 +205,22 @@ function initActivityTheme(){
     background:linear-gradient(135deg,#ff8a5b,#7b6ef0); display:flex; align-items:center; justify-content:center; font-size:24px; }
   .trc-top h1{ font-weight:700; font-size:21px; line-height:1.1; }
   .trc-top .trc-tsub{ color:var(--ink-soft); font-size:12px; font-weight:500; }
-  .trc-top-actions{ margin-left:auto; display:flex; gap:10px; flex-wrap:wrap; }
+  .trc-title-wrap{ min-width:0; max-width:420px; flex:1 1 auto; }
+  /* The title+subtitle block (below) has no width limit of its own, so
+     its long single-line subtitle rendered at full text width — much
+     wider than Matching's shorter subtitle — leaving no room for the
+     button row on the same line and forcing it to wrap onto a second
+     row entirely (not actually a vertical-alignment problem). Letting
+     this shrink/wrap instead, with the buttons flex-shrink:0, is what
+     keeps everything on one row like the Matching template. */
+  .trc-top-actions{ margin-left:auto; align-self:center; display:flex; align-items:center; gap:10px; flex-wrap:wrap; flex-shrink:0; }
   .trc-btn{ cursor:pointer; border:none; font-family:var(--font); font-weight:700; font-size:14px;
     padding:11px 18px; border-radius:13px; display:inline-flex; align-items:center; gap:7px;
     transition:transform .08s ease, filter .1s ease; }
   .trc-btn:active{ transform:translateY(2px); }
   .trc-btn--ghost{ background:#fff; color:var(--ink); border:1.5px solid var(--field-border); }
   .trc-btn--ghost:hover{ background:#f7f9fd; }
+  .trc-back-btn{ text-decoration:none; flex:none; }
   .trc-btn--print{ background:var(--gold); color:#5c4400; box-shadow:0 4px 0 #d9a416; }
   .trc-btn--pub{ background:var(--green); color:#fff; box-shadow:0 4px 0 var(--green-dark); }
 
@@ -320,6 +329,25 @@ function initActivityTheme(){
   .trc-canvas-wrap canvas{ position:absolute; inset:0; width:100%; height:100%; display:block; }
   .trc-canvas{ cursor:crosshair; }
   .trc-scard-status{ font-size:.4em; font-weight:800; min-height:1.2em; }
+  /* Hidden on desktop — the inline canvas is already big enough to draw
+     on directly there. Shown (see the phone media query) only on a
+     small screen, where it sits over the small preview canvas and
+     opens the full-screen trace zoom on tap instead of letting the
+     student try to draw on a cramped thumbnail. */
+  .trc-zoom-tap{ display:none; }
+  .trc-zoom-overlay{
+    display:none; position:fixed; inset:0; z-index:9999;
+    background:rgba(15,23,42,.55); align-items:center; justify-content:center;
+    flex-direction:column; gap:14px; padding:16px;
+  }
+  .trc-zoom-overlay.show{ display:flex; }
+  .trc-zoom-card{ width:100%; max-width:420px; }
+  .trc-zoom-card .trc-scard{ max-width:none; cursor:default; }
+  .trc-zoom-done{
+    cursor:pointer; border:none; border-radius:14px; padding:12px 28px;
+    background:var(--green); color:#fff; font-family:var(--font);
+    font-weight:800; font-size:16px; box-shadow:0 4px 0 var(--green-dark);
+  }
   .trc-scard-status.correct{ color:var(--green-dark); }
   .trc-scard-status.wrong{ color:var(--red-dark); }
 
@@ -464,6 +492,74 @@ function initActivityTheme(){
     .trc-body{ grid-template-columns:1fr; }
   }
 
+  @media (max-width:640px){
+    .trc-top{ padding:12px 14px; gap:10px; }
+    .trc-top h1{ font-size:17px; }
+    .trc-back-btn{ order:-1; flex-basis:100%; justify-content:center; }
+    /* 2-per-row grid instead of organic flex-wrap, so the action
+       buttons line up in even rows instead of leaving one stranded
+       alone on its own row. */
+    .trc-top-actions{ width:100%; margin-left:0; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .trc-btn{ justify-content:center; font-size:12.5px; padding:9px 10px; width:100%; }
+
+    /* Cards + their contents: shrink so panels read cleaner on a phone
+       width instead of feeling boxy/cramped. */
+    .trc-card{ padding:12px; }
+    .trc-card + .trc-card{ margin-top:12px; }
+    .trc-step{ font-size:11px; margin-bottom:9px; }
+    .trc-slidebar button{ width:26px; height:26px; font-size:12px; }
+    .trc-slide-label{ font-size:12px; }
+    .trc-type{ padding:10px; gap:9px; }
+    .trc-type-ic{ width:34px; height:34px; font-size:17px; }
+    .trc-type b{ font-size:14px; }
+    .trc-type-desc{ font-size:11.5px; margin-top:9px; }
+    .trc-item-row{ padding:8px 0; }
+    .trc-item-preview{ width:46px; height:46px; font-size:16px; }
+
+    /* ACTIVITY STAGE (what the student actually traces) — deliberately
+       NOT shrinking .trc-stage's own font-size here: real student/
+       preview mode centers the stage's content vertically in a full
+       100vh box (justify-content:center, see below), and a smaller
+       font-size cascades to every em-based child, making the natural
+       content noticeably shorter — which that centering then turns
+       into a big empty gap above/below instead of the activity filling
+       the screen. Fixed at 2 columns (not the desktop auto-fit-to-
+       however-many-fit) — a real tracing box needs more room on a
+       phone than shrinking to fit 3-4 across would leave, so the card
+       itself only stays small as a PREVIEW; .trc-zoom-tap (below) opens
+       it full-screen to actually trace on. */
+    .trc-grid{ grid-template-columns:repeat(2, 1fr); gap:8px; }
+
+    /* Tap-to-zoom overlay button sits directly on top of the small
+       preview canvas — tapping it opens that same card full-screen
+       (openTraceZoom) instead of trying to draw on a thumbnail-sized
+       box. touch-action:none on .trc-canvas-wrap would otherwise still
+       let a drag on the canvas underneath register as a (useless,
+       cramped) stroke — pointer-events:none on the canvas itself, done
+       via JS class toggle, isn't needed since this button fully covers it. */
+    .trc-zoom-tap{
+      display:flex; position:absolute; inset:0; z-index:3;
+      align-items:center; justify-content:center; gap:4px;
+      border:none; background:rgba(255,255,255,.88); color:var(--ink-soft);
+      font-family:var(--font); font-weight:700; font-size:11px; cursor:pointer;
+    }
+    .trc-zoom-card .trc-canvas-wrap{ width:100%; height:60vh; max-height:420px; }
+    .trc-zoom-card .trc-zoom-tap{ display:none; }
+    .trc-zoom-card .trc-scard-label{ font-size:16px; }
+    .trc-zoom-card .trc-scard-status{ font-size:14px; }
+  }
+
+  /* Real student/preview mode centers the stage's content vertically in
+     a full 100vh box (justify-content:center) — fine on desktop where
+     the activity is usually tall enough to fill most of that height,
+     but on a phone the content can be much shorter relative to 100vh,
+     leaving an empty gap above (and below) it instead of the activity
+     actually using the screen. Anchoring to the top on mobile uses
+     that space instead of centering into empty air. */
+  @media (max-width:640px){
+    body.trc-preview-only .trc-stage{ justify-content:flex-start; padding-top:26px; }
+  }
+
   /* ===== PRINTABLE WORKSHEET (Generate Printable button / PDF via browser print) ===== */
   .trc-print-area{ display:none; }
   .trc-print-area.trc-pdf-capture{ display:block; position:fixed; left:-99999px; top:0; background:#fff; }
@@ -524,8 +620,9 @@ function initActivityTheme(){
 
   <!-- TOP BAR -->
   <div class="trc-top">
+    <a class="trc-btn trc-btn--ghost trc-back-btn" href="../Teacher_generate.html" title="Back to Generate Materials">← Back</a>
     <div class="trc-logo">✍️</div>
-    <div>
+    <div class="trc-title-wrap">
       <h1>Tracing Template Generator</h1>
       <div class="trc-tsub">Letter &amp; number tracing activities for learners (ASD / Intellectual Disability) — handwriting &amp; fine motor practice</div>
     </div>
@@ -600,6 +697,14 @@ function initActivityTheme(){
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Mobile-only full-screen trace zoom — a tapped card's .trc-scard
+           node is moved in here (see openTraceZoom/closeTraceZoom), traced
+           at a comfortable size, then moved back on Done. -->
+      <div class="trc-zoom-overlay" id="trcZoomOverlay">
+        <button class="trc-zoom-done" id="trcZoomDoneBtn" type="button">✓ Done</button>
+        <div class="trc-zoom-card" id="trcZoomCard"></div>
       </div>
 
       <div class="trc-reminders">
@@ -1086,6 +1191,136 @@ function initActivityTheme(){
    * 4. ACTIVITY PREVIEW (trace the dotted guide character)
    * ------------------------------------------------------------- */
 
+  // ---- Skeletonize a glyph so tracing shows ONE line per stroke ----
+  // strokeText always outlines a filled letterform's actual shape — both
+  // edges of every stroke — which reads as a double line no matter how
+  // the stroke width is tuned. Rendering the glyph to an offscreen canvas,
+  // thresholding it to a black/white mask, and thinning it down to a
+  // 1px-wide skeleton (Zhang-Suen thinning, a standard technique) gives a
+  // genuine single-path centerline instead, like an actual pen stroke.
+  // Cached per (char, font, size) since it's the same fairly expensive
+  // computation every time that exact glyph/size is drawn.
+  var _trcSkelCache = {};
+  function _trcThinBinary(bin, w, h){
+    function at(x, y){ return (x < 0 || x >= w || y < 0 || y >= h) ? 0 : bin[y * w + x]; }
+    var changed = true;
+    while (changed){
+      changed = false;
+      for (var pass = 0; pass < 2; pass++){
+        var toClear = [];
+        for (var y = 0; y < h; y++){
+          for (var x = 0; x < w; x++){
+            if (!at(x, y)) continue;
+            var p2=at(x,y-1),p3=at(x+1,y-1),p4=at(x+1,y),p5=at(x+1,y+1),
+                p6=at(x,y+1),p7=at(x-1,y+1),p8=at(x-1,y),p9=at(x-1,y-1);
+            var n=[p2,p3,p4,p5,p6,p7,p8,p9];
+            var B = n[0]+n[1]+n[2]+n[3]+n[4]+n[5]+n[6]+n[7];
+            if (B < 2 || B > 6) continue;
+            var A = 0;
+            for (var i = 0; i < 8; i++) if (n[i] === 0 && n[(i+1)%8] === 1) A++;
+            if (A !== 1) continue;
+            if (pass === 0){
+              if (p2*p4*p6 !== 0) continue;
+              if (p4*p6*p8 !== 0) continue;
+            } else {
+              if (p2*p4*p8 !== 0) continue;
+              if (p2*p6*p8 !== 0) continue;
+            }
+            toClear.push(y * w + x);
+          }
+        }
+        if (toClear.length){ for (var k = 0; k < toClear.length; k++) bin[toClear[k]] = 0; changed = true; }
+      }
+    }
+    return bin;
+  }
+  function _trcComputeSkeleton(ch, fontStr, size){
+    var key = ch + '|' + fontStr + '|' + Math.round(size);
+    if (_trcSkelCache[key]) return _trcSkelCache[key];
+
+    var pad = Math.ceil(size * 0.4);
+    var offW = Math.ceil(size * 1.3) + pad * 2;
+    var offH = Math.ceil(size * 1.5) + pad * 2;
+    var off = document.createElement('canvas');
+    off.width = offW; off.height = offH;
+    var octx = off.getContext('2d', { willReadFrequently: true });
+    var baselineOffY = pad + size * 1.05;
+    octx.font = "400 " + Math.round(size) + "px " + fontStr;
+    octx.textAlign = 'left';
+    octx.textBaseline = 'alphabetic';
+    octx.fillStyle = '#000';
+    octx.fillText(ch, pad, baselineOffY);
+
+    var img = octx.getImageData(0, 0, offW, offH);
+    var bin = new Uint8Array(offW * offH);
+    var minX = offW, maxX = -1, minY = offH, maxY = -1;
+    for (var y = 0; y < offH; y++){
+      for (var x = 0; x < offW; x++){
+        var a = img.data[(y * offW + x) * 4 + 3];
+        if (a > 100){
+          bin[y * offW + x] = 1;
+          if (x < minX) minX = x; if (x > maxX) maxX = x;
+          if (y < minY) minY = y; if (y > maxY) maxY = y;
+        }
+      }
+    }
+    var result;
+    if (maxX < 0){
+      result = { segments: [], left: 0, right: 0, baselineOffY: baselineOffY };
+    } else {
+      _trcThinBinary(bin, offW, offH);
+      // Walk each connected component of surviving skeleton pixels,
+      // assigning a running distance along the path — used to decide
+      // which short segments are "on" (dash) vs "off" (gap), so the
+      // dash pattern travels along the actual pen path rather than in
+      // a fixed direction.
+      var visited = new Uint8Array(offW * offH);
+      var dashOn = size * 0.16, dashOff = size * 0.11, period = dashOn + dashOff;
+      var segments = [];
+      function skel(x, y){ return (x >= 0 && x < offW && y >= 0 && y < offH) ? bin[y * offW + x] : 0; }
+      var dirs = [[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]];
+      for (var sy = minY; sy <= maxY; sy++){
+        for (var sx = minX; sx <= maxX; sx++){
+          if (!skel(sx, sy) || visited[sy*offW+sx]) continue;
+          var queue = [[sx, sy, 0]];
+          visited[sy*offW+sx] = 1;
+          var qi = 0;
+          while (qi < queue.length){
+            var cur = queue[qi++]; var cx = cur[0], cy = cur[1], cd = cur[2];
+            for (var di = 0; di < 8; di++){
+              var nx = cx + dirs[di][0], ny = cy + dirs[di][1];
+              if (!skel(nx, ny) || visited[ny*offW+nx]) continue;
+              var step = (dirs[di][0] !== 0 && dirs[di][1] !== 0) ? 1.4142 : 1;
+              visited[ny*offW+nx] = 1;
+              queue.push([nx, ny, cd + step]);
+              if ((cd % period) < dashOn) segments.push([cx, cy, nx, ny]);
+            }
+          }
+        }
+      }
+      result = { segments: segments, left: minX, right: maxX, baselineOffY: baselineOffY };
+    }
+    _trcSkelCache[key] = result;
+    return result;
+  }
+  // Draws one already-skeletonized glyph onto the real guide canvas,
+  // positioned so its left/right/center edge (per `align`, matching
+  // ctx.textAlign semantics) lands at `anchorX`, baseline at `baselineY`.
+  function strokeSkeletonGlyph(ctx, ch, fontStr, size, anchorX, baselineY, align){
+    var sk = _trcComputeSkeleton(ch, fontStr, size);
+    if (!sk.segments.length) return;
+    var anchorOffX = align === 'right' ? sk.right : align === 'center' ? (sk.left + sk.right) / 2 : sk.left;
+    var offX = anchorX - anchorOffX;
+    var offY = baselineY - sk.baselineOffY;
+    ctx.beginPath();
+    for (var i = 0; i < sk.segments.length; i++){
+      var s = sk.segments[i];
+      ctx.moveTo(s[0] + offX, s[1] + offY);
+      ctx.lineTo(s[2] + offX, s[3] + offY);
+    }
+    ctx.stroke();
+  }
+
   // Draws the guide onto the tracing canvas (clearing it first), styled
   // after a classic ruled handwriting-practice sheet: a soft-gray baseline
   // (+ midline for letters) behind a DOTTED-outline glyph. Letters are drawn
@@ -1123,9 +1358,9 @@ function initActivityTheme(){
     // Shrink to fit if the uppercase+lowercase pair would run wider than the
     // canvas (e.g. "Mm", "Ww") — measured once, then scaled down together.
     if (!isDigit){
-      ctx.font = "700 " + upperSize + "px " + fontName;
+      ctx.font = "400 " + upperSize + "px " + fontName;
       var upperW = ctx.measureText(ch).width;
-      ctx.font = "700 " + lowerSize + "px " + fontName;
+      ctx.font = "400 " + lowerSize + "px " + fontName;
       var lowerW = ctx.measureText(ch.toLowerCase()).width;
       var totalW = upperW + gap + lowerW;
       var maxW = w * 0.9;
@@ -1137,26 +1372,19 @@ function initActivityTheme(){
       }
     }
 
-    // Dotted-outline glyph(s): a near-zero dash length with round line caps
-    // renders as a row of small round dots, like the reference worksheet.
-    var dotGap = Math.max(5, (state.strokeWidth || 10) * 0.9);
+    // True single-stroke dashed centerline (see strokeSkeletonGlyph above)
+    // instead of strokeText's double-edge outline of the filled glyph.
     ctx.strokeStyle = state.guideColor;
-    ctx.lineWidth = state.strokeWidth || 10;
+    ctx.lineWidth = Math.max(2, upperSize * 0.045);
     ctx.lineCap = "round";
-    ctx.setLineDash([1, dotGap]);
-    ctx.textBaseline = "alphabetic";
+    ctx.lineJoin = "round";
+    ctx.setLineDash([]);
 
     if (isDigit){
-      ctx.font = "700 " + upperSize + "px " + fontName;
-      ctx.textAlign = "center";
-      ctx.strokeText(ch, w / 2, baselineY);
+      strokeSkeletonGlyph(ctx, ch, fontName, upperSize, w / 2, baselineY, "center");
     } else {
-      ctx.font = "700 " + upperSize + "px " + fontName;
-      ctx.textAlign = "right";
-      ctx.strokeText(ch, w / 2 - gap / 2, baselineY);
-      ctx.font = "700 " + lowerSize + "px " + fontName;
-      ctx.textAlign = "left";
-      ctx.strokeText(ch.toLowerCase(), w / 2 + gap / 2, baselineY);
+      strokeSkeletonGlyph(ctx, ch, fontName, upperSize, w / 2 - gap / 2, baselineY, "right");
+      strokeSkeletonGlyph(ctx, ch.toLowerCase(), fontName, lowerSize, w / 2 + gap / 2, baselineY, "left");
     }
     ctx.restore();
   }
@@ -1212,6 +1440,17 @@ function initActivityTheme(){
     wrap.appendChild(canvas);
     el.appendChild(wrap);
 
+    // Mobile-only tap target — the card itself stays a small preview on a
+    // phone, tapping it opens the same canvas full-screen (openTraceZoom)
+    // to actually trace on, instead of drawing directly on a cramped
+    // thumbnail-sized box. display:none on desktop (see CSS), where the
+    // inline canvas is already comfortably sized to draw on directly.
+    const zoomTap = document.createElement("button");
+    zoomTap.type = "button"; zoomTap.className = "trc-zoom-tap";
+    zoomTap.innerHTML = "🔍 Tap to trace";
+    zoomTap.addEventListener("click", function(){ openTraceZoom(itemIndex); });
+    wrap.appendChild(zoomTap);
+
     const status = document.createElement("div"); status.className = "trc-scard-status";
     el.appendChild(status);
 
@@ -1236,6 +1475,68 @@ function initActivityTheme(){
       setupDrawCanvas(cv, i);
     });
   }
+
+  // Re-fits an already-initialized card's canvas to its CURRENT wrapper
+  // size (used when the same card moves between the small inline preview
+  // and the full-screen trace zoom, which are very different sizes).
+  // Resizing a canvas element clears it, so whatever was already drawn
+  // (guide + any ink the student traced) is captured first and restored
+  // scaled to the new size, instead of losing their progress every time
+  // they open or close the zoom.
+  function resizeCardCanvas(card, itemIndex){
+    var it = currentActivity().items[itemIndex];
+    var wrap = card.querySelector(".trc-canvas-wrap");
+    var cv = card.querySelector(".trc-canvas");
+    if (!it || !wrap || !cv) return;
+    var newW = Math.round(wrap.clientWidth) || 200, newH = Math.round(wrap.clientHeight) || 200;
+    if (!newW || !newH) return;
+    var hadContent = cv.width > 0 && cv.height > 0;
+    var snapshot = null;
+    if (hadContent){ try { snapshot = cv.toDataURL(); } catch(e){} }
+    cv.width = newW; cv.height = newH;
+    traceCanvasSize[itemIndex] = newW;
+    if (snapshot){
+      var img = new Image();
+      img.onload = function(){ cv.getContext("2d").drawImage(img, 0, 0, newW, newH); };
+      img.src = snapshot;
+    } else {
+      drawGuideChar(cv, it.char);
+    }
+  }
+
+  // Moves a card's real DOM node (not a clone/copy — its canvas already
+  // has pointer listeners attached from setupDrawCanvas, so re-using it
+  // keeps drawing working with zero extra wiring) into the full-screen
+  // zoom overlay, then resizes its canvas to the new, much bigger space.
+  var _trcZoomHome = null; // { card, parent, next } — where to put it back
+  function openTraceZoom(itemIndex){
+    var card = document.querySelector('.trc-scard[data-i="' + itemIndex + '"]');
+    var overlay = $("trcZoomOverlay"), zoomCard = $("trcZoomCard");
+    if (!card || !overlay || !zoomCard) return;
+    _trcZoomHome = { card: card, parent: card.parentNode, next: card.nextSibling };
+    zoomCard.appendChild(card);
+    overlay.classList.add("show");
+    requestAnimationFrame(function(){ resizeCardCanvas(card, itemIndex); });
+  }
+  function closeTraceZoom(){
+    var overlay = $("trcZoomOverlay");
+    if (!overlay || !_trcZoomHome) return;
+    overlay.classList.remove("show");
+    var home = _trcZoomHome; _trcZoomHome = null;
+    home.parent.insertBefore(home.card, home.next);
+    var itemIndex = +home.card.dataset.i;
+    requestAnimationFrame(function(){ resizeCardCanvas(home.card, itemIndex); });
+  }
+  // Wired up directly (not via DOMContentLoaded) — this script tag sits
+  // after the modal's markup in the document, so the DOM is already
+  // parsed and these elements already exist by the time this line runs;
+  // DOMContentLoaded has already fired earlier and would never call back.
+  (function(){
+    var doneBtn = document.getElementById("trcZoomDoneBtn");
+    var overlay = document.getElementById("trcZoomOverlay");
+    if (doneBtn) doneBtn.addEventListener("click", closeTraceZoom);
+    if (overlay) overlay.addEventListener("click", function(e){ if (e.target === overlay) closeTraceZoom(); });
+  })();
 
   function renderActivity(){
     const activity = currentActivity();
@@ -1387,14 +1688,22 @@ function initActivityTheme(){
       _stuLastScore = correctCount; _stuLastTotal = totalItems;
       _stuSlideScores[state.currentIndex] = { correct: correctCount, total: totalItems, ansItems: Object.keys(suggestedMarks).map(function(i){var it=currentActivity().items[+i];var lbl=it?((it.label||(it.char&&charDisplay(it.char)))||('Item '+(+i+1))):('Item '+(+i+1));return{label:lbl,img:'',studentAnswer:suggestedMarks[+i]?'Traced':'Incomplete',correctAnswer:(it&&it.char&&charDisplay(it.char))||'—',correct:!!suggestedMarks[+i]};}) };
       var _ts = state.activities.length, _isLast = state.currentIndex >= _ts - 1;
-      var _allDone = _stuSlideScores.filter(Boolean).length === _ts && _stuSlideScores.every(function(s){ return s && (s.correct / s.total) >= PASS_THRESHOLD; });
-      if (_ts > 1 && !_isLast && percent >= PASS_THRESHOLD) {
+      // No pass-to-proceed gate — checked (any score) is enough to move on
+      // or submit, instead of forcing a retake whenever the score is below
+      // PASS_THRESHOLD.
+      var _allDone = _stuSlideScores.filter(Boolean).length === _ts;
+      if (_ts > 1 && !_isLast) {
         $("trcModalCloseBtn").style.display = ""; $("trcModalCloseBtn").textContent = "Next Slide →"; $("trcModalCloseBtn").dataset.nextSlide = "1";
       } else {
         $("trcModalCloseBtn").style.display = "none"; $("trcModalCloseBtn").dataset.nextSlide = "";
       }
       $("trcModalTryBtn").textContent = "🔁 Retake";
-      $("trcStudentSubmitBtn").style.display = (_allDone && !_stuAlreadyPassed) ? "" : "none";
+      // Always available once every slide's been checked — no pass
+      // requirement, and even in practice-mode (_stuAlreadyPassed) this
+      // just shows the summary without re-submitting (see the click
+      // handler below), so there's never a reason to hide it.
+      $("trcStudentSubmitBtn").style.display = _allDone ? "" : "none";
+      if (percent < PASS_THRESHOLD) $("trcModalMsg").textContent = "Nice try! Submit when you're ready, or retake for more practice. 💪";
       var ri = $("trcRetakeInfo");
       var _csr = _stuSlideRetakes[state.currentIndex] || 0;
       ri.style.display = _stuRetake > 0 ? "" : "none";
@@ -2252,7 +2561,6 @@ function initActivityTheme(){
           var _totCorrect=_stuSlideScores.reduce(function(s,x){return s+x.correct;},0);
           var _totItems=_stuSlideScores.reduce(function(s,x){return s+x.total;},0);
           var pct = Math.round((_totCorrect / _totItems) * 100);
-          if (pct < Math.round(PASS_THRESHOLD*100)) { alert('You need at least ' + Math.round(PASS_THRESHOLD*100) + '% to submit this activity. Keep trying!'); return; }
 
           // Show final summary right away — the recording/notification below
           // finishes compressing thumbnails in the background afterward.
