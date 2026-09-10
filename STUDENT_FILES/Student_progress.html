@@ -184,17 +184,18 @@
             <table class="student-history-table">
                 <thead>
                     <tr>
-                        <th>Date Submitted</th>
-                        <th>Activity</th>
-                        <th>Type · Grading</th>
-                        <th>Score</th>
-                        <th>Retakes</th>
-                        <th>Assistance Level</th>
-                        <th>Status</th>
+                        <th style="width:130px;">Date Submitted</th>
+                        <th style="width:220px;">Activity</th>
+                        <th style="width:130px;">Type · Grading</th>
+                        <th style="width:100px;">Score</th>
+                        <th style="width:100px;">Retakes</th>
+                        <th style="width:160px;">Assistance Level</th>
+                        <th style="width:110px;">Status</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody id="historyBody">
-                    <tr><td class="student-history-empty" colspan="7">No activity history yet.</td></tr>
+                    <tr><td class="student-history-empty" colspan="8">No activity history yet.</td></tr>
                 </tbody>
             </table>
         </div>
@@ -281,20 +282,20 @@
         document.getElementById('historyCount').textContent = completed + ' record' + (completed === 1 ? '' : 's');
         var tbody = document.getElementById('historyBody');
         if (completed === 0) {
-            tbody.innerHTML = '<tr><td class="student-history-empty" colspan="6">No activity history yet.</td></tr>';
+            tbody.innerHTML = '<tr><td class="student-history-empty" colspan="8">No activity history yet.</td></tr>';
         } else {
             tbody.innerHTML = activities.map(function(r) {
                 var sc = r.score || 0;
                 var col = scoreColor(sc);
                 var scoreDisplay = sc + '%';
                 if (r.is_finalized && r.finalized_score !== null) {
-                    scoreDisplay = r.finalized_score + '% <span style="font-size:10px;font-weight:600;background:#dbeafe;color:#1d4ed8;padding:1px 6px;border-radius:8px;margin-left:3px;">Teacher Final</span>';
+                    scoreDisplay = r.finalized_score + '% <span style="font-size:11.5px;font-weight:600;background:#dbeafe;color:#1d4ed8;padding:2px 7px;border-radius:8px;margin-left:3px;">Teacher Final</span>';
                 }
                 var badge = sc >= 80
-                    ? '<span style="background:#dcfce7;color:#16a34a;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;">Passed</span>'
+                    ? '<span style="background:#dcfce7;color:#16a34a;padding:4px 11px;border-radius:999px;font-size:13px;font-weight:700;">Passed</span>'
                     : sc >= 50
-                    ? '<span style="background:#fef9c3;color:#ca8a04;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;">Fair</span>'
-                    : '<span style="background:#fee2e2;color:#ef4444;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;">Needs Practice</span>';
+                    ? '<span style="background:#fef9c3;color:#ca8a04;padding:4px 11px;border-radius:999px;font-size:13px;font-weight:700;">Fair</span>'
+                    : '<span style="background:#fee2e2;color:#ef4444;padding:4px 11px;border-radius:999px;font-size:13px;font-weight:700;">Needs Practice</span>';
                 var retakes = parseInt(r.retake_count) || 0;
                 var retakeCell = retakes > 0 ? retakes + 'x' : '—';
                 // Build per-slide retake breakdown if multi-slide answers exist
@@ -307,7 +308,7 @@
                   }
                 } catch(e){}
                 var assistCell = r.assistance_level
-                    ? '<span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:#eff6ff;color:#1d4ed8;">' + escStr(r.assistance_level) + '</span>'
+                    ? '<span style="font-size:13px;font-weight:600;padding:3px 9px;border-radius:20px;background:#eff6ff;color:#1d4ed8;">' + escStr(r.assistance_level) + '</span>'
                     : '—';
                 return '<tr>'
                     + '<td>' + fmtDate(r.assessment_date) + '</td>'
@@ -317,6 +318,7 @@
                     + '<td style="text-align:center;">' + retakeCell + '</td>'
                     + '<td>' + assistCell + '</td>'
                     + '<td>' + badge + '</td>'
+                    + '<td></td>'
                     + '</tr>';
             }).join('');
         }

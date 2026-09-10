@@ -47,7 +47,7 @@ body { display: flex; }
 .admin-sidebar-sub {
     display: block;
     color: rgba(255,255,255,.55);
-    font-size: 11px;
+    font-size: 12px;
     font-family: 'Poppins', sans-serif;
 }
 
@@ -136,7 +136,7 @@ body { display: flex; }
     display: block;
     color: rgba(255,255,255,.50);
     font-family: 'Poppins', sans-serif;
-    font-size: 11px;
+    font-size: 12px;
 }
 
 .admin-signout-btn {
@@ -192,7 +192,7 @@ body { display: flex; }
 
 /* Settings Menu */
 .admin-settings-menu { width: 220px; min-width: 220px; background: #fff; border-radius: 18px; padding: 20px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 4px; height: fit-content; }
-.admin-settings-menu-label { font-size: 10px; font-weight: 700; color: #bbb; letter-spacing: 1.2px; padding: 0 10px; margin-bottom: 8px; }
+.admin-settings-menu-label { font-size: 12px; font-weight: 700; color: #bbb; letter-spacing: 1.2px; padding: 0 10px; margin-bottom: 8px; }
 .admin-settings-tab { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 12px; border: none; background: transparent; font-size: 14px; font-weight: 600; color: #888; cursor: pointer; text-align: left; transition: background .2s, color .2s; position: relative; width: 100%; }
 .admin-settings-tab:hover { background: #f5f0e8; color: #333; }
 .admin-settings-tab.active { background: #1a3a8f; color: #fff; }

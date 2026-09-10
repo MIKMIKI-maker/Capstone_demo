@@ -92,7 +92,7 @@ body {
 .teacher-sidebar-sub {
     display: block;
     color: rgba(255,255,255,.55);
-    font-size: 11px;
+    font-size: 12px;
 }
 
 /* Nav */
@@ -184,7 +184,7 @@ body {
 .teacher-role {
     display: block;
     color: rgba(255,255,255,.50);
-    font-size: 11px;
+    font-size: 12px;
 }
 
 .teacher-signout-btn {
@@ -690,7 +690,7 @@ body {
 .teacher-activity-dot.dot-pink   { background: var(--pink); }
 .teacher-activity-dot.dot-muted  { background: #CBD5E1; }
 .teacher-activity-title { font-size: 12.5px; color: var(--text); font-weight: 500; margin: 0; }
-.teacher-activity-time  { font-size: 11px; color: var(--muted); margin: 1px 0 0; }
+.teacher-activity-time  { font-size: 12px; color: var(--muted); margin: 1px 0 0; }
 
 /* =====================
    STUDENT PROGRESS CARDS
@@ -714,7 +714,7 @@ body {
     font-size: 13px; font-weight: 600; color: var(--text);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.teacher-prog-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.teacher-prog-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
 .teacher-prog-score {
     background: #DBEAFE; color: var(--accent);
     font-size: 11px; font-weight: 700; padding: 4px 10px;

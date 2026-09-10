@@ -242,6 +242,11 @@ function initActivityTheme(){
   .chk-type-ic{ width:40px; height:40px; border-radius:11px; background:#fff; display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 3px 0 #ddd8f7; }
   .chk-type b{ font-weight:700; font-size:15px; }
   .chk-type-desc{ color:var(--ink-soft); font-size:12.5px; font-weight:500; line-height:1.5; margin-top:12px; }
+  .chk-type-desc-input{ width:100%; box-sizing:border-box; color:var(--ink); font-family:var(--font); font-size:12.5px; font-weight:500; line-height:1.5; padding:8px 10px; border:1.5px solid #e2e8f0; border-radius:10px; resize:vertical; }
+  .chk-type-desc-input:focus{ outline:none; border-color:var(--purple); }
+  .chk-markstyle-seg{ display:flex; flex-direction:column; gap:6px; }
+  .chk-markstyle-opt{ text-align:left; padding:8px 10px; border:1.5px solid #e2e8f0; border-radius:10px; background:#fff; color:var(--ink-soft); font-family:var(--font); font-size:12px; font-weight:600; cursor:pointer; }
+  .chk-markstyle-opt.sel{ border-color:var(--purple); color:var(--purple); background:#f5f2ff; }
 
   /* Items list */
   .chk-item-row{ padding:10px 0; border-bottom:1px solid var(--line); position:relative; }
@@ -529,6 +534,12 @@ function initActivityTheme(){
   @media print{
     html, body{ height:auto !important; overflow:visible !important; }
     body *{ visibility:hidden; }
+    /* visibility:hidden above keeps hidden elements in normal flow, so the
+       huge editor UI (.chk-body, modals, tour overlay, etc.) still occupies
+       its full height and forces the print engine to allocate extra blank
+       pages for it. display:none removes it from layout entirely, so page
+       count is driven only by the print area's real content. */
+    body > *:not(#chkPrintArea){ display:none !important; }
     .chk-print-area, .chk-print-area *{ visibility:visible; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .chk-print-area{ display:block; position:absolute; left:0; top:0; width:100%; margin:0; padding:0; }
     .chk-print-page{ page-break-after:always; padding:6mm 8mm; box-sizing:border-box; }
@@ -615,7 +626,13 @@ function initActivityTheme(){
           <div class="chk-type-ic">✅</div>
           <b>Check or X</b>
         </div>
-        <p class="chk-type-desc">Learners mark ✓ or ✗ on each picture based on one stated criterion (e.g. "shows eating soup").</p>
+        <label for="chkTypeDescInput" style="display:block;font-size:11px;font-weight:700;color:#94a3b8;margin:8px 0 4px;">Criterion / what learners are judging</label>
+        <textarea class="chk-type-desc-input" id="chkTypeDescInput" rows="2" placeholder='Describe the specific criterion, e.g. "shows eating soup"'></textarea>
+        <label style="display:block;font-size:11px;font-weight:700;color:#94a3b8;margin:12px 0 4px;">Mark Style</label>
+        <div class="chk-markstyle-seg" id="chkMarkStyleSeg">
+          <button type="button" class="chk-markstyle-opt" data-style="checkx">✓ Agree/True · ✗ Disagree/False</button>
+          <button type="button" class="chk-markstyle-opt" data-style="ox">O Agree/True · X Disagree/False</button>
+        </div>
       </div>
 
       <div class="chk-card">
@@ -890,7 +907,7 @@ function initActivityTheme(){
       var pic = it.img ? '<img src="'+it.img+'" style="width:32px;height:32px;object-fit:cover;border-radius:6px;">' : '<span style="font-size:22px;">'+(it.emoji||"?")+'</span>';
       row.innerHTML = '<div style="min-width:36px;text-align:center;">'+pic+'</div>'
         + '<div style="flex:1;font-size:13px;font-weight:600;color:#334155;">Correct:</div>'
-        + '<div style="font-size:16px;font-weight:800;color:'+(it.correct?'#1f9d44':'#e23b54')+';">'+(it.correct?'✓':'✗')+'</div>';
+        + '<div style="font-size:16px;font-weight:800;color:'+(it.correct?'#1f9d44':'#e23b54')+';">'+(it.correct?markLabels().yes:markLabels().no)+'</div>';
       rows.appendChild(row);
     });
     $("chkTeachOverlay").classList.add("show");
@@ -952,10 +969,14 @@ function initActivityTheme(){
     ...structuredClone(DEFAULT_DESIGN),
     thumb:null,
     activities:[ makeDefaultActivity() ],
-    currentIndex:0
+    currentIndex:0,
+    markStyle:'checkx' // 'checkx' = ✓/✗ (Agree-True/Disagree-False), 'ox' = O/X
   };
 
   function currentActivity(){ return state.activities[state.currentIndex]; }
+  function markLabels(){
+    return state.markStyle === 'ox' ? { yes:'O', no:'X' } : { yes:'✓', no:'✗' };
+  }
 
   let studentMarks = {};   // itemIndex -> true(check)/false(x)/undefined
   let suggestedMarks = {}; // itemIndex -> bool (isCorrect)
@@ -991,6 +1012,8 @@ function initActivityTheme(){
     renderItems();
     $("chkTitleInput").value = currentActivity().title;
     $("chkInstrInput").value = currentActivity().instruction;
+    $("chkTypeDescInput").value = currentActivity().instruction;
+    syncMarkStyleUI();
     renderActivity();
     renderSlideNav();
   }
@@ -1072,8 +1095,8 @@ function initActivityTheme(){
     const fields = document.createElement("div"); fields.className = "chk-item-fields";
     const l1 = document.createElement("label"); l1.textContent = "Correct Answer";
     const seg = document.createElement("div"); seg.className = "chk-correct-seg";
-    const btnCheck = document.createElement("button"); btnCheck.type="button"; btnCheck.textContent="✓ Check";
-    const btnX = document.createElement("button"); btnX.type="button"; btnX.textContent="✗ X";
+    const btnCheck = document.createElement("button"); btnCheck.type="button"; btnCheck.textContent=markLabels().yes+" Agree";
+    const btnX = document.createElement("button"); btnX.type="button"; btnX.textContent=markLabels().no+" Disagree";
     function syncSeg(){
       btnCheck.classList.toggle("sel-check", it.correct === true);
       btnX.classList.toggle("sel-x", it.correct === false);
@@ -1137,8 +1160,8 @@ function initActivityTheme(){
     }
 
     const opts = document.createElement("div"); opts.className = "chk-scard-opts";
-    const checkBtn = document.createElement("button"); checkBtn.className = "chk-mopt mopt-check"; checkBtn.type = "button"; checkBtn.textContent = "✓";
-    const xBtn = document.createElement("button"); xBtn.className = "chk-mopt mopt-x"; xBtn.type = "button"; xBtn.textContent = "✗";
+    const checkBtn = document.createElement("button"); checkBtn.className = "chk-mopt mopt-check"; checkBtn.type = "button"; checkBtn.textContent = markLabels().yes;
+    const xBtn = document.createElement("button"); xBtn.className = "chk-mopt mopt-x"; xBtn.type = "button"; xBtn.textContent = markLabels().no;
     const locked = isLocked(itemIndex);
     if (locked) {
       el.style.cssText += "border-color:#7c3aed !important;box-shadow:0 0 0 2px rgba(124,58,237,.25);";
@@ -1446,7 +1469,28 @@ function initActivityTheme(){
   $("chkInstrInput").addEventListener("input", e=>{
     currentActivity().instruction = e.target.value;
     $("chkInstr").textContent = e.target.value;
+    $("chkTypeDescInput").value = e.target.value;
   });
+  $("chkTypeDescInput").addEventListener("input", e=>{
+    currentActivity().instruction = e.target.value;
+    $("chkInstr").textContent = e.target.value;
+    $("chkInstrInput").value = e.target.value;
+  });
+
+  function syncMarkStyleUI(){
+    document.querySelectorAll(".chk-markstyle-opt").forEach(function(btn){
+      btn.classList.toggle("sel", btn.dataset.style === state.markStyle);
+    });
+  }
+  document.querySelectorAll(".chk-markstyle-opt").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      state.markStyle = btn.dataset.style;
+      syncMarkStyleUI();
+      renderItems();
+      renderActivity();
+    });
+  });
+  syncMarkStyleUI();
   $("chkTitleInput").addEventListener("input", e=>{
     currentActivity().title = e.target.value;
     $("chkTitle").textContent = e.target.value;
@@ -1521,10 +1565,12 @@ function initActivityTheme(){
   // wording — tap/click/select becomes "put a check (✓) or an X on".
   function toPrintInstruction(s){
     if (!s) return s;
+    var m = markLabels();
+    var phrase = 'put a ' + m.yes + ' or an ' + m.no + ' on';
     return String(s)
-      .replace(/\btap\b/gi, 'put a check (✓) or an X on')
-      .replace(/\bclick\b/gi, 'put a check (✓) or an X on')
-      .replace(/\bselect\b/gi, 'put a check (✓) or an X on');
+      .replace(/\btap\b/gi, phrase)
+      .replace(/\bclick\b/gi, phrase)
+      .replace(/\bselect\b/gi, phrase);
   }
   // printEscape() does not escape quote characters, so it is not safe inside an
   // HTML attribute (e.g. src="..."). Use this for any teacher-entered value
@@ -1568,8 +1614,10 @@ function initActivityTheme(){
           var visual = it.img
             ? '<img src="'+escAttr(it.img)+'" alt="">'
             : '<span class="chk-print-emoji">'+printEscape(it.emoji || "?")+'</span>';
+          // One blank box — the learner draws their own check or X in it,
+          // rather than picking between two pre-printed ✓/✗ boxes.
           return '<div class="chk-print-item">'+visual
-            + '<div class="chk-print-marks"><span class="chk-print-mark">✓</span><span class="chk-print-mark">✗</span></div>'
+            + '<div class="chk-print-marks"><span class="chk-print-mark chk-print-mark--blank"></span></div>'
             + '</div>';
         }).join("");
         pages += '<div class="chk-print-page"'+(isLastPageOverall ? ' style="page-break-after:auto; display:flex; flex-direction:column; min-height:100vh;"' : '')+'>'
@@ -1658,22 +1706,37 @@ function initActivityTheme(){
   /* ── In-progress autosave: survives an accidental refresh before the
      teacher clicks Save Draft/Publish. Keyed per exact URL (including any
      draft_id/edit_pub_id), so a fresh blank editor, a resumed draft, and a
-     resumed published-activity edit each get their own slot and never mix. ── */
+     resumed published-activity edit each get their own slot and never mix.
+     Expires after AUTOSAVE_TTL_MS of inactivity so a stale, long-abandoned
+     autosave doesn't sit in sessionStorage indefinitely (or silently pop
+     back up if this URL is ever revisited much later) — it's just discarded
+     and the editor starts fresh instead. ── */
+  var AUTOSAVE_TTL_MS = 20 * 60 * 1000;
   function autoSaveKey(){ return 'sped_autosave_' + location.pathname + location.search; }
   function autoSaveState(){
-    try { sessionStorage.setItem(autoSaveKey(), JSON.stringify(state)); } catch(e) {}
+    try { sessionStorage.setItem(autoSaveKey(), JSON.stringify({ savedAt: Date.now(), state: state })); } catch(e) {}
   }
   function restoreAutoSaveIfAny(){
     try {
-      var saved = sessionStorage.getItem(autoSaveKey());
-      if (!saved) return;
-      Object.assign(state, JSON.parse(saved));
+      var raw = sessionStorage.getItem(autoSaveKey());
+      if (!raw) return;
+      var wrapper = JSON.parse(raw);
+      if (!wrapper || typeof wrapper.savedAt !== "number" || (Date.now() - wrapper.savedAt) > AUTOSAVE_TTL_MS) {
+        sessionStorage.removeItem(autoSaveKey());
+        return;
+      }
+      Object.assign(state, wrapper.state);
       refreshSlideUI(); syncDesignControls(); applyAppearance(); renderActivity();
     } catch(e) {}
   }
   window.addEventListener('pagehide', autoSaveState);
   window.addEventListener('beforeunload', autoSaveState);
-  setInterval(autoSaveState, 8000);
+  // Skip the periodic tick while the tab is hidden/backgrounded — the
+  // teacher isn't actively editing then, and pagehide/beforeunload above
+  // already guarantee a save the moment they actually navigate away.
+  // Avoids needlessly re-serializing state (which can hold base64 image
+  // data) every few seconds for a tab sitting unused in the background.
+  setInterval(function(){ if (!document.hidden) autoSaveState(); }, 15000);
 
   function loadDraftIfAny() {
     var draftId = new URLSearchParams(location.search).get('draft_id');

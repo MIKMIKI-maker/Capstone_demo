@@ -34,7 +34,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-s
     background: transparent;
 }
 .teacher-sidebar-title { display: block; color: #fff; font-weight: 700; font-size: 15px; line-height: 1.2; }
-.teacher-sidebar-sub { display: block; color: rgba(255,255,255,.55); font-size: 11px; }
+.teacher-sidebar-sub { display: block; color: rgba(255,255,255,.55); font-size: 12px; }
 .teacher-sidebar-nav { flex: 1; padding: 20px 12px; display: flex; flex-direction: column; gap: 4px; }
 .teacher-nav-item { display: flex; align-items: center; gap: 12px; padding: 13px 16px; border-radius: 12px; color: rgba(255,255,255,.65); text-decoration: none; font-size: 14px; font-weight: 500; transition: var(--transition); }
 .teacher-nav-item i:first-child { font-size: 16px; width: 18px; }
@@ -46,7 +46,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-s
 .teacher-profile { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: rgba(255,255,255,.08); border-radius: 12px; }
 .teacher-avatar { width: 38px; height: 38px; background: var(--orange); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
 .teacher-name { display: block; color: #fff; font-size: 13px; font-weight: 600; line-height: 1.2; }
-.teacher-role { display: block; color: rgba(255,255,255,.50); font-size: 11px; }
+.teacher-role { display: block; color: rgba(255,255,255,.50); font-size: 12px; }
 .teacher-signout-btn { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px; color: rgba(255,255,255,.55); text-decoration: none; font-size: 13px; font-weight: 500; transition: var(--transition); }
 .teacher-signout-btn:hover { background: rgba(255,255,255,.08); color: #fff; }
 
@@ -141,7 +141,7 @@ tbody tr:hover { background: #FAFBFF; }
 .tr-modal-icon { width: 40px; height: 40px; border-radius: 12px; background: #EFF6FF; color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
 .tr-modal-title-group { flex: 1; min-width: 0; }
 .tr-modal-title { font-weight: 700; font-size: 15px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tr-modal-sub { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.tr-modal-sub { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
 .tr-modal-close { width: 30px; height: 30px; border-radius: 9px; border: none; background: #F1F5F9; color: var(--muted); font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: var(--transition); flex-shrink: 0; }
 .tr-modal-close:hover { background: #E2E8F0; color: var(--text); }
 .tr-modal-progress-wrap { padding: 16px 22px 4px; flex-shrink: 0; }
@@ -156,7 +156,7 @@ tbody tr:hover { background: #FAFBFF; }
 .tr-sub-avatar.pending { background: #E2E8F0; color: var(--muted); }
 .tr-sub-info { flex: 1; min-width: 0; }
 .tr-sub-name { font-weight: 600; font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tr-sub-meta { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.tr-sub-meta { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
 .tr-sub-badge { font-size: 10.5px; font-weight: 700; padding: 4px 11px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
 .tr-sub-badge.done { background: #D1FAE5; color: #065F46; }
 .tr-sub-badge.pending { background: #F1F5F9; color: #94A3B8; }
@@ -177,7 +177,7 @@ tbody tr:hover { background: #FAFBFF; }
 .teacher-grading-evidence { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; }
 .teacher-grading-evidence > div { padding: 12px; background: #F8FAFC; border-radius: 10px; }
 .teacher-grading-evidence span, .teacher-grading-evidence strong { display: block; }
-.teacher-grading-evidence span { color: var(--muted); font-size: 11px; }
+.teacher-grading-evidence span { color: var(--muted); font-size: 12px; }
 .teacher-grading-evidence strong { margin-top: 4px; color: var(--text); font-size: 15px; }
 .teacher-generator-actions { display: flex; gap: 10px; margin-top: 18px; }
 .teacher-report-row-btn { border: 1px solid #BFDBFE; border-radius: 8px; padding: 6px 10px; background: #EFF6FF; color: var(--accent); font-weight: 700; cursor: pointer; }

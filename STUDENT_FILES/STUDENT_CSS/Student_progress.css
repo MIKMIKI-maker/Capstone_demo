@@ -171,7 +171,7 @@ body {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
 .student-circle-num { font-family: var(--font-head); font-weight: 800; font-size: 22px; color: var(--ink); line-height: 1; }
-.student-circle-denom { font-size: 11px; color: var(--ink-soft); font-weight: 600; }
+.student-circle-denom { font-size: 12px; color: var(--ink-soft); font-weight: 600; }
 .student-ov-stat-label { font-family: var(--font-head); font-weight: 700; font-size: 14px; color: var(--ink); }
 .student-ov-stat-sub { font-size: 12px; color: var(--ink-soft); font-weight: 500; }
 
@@ -208,22 +208,29 @@ body {
 
 /* ---- Activity history ---- */
 .student-history-card {
-  padding: 22px 24px; border-radius: var(--r-lg); background: var(--card); overflow-x: auto;
+  padding: 18px 22px; border-radius: var(--r-lg); background: var(--card); overflow-x: auto;
   box-shadow: 0 10px 0 rgba(36, 58, 94, .08), 0 18px 30px rgba(36, 58, 94, .12);
 }
-.student-history-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.student-history-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .student-history-title { font-family: var(--font-head); font-weight: 700; font-size: 18px; color: var(--ink); }
 .student-history-count { color: var(--ink-soft); font-weight: 600; font-size: 13px; }
-.student-history-table { width: 100%; border-collapse: collapse; }
+/* table-layout:fixed makes the column width:% set on each <th> actually
+   binding — with the default "auto" layout, the browser was re-sizing
+   columns off their (mostly short) cell content instead and ignoring
+   those hints, which is why the columns stayed spread out with the same
+   gaps no matter how the widths or padding were adjusted. */
+.student-history-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .student-history-table th {
-  text-align: left; padding: 12px 14px;
-  font-family: var(--font-head); font-weight: 700; font-size: 12px;
+  text-align: left; padding: 10px 12px;
+  font-family: var(--font-head); font-weight: 700; font-size: 13px;
   letter-spacing: .04em; text-transform: uppercase; color: var(--ink-soft);
   border-bottom: 2px solid #eef2f8;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .student-history-table td {
-  padding: 14px; font-size: 14px; color: var(--ink);
+  padding: 10px 12px; font-size: 15px; color: var(--ink);
   border-bottom: 1px solid #f1f4fa;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .student-history-empty {
   text-align: center !important; padding: 36px 14px !important;

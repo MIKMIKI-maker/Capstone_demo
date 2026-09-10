@@ -491,6 +491,12 @@ function initActivityTheme(){
   @media print{
     html, body{ height:auto !important; overflow:visible !important; }
     body *{ visibility:hidden; }
+    /* visibility:hidden above keeps hidden elements in normal flow, so the
+       huge editor UI (.trc-body, modals, tour overlay, etc.) still occupies
+       its full height and forces the print engine to allocate extra blank
+       pages for it. display:none removes it from layout entirely, so page
+       count is driven only by the print area's real content. */
+    body > *:not(#trcPrintArea){ display:none !important; }
     .trc-print-area, .trc-print-area *{ visibility:visible; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .trc-print-area{ display:block; position:absolute; left:0; top:0; width:100%; margin:0; padding:0; }
     .trc-print-page{ page-break-after:always; padding:6mm 8mm; box-sizing:border-box; }
@@ -1615,6 +1621,13 @@ function initActivityTheme(){
   function printEscape(s){
     var d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML;
   }
+  // The on-screen instruction says "with your finger or mouse" (tracing on
+  // a touchscreen/canvas) — on a printed worksheet there's no mouse, only a
+  // pencil, so that phrase must be swapped before printing.
+  function toPrintInstruction(s){
+    if (!s) return s;
+    return String(s).replace(/with\s+your\s+finger\s+or\s+mouse/gi, 'with a pencil');
+  }
   // printEscape() does not escape quote characters, so it is not safe inside an
   // HTML attribute (e.g. src="..."). Use this for any teacher-entered value
   // placed inside an attribute, so a value like `x" onerror="...` can't break out.
@@ -1705,7 +1718,7 @@ function initActivityTheme(){
         }).join("");
         pages += '<div class="trc-print-page"'+(isLastPageOverall ? ' style="page-break-after:auto; display:flex; flex-direction:column; min-height:100vh;"' : '')+'>'
           + '<div class="trc-print-head"><h2>'+printEscape(activity.title)+'</h2>'
-          + '<div class="trc-print-objective">('+printEscape(activity.instruction)+')</div>'
+          + '<div class="trc-print-objective">('+printEscape(toPrintInstruction(activity.instruction))+')</div>'
           + (state.activities.length > 1 ? '<div class="trc-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+' — '+(DIFFICULTY_LABELS[slideIdx]||"")+'</div>' : '')
           + (totalPages > 1 ? '<div class="trc-print-pagenum">Page '+pageNum+' of '+totalPages+'</div>' : '')
           + '</div>'
@@ -1791,22 +1804,37 @@ function initActivityTheme(){
   /* ── In-progress autosave: survives an accidental refresh before the
      teacher clicks Save Draft/Publish. Keyed per exact URL (including any
      draft_id/edit_pub_id), so a fresh blank editor, a resumed draft, and a
-     resumed published-activity edit each get their own slot and never mix. ── */
+     resumed published-activity edit each get their own slot and never mix.
+     Expires after AUTOSAVE_TTL_MS of inactivity so a stale, long-abandoned
+     autosave doesn't sit in sessionStorage indefinitely (or silently pop
+     back up if this URL is ever revisited much later) — it's just discarded
+     and the editor starts fresh instead. ── */
+  var AUTOSAVE_TTL_MS = 20 * 60 * 1000;
   function autoSaveKey(){ return 'sped_autosave_' + location.pathname + location.search; }
   function autoSaveState(){
-    try { sessionStorage.setItem(autoSaveKey(), JSON.stringify(state)); } catch(e) {}
+    try { sessionStorage.setItem(autoSaveKey(), JSON.stringify({ savedAt: Date.now(), state: state })); } catch(e) {}
   }
   function restoreAutoSaveIfAny(){
     try {
-      var saved = sessionStorage.getItem(autoSaveKey());
-      if (!saved) return;
-      Object.assign(state, JSON.parse(saved));
+      var raw = sessionStorage.getItem(autoSaveKey());
+      if (!raw) return;
+      var wrapper = JSON.parse(raw);
+      if (!wrapper || typeof wrapper.savedAt !== "number" || (Date.now() - wrapper.savedAt) > AUTOSAVE_TTL_MS) {
+        sessionStorage.removeItem(autoSaveKey());
+        return;
+      }
+      Object.assign(state, wrapper.state);
       refreshSlideUI(); syncDesignControls(); applyAppearance(); renderActivity();
     } catch(e) {}
   }
   window.addEventListener('pagehide', autoSaveState);
   window.addEventListener('beforeunload', autoSaveState);
-  setInterval(autoSaveState, 8000);
+  // Skip the periodic tick while the tab is hidden/backgrounded — the
+  // teacher isn't actively editing then, and pagehide/beforeunload above
+  // already guarantee a save the moment they actually navigate away.
+  // Avoids needlessly re-serializing state (which can hold base64 image
+  // data) every few seconds for a tab sitting unused in the background.
+  setInterval(function(){ if (!document.hidden) autoSaveState(); }, 15000);
 
   function loadDraftIfAny() {
     var draftId = new URLSearchParams(location.search).get('draft_id');

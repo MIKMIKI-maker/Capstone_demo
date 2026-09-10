@@ -531,6 +531,12 @@ function initActivityTheme(){
   @media print{
     html, body{ height:auto !important; overflow:visible !important; }
     body *{ visibility:hidden; }
+    /* visibility:hidden above keeps hidden elements in normal flow, so the
+       huge editor UI (.srt-body, modals, tour overlay, etc.) still occupies
+       its full height and forces the print engine to allocate extra blank
+       pages for it. display:none removes it from layout entirely, so page
+       count is driven only by the print area's real content. */
+    body > *:not(#srtPrintArea){ display:none !important; }
     .srt-print-area, .srt-print-area *{ visibility:visible; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .srt-print-area{ display:block; position:absolute; left:0; top:0; width:100%; margin:0; padding:0; }
     .srt-print-page{ page-break-after:always; padding:6mm 8mm; box-sizing:border-box; }
@@ -1779,10 +1785,13 @@ function initActivityTheme(){
   // Reword the on-screen (drag into a bin) instruction into paper-appropriate
   // wording — this is a sorting activity, so "drag ... into" becomes
   // "write the letter of ... under" and tap/click becomes "circle".
+  // Students physically cut out each printed picture and paste it inside the
+  // matching category box — not write a letter — so the printed instruction
+  // must say that, not the on-screen "drag" wording.
   function toPrintInstruction(s){
     if (!s) return s;
     return String(s)
-      .replace(/drag\s+(and\s+drop\s+)?/gi, 'write the letter of ')
+      .replace(/drag\s+(and\s+drop\s+)?/gi, 'cut out and paste ')
       .replace(/\binto\b/gi, 'under')
       .replace(/\btap\b/gi, 'circle')
       .replace(/\bclick\b/gi, 'circle')
@@ -1979,22 +1988,37 @@ function initActivityTheme(){
   /* ── In-progress autosave: survives an accidental refresh before the
      teacher clicks Save Draft/Publish. Keyed per exact URL (including any
      draft_id/edit_pub_id), so a fresh blank editor, a resumed draft, and a
-     resumed published-activity edit each get their own slot and never mix. ── */
+     resumed published-activity edit each get their own slot and never mix.
+     Expires after AUTOSAVE_TTL_MS of inactivity so a stale, long-abandoned
+     autosave doesn't sit in sessionStorage indefinitely (or silently pop
+     back up if this URL is ever revisited much later) — it's just discarded
+     and the editor starts fresh instead. ── */
+  var AUTOSAVE_TTL_MS = 20 * 60 * 1000;
   function autoSaveKey(){ return 'sped_autosave_' + location.pathname + location.search; }
   function autoSaveState(){
-    try { sessionStorage.setItem(autoSaveKey(), JSON.stringify(state)); } catch(e) {}
+    try { sessionStorage.setItem(autoSaveKey(), JSON.stringify({ savedAt: Date.now(), state: state })); } catch(e) {}
   }
   function restoreAutoSaveIfAny(){
     try {
-      var saved = sessionStorage.getItem(autoSaveKey());
-      if (!saved) return;
-      Object.assign(state, JSON.parse(saved));
+      var raw = sessionStorage.getItem(autoSaveKey());
+      if (!raw) return;
+      var wrapper = JSON.parse(raw);
+      if (!wrapper || typeof wrapper.savedAt !== "number" || (Date.now() - wrapper.savedAt) > AUTOSAVE_TTL_MS) {
+        sessionStorage.removeItem(autoSaveKey());
+        return;
+      }
+      Object.assign(state, wrapper.state);
       refreshSlideUI(); syncDesignControls(); applyAppearance(); renderActivity();
     } catch(e) {}
   }
   window.addEventListener('pagehide', autoSaveState);
   window.addEventListener('beforeunload', autoSaveState);
-  setInterval(autoSaveState, 8000);
+  // Skip the periodic tick while the tab is hidden/backgrounded — the
+  // teacher isn't actively editing then, and pagehide/beforeunload above
+  // already guarantee a save the moment they actually navigate away.
+  // Avoids needlessly re-serializing state (which can hold base64 image
+  // data) every few seconds for a tab sitting unused in the background.
+  setInterval(function(){ if (!document.hidden) autoSaveState(); }, 15000);
 
   function loadDraftIfAny() {
     var draftId = new URLSearchParams(location.search).get('draft_id');

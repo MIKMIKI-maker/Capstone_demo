@@ -133,7 +133,7 @@ body {
 .student-notif-row1 { display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
 .student-notif-title { font-weight:700; font-size:14px; color:#1e293b; line-height:1.4; }
 .notif-item:not(.unread) .student-notif-title { font-weight:500; color:#475569; }
-.student-notif-time { color:#94a3b8; font-weight:500; font-size:11px; flex:none; margin-top:5px; display:block; }
+.student-notif-time { color:#94a3b8; font-weight:500; font-size:12px; flex:none; margin-top:5px; display:block; }
 .student-notif-text { margin-top:3px; color:#64748b; font-weight:400; font-size:13px; line-height:1.5; }
 
 .mark-read-btn, .student-delete-btn {

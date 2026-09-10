@@ -36,7 +36,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-s
     background: transparent;
 }
 .teacher-sidebar-title { display: block; color: #fff; font-weight: 700; font-size: 15px; line-height: 1.2; }
-.teacher-sidebar-sub { display: block; color: rgba(255,255,255,.55); font-size: 11px; }
+.teacher-sidebar-sub { display: block; color: rgba(255,255,255,.55); font-size: 12px; }
 .teacher-sidebar-nav { flex: 1; padding: 20px 12px; display: flex; flex-direction: column; gap: 4px; }
 .teacher-nav-item { display: flex; align-items: center; gap: 12px; padding: 13px 16px; border-radius: 12px; color: rgba(255,255,255,.65); text-decoration: none; font-size: 14px; font-weight: 500; transition: var(--transition); }
 .teacher-nav-item i:first-child { font-size: 16px; width: 18px; }
@@ -48,7 +48,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-s
 .teacher-profile { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: rgba(255,255,255,.08); border-radius: 12px; }
 .teacher-avatar { width: 38px; height: 38px; background: var(--orange); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
 .teacher-name { display: block; color: #fff; font-size: 13px; font-weight: 600; line-height: 1.2; }
-.teacher-role { display: block; color: rgba(255,255,255,.50); font-size: 11px; }
+.teacher-role { display: block; color: rgba(255,255,255,.50); font-size: 12px; }
 .teacher-signout-btn { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px; color: rgba(255,255,255,.55); text-decoration: none; font-size: 13px; font-weight: 500; transition: var(--transition); }
 .teacher-signout-btn:hover { background: rgba(255,255,255,.08); color: #fff; }
 
@@ -61,7 +61,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-s
 .btn-back-circle { width: 38px; height: 38px; background: var(--white); border: 1.5px solid #E2E8F0; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition); color: var(--text); font-size: 14px; text-decoration: none; flex-shrink: 0; box-shadow: var(--shadow-sm); }
 .btn-back-circle:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
 .teacher-topbar-title-group { display: flex; flex-direction: column; }
-.teacher-topbar-back-label { font-size: 11px; color: var(--muted); font-weight: 500; margin-bottom: 1px; }
+.teacher-topbar-back-label { font-size: 12px; color: var(--muted); font-weight: 500; margin-bottom: 1px; }
 .teacher-topbar-title { font-size: 20px; font-weight: 700; color: var(--text); line-height: 1.2; }
 .teacher-topbar-right { display: flex; align-items: center; gap: 12px; }
 .btn-pdf { display: inline-flex; align-items: center; gap: 8px; background: var(--accent); color: #fff; border: none; padding: 10px 22px; border-radius: 12px; font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: var(--transition); box-shadow: 0 4px 12px rgba(37,99,235,.25); }
@@ -115,7 +115,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-s
 .teacher-ring-label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: var(--text); }
 .teacher-ring-info { text-align: center; }
 .teacher-ring-title { font-size: 13px; font-weight: 700; color: var(--text); }
-.teacher-ring-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.teacher-ring-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
 
 /* ── TWO-COLUMN LAYOUT ── */
 .teacher-progress-grid { display: grid; grid-template-columns: 1fr 320px; gap: 18px; }
@@ -134,7 +134,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-s
    bottom-anchored, matching the original visual intent. */
 .teacher-bar-col { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; flex: 1; height: 100%; }
 .teacher-bar { background: #4A90E2; border-radius: 6px 6px 0 0; width: 100%; min-height: 2px; transition: height .4s ease; }
-.teacher-bar-label { font-size: 11px; color: var(--muted); margin-top: 8px; }
+.teacher-bar-label { font-size: 12px; color: var(--muted); margin-top: 8px; }
 .teacher-y-labels { position: absolute; left: 0; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 0 0 2px; }
 .teacher-y-label { font-size: 10px; color: #CBD5E1; }
 
@@ -211,7 +211,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-s
 .teacher-note-item { padding: 12px 0; border-bottom: 1px solid #F1F5F9; }
 .teacher-note-item:last-of-type { border-bottom: none; }
 .teacher-note-text { font-size: 13px; color: var(--text); line-height: 1.55; }
-.teacher-note-date { font-size: 11px; color: #94A3B8; margin-top: 4px; }
+.teacher-note-date { font-size: 12px; color: #94A3B8; margin-top: 4px; }
 
 /* ── ADD NOTE MODAL ── */
 .note-modal-overlay { display: none; position: fixed; inset: 0; z-index: 9000; background: rgba(15,23,42,.45); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); align-items: center; justify-content: center; }
