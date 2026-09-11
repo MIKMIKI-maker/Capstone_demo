@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/teacher_check_pending_reminders.php';
 
 header('Content-Type: application/json');
 
@@ -10,6 +11,11 @@ if (!$conn) {
 }
 
 $teacher_id = isset($_REQUEST['teacher_id']) ? intval($_REQUEST['teacher_id']) : 1;
+
+// See teacher_check_pending_reminders.php — this is the closest thing this
+// app has to a daily cron, piggybacked on the one page every teacher is
+// virtually guaranteed to load.
+checkPendingActivityReminders($conn, $teacher_id);
 
 $stats = [
     'assigned_learners'    => 0,

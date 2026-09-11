@@ -277,11 +277,11 @@
             return icons[type] || 'fa-bell';
         }
         function typeColor(type) {
-            var colors = { info: '#3b82f6', success: '#10b981', warning: '#f59e0b', error: '#ef4444', activity: '#8b5cf6', message: '#0ea5e9', scaffold: '#ef4444', scaffold_hint: '#f59e0b', retake_alert: '#f97316' };
+            var colors = { info: '#3b82f6', success: '#10b981', warning: '#f59e0b', error: '#ef4444', activity: '#8b5cf6', message: '#0ea5e9', scaffold: '#ef4444', scaffold_hint: '#f59e0b', retake_alert: '#f97316', pending_activity: '#d97706' };
             return colors[type] || '#6b7280';
         }
         function typeLabel(type) {
-            var labels = { info: 'Info', success: 'Success', warning: 'Warning', error: 'Error', activity: 'Activity', message: 'Message', scaffold: 'Needs Review', scaffold_hint: 'Needed a Hint', retake_alert: 'Live Retake Alert' };
+            var labels = { info: 'Info', success: 'Success', warning: 'Warning', error: 'Error', activity: 'Activity', message: 'Message', scaffold: 'Needs Review', scaffold_hint: 'Needed a Hint', retake_alert: 'Live Retake Alert', pending_activity: 'Pending Reminder' };
             return labels[type] || 'Notice';
         }
         function timeAgo(ts) {
