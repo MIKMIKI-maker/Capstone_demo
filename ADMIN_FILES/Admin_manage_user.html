@@ -690,8 +690,8 @@
           <div class="admin-field-group" style="margin-bottom:6px">
             <label>New Password</label>
             <div class="admin-temp-pass-wrap">
-              <input class="admin-temp-pass-input" name="enter_temporary_password"
-                placeholder="Enter new password..." type="text" required minlength="8" />
+              <input class="admin-temp-pass-input" name="enter_temporary_password" id="admin-reset-pw-input"
+                placeholder="Enter new password..." type="text" autocomplete="off" required minlength="8" />
               <span class="admin-copy-icon">⧉</span>
             </div>
           </div>
@@ -1471,6 +1471,13 @@
       if (userIdInput) {
         userIdInput.value = selectedAccount.id;
       }
+
+      // The password field was never cleared between openings, so it kept
+      // showing whatever was typed for the PREVIOUS user reset — easy to
+      // mistake for "already has a password" or, worse, submit unchanged
+      // and give two different accounts the same password.
+      var pwField = document.querySelector('#admin_manage_user_form_3 [name="enter_temporary_password"]');
+      if (pwField) pwField.value = '';
 
       showModal('admin-modal-reset');
     }

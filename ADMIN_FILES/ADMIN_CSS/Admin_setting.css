@@ -1,5 +1,25 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Used across this page (Save Changes, Update Password, Grading Periods'
+   Unlock button) but never actually defined here — every button with this
+   class was rendering as a plain unstyled browser button. Each usage sets
+   its own width/padding inline; this just supplies the look. */
+.admin-btn-signin {
+    background: #1a3a8f;
+    color: #fff;
+    font-family: 'Poppins', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: background .2s, transform .1s;
+}
+.admin-btn-signin:hover  { background: #14307a; }
+.admin-btn-signin:active { transform: scale(0.98); }
+.admin-btn-signin:disabled { background: #94a3b8; cursor: not-allowed; }
+
 html, body { height: 100%; overflow: hidden; font-family: 'Inter', sans-serif; background:#eaf0fc; }
 body { display: flex; }
 
