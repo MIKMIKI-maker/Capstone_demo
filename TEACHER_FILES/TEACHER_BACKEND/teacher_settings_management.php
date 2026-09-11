@@ -72,8 +72,31 @@ function updateTeacherProfile($conn, $teacher_id) {
         return;
     }
 
+    // A teacher may change their own name exactly once — see the matching
+    // check in teacher_get_profile.php for why this column check lives here
+    // instead of the main migration gate.
+    $nameChangeCol = $conn->query("SHOW COLUMNS FROM teacher_accounts LIKE 'name_change_used'");
+    if ($nameChangeCol && $nameChangeCol->num_rows == 0) {
+        $conn->query("ALTER TABLE teacher_accounts ADD COLUMN name_change_used TINYINT(1) NOT NULL DEFAULT 0");
+    }
+
+    $cur = $conn->prepare("SELECT first_name, last_name, name_change_used FROM teacher_accounts WHERE id=?");
+    $cur->bind_param("i", $teacher_id);
+    $cur->execute();
+    $curRow = $cur->get_result()->fetch_assoc();
+    $cur->close();
+
+    $nameChanged = $curRow && (trim($curRow['first_name']) !== $first_name || trim((string)$curRow['last_name']) !== $last_name);
+
+    if ($nameChanged && !empty($curRow['name_change_used'])) {
+        echo json_encode(['success' => false, 'code' => 'name_locked', 'message' => "You've already used your one-time name change. Contact your Admin to update your name."]);
+        return;
+    }
+
     // Update teacher_accounts profile fields (specialization/bio removed from the form — not touched here)
-    $sql  = "UPDATE teacher_accounts SET first_name=?, last_name=?, phone_number=? WHERE id=?";
+    $sql  = $nameChanged
+        ? "UPDATE teacher_accounts SET first_name=?, last_name=?, phone_number=?, name_change_used=1 WHERE id=?"
+        : "UPDATE teacher_accounts SET first_name=?, last_name=?, phone_number=? WHERE id=?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("sssi", $first_name, $last_name, $phone, $teacher_id);
 

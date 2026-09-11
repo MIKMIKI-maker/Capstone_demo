@@ -20,8 +20,18 @@ if (!$conn) {
     exit;
 }
 
+// A teacher may change their own name (first/last) exactly once — meant for
+// fixing a typo right after account creation, not ongoing self-service
+// renames. Checked here (a cheap standalone check, not the main $needsSetup
+// migration gate) so it also lands on an already-deployed teacher_accounts
+// table, not just a freshly-created one.
+$nameChangeCol = $conn->query("SHOW COLUMNS FROM teacher_accounts LIKE 'name_change_used'");
+if ($nameChangeCol && $nameChangeCol->num_rows == 0) {
+    $conn->query("ALTER TABLE teacher_accounts ADD COLUMN name_change_used TINYINT(1) NOT NULL DEFAULT 0");
+}
+
 // CHANGED: Added bio field to SELECT so the teacher's bio is returned to the settings page
-$sql = "SELECT id, teacher_email, first_name, last_name, school_name, phone_number, specialization, COALESCE(bio,'') as bio, class_section, status
+$sql = "SELECT id, teacher_email, first_name, last_name, school_name, phone_number, specialization, COALESCE(bio,'') as bio, class_section, status, COALESCE(name_change_used,0) AS name_change_used
         FROM teacher_accounts WHERE id=?";
 $stmt = $conn->prepare($sql);
 if (!$stmt) {
@@ -72,7 +82,8 @@ if ($row = $result->fetch_assoc()) {
             'classSection'   => $class_section,
             'status'         => $row['status'],
             'avatarLetter'   => $avatar_letter,
-            'profilePhoto'   => $profile_photo
+            'profilePhoto'   => $profile_photo,
+            'nameChangeUsed' => (bool)$row['name_change_used']
         ]
     ]);
 } else {

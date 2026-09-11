@@ -147,6 +147,7 @@
                     <div class="teacher-form-group">
                         <label>Last Name</label>
                         <input id="field-last-name" placeholder="Last name" type="text" />
+                        <p id="name-change-note" style="display:none;font-size:12px;color:#b45309;margin-top:6px;grid-column:1 / -1;"><i class="fa-solid fa-lock"></i> You've already used your one-time name change. Contact your Admin to update it again.</p>
                     </div>
                     <div class="teacher-form-group">
                         <label>Email Address</label>
@@ -424,12 +425,28 @@ document.addEventListener('DOMContentLoaded', function () {
                 setVal('field-last-name',  t.lastName  || '');
                 setVal('field-email',      t.email     || '');
                 setVal('field-phone',      t.phone     || '');
+                applyNameChangeLock(!!t.nameChangeUsed);
             })
             .catch(function (err) { console.error('Profile load error:', err); });
     }
 
     function setText(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
     function setVal(id, val)  { var el = document.getElementById(id); if (el) el.value = val; }
+
+    // A teacher gets exactly one self-service name change — meant for fixing
+    // a typo right after account creation. Once used, lock both fields
+    // read-only so a blocked save isn't the first they hear of it.
+    function applyNameChangeLock(used) {
+        ['field-first-name', 'field-last-name'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.readOnly = used;
+            el.style.background  = used ? '#f0f0f0' : '';
+            el.style.cursor      = used ? 'not-allowed' : '';
+        });
+        var note = document.getElementById('name-change-note');
+        if (note) note.style.display = used ? 'block' : 'none';
+    }
 
     /* ── Save profile ── */
     document.getElementById('btn-save-profile').addEventListener('click', function () {
