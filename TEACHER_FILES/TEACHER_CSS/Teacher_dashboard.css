@@ -461,12 +461,45 @@ body {
     font-weight: 600;
     padding: 7px 18px;
     border-radius: 20px;
-    margin-bottom: 14px;
 }
 
 .badge-blue   { background: var(--accent); }
 .badge-pink   { background: var(--pink);   }
 .badge-orange { background: var(--orange); }
+
+/* Learning Activity Plan — per-grading lock state, set by the Admin
+   (Settings > Grading Periods). Only one grading is normally "unlocked"
+   at a time; the others show locked and can't be edited until the Admin
+   opens them. */
+.teacher-plan-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+.teacher-plan-state {
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.teacher-plan-state--active { color: #16a34a; }
+.teacher-plan-state--locked { color: #94a3b8; }
+.teacher-plan-card--locked {
+    background: #f8fafc;
+}
+.teacher-plan-card--locked .teacher-plan-items li {
+    opacity: .75;
+}
+.teacher-plan-add-input:disabled {
+    background: #f1f5f9;
+    color: #94a3b8;
+    cursor: not-allowed;
+}
+.teacher-plan-add-btn:disabled {
+    background: #cbd5e1;
+    cursor: not-allowed;
+}
 
 .teacher-plan-items {
     list-style: none;

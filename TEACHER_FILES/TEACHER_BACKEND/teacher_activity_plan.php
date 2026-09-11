@@ -15,6 +15,38 @@ $conn->query("CREATE TABLE IF NOT EXISTS teacher_activity_plan (
   INDEX idx_teacher_grading (teacher_id, grading_period)
 )");
 
+// School-wide (not per-teacher) lock state — Admin controls which grading
+// period(s) teachers can currently edit from Admin Settings. Only First
+// Grading starts unlocked; the seed only runs once, the first time this
+// table is empty.
+$conn->query("CREATE TABLE IF NOT EXISTS grading_period_locks (
+  grading_period VARCHAR(20) PRIMARY KEY,
+  is_unlocked TINYINT(1) NOT NULL DEFAULT 0
+)");
+$lockSeedCheck = $conn->query("SELECT COUNT(*) AS cnt FROM grading_period_locks");
+if ($lockSeedCheck && $lockSeedCheck->fetch_assoc()['cnt'] == 0) {
+    $conn->query("INSERT INTO grading_period_locks (grading_period, is_unlocked) VALUES
+        ('First', 1), ('Second', 0), ('Third', 0)");
+}
+
+function isGradingUnlocked($conn, $period) {
+    $stmt = $conn->prepare("SELECT is_unlocked FROM grading_period_locks WHERE grading_period=?");
+    $stmt->bind_param("s", $period);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    return $row ? (bool)$row['is_unlocked'] : false;
+}
+
+function getAllGradingLocks($conn) {
+    $locks = ['First' => false, 'Second' => false, 'Third' => false];
+    $res = $conn->query("SELECT grading_period, is_unlocked FROM grading_period_locks");
+    while ($row = $res->fetch_assoc()) {
+        $locks[$row['grading_period']] = (bool)$row['is_unlocked'];
+    }
+    return $locks;
+}
+
 $teacher_id = isset($_REQUEST['teacher_id']) ? intval($_REQUEST['teacher_id']) : 0;
 if (!$teacher_id) { echo json_encode(['success' => false, 'message' => 'teacher_id required']); exit; }
 
@@ -57,13 +89,14 @@ switch ($action) {
             $plan[$row['grading_period']][] = ['id' => $row['id'], 'text' => $row['item_text']];
         }
         $stmt->close();
-        echo json_encode(['success' => true, 'plan' => $plan]);
+        echo json_encode(['success' => true, 'plan' => $plan, 'locks' => getAllGradingLocks($conn)]);
         break;
 
     case 'create':
         $period = in_array($_POST['grading_period'] ?? '', ['First', 'Second', 'Third']) ? $_POST['grading_period'] : null;
         $text = trim($_POST['item_text'] ?? '');
         if (!$period || $text === '') { echo json_encode(['success' => false, 'message' => 'grading_period and item_text required']); break; }
+        if (!isGradingUnlocked($conn, $period)) { echo json_encode(['success' => false, 'message' => 'This grading period is locked. Contact your Admin to unlock it.']); break; }
         if (mb_strlen($text) > 255) $text = mb_substr($text, 0, 255);
 
         $ord = $conn->prepare("SELECT COALESCE(MAX(sort_order), -1) + 1 AS next_ord FROM teacher_activity_plan WHERE teacher_id=? AND grading_period=?");
@@ -82,6 +115,15 @@ switch ($action) {
 
     case 'delete':
         $item_id = intval($_POST['item_id'] ?? 0);
+        $ownerStmt = $conn->prepare("SELECT grading_period FROM teacher_activity_plan WHERE id=? AND teacher_id=?");
+        $ownerStmt->bind_param("ii", $item_id, $teacher_id);
+        $ownerStmt->execute();
+        $ownerRow = $ownerStmt->get_result()->fetch_assoc();
+        $ownerStmt->close();
+        if ($ownerRow && !isGradingUnlocked($conn, $ownerRow['grading_period'])) {
+            echo json_encode(['success' => false, 'message' => 'This grading period is locked. Contact your Admin to unlock it.']);
+            break;
+        }
         $stmt = $conn->prepare("DELETE FROM teacher_activity_plan WHERE id=? AND teacher_id=?");
         $stmt->bind_param("ii", $item_id, $teacher_id);
         $stmt->execute();
@@ -93,6 +135,7 @@ switch ($action) {
         $period = in_array($_POST['grading_period'] ?? '', ['First', 'Second', 'Third']) ? $_POST['grading_period'] : null;
         $order = trim($_POST['order'] ?? '');
         if (!$period || $order === '') { echo json_encode(['success' => false, 'message' => 'grading_period and order required']); break; }
+        if (!isGradingUnlocked($conn, $period)) { echo json_encode(['success' => false, 'message' => 'This grading period is locked. Contact your Admin to unlock it.']); break; }
         $ids = array_filter(array_map('intval', explode(',', $order)));
 
         $stmt = $conn->prepare("UPDATE teacher_activity_plan SET sort_order=? WHERE id=? AND teacher_id=? AND grading_period=?");

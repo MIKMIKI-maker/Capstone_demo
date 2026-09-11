@@ -139,7 +139,10 @@
                         <h3 class="teacher-section-title">Learning Activity Plan</h3>
                         <div class="teacher-plan-grid">
                             <div class="teacher-plan-card">
-                                <span class="teacher-grading-badge badge-blue">First Grading</span>
+                                <div class="teacher-plan-card-head">
+                                    <span class="teacher-grading-badge badge-blue">First Grading</span>
+                                    <span class="teacher-plan-state" id="teacher-plan-state-First"></span>
+                                </div>
                                 <ul class="teacher-plan-items" id="teacher-plan-First" ondragover="planDragOver(event)" ondrop="planDrop(event,'First')"></ul>
                                 <div class="teacher-plan-add-row">
                                     <input class="teacher-plan-add-input" id="teacher-plan-input-First" placeholder="Add a focus area..." type="text" onkeydown="if(event.key==='Enter') addPlanItem('First')" />
@@ -147,7 +150,10 @@
                                 </div>
                             </div>
                             <div class="teacher-plan-card">
-                                <span class="teacher-grading-badge badge-pink">Second Grading</span>
+                                <div class="teacher-plan-card-head">
+                                    <span class="teacher-grading-badge badge-pink">Second Grading</span>
+                                    <span class="teacher-plan-state" id="teacher-plan-state-Second"></span>
+                                </div>
                                 <ul class="teacher-plan-items" id="teacher-plan-Second" ondragover="planDragOver(event)" ondrop="planDrop(event,'Second')"></ul>
                                 <div class="teacher-plan-add-row">
                                     <input class="teacher-plan-add-input" id="teacher-plan-input-Second" placeholder="Add a focus area..." type="text" onkeydown="if(event.key==='Enter') addPlanItem('Second')" />
@@ -155,7 +161,10 @@
                                 </div>
                             </div>
                             <div class="teacher-plan-card">
-                                <span class="teacher-grading-badge badge-orange">Third Grading</span>
+                                <div class="teacher-plan-card-head">
+                                    <span class="teacher-grading-badge badge-orange">Third Grading</span>
+                                    <span class="teacher-plan-state" id="teacher-plan-state-Third"></span>
+                                </div>
                                 <ul class="teacher-plan-items" id="teacher-plan-Third" ondragover="planDragOver(event)" ondrop="planDrop(event,'Third')"></ul>
                                 <div class="teacher-plan-add-row">
                                     <input class="teacher-plan-add-input" id="teacher-plan-input-Third" placeholder="Add a focus area..." type="text" onkeydown="if(event.key==='Enter') addPlanItem('Third')" />
@@ -346,25 +355,50 @@
             });
         });
 
+        // Which grading periods the Admin currently has unlocked — set by
+        // renderActivityPlan(), read by addPlanItem/deletePlanItem/drag
+        // handlers so they can bail out client-side instead of relying only
+        // on the server rejecting the request after the fact.
+        var currentGradingLocks = { First: false, Second: false, Third: false };
+
         function loadActivityPlan() {
             var tid = getCurrentTeacherId();
             fetch('TEACHER_BACKEND/teacher_activity_plan.php?teacher_id=' + tid + '&action=get')
                 .then(function(r) { return r.json(); })
-                .then(function(data) { if (data.success) renderActivityPlan(data.plan); })
+                .then(function(data) { if (data.success) renderActivityPlan(data.plan, data.locks); })
                 .catch(function() {});
         }
 
-        function renderActivityPlan(plan) {
+        function renderActivityPlan(plan, locks) {
+            currentGradingLocks = locks || currentGradingLocks;
             ['First', 'Second', 'Third'].forEach(function(period) {
                 var list = document.getElementById('teacher-plan-' + period);
                 var items = (plan && plan[period]) || [];
+                var isUnlocked = !!currentGradingLocks[period];
+
                 list.innerHTML = items.map(function(item) {
-                    return '<li draggable="true" data-id="' + item.id + '" ondragstart="planDragStart(event)" ondragend="planDragEnd(event)">'
+                    return '<li draggable="' + (isUnlocked ? 'true' : 'false') + '" data-id="' + item.id + '" ondragstart="planDragStart(event)" ondragend="planDragEnd(event)">'
                         + '<span class="teacher-plan-drag-handle">⠿</span>'
                         + '<span class="teacher-plan-item-text">' + escHtml(item.text) + '</span>'
-                        + '<button class="teacher-plan-item-del" type="button" onclick="deletePlanItem(' + item.id + ',\'' + period + '\')" title="Remove">✕</button>'
+                        + (isUnlocked
+                            ? '<button class="teacher-plan-item-del" type="button" onclick="deletePlanItem(' + item.id + ',\'' + period + '\')" title="Remove">✕</button>'
+                            : '')
                         + '</li>';
                 }).join('');
+
+                var card = list.closest('.teacher-plan-card');
+                if (card) card.classList.toggle('teacher-plan-card--locked', !isUnlocked);
+
+                var input = document.getElementById('teacher-plan-input-' + period);
+                var addBtn = input ? input.nextElementSibling : null;
+                if (input) { input.disabled = !isUnlocked; input.placeholder = isUnlocked ? 'Add a focus area...' : 'Locked — contact your Admin'; }
+                if (addBtn) addBtn.disabled = !isUnlocked;
+
+                var stateEl = document.getElementById('teacher-plan-state-' + period);
+                if (stateEl) {
+                    stateEl.textContent = isUnlocked ? '● Active' : '🔒 Locked';
+                    stateEl.className = 'teacher-plan-state ' + (isUnlocked ? 'teacher-plan-state--active' : 'teacher-plan-state--locked');
+                }
             });
         }
 
@@ -376,6 +410,7 @@
         var _dragItem = null;
 
         function planDragStart(e) {
+            if (e.currentTarget.getAttribute('draggable') !== 'true') { e.preventDefault(); return; }
             _dragItem = e.currentTarget;
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', _dragItem.dataset.id);
@@ -418,6 +453,7 @@
         }
 
         function addPlanItem(period) {
+            if (!currentGradingLocks[period]) { window.showToast('This grading period is locked. Contact your Admin to unlock it.', 'error'); return; }
             var input = document.getElementById('teacher-plan-input-' + period);
             var text = (input.value || '').trim();
             if (!text) { input.focus(); return; }
