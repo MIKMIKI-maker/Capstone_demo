@@ -351,9 +351,17 @@
          password-change completion - both return the exact same
          {status:"success", role, admin_id, ...} shape. */
       function handleLoginSuccess(jsonData) {
-        /* Remember only the email; never store plaintext passwords. */
-        var rememberedEmail = document.getElementById("admin-email").value;
-        if (rememberedEmail) localStorage.setItem('sped_remember_email', rememberedEmail);
+        /* Remember only the email, and only if the box is actually checked
+           — this used to save unconditionally on every successful login,
+           ignoring the checkbox entirely, so unchecking it never actually
+           forgot the email. Never store plaintext passwords. */
+        var rememberBox = document.getElementById('remember-me');
+        var enteredEmail = document.getElementById("admin-email").value;
+        if (rememberBox && rememberBox.checked && enteredEmail) {
+          localStorage.setItem('sped_remember_email', enteredEmail);
+        } else {
+          localStorage.removeItem('sped_remember_email');
+        }
         localStorage.removeItem('sped_remember_pass');
 
         /* Clear all old session data */

@@ -289,9 +289,15 @@ body { display: flex; }
 
 
 /* ===== STATS ROW ===== */
+/* 3 columns (2 rows of 3) for the 6 cards, not 6-in-a-row or an auto-fit
+   minimum that still packed 6 narrow columns on wide screens — either way
+   left too little width for two-word labels like "Draft Activities" or
+   "Most Used Template" to stay on one line. 3 columns gives each card
+   roughly double the width, comfortably fitting them all on one line
+   again at normal desktop widths. */
 .al-stats-row {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
 }
 
@@ -326,6 +332,7 @@ body { display: flex; }
 .al-si-green  { background: #F0FDF4; color: #22C55E; }
 .al-si-amber  { background: #FFFBEB; color: #F59E0B; }
 .al-si-teal   { background: #F0FDFA; color: #0D9488; }
+.al-si-red    { background: #FEF2F2; color: #EF4444; }
 
 /* min-width:0 is needed here (not just on the parent .al-stat-card) because
    flex children default to min-width:auto, which let the label/sub text
@@ -337,9 +344,12 @@ body { display: flex; }
   font-weight: 600;
   color: #888;
   font-family: 'Poppins', sans-serif;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* Wrap instead of ellipsizing — a hard nowrap truncated longer labels
+     like "Most Used Template" even once the card had room, since the
+     rule ellipsized at ONE line no matter how wide the card got. The
+     value text below already wraps fine (e.g. "Sorting / Categorization"),
+     so this just makes the label consistent with it. */
+  overflow-wrap: break-word;
 }
 
 .al-stat-num {

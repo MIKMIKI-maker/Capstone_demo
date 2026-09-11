@@ -164,6 +164,16 @@
           <span class="al-stat-sub">Sent to learners</span>
         </div>
       </div>
+      <div class="al-stat-card" id="al-stat-card-mostused" onclick="document.getElementById('al-tpl-modal').style.display='flex'" role="button" tabindex="0">
+        <div class="al-stat-icon-wrap al-si-red">
+          <i class="fa-solid fa-fire"></i>
+        </div>
+        <div class="al-stat-body">
+          <span class="al-stat-label">Most Used Template</span>
+          <span class="al-stat-num" id="stat-mostused" style="font-size:20px;">—</span>
+          <span class="al-stat-sub" id="stat-mostused-sub">No activities yet</span>
+        </div>
+      </div>
     </div>
 
     <!-- Mobile-only: same "View Templates" action as the topbar button
@@ -347,7 +357,7 @@
           +   '</div>'
           +   '<p class="al-tplr-desc">' + esc(t.desc) + '</p>'
           +   '<div class="al-tplr-stats">'
-          +     '<span class="al-tplr-stat"><i class="fa-solid fa-pen-to-square"></i> <strong id="tu-' + k + '">0</strong> teachers used</span>'
+          +     '<span class="al-tplr-stat"><i class="fa-solid fa-chart-simple"></i> Used in <strong id="ta-' + k + '">0</strong> activities</span>'
           +     '<span class="al-tplr-dot">·</span>'
           +     '<span class="al-tplr-stat al-tplr-stat-amber"><i class="fa-solid fa-file-pen"></i> <strong id="td-' + k + '">0</strong> drafts</span>'
           +   '</div>'
@@ -466,6 +476,28 @@
       document.getElementById('stat-published').textContent = published;
       document.getElementById('stat-teachers').textContent  = teachers;
       document.getElementById('stat-uploads').textContent   = uploadsList.length;
+
+      // Most Used Template — the template type with the most activities
+      // created against it (drafts + published both count as "used").
+      var counts = {};
+      activitiesList.forEach(function(a) {
+        if (!a.type || a.type === '—') return;
+        counts[a.type] = (counts[a.type] || 0) + 1;
+      });
+      var topKey = null, topCount = 0;
+      Object.keys(counts).forEach(function(k) {
+        if (counts[k] > topCount) { topKey = k; topCount = counts[k]; }
+      });
+      var mostUsedEl    = document.getElementById('stat-mostused');
+      var mostUsedSubEl = document.getElementById('stat-mostused-sub');
+      if (topKey) {
+        var def = TEMPLATE_DEFS.find(function(t) { return t.key === topKey; });
+        mostUsedEl.textContent    = def ? def.name : topKey;
+        mostUsedSubEl.textContent = 'Used in ' + topCount + (topCount === 1 ? ' activity' : ' activities');
+      } else {
+        mostUsedEl.textContent    = '—';
+        mostUsedSubEl.textContent = 'No activities yet';
+      }
     }
 
     /* ── Stat card click → jump to the matching tab in the table below ── */
@@ -480,10 +512,9 @@
         var key    = t.key.toLowerCase();
         var all    = activitiesList.filter(function(a){ return a.type === t.key; });
         var drafts = all.filter(function(a){ return a.status === 'Draft'; }).length;
-        var tNames = new Set(all.map(function(a){ return a.teacherName; }).filter(function(n){ return n && n !== '—'; }));
-        var tuEl = document.getElementById('tu-' + key);
+        var taEl = document.getElementById('ta-' + key);
         var tdEl = document.getElementById('td-' + key);
-        if (tuEl) tuEl.textContent = tNames.size || '0';
+        if (taEl) taEl.textContent = all.length || '0';
         if (tdEl) tdEl.textContent = drafts + (drafts === 1 ? ' Draft' : ' Drafts');
       });
     }
