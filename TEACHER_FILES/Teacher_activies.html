@@ -283,9 +283,6 @@
             localPublished.forEach(function(p) { if (p.db_activity_id) coveredDbIds.add(String(p.db_activity_id)); });
             localDrafts.forEach(function(d)    { if (d.db_draft_id)    coveredDbIds.add(String(d.db_draft_id));    });
 
-            // Titles covered by local PUBLISHED items — backend rows with same title are
-            // redundant in the Published tab (local entry is richer: learner, grading, Unpublish)
-            var localPubTitles = new Set(localPublished.map(function(p) { return p.title.trim().toLowerCase(); }));
 
             function _merge(backendRows) {
                 // teacher_list_activities.php returns an error OBJECT (e.g.
@@ -317,6 +314,17 @@
                         return String(row.id) === String(localItem.db_activity_id);
                     });
                 });
+
+                // Titles covered by local PUBLISHED items — backend rows with same title are
+                // redundant in the Published tab (local entry is richer: learner, grading, Unpublish).
+                // Computed AFTER the filter above (not before, at page load) — a local entry
+                // whose db_activity_id never got written back (e.g. the publish request's
+                // response never arrived because of a slow connection or an early
+                // navigation away) is dropped by that filter, but its title would otherwise
+                // still land here and wrongly suppress the real backend row for that
+                // activity — hiding it from Review Activities even though it saved fine
+                // server-side and students can already see it.
+                var localPubTitles = new Set(localPublished.map(function(p) { return p.title.trim().toLowerCase(); }));
 
                 // Replace legacy local-storage labels such as student1|ID with
                 // the current learner names resolved by the backend.
