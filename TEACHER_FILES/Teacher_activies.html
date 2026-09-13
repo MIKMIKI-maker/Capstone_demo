@@ -332,6 +332,11 @@
                     if (matchingRow) {
                         localItem.status = matchingRow.status;
                         localItem.is_locked = matchingRow.is_locked;
+                        // Also sync the timestamp so an edited/re-published
+                        // activity sorts back to the top of the list (most
+                        // recent first) instead of staying pinned at its
+                        // original publish time forever.
+                        if (matchingRow.savedAt) localItem.savedAt = matchingRow.savedAt;
                     }
                 });
 
