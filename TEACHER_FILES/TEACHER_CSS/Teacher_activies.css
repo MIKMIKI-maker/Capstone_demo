@@ -90,8 +90,13 @@ body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-s
 .teacher-table-info { padding: 14px 22px; font-size: 13px; color: var(--muted); border-bottom: 1px solid #F1F5F9; }
 .teacher-table-info strong { color: var(--text); }
 
+/* Caps the table's height once rows pile up (many activities) instead of
+   pushing the page endlessly taller — the header stays pinned via
+   position:sticky so it's still visible while scrolling the body. */
+.teacher-table-scroll { max-height: 560px; overflow-y: auto; }
+
 table { width: 100%; border-collapse: collapse; }
-thead th { background: #F8FAFC; padding: 14px 22px; text-align: left; vertical-align: middle; font-size: 12px; font-weight: 600; color: var(--muted); border-bottom: 1px solid #EDE8E3; white-space: nowrap; }
+thead th { background: #F8FAFC; padding: 14px 22px; text-align: left; vertical-align: middle; font-size: 12px; font-weight: 600; color: var(--muted); border-bottom: 1px solid #EDE8E3; white-space: nowrap; position: sticky; top: 0; z-index: 1; }
 thead th .teacher-sort-arrow { margin-left: 4px; font-size: 10px; opacity: .6; }
 /* top-aligned so a cell with wrapped multi-line content (e.g. several
    learner names in the Learner column) doesn't drag the shorter, single-

@@ -224,7 +224,7 @@ img, video, canvas { max-width: 100%; height: auto; }
     display: table;
     min-width: 700px;
   }
-  .teacher-table-container, .teacher-table-card { overflow-x: auto; }
+  .teacher-table-container, .teacher-table-card, .teacher-table-scroll { overflow-x: auto; }
 
   /* Teacher_IEP.html's "Select Learner(s)" table is only 3 narrow
      columns (checkbox/name/condition) — it isn't a wide table that
