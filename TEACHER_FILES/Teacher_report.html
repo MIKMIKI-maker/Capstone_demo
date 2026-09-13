@@ -132,6 +132,13 @@
                     </div>
                 </div>
             </div>
+            <!-- NEEDS ATTENTION -->
+            <div class="teacher-panel teacher-attention-panel" id="needs-attention-panel">
+                <div class="teacher-panel-title">⚠️ Needs Attention</div>
+                <div id="needs-attention-list">
+                    <div style="text-align:center;padding:20px;color:#cbd5e1;font-size:13px;">Loading...</div>
+                </div>
+            </div>
             <!-- TWO-COL: Skills Overview only (Teacher Notes removed) -->
             <div class="teacher-report-grid">
                 <!-- SKILLS OVERVIEW -->
@@ -187,7 +194,7 @@
                 </div>
             </div>
             <!-- LEARNER PERFORMANCE TABLE -->
-            <div class="teacher-table-card">
+            <div class="teacher-table-card" id="teacher-table-card">
                 <div class="teacher-table-card-title">Learner Performance</div>
                 <table id="teacher-reportLearnersTable">
                     <thead>
@@ -434,6 +441,7 @@
                     // Learner performance table
                     var tbody = document.getElementById('report-learner-tbody');
                     _reportStudents = d.students || [];
+                    renderNeedsAttention(_reportStudents);
                     if (!d.students || !d.students.length) {
                         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:#94a3b8;">No learner data yet</td></tr>';
                     } else {
@@ -485,6 +493,39 @@
 
         function escHtml(str) {
             return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        // ── Needs Attention ──────────────────────────────────────
+        function renderNeedsAttention(students) {
+            var el = document.getElementById('needs-attention-list');
+            if (!el) return;
+            var statusCls = {'At Risk': 'sb-red', 'Needs Support': 'sb-orange'};
+            var flagged = (students || [])
+                .filter(function(s) { return s.status === 'At Risk' || s.status === 'Needs Support'; })
+                .sort(function(a, b) { return (a.avg_score || 0) - (b.avg_score || 0); });
+
+            if (!flagged.length) {
+                el.innerHTML = '<div class="teacher-attention-empty">✅ No learners need immediate attention right now.</div>';
+                return;
+            }
+
+            var shown = flagged.slice(0, 5);
+            var html = shown.map(function(s) {
+                var cls = statusCls[s.status] || 'sb-gray';
+                var scoreStr = s.avg_score > 0 ? s.avg_score + '% average' : 'No score yet';
+                return '<div class="teacher-attention-row">'
+                    + '<span class="teacher-attention-name">' + escHtml(s.student_name) + '</span>'
+                    + '<span><span class="teacher-attention-score">' + scoreStr + '</span>'
+                    + '<span class="teacher-status-badge ' + cls + '">' + s.status + '</span></span>'
+                    + '</div>';
+            }).join('');
+
+            if (flagged.length > shown.length) {
+                html += '<div class="teacher-attention-more">'
+                    + '+' + (flagged.length - shown.length) + ' more — <a href="#teacher-table-card">see full list below</a>'
+                    + '</div>';
+            }
+            el.innerHTML = html;
         }
 
         function printClassReport() {
