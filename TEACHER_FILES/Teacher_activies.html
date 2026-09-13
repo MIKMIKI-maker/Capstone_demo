@@ -477,7 +477,7 @@
                     // is blank for these).
                     var _subDbId = a.db_activity_id || 0;
                     actions = (EDITABLE_TYPES[a.type] ? '<button class="btn-edit" onclick="editPublished(\'' + esc(a.id) + '\',\'' + esc(a.type) + '\')" type="button" title="Edit"><i class="fa-solid fa-pen"></i> <span class="btn-label">Edit</span></button>' : '')
-                            + (_subDbId ? '<button class="btn-edit" onclick="window.location.href=\'Teacher_reviewact.html?id='+_subDbId+'\'" type="button" title="View Submissions"><i class="fa-solid fa-eye"></i> <span class="btn-label">View Submissions</span></button>' : '')
+                            + (_subDbId && a.status === 'published' ? '<button class="btn-edit" onclick="window.location.href=\'Teacher_reviewact.html?id='+_subDbId+'\'" type="button" title="View Submissions"><i class="fa-solid fa-eye"></i> <span class="btn-label">View Submissions</span></button>' : '')
                             + '<button class="btn-delete" onclick="deletePublished(\'' + esc(a.id) + '\')" type="button" title="Unpublish">'
                             + '<i class="fa-solid fa-trash"></i> <span class="btn-label">Unpublish</span></button>';
                 } else if (a.status === 'published' && !a._isLocal) {
