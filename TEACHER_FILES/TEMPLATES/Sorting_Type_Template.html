@@ -2288,7 +2288,7 @@ function initActivityTheme(){
       var i = acts.findIndex(function(a){ return a.id === _editingPub.id; });
       if (i >= 0) {
         acts[i].title = firstTitle; acts[i].thumbnail = smallThumb; acts[i].deadline = deadline;
-        acts[i].condition = domain; acts[i].locked = false;
+        acts[i].condition = domain; acts[i].locked = false; acts[i].publishedAt = new Date().toISOString();
         try { localStorage.setItem('published_activities', JSON.stringify(acts)); } catch(e){}
       }
       _idb.save('pub_data_' + _editingPub.id, JSON.parse(JSON.stringify(state)), function(err){ if(err) console.warn('IDB save failed:',err); });
