@@ -237,3 +237,17 @@ tbody tr:hover { background: #FAFBFF; }
     body.grading-print-mode .teacher-print-report { display: block !important; }
     @page { margin: 12mm; size: auto; }
 }
+
+/* Same expand-for-capture rules as @media print above, but toggled via a
+   class so html2canvas (used for the Download PDF button) sees the full
+   scrollable report instead of the clipped 100vh viewport. */
+body.pdf-capture-mode { background: #fff; }
+body.pdf-capture-mode html,
+body.pdf-capture-mode { height: auto; overflow: visible; }
+body.pdf-capture-mode .teacher-app-wrapper,
+body.pdf-capture-mode .teacher-main-content { display: block; height: auto; overflow: visible; }
+body.pdf-capture-mode .teacher-sidebar,
+body.pdf-capture-mode .teacher-topbar-actions,
+body.pdf-capture-mode .teacher-divider,
+body.pdf-capture-mode #activitySubModal { display: none !important; }
+body.pdf-capture-mode .teacher-main-content { padding: 16px; }
