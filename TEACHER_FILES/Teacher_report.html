@@ -12,6 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap"
         rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"></script>
     <link href="TEACHER_CSS/Teacher_report.css" rel="stylesheet" />
     <link href="TEACHER_CSS/teacher_responsive.css?v=75" rel="stylesheet" />
 </head>
@@ -161,6 +162,30 @@
                     </div>
                 </div>
             </div>
+            <!-- CHARTS -->
+            <div class="teacher-charts-grid">
+                <div class="teacher-panel teacher-chart-panel">
+                    <div class="teacher-panel-title">Progress Over Time</div>
+                    <div class="teacher-chart-wrap">
+                        <canvas id="chart-progress-time"></canvas>
+                        <div class="teacher-chart-empty" id="chart-progress-time-empty">Not enough data yet — this will fill in as learners complete activities over time.</div>
+                    </div>
+                </div>
+                <div class="teacher-panel teacher-chart-panel">
+                    <div class="teacher-panel-title">Pass vs. Fail per Activity</div>
+                    <div class="teacher-chart-wrap">
+                        <canvas id="chart-pass-fail"></canvas>
+                        <div class="teacher-chart-empty" id="chart-pass-fail-empty">No submissions yet.</div>
+                    </div>
+                </div>
+                <div class="teacher-panel teacher-chart-panel">
+                    <div class="teacher-panel-title">Skills Comparison</div>
+                    <div class="teacher-chart-wrap">
+                        <canvas id="chart-skills-radar"></canvas>
+                        <div class="teacher-chart-empty" id="chart-skills-radar-empty">No skill data yet.</div>
+                    </div>
+                </div>
+            </div>
             <!-- LEARNER PERFORMANCE TABLE -->
             <div class="teacher-table-card">
                 <div class="teacher-table-card-title">Learner Performance</div>
@@ -284,6 +309,97 @@
             }
         }
 
+        var _progressChart = null, _passFailChart = null, _skillsRadarChart = null;
+
+        function toggleChartEmpty(canvasId, isEmpty) {
+            var canvas = document.getElementById(canvasId);
+            var empty = document.getElementById(canvasId + '-empty');
+            if (canvas) canvas.style.display = isEmpty ? 'none' : 'block';
+            if (empty) empty.style.display = isEmpty ? 'flex' : 'none';
+        }
+
+        function renderProgressChart(rows) {
+            toggleChartEmpty('chart-progress-time', !rows.length);
+            if (!rows.length) return;
+            var ctx = document.getElementById('chart-progress-time').getContext('2d');
+            if (_progressChart) _progressChart.destroy();
+            _progressChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: rows.map(function (r) { return r.date; }),
+                    datasets: [{
+                        label: 'Average Score',
+                        data: rows.map(function (r) { return r.avg_score; }),
+                        borderColor: '#2563EB',
+                        backgroundColor: 'rgba(37,99,235,.12)',
+                        tension: .3,
+                        fill: true,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#2563EB'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, max: 100, ticks: { callback: function (v) { return v + '%'; } } } }
+                }
+            });
+        }
+
+        function renderPassFailChart(activities) {
+            var withData = (activities || []).filter(function (a) { return a.submissions > 0; }).slice(0, 8);
+            toggleChartEmpty('chart-pass-fail', !withData.length);
+            if (!withData.length) return;
+            var ctx = document.getElementById('chart-pass-fail').getContext('2d');
+            if (_passFailChart) _passFailChart.destroy();
+            _passFailChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: withData.map(function (a) { return a.activity_title; }),
+                    datasets: [
+                        { label: 'Passed', data: withData.map(function (a) { return a.passed_count; }), backgroundColor: '#10B981' },
+                        { label: 'Failed', data: withData.map(function (a) { return Math.max(a.submissions - a.passed_count, 0); }), backgroundColor: '#EF4444' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { x: { stacked: true, ticks: { autoSkip: false, maxRotation: 30, minRotation: 0, font: { size: 10 } } }, y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } } },
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } }
+                }
+            });
+        }
+
+        function renderSkillsRadar(skMap) {
+            var labels = ['Cognitive', 'Communication', 'Fine Motor', 'Life Skills'];
+            var data = [skMap.cognitive, skMap.communication, skMap.finemotor, skMap.lifeskills];
+            var hasData = data.some(function (v) { return v != null; });
+            toggleChartEmpty('chart-skills-radar', !hasData);
+            if (!hasData) return;
+            var ctx = document.getElementById('chart-skills-radar').getContext('2d');
+            if (_skillsRadarChart) _skillsRadarChart.destroy();
+            _skillsRadarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Skill Average',
+                        data: data.map(function (v) { return v != null ? v : 0; }),
+                        backgroundColor: 'rgba(37,99,235,.2)',
+                        borderColor: '#2563EB',
+                        pointBackgroundColor: '#2563EB'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { r: { beginAtZero: true, max: 100, ticks: { stepSize: 25 } } }
+                }
+            });
+        }
+
         function loadReports() {
             // Use auto-report endpoint for richer, real DB data
             fetch('TEACHER_BACKEND/teacher_auto_report.php?teacher_id=' + TEACHER_ID + '&_t=' + Date.now(), { cache: 'no-store' })
@@ -310,6 +426,10 @@
                         if (pctEl) pctEl.textContent = (v != null) ? v + '%' : '—';
                         if (barEl) barEl.style.width = (v != null) ? Math.min(100, v) + '%' : '0%';
                     });
+
+                    renderProgressChart(d.progress_over_time || []);
+                    renderPassFailChart(d.activities || []);
+                    renderSkillsRadar(skMap);
 
                     // Learner performance table
                     var tbody = document.getElementById('report-learner-tbody');
@@ -341,7 +461,7 @@
                             actEl.innerHTML = '<div style="text-align:center;padding:20px;color:#cbd5e1;">No activities published yet</div>';
                         } else {
                             _reportActivities = d.activities;
-                            actEl.innerHTML = d.activities.slice(0, 6).map(function(a, idx) {
+                            actEl.innerHTML = d.activities.map(function(a, idx) {
                                 var pct = a.avg_score ? a.avg_score + '%' : '—';
                                 var barW = a.avg_score ? a.avg_score : 0;
                                 return '<div class="tr-act-row" onclick="openActivitySubmissions(' + idx + ')" title="Click to see who submitted">'

@@ -192,6 +192,33 @@ if ($skillStmt) {
     $skillStmt->close();
 }
 
+// Progress over time — class-wide average score per day, so a "Progress
+// Over Time" trend line can show whether the class is improving, not just
+// a single current snapshot.
+$progress_over_time = [];
+$potStmt = $conn->prepare("
+    SELECT DATE(COALESCE(lp.assessment_date, lp.created_at)) AS day,
+           ROUND(AVG(COALESCE(sub.finalized_score, lp.score)), 1) AS avg_score
+    FROM learner_progress lp
+    LEFT JOIN activity_submissions sub
+           ON sub.activity_id = lp.activity_id
+          AND sub.student_id  = lp.student_id
+          AND sub.teacher_id  = lp.teacher_id
+          AND sub.is_finalized = 1
+    WHERE lp.teacher_id = ?
+    GROUP BY day
+    ORDER BY day ASC
+");
+if ($potStmt) {
+    $potStmt->bind_param("i", $teacher_id);
+    $potStmt->execute();
+    $potRows = $potStmt->get_result();
+    while ($pt = $potRows->fetch_assoc()) {
+        $progress_over_time[] = ['date' => $pt['day'], 'avg_score' => (float)$pt['avg_score']];
+    }
+    $potStmt->close();
+}
+
 // Recent activity log (last 30 days)
 $stmt3 = $conn->prepare("
     SELECT lp.score, lp.assessment_date, lp.created_at,
@@ -229,6 +256,7 @@ echo json_encode([
     'activities'       => $activities,
     'recent_log'       => $recent_log,
     'skills_breakdown' => $skills_breakdown,
+    'progress_over_time' => $progress_over_time,
 ]);
 
 } catch (\Throwable $e) {
