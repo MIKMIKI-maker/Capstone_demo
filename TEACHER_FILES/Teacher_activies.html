@@ -314,7 +314,13 @@
                 });
 
                 // Replace legacy local-storage labels such as student1|ID with
-                // the current learner names resolved by the backend.
+                // the current learner names resolved by the backend. Also
+                // sync status/lock state from the backend — the local copy
+                // is hardcoded 'published' from whenever it was cached, but
+                // the backend row is the source of truth for whether it's
+                // since been locked into a draft (e.g. by opening Edit).
+                // Without this, a locally-cached published activity kept
+                // showing "Published" forever regardless of DB updates.
                 localPublished.forEach(function(localItem) {
                     var matchingRow = backend.find(function(row) {
                         return String(row.id) === String(localItem.db_activity_id)
@@ -322,6 +328,10 @@
                     });
                     if (matchingRow && matchingRow.learner) {
                         localItem.learner = matchingRow.learner;
+                    }
+                    if (matchingRow) {
+                        localItem.status = matchingRow.status;
+                        localItem.is_locked = matchingRow.is_locked;
                     }
                 });
 
@@ -453,12 +463,18 @@
                     var _uploadUrl = a.file_name.indexOf('http') === 0 ? a.file_name : 'uploads/materials/' + a.file_name;
                     actions = '<a class="btn-edit" href="' + esc(_uploadUrl) + '" target="_blank" rel="noopener" title="Open" style="display:inline-flex;align-items:center;gap:5px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> <span class="btn-label">Open</span></a>'
                             + '<button class="btn-delete" onclick="deleteUpload(' + a.upload_id + ')" type="button" title="Delete"><i class="fa-solid fa-trash"></i> <span class="btn-label">Delete</span></button>';
-                } else if (a.status === 'draft' && a._isLocal) {
+                } else if (a.status === 'draft' && a._isLocal && !a.db_activity_id) {
                     actions = '<button class="btn-edit" onclick="editDraft(\'' + esc(a.id) + '\',\'' + esc(a.templateFile) + '\')" type="button" title="Edit">'
                             + '<i class="fa-solid fa-pen"></i> <span class="btn-label">Edit</span></button>'
                             + '<button class="btn-delete" onclick="deleteDraft(\'' + esc(a.id) + '\')" type="button" title="Delete">'
                             + '<i class="fa-solid fa-trash"></i> <span class="btn-label">Delete</span></button>';
-                } else if (a.status === 'published' && a._isLocal) {
+                } else if (a._isLocal && (a.status === 'published' || a.is_locked)) {
+                    // Covers both a genuinely-published local item and one that
+                    // got locked into 'draft' by opening Edit (or an abandoned
+                    // edit) — either way it's published-origin, so it still
+                    // needs editPublished()/db_activity_id-based actions, not
+                    // the plain local-draft branch above (whose templateFile
+                    // is blank for these).
                     var _subDbId = a.db_activity_id || 0;
                     actions = (EDITABLE_TYPES[a.type] ? '<button class="btn-edit" onclick="editPublished(\'' + esc(a.id) + '\',\'' + esc(a.type) + '\')" type="button" title="Edit"><i class="fa-solid fa-pen"></i> <span class="btn-label">Edit</span></button>' : '')
                             + (_subDbId ? '<button class="btn-edit" onclick="window.location.href=\'Teacher_reviewact.html?id='+_subDbId+'\'" type="button" title="View Submissions"><i class="fa-solid fa-eye"></i> <span class="btn-label">View Submissions</span></button>' : '')
