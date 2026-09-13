@@ -303,6 +303,7 @@
                         learner:  a.learner || 'ALL',
                         savedAt:  a.created_at    || '',
                         status:   (a.status || '').toLowerCase() === 'draft' ? 'draft' : 'published',
+                        is_locked: !!a.is_locked,
                         _isLocal: false
                     };
                 });
@@ -460,8 +461,20 @@
                             + '<button class="btn-edit" onclick="window.location.href=\'Teacher_reviewact.html?id='+a.id+'\'" type="button" title="View Submissions"><i class="fa-solid fa-eye"></i> <span class="btn-label">View Submissions</span></button>'
                             + '<button class="btn-delete" onclick="deleteBackendPublished(' + a.id + ')" type="button" title="Unpublish">'
                             + '<i class="fa-solid fa-trash"></i> <span class="btn-label">Unpublish</span></button>';
+                } else if (a.is_locked) {
+                    // Was published, currently mid-edit or bounced back to draft
+                    // (Save Draft / an abandoned edit) — full content already
+                    // lives server-side, so reopen it the same way a backend
+                    // published activity is edited, covering all 8 template
+                    // types instead of just the 3 in the plain stub-draft map
+                    // below.
+                    actions = (EDITABLE_TYPES[a.type] ? '<button class="btn-edit" onclick="editPublishedRemote(' + a.id + ',\'' + esc(a.type) + '\')" type="button" title="Edit"><i class="fa-solid fa-pen"></i> <span class="btn-label">Edit</span></button>' : '')
+                            + '<button class="btn-delete" onclick="deleteBackendDraft(' + a.id + ')" type="button" title="Delete"><i class="fa-solid fa-trash"></i> <span class="btn-label">Delete</span></button>';
                 } else {
-                    // Backend-only draft: Edit (open matching template) + Delete
+                    // Genuine backend-only draft stub (teacher_save_draft.php) —
+                    // no real content_json saved server-side yet, so Edit just
+                    // opens a fresh editor of that type instead of trying to
+                    // restore content that was never there.
                     var _tmplMap = { 'Matching':'TEMPLATES/Matching_Type_Template.html', 'Sorting':'TEMPLATES/Sorting_Type_Template.html', 'Sequencing':'TEMPLATES/Sequencing_Type_Template.html' };
                     var _tmpl = _tmplMap[a.type] || '';
                     actions = (_tmpl ? '<button class="btn-edit" onclick="editBackendDraft(' + a.id + ',\'' + esc(_tmpl) + '\')" type="button" title="Edit"><i class="fa-solid fa-pen"></i> <span class="btn-label">Edit</span></button>' : '')

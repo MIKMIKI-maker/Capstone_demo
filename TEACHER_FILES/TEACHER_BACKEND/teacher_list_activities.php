@@ -58,7 +58,7 @@ if ($single_id) {
     $stmt = $conn->prepare(
         "SELECT ta.id, ta.activity_title, ta.activity_description,
                 ta.activity_type, ta.subject, ta.grade_level,
-                ta.difficulty, ta.status, ta.created_at,
+                ta.difficulty, ta.status, ta.created_at, ta.is_locked,
                 (
                     SELECT GROUP_CONCAT(
                         CONCAT(s.student_name, '|', COALESCE(NULLIF(s.disability_type, ''), 'General'))
@@ -95,7 +95,8 @@ if ($single_id) {
             'grade_level'   => $row['grade_level'],
             'difficulty'    => $row['difficulty'],
             'status'        => $row['status'],
-            'created_at'    => $row['created_at']
+            'created_at'    => $row['created_at'],
+            'is_locked'     => (int)$row['is_locked']
             ,'learner'      => $row['learner'] ?: 'ALL'
         ];
     }
