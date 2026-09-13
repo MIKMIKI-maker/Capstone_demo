@@ -179,7 +179,7 @@
                 document.getElementById('teacher-name-sidebar').textContent = name;
                 _applyTeacherPhoto(sessionStorage.getItem('teacher_profile_pic'));
             } else {
-                var fd = new FormData(); fd.append('teacher_id', TEACHER_ID || sessionStorage.getItem('teacher_id') || 1);
+                var fd = new FormData(); fd.append('teacher_id', sessionStorage.getItem('teacher_id') || 1);
                 fetch('TEACHER_BACKEND/teacher_get_profile.php', { method: 'POST', body: fd })
                     .then(function(r){ return r.json(); })
                     .then(function(d){
@@ -388,6 +388,19 @@
                        a.title.toLowerCase().includes(q) ||
                        a.type.toLowerCase().includes(q)  ||
                        a.learner.toLowerCase().includes(q);
+            });
+
+            // Most recently published/saved first, regardless of whether the
+            // row came from localStorage (drafts/published) or the backend —
+            // those get concatenated in loadActivities() with no ordering of
+            // their own, so without this rows land in whatever order they
+            // happened to be merged in rather than by date.
+            filtered.sort(function(a, b) {
+                var ta = a.savedAt ? new Date(a.savedAt).getTime() : 0;
+                var tb = b.savedAt ? new Date(b.savedAt).getTime() : 0;
+                if (isNaN(ta)) ta = 0;
+                if (isNaN(tb)) tb = 0;
+                return tb - ta;
             });
 
             updateTabCounts();
