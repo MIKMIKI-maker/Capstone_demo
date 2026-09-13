@@ -466,8 +466,8 @@
                 } else if (a.status === 'draft' && a._isLocal && !a.db_activity_id) {
                     actions = '<button class="btn-edit" onclick="editDraft(\'' + esc(a.id) + '\',\'' + esc(a.templateFile) + '\')" type="button" title="Edit">'
                             + '<i class="fa-solid fa-pen"></i> <span class="btn-label">Edit</span></button>'
-                            + '<button class="btn-delete" onclick="deleteDraft(\'' + esc(a.id) + '\')" type="button" title="Delete">'
-                            + '<i class="fa-solid fa-trash"></i> <span class="btn-label">Delete</span></button>';
+                            + '<button class="btn-delete" onclick="deleteDraft(\'' + esc(a.id) + '\')" type="button" title="Unpublish">'
+                            + '<i class="fa-solid fa-trash"></i> <span class="btn-label">Unpublish</span></button>';
                 } else if (a._isLocal && (a.status === 'published' || a.is_locked)) {
                     // Covers both a genuinely-published local item and one that
                     // got locked into 'draft' by opening Edit (or an abandoned
@@ -495,7 +495,7 @@
                     // types instead of just the 3 in the plain stub-draft map
                     // below.
                     actions = (EDITABLE_TYPES[a.type] ? '<button class="btn-edit" onclick="editPublishedRemote(' + a.id + ',\'' + esc(a.type) + '\')" type="button" title="Edit"><i class="fa-solid fa-pen"></i> <span class="btn-label">Edit</span></button>' : '')
-                            + '<button class="btn-delete" onclick="deleteBackendDraft(' + a.id + ')" type="button" title="Delete"><i class="fa-solid fa-trash"></i> <span class="btn-label">Delete</span></button>';
+                            + '<button class="btn-delete" onclick="deleteBackendDraft(' + a.id + ')" type="button" title="Unpublish"><i class="fa-solid fa-trash"></i> <span class="btn-label">Unpublish</span></button>';
                 } else {
                     // Genuine backend-only draft stub (teacher_save_draft.php) —
                     // no real content_json saved server-side yet, so Edit just
@@ -504,7 +504,7 @@
                     var _tmplMap = { 'Matching':'TEMPLATES/Matching_Type_Template.html', 'Sorting':'TEMPLATES/Sorting_Type_Template.html', 'Sequencing':'TEMPLATES/Sequencing_Type_Template.html' };
                     var _tmpl = _tmplMap[a.type] || '';
                     actions = (_tmpl ? '<button class="btn-edit" onclick="editBackendDraft(' + a.id + ',\'' + esc(_tmpl) + '\')" type="button" title="Edit"><i class="fa-solid fa-pen"></i> <span class="btn-label">Edit</span></button>' : '')
-                            + '<button class="btn-delete" onclick="deleteBackendDraft(' + a.id + ')" type="button" title="Delete"><i class="fa-solid fa-trash"></i> <span class="btn-label">Delete</span></button>';
+                            + '<button class="btn-delete" onclick="deleteBackendDraft(' + a.id + ')" type="button" title="Unpublish"><i class="fa-solid fa-trash"></i> <span class="btn-label">Unpublish</span></button>';
                 }
 
                 var learnerCell = a.grading
