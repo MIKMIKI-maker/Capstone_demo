@@ -542,17 +542,24 @@
             if (!target) { alert("Could not find this activity's saved content in this browser."); return; }
 
             var teacherId = sessionStorage.getItem('teacher_id') || '';
-            // Lock it immediately so the student can't open it mid-edit, and
-            // let them know via their notification inbox.
-            if (target.db_activity_id && teacherId) {
-                fetch('TEACHER_BACKEND/teacher_lock_activity.php', {
-                    method: 'POST', keepalive: true,
-                    body: new URLSearchParams({ action: 'lock', teacher_id: teacherId, activity_id: target.db_activity_id, activity_title: target.title || 'Activity' })
-                }).catch(function(){});
-            }
             target.locked = true;
             localStorage.setItem('published_activities', JSON.stringify(allPubs));
-            window.location.href = tpl + '?edit_pub_id=' + encodeURIComponent(id);
+
+            function goToEditor() { window.location.href = tpl + '?edit_pub_id=' + encodeURIComponent(id); }
+
+            // Lock it (flips status to draft server-side) and wait for that
+            // to finish before opening the editor, so the draft flag is
+            // guaranteed set even if the teacher immediately hits Back
+            // without saving — navigating right away used to race the
+            // request and could leave the activity showing as published.
+            if (target.db_activity_id && teacherId) {
+                fetch('TEACHER_BACKEND/teacher_lock_activity.php', {
+                    method: 'POST',
+                    body: new URLSearchParams({ action: 'lock', teacher_id: teacherId, activity_id: target.db_activity_id, activity_title: target.title || 'Activity' })
+                }).then(goToEditor).catch(goToEditor);
+            } else {
+                goToEditor();
+            }
         }
 
         // Edit a published activity that has no local copy in this browser
@@ -563,13 +570,15 @@
             var tpl = EDITABLE_TYPES[type];
             if (!tpl) { alert('Editing is not supported yet for this activity type.'); return; }
             var teacherId = sessionStorage.getItem('teacher_id') || '';
+            function goToEditor() { window.location.href = tpl + '?edit_pub_id=' + encodeURIComponent(dbId); }
             if (teacherId) {
                 fetch('TEACHER_BACKEND/teacher_lock_activity.php', {
-                    method: 'POST', keepalive: true,
+                    method: 'POST',
                     body: new URLSearchParams({ action: 'lock', teacher_id: teacherId, activity_id: dbId, activity_title: 'Activity' })
-                }).catch(function(){});
+                }).then(goToEditor).catch(goToEditor);
+            } else {
+                goToEditor();
             }
-            window.location.href = tpl + '?edit_pub_id=' + encodeURIComponent(dbId);
         }
 
         function deleteDraft(id) {
