@@ -91,10 +91,23 @@ if ($action === 'permanent') {
     $tconn = getTeacherDatabaseConnection();
     if ($tconn) {
         foreach ($rows as $r) {
-            if ($r['role'] !== 'teacher') continue;
-            $newEmail = 'deleted_' . $r['id'] . '_' . $r['admin_email'];
-            $rn = $tconn->prepare("UPDATE teacher_accounts SET teacher_email = ?, status = 'inactive' WHERE teacher_email = ?");
-            if ($rn) { $rn->bind_param("ss", $newEmail, $r['admin_email']); $rn->execute(); $rn->close(); }
+            if ($r['role'] === 'teacher') {
+                $newEmail = 'deleted_' . $r['id'] . '_' . $r['admin_email'];
+                $rn = $tconn->prepare("UPDATE teacher_accounts SET teacher_email = ?, status = 'inactive' WHERE teacher_email = ?");
+                if ($rn) { $rn->bind_param("ss", $newEmail, $r['admin_email']); $rn->execute(); $rn->close(); }
+            } elseif ($r['role'] === 'student') {
+                // Delete the linked learner row now, immediately, instead of
+                // leaving it for teacher_list_learners.php's lazy orphan-purge
+                // to catch next time the teacher opens their learner list.
+                // The real ON DELETE CASCADE FK on students.id takes
+                // iep_materials/learner_progress/teacher_reports/
+                // activity_assignments/activity_submissions/student_notes/
+                // student_notifications/student_notification_reads with it,
+                // so "permanently delete" removes all of it right away
+                // rather than at some unpredictable later moment.
+                $sd = $tconn->prepare("DELETE FROM students WHERE admin_account_id = ?");
+                if ($sd) { $sd->bind_param("i", $r['id']); $sd->execute(); $sd->close(); }
+            }
         }
         $tconn->close();
     }

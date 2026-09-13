@@ -54,7 +54,7 @@ $roleCheckStmt->close();
 if (!empty($adminIds)) {
     $ids = array_values(array_diff($ids, $adminIds));
     if (empty($ids)) {
-        echo json_encode(['success' => false, 'message' => 'Admin accounts cannot be deleted.']);
+        echo json_encode(['success' => false, 'message' => 'Admin accounts cannot be archived.']);
         $conn->close();
         exit;
     }
@@ -116,8 +116,8 @@ if ($teacherConn) {
 
 if ($ok && !empty($deletedNames)) {
     $count = count($deletedNames);
-    $title = $count === 1 ? 'Account Deleted' : "{$count} Accounts Deleted";
-    $msg   = implode(', ', $deletedNames) . ' ' . ($count === 1 ? 'has' : 'have') . ' been moved to deleted accounts.';
+    $title = $count === 1 ? 'Account Archived' : "{$count} Accounts Archived";
+    $msg   = implode(', ', $deletedNames) . ' ' . ($count === 1 ? 'has' : 'have') . ' been moved to Archived Accounts.';
     pushAdminNotification($conn, 'account', $title, $msg);
 }
 
@@ -125,7 +125,7 @@ $conn->close();
 
 $response = ['success' => true];
 if (!empty($adminIds)) {
-    $response['message'] = 'Admin accounts cannot be deleted and were skipped. The other selected accounts were deleted.';
+    $response['message'] = 'Admin accounts cannot be archived and were skipped. The other selected accounts were archived.';
 }
 echo json_encode($response);
 ?>

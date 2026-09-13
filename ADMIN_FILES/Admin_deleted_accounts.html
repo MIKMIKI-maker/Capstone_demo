@@ -5,7 +5,7 @@
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <link rel="icon" type="image/png" href="../ASSETS/logo.png"/>
-  <title>SPED ALM – Deleted Accounts</title>
+  <title>SPED ALM – Archived Accounts</title>
   <link href="ADMIN_CSS/animations.css" rel="stylesheet"/>
   <link href="ADMIN_CSS/Admin_manage_user.css?v=10" rel="stylesheet"/>
   <link href="ADMIN_CSS/admin_responsive.css" rel="stylesheet"/>
@@ -166,8 +166,8 @@
 <main class="admin-main page-enter">
   <header class="admin-topbar">
     <div class="admin-topbar-left">
-      <h1 class="admin-page-title">Deleted Accounts</h1>
-      <p class="admin-page-sub">Restore or permanently remove soft-deleted accounts</p>
+      <h1 class="admin-page-title">Archived Accounts</h1>
+      <p class="admin-page-sub">Restore or permanently remove archived accounts</p>
     </div>
     <a class="admin-notif-btn" href="Admin_notif.html"><i class="fa-regular fa-bell"></i><span class="admin-notif-badge"></span></a>
   </header>
@@ -180,8 +180,8 @@
 
     <!-- Stat chip -->
     <div class="da-stat-chip">
-      <i class="fa-solid fa-trash-can"></i>
-      <span>Deleted accounts:</span>
+      <i class="fa-solid fa-box-archive"></i>
+      <span>Archived accounts:</span>
       <strong id="da-count">—</strong>
     </div>
 
@@ -208,8 +208,8 @@
             <th><input type="checkbox" class="da-cb" id="da-cb-all" onchange="toggleAll(this.checked)"/></th>
             <th>Account</th>
             <th>Role</th>
-            <th>Status at Deletion</th>
-            <th>Deleted On</th>
+            <th>Status at Archiving</th>
+            <th>Archived On</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -305,7 +305,7 @@
       })
       .catch(function(){
         document.getElementById('da-tbody').innerHTML =
-          '<tr><td colspan="6" class="da-empty"><i class="fa-solid fa-circle-exclamation"></i><p>Failed to load deleted accounts.</p></td></tr>';
+          '<tr><td colspan="6" class="da-empty"><i class="fa-solid fa-circle-exclamation"></i><p>Failed to load archived accounts.</p></td></tr>';
       });
   }
 
@@ -320,8 +320,8 @@
 
     if (!list.length) {
       document.getElementById('da-tbody').innerHTML =
-        '<tr><td colspan="6"><div class="da-empty"><i class="fa-solid fa-trash-can"></i><p>' +
-        (q ? 'No deleted accounts match your search.' : 'No deleted accounts. The trash is empty.') +
+        '<tr><td colspan="6"><div class="da-empty"><i class="fa-solid fa-box-archive"></i><p>' +
+        (q ? 'No archived accounts match your search.' : 'No archived accounts. The archive is empty.') +
         '</p></div></td></tr>';
       return;
     }
@@ -383,7 +383,13 @@
   }
 
   function permanentDeleteOne(id) {
-    showConfirmModal('Permanently delete this account? This cannot be undone.', 'Delete', 'Delete permanently?').then(function (ok) {
+    var acct = deletedList.find(function(a){ return String(a.id) === String(id); });
+    var extra = acct && acct.role === 'student'
+      ? ' This learner\'s grades, activities, progress, and notes will be permanently erased too.'
+      : acct && acct.role === 'teacher'
+        ? ' Their uploaded materials and activity history will be kept, but the account cannot be recovered.'
+        : '';
+    showConfirmModal('Permanently delete this account?' + extra + ' This cannot be undone.', 'Delete', 'Delete permanently?').then(function (ok) {
       if (ok) callBackend('permanent', [id], 'Account permanently deleted.');
     });
   }
@@ -400,7 +406,13 @@
   function bulkPermanentDelete() {
     if (!selectedIds.size) return;
     var n = selectedIds.size;
-    showConfirmModal('Permanently delete ' + n + ' account(s)? This CANNOT be undone.', 'Delete', 'Delete permanently?').then(function (ok) {
+    var hasStudent = false;
+    selectedIds.forEach(function(id){
+      var acct = deletedList.find(function(a){ return String(a.id) === String(id); });
+      if (acct && acct.role === 'student') hasStudent = true;
+    });
+    var extra = hasStudent ? ' Any learner grades, activities, progress, and notes among them will be permanently erased too.' : '';
+    showConfirmModal('Permanently delete ' + n + ' account(s)?' + extra + ' This CANNOT be undone.', 'Delete', 'Delete permanently?').then(function (ok) {
       if (ok) callBackend('permanent', Array.from(selectedIds), n + ' account(s) permanently deleted.');
     });
   }
