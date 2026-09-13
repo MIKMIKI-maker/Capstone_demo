@@ -505,11 +505,16 @@
 
             document.querySelectorAll('.teacher-ring-sub')[0].textContent = overall >= 70 ? 'On track' : 'Needs support';
             // Same wording and thresholds as the Class Reports status column
-            // (Passing/Needs Support/At Risk) — this page used to call the
-            // same 60-79% band "Good", which contradicted the Needs
-            // Attention flag a teacher would see for that same learner
-            // elsewhere.
-            document.querySelectorAll('.teacher-ring-sub')[1].textContent = avg >= 80 ? 'Passing' : avg >= 60 ? 'Needs Support' : 'At Risk';
+            // (Excellent/Very Good/Good/Need Support/Need Assistance) — this
+            // page used to use its own separate bands, which could label a
+            // learner "Good" here while Class Reports flagged the very same
+            // average as needing support.
+            document.querySelectorAll('.teacher-ring-sub')[1].textContent =
+                avg >= 90 ? 'Excellent' :
+                avg >= 80 ? 'Very Good' :
+                avg >= 76 ? 'Good' :
+                avg >= 75 ? 'Need Support' :
+                'Need Assistance';
             document.querySelectorAll('.teacher-ring-sub')[2].textContent = total > 0 ? 'of ' + total + ' assigned' : 'none assigned yet';
         }
 

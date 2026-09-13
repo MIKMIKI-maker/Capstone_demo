@@ -142,6 +142,8 @@ tbody tr:hover { background: #FAFBFF; }
 .sb-orange { background: #FEF3C7; color: #92400E; }
 .sb-red    { background: #FEE2E2; color: #991B1B; }
 .sb-gray   { background: #F1F5F9; color: #64748B; }
+.sb-teal   { background: #CCFBF1; color: #0F766E; }
+.sb-blue   { background: #DBEAFE; color: #1E40AF; }
 
 /* ── NEEDS ATTENTION ── */
 .teacher-attention-panel { margin-bottom: 22px; }

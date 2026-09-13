@@ -445,13 +445,18 @@
                     if (!d.students || !d.students.length) {
                         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:#94a3b8;">No learner data yet</td></tr>';
                     } else {
-                        var statusCls = {'Passing':'sb-green','Needs Support':'sb-orange','At Risk':'sb-red','No Activity':'sb-gray'};
+                        var statusCls = {'Excellent':'sb-green','Very Good':'sb-teal','Good':'sb-blue','Need Support':'sb-orange','Need Assistance':'sb-red','No Activity':'sb-gray'};
+                        var statusRemark = {
+                            'Excellent':       'Outstanding work!',
+                            'Very Good':       'Doing great!',
+                            'Good':            'Keep it up!',
+                            'Need Support':    'Provide additional support',
+                            'Need Assistance': 'Needs immediate attention',
+                            'No Activity':     'No submissions yet'
+                        };
                         tbody.innerHTML = d.students.map(function(s) {
                             var cls = statusCls[s.status] || 'sb-gray';
-                            var remark = s.status === 'Passing' ? 'Keep it up!'
-                                       : s.status === 'At Risk' ? 'Needs immediate attention'
-                                       : s.status === 'No Activity' ? 'No submissions yet'
-                                       : 'Provide additional support';
+                            var remark = statusRemark[s.status] || '';
                             return '<tr>'
                                 + '<td>' + escHtml(s.student_name) + '</td>'
                                 + '<td>' + escHtml(s.disability_type || '—') + '</td>'
@@ -499,9 +504,8 @@
         function renderNeedsAttention(students) {
             var el = document.getElementById('needs-attention-list');
             if (!el) return;
-            var statusCls = {'At Risk': 'sb-red', 'Needs Support': 'sb-orange'};
             var flagged = (students || [])
-                .filter(function(s) { return s.status === 'At Risk' || s.status === 'Needs Support'; })
+                .filter(function(s) { return s.status === 'Need Assistance'; })
                 .sort(function(a, b) { return (a.avg_score || 0) - (b.avg_score || 0); });
 
             if (!flagged.length) {
@@ -511,12 +515,11 @@
 
             var shown = flagged.slice(0, 5);
             var html = shown.map(function(s) {
-                var cls = statusCls[s.status] || 'sb-gray';
                 var scoreStr = s.avg_score > 0 ? s.avg_score + '% average' : 'No score yet';
                 return '<div class="teacher-attention-row">'
                     + '<span class="teacher-attention-name">' + escHtml(s.student_name) + '</span>'
                     + '<span><span class="teacher-attention-score">' + scoreStr + '</span>'
-                    + '<span class="teacher-status-badge ' + cls + '">' + s.status + '</span></span>'
+                    + '<span class="teacher-status-badge sb-red">' + s.status + '</span></span>'
                     + '</div>';
             }).join('');
 

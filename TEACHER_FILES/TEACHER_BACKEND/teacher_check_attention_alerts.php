@@ -1,16 +1,17 @@
 <?php
-// Notifies the teacher the first time a learner's overall average crosses
-// into the same "Needs Support" (60-79%) / "At Risk" (<60%) bands the
-// Needs Attention panel on Class Reports already flags — so a teacher who
-// hasn't opened that page still finds out.
+// Notifies the teacher the first time a learner's overall average drops into
+// "Need Assistance" (below 75%) — the same bottom tier the Needs Attention
+// panel on Class Reports flags (Excellent/Very Good/Good/Need Support sit
+// above it and are never flagged) — so a teacher who hasn't opened that page
+// still finds out.
 //
 // Piggybacked on the dashboard load like teacher_check_pending_reminders.php
-// (see that file — this app has no cron). notif_key is scoped to
-// (student_id, band), not to today's date, so this fires once per learner
-// per band rather than once a day: dropping from Passing into Needs Support
-// notifies once, and dropping further into At Risk notifies again (a
-// different band = a different key), but staying in the same band on every
-// later check is a no-op via INSERT IGNORE.
+// (see that file — this app has no cron). notif_key is scoped to student_id,
+// not to today's date, so staying below 75% on every later check is a no-op
+// via INSERT IGNORE rather than a fresh notification each time. Once a
+// learner recovers to 75%+ their notification row is deleted, which frees
+// the key so a later relapse notifies again instead of staying silent
+// forever after the first drop.
 require_once __DIR__ . '/teacher_push_notification.php';
 
 function checkNeedsAttentionAlerts($conn, $teacher_id) {
@@ -26,32 +27,36 @@ function checkNeedsAttentionAlerts($conn, $teacher_id) {
                   AND sub.teacher_id  = lp.teacher_id
                   AND sub.is_finalized = 1
             WHERE s.teacher_id = ? AND s.status = 'active'
-            GROUP BY s.id, s.student_name
-            HAVING avg_score < 80";
+            GROUP BY s.id, s.student_name";
     $stmt = $conn->prepare($sql);
     if (!$stmt) return;
     $stmt->bind_param("i", $teacher_id);
     $stmt->execute();
     $res = $stmt->get_result();
 
-    while ($row = $res->fetch_assoc()) {
-        $avg  = (float)$row['avg_score'];
-        $name = trim($row['student_name']);
-        $atRisk = $avg < 60;
-        $band = $atRisk ? 'at_risk' : 'needs_support';
-        $message = $atRisk
-            ? $name . ' is At Risk — average score is ' . $avg . '%. Needs immediate attention.'
-            : $name . ' Needs Support — average score is ' . $avg . '%. Consider providing extra practice.';
+    $delStmt = $conn->prepare("DELETE FROM notifications WHERE teacher_id = ? AND notif_key = ?");
 
-        pushTeacherNotification(
-            $conn,
-            $teacher_id,
-            'needs_attention',
-            $name . ' needs attention',
-            $message,
-            ['student_id' => (int)$row['student_id'], 'avg_score' => $avg, 'band' => $band],
-            'attention_' . $row['student_id'] . '_' . $band
-        );
+    while ($row = $res->fetch_assoc()) {
+        $avg      = (float)$row['avg_score'];
+        $name     = trim($row['student_name']);
+        $notifKey = 'attention_' . $row['student_id'] . '_need_assistance';
+
+        if ($avg < 75) {
+            $message = $name . ' needs assistance — average score is ' . $avg . '%. Needs immediate support.';
+            pushTeacherNotification(
+                $conn,
+                $teacher_id,
+                'needs_attention',
+                $name . ' needs assistance',
+                $message,
+                ['student_id' => (int)$row['student_id'], 'avg_score' => $avg],
+                $notifKey
+            );
+        } elseif ($delStmt) {
+            $delStmt->bind_param("is", $teacher_id, $notifKey);
+            $delStmt->execute();
+        }
     }
+    if ($delStmt) $delStmt->close();
     $stmt->close();
 }
