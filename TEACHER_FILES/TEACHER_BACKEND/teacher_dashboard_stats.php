@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/teacher_check_pending_reminders.php';
+require_once __DIR__ . '/teacher_check_attention_alerts.php';
 
 header('Content-Type: application/json');
 
@@ -16,6 +17,7 @@ $teacher_id = isset($_REQUEST['teacher_id']) ? intval($_REQUEST['teacher_id']) :
 // app has to a daily cron, piggybacked on the one page every teacher is
 // virtually guaranteed to load.
 checkPendingActivityReminders($conn, $teacher_id);
+checkNeedsAttentionAlerts($conn, $teacher_id);
 
 $stats = [
     'assigned_learners'    => 0,
