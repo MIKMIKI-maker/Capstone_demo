@@ -122,11 +122,7 @@ if ($progStmt) {
                 $s['highest_score']   = max($scores);
                 $s['lowest_score']    = min($scores);
                 $s['passed_count']    = count(array_filter($scores, function($sc){ return $sc >= 80; }));
-                $s['status']          = $avg >= 90 ? 'Excellent'
-                                       : ($avg >= 80 ? 'Very Good'
-                                       : ($avg >= 76 ? 'Good'
-                                       : ($avg >= 75 ? 'Need Support'
-                                       : 'Need Assistance')));
+                $s['status']          = $avg >= 80 ? 'Passing' : ($avg >= 60 ? 'Needs Support' : 'At Risk');
                 $total_scores[]       = $avg;
             }
         }

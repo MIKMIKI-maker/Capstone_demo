@@ -132,13 +132,6 @@
                     </div>
                 </div>
             </div>
-            <!-- NEEDS ATTENTION -->
-            <div class="teacher-panel teacher-attention-panel" id="needs-attention-panel">
-                <div class="teacher-panel-title">⚠️ Needs Attention</div>
-                <div id="needs-attention-list">
-                    <div style="text-align:center;padding:20px;color:#cbd5e1;font-size:13px;">Loading...</div>
-                </div>
-            </div>
             <!-- TWO-COL: Skills Overview only (Teacher Notes removed) -->
             <div class="teacher-report-grid">
                 <!-- SKILLS OVERVIEW -->
@@ -194,7 +187,7 @@
                 </div>
             </div>
             <!-- LEARNER PERFORMANCE TABLE -->
-            <div class="teacher-table-card" id="teacher-table-card">
+            <div class="teacher-table-card">
                 <div class="teacher-table-card-title">Learner Performance</div>
                 <table id="teacher-reportLearnersTable">
                     <thead>
@@ -441,22 +434,16 @@
                     // Learner performance table
                     var tbody = document.getElementById('report-learner-tbody');
                     _reportStudents = d.students || [];
-                    renderNeedsAttention(_reportStudents);
                     if (!d.students || !d.students.length) {
                         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:#94a3b8;">No learner data yet</td></tr>';
                     } else {
-                        var statusCls = {'Excellent':'sb-green','Very Good':'sb-teal','Good':'sb-blue','Need Support':'sb-orange','Need Assistance':'sb-red','No Activity':'sb-gray'};
-                        var statusRemark = {
-                            'Excellent':       'Outstanding work!',
-                            'Very Good':       'Doing great!',
-                            'Good':            'Keep it up!',
-                            'Need Support':    'Provide additional support',
-                            'Need Assistance': 'Needs immediate attention',
-                            'No Activity':     'No submissions yet'
-                        };
+                        var statusCls = {'Passing':'sb-green','Needs Support':'sb-orange','At Risk':'sb-red','No Activity':'sb-gray'};
                         tbody.innerHTML = d.students.map(function(s) {
                             var cls = statusCls[s.status] || 'sb-gray';
-                            var remark = statusRemark[s.status] || '';
+                            var remark = s.status === 'Passing' ? 'Keep it up!'
+                                       : s.status === 'At Risk' ? 'Needs immediate attention'
+                                       : s.status === 'No Activity' ? 'No submissions yet'
+                                       : 'Provide additional support';
                             return '<tr>'
                                 + '<td>' + escHtml(s.student_name) + '</td>'
                                 + '<td>' + escHtml(s.disability_type || '—') + '</td>'
@@ -498,37 +485,6 @@
 
         function escHtml(str) {
             return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-        }
-
-        // ── Needs Attention ──────────────────────────────────────
-        function renderNeedsAttention(students) {
-            var el = document.getElementById('needs-attention-list');
-            if (!el) return;
-            var flagged = (students || [])
-                .filter(function(s) { return s.status === 'Need Assistance'; })
-                .sort(function(a, b) { return (a.avg_score || 0) - (b.avg_score || 0); });
-
-            if (!flagged.length) {
-                el.innerHTML = '<div class="teacher-attention-empty">✅ No learners need immediate attention right now.</div>';
-                return;
-            }
-
-            var shown = flagged.slice(0, 5);
-            var html = shown.map(function(s) {
-                var scoreStr = s.avg_score > 0 ? s.avg_score + '% average' : 'No score yet';
-                return '<div class="teacher-attention-row">'
-                    + '<span class="teacher-attention-name">' + escHtml(s.student_name) + '</span>'
-                    + '<span><span class="teacher-attention-score">' + scoreStr + '</span>'
-                    + '<span class="teacher-status-badge sb-red">' + s.status + '</span></span>'
-                    + '</div>';
-            }).join('');
-
-            if (flagged.length > shown.length) {
-                html += '<div class="teacher-attention-more">'
-                    + '+' + (flagged.length - shown.length) + ' more — <a href="#teacher-table-card">see full list below</a>'
-                    + '</div>';
-            }
-            el.innerHTML = html;
         }
 
         function printClassReport() {
