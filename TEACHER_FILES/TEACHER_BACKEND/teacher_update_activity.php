@@ -18,6 +18,10 @@ $subject        = isset($_POST['subject'])        ? trim($_POST['subject'])     
 $content_json   = isset($_POST['content_json'])   ? $_POST['content_json']           : null;
 $deadline       = isset($_POST['deadline'])       ? trim($_POST['deadline'])         : '';
 if ($deadline === '') $deadline = null;
+// The teacher chose "Save Draft" instead of finishing/re-confirming the
+// edit — save the content but leave it out of Published (and therefore out
+// of the student's materials list) until they explicitly publish again.
+$saveAsDraft = isset($_POST['save_as_draft']) && $_POST['save_as_draft'] === '1';
 
 if (!$teacher_id || !$activity_id || !$activity_title) {
     echo json_encode(['success' => false, 'message' => 'Teacher ID, activity ID, and title are required']);
@@ -46,13 +50,21 @@ if (!$stmt) {
 $stmt->bind_param("ssssii", $activity_title, $subject, $content_json, $deadline, $activity_id, $teacher_id);
 
 if ($stmt->execute()) {
-    setActivityLocked($conn, $teacher_id, $activity_id, false);
-    notifyActivityAssignees(
-        $conn, $teacher_id, $activity_id, 'locked',
-        '✅ Activity Available Again',
-        "\"{$activity_title}\" has been updated and is available again. You can continue working on it."
-    );
-    pushTeacherNotification($conn, $teacher_id, 'activity', 'Activity Updated', "You saved changes to \"{$activity_title}\" and it's live again for students.");
+    if ($saveAsDraft) {
+        // Stays locked/draft — it was already flipped to 'draft' the moment
+        // Edit was clicked (see teacher_lock_activity.php), so there's
+        // nothing further to flip here. No "available again" notification
+        // either, since it genuinely isn't available right now.
+        pushTeacherNotification($conn, $teacher_id, 'activity', 'Draft Saved', "Your changes to \"{$activity_title}\" were saved as a draft. Publish it again when you're ready.");
+    } else {
+        setActivityLocked($conn, $teacher_id, $activity_id, false);
+        notifyActivityAssignees(
+            $conn, $teacher_id, $activity_id, 'locked',
+            '✅ Activity Available Again',
+            "\"{$activity_title}\" has been updated and is available again. You can continue working on it."
+        );
+        pushTeacherNotification($conn, $teacher_id, 'activity', 'Activity Updated', "You saved changes to \"{$activity_title}\" and it's live again for students.");
+    }
     echo json_encode(['success' => true]);
 } else {
     echo json_encode(['success' => false, 'message' => 'Failed to update activity']);

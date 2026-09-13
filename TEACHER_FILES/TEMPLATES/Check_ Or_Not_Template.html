@@ -1704,8 +1704,41 @@ function initActivityTheme(){
   $("chkPdfBtn").addEventListener("click", downloadAsPdf);
 
   function saveDraft() {
-    var draftId = new URLSearchParams(location.search).get('draft_id') || ('draft_' + Date.now());
     var firstTitle = (state.activities[0] && state.activities[0].title) || '';
+
+    if (_editingPub && _editingPub.db_activity_id && _editingPub.teacherId) {
+      var domainInputD = document.querySelector('input[name="chkDomain"]:checked');
+      var deadlineD = ($('chkDeadlineInput') && $('chkDeadlineInput').value) || _editingPub.deadline || '';
+      var fdD = new FormData();
+      fdD.append('teacher_id', _editingPub.teacherId);
+      fdD.append('activity_id', _editingPub.db_activity_id);
+      fdD.append('activity_title', firstTitle || _editingPub.title || 'Untitled Activity');
+      fdD.append('subject', domainInputD ? domainInputD.value : (_editingPub.condition || ''));
+      fdD.append('content_json', JSON.stringify(state));
+      fdD.append('deadline', deadlineD);
+      fdD.append('save_as_draft', '1');
+      fetch('../TEACHER_BACKEND/teacher_update_activity.php', { method: 'POST', body: fdD })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if (d && d.success === false) {
+            window.showToast('Save failed: ' + (d.message || 'Unknown error') + ' Please try again.', 'error', 4500);
+            return;
+          }
+          _idb.save('pub_data_' + _editingPub.id, JSON.parse(JSON.stringify(state)), function(err){ if(err) console.warn('IDB save failed:',err); });
+          var acts = []; try { acts = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+          acts = acts.filter(function(a){ return a.id !== _editingPub.id; });
+          try { localStorage.setItem('published_activities', JSON.stringify(acts)); } catch(e){}
+          _editingPub._saved = true;
+          flash($('chkDraftBtn'), '✓ Draft Saved!');
+          setTimeout(function(){ window.location.href = '../Teacher_activies.html'; }, 700);
+        })
+        .catch(function(){
+          window.showToast('Could not reach the server to save this draft. Please check your connection and try again.', 'error', 4500);
+        });
+      return;
+    }
+
+    var draftId = new URLSearchParams(location.search).get('draft_id') || ('draft_' + Date.now());
     var draft = {
       id:           draftId,
       title:        firstTitle || 'Untitled Draft',
@@ -1836,14 +1869,10 @@ function initActivityTheme(){
     });
   }
 
-  window.addEventListener('pagehide', function(){
-    if (_editingPub && !_editingPub._saved && _editingPub.db_activity_id && _editingPub.teacherId) {
-      fetch('../TEACHER_BACKEND/teacher_lock_activity.php', {
-        method: 'POST', keepalive: true,
-        body: new URLSearchParams({ action: 'unlock', teacher_id: _editingPub.teacherId, activity_id: _editingPub.db_activity_id, activity_title: _editingPub.title || 'Activity' })
-      });
-    }
-  });
+  // An abandoned edit (Back button, closing the tab) should stay flagged
+  // draft, not silently bounce back to published — Edit already flips the
+  // row to draft the moment it's opened (teacher_lock_activity.php), so
+  // there's nothing to undo here on pagehide.
 
   function fitStageToScreen(){
     if (!document.body.classList.contains("chk-preview-only")) return;

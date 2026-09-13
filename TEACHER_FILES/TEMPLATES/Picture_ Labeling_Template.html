@@ -1628,8 +1628,49 @@ window.addEventListener('resize', ()=>{ if(document.body.classList.contains('lbl
 
 /* ── Save Draft to localStorage (same pattern as written-response.html) ── */
 function saveDraft(){
-  var draftId = new URLSearchParams(location.search).get('draft_id') || ('draft_' + Date.now());
   var firstTitle = (state.activities[0] && state.activities[0].title) || '';
+
+  // Editing an already-published activity: update the SAME row and leave it
+  // flagged draft (it was already flipped to draft the moment Edit was
+  // clicked) instead of spinning off a brand-new local draft with a
+  // default "ALL" learner — there's no "ALL" assignment, only whoever this
+  // activity was actually assigned to.
+  if (_editingPub && _editingPub.db_activity_id && _editingPub.teacherId) {
+    var domainInputD = document.querySelector('input[name="lblDomain"]:checked');
+    var deadlineD = ($('lblDeadlineInput') && $('lblDeadlineInput').value) || _editingPub.deadline || '';
+    var fdD = new FormData();
+    fdD.append('teacher_id', _editingPub.teacherId);
+    fdD.append('activity_id', _editingPub.db_activity_id);
+    fdD.append('activity_title', firstTitle || _editingPub.title || 'Untitled Activity');
+    fdD.append('subject', domainInputD ? domainInputD.value : (_editingPub.condition || ''));
+    fdD.append('content_json', JSON.stringify(state));
+    fdD.append('deadline', deadlineD);
+    fdD.append('save_as_draft', '1');
+    fetch('../TEACHER_BACKEND/teacher_update_activity.php', { method: 'POST', body: fdD })
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if (d && d.success === false) {
+          window.showToast('Save failed: ' + (d.message || 'Unknown error') + ' Please try again.', 'error', 4500);
+          return;
+        }
+        _idb.save('pub_data_' + _editingPub.id, JSON.parse(JSON.stringify(state)), function(err){ if(err) console.warn('IDB save failed:',err); });
+        // Drop the local "published" override for this row — the backend
+        // already shows it as a draft now, so a stale local entry here
+        // would keep forcing status:'published' back in Review Activities.
+        var acts = []; try { acts = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+        acts = acts.filter(function(a){ return a.id !== _editingPub.id; });
+        try { localStorage.setItem('published_activities', JSON.stringify(acts)); } catch(e){}
+        _editingPub._saved = true;
+        flash($('lblDraftBtn'), '✓ Draft Saved!');
+        setTimeout(function(){ window.location.href = '../Teacher_activies.html'; }, 700);
+      })
+      .catch(function(){
+        window.showToast('Could not reach the server to save this draft. Please check your connection and try again.', 'error', 4500);
+      });
+    return;
+  }
+
+  var draftId = new URLSearchParams(location.search).get('draft_id') || ('draft_' + Date.now());
   var draft = {
     id: draftId, title: firstTitle || 'Untitled Draft', type: 'PictureLabeling',
     templateFile: 'TEMPLATES/LABELING/picture-labeling.html',
@@ -1756,14 +1797,14 @@ function loadPublishedForEditIfAny() {
   });
 }
 
-window.addEventListener('pagehide', function(){
-  if (_editingPub && !_editingPub._saved && _editingPub.db_activity_id && _editingPub.teacherId) {
-    fetch('../TEACHER_BACKEND/teacher_lock_activity.php', {
-      method: 'POST', keepalive: true,
-      body: new URLSearchParams({ action: 'unlock', teacher_id: _editingPub.teacherId, activity_id: _editingPub.db_activity_id, activity_title: _editingPub.title || 'Activity' })
-    });
-  }
-});
+// NOTE: there used to be a pagehide safety-net here that called
+// action=unlock (re-publishing the row) whenever an edit was abandoned
+// without saving. That's no longer wanted: Edit already flips the row to
+// draft the moment it's opened (see teacher_lock_activity.php), and an
+// abandoned edit should stay draft, not silently bounce back to
+// published. So on abandonment (browser Back, closing the tab) the row
+// simply stays flagged draft until the teacher deliberately publishes or
+// saves-draft again.
 
 function flash(button, text){
   const original = button.textContent;
