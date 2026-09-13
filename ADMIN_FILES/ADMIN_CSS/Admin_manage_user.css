@@ -234,6 +234,8 @@ body { display: flex; }
 .admin-btn-add:hover { background: #15803d; box-shadow: 0 4px 14px rgba(22,163,74,.3); }
 .admin-btn-delete { display: flex; align-items: center; gap: 8px; padding: 11px 20px; border: none; border-radius: 12px; background: #e8375a; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Inter',sans-serif; transition: background .2s, box-shadow .2s; box-shadow: 0 2px 8px rgba(232,55,90,.2); }
 .admin-btn-delete:hover { background: #c42e4b; box-shadow: 0 4px 14px rgba(232,55,90,.3); }
+.admin-btn-bulk { display: flex; align-items: center; gap: 8px; padding: 11px 20px; border: none; border-radius: 12px; background: #2563eb; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Inter',sans-serif; transition: background .2s, box-shadow .2s; box-shadow: 0 2px 8px rgba(37,99,235,.2); }
+.admin-btn-bulk:hover { background: #1d4ed8; box-shadow: 0 4px 14px rgba(37,99,235,.3); }
 
 /* Table */
 .admin-table-wrap { background: #fff; border-radius: 18px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; position: relative; border: 1px solid #f0f4fc; }
@@ -414,6 +416,45 @@ body { display: flex; }
 .admin-del-check { width: 18px; height: 18px; accent-color: #e8375a; cursor: pointer; flex-shrink: 0; }
 .admin-del-info { flex: 1; }
 .admin-del-warning { background: #fff5f7; border: 1px solid #ffd0da; border-radius: 10px; padding: 12px 14px; font-size: 12px; color: #c42e4b; line-height: 1.6; }
+
+/* Bulk Import modal */
+.admin-bulk-teacher-alert { display: flex; align-items: center; gap: 8px; background: #fffbeb; border: 1px solid #fde68a; color: #92400e; border-radius: 10px; padding: 10px 14px; font-size: 12px; font-weight: 700; margin-top: 8px; }
+.admin-bulk-teacher-alert i { color: #d97706; }
+.admin-bulk-tabs { display: flex; gap: 8px; margin-bottom: 4px; }
+.admin-bulk-tab { flex: 1; padding: 10px 12px; border: 1px solid #e2e8f0; background: #f8fafc; color: #64748b; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'Inter',sans-serif; }
+.admin-bulk-tab--active { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+.admin-bulk-template-btn { display: inline-flex; align-items: center; gap: 6px; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 10px; padding: 9px 14px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'Inter',sans-serif; margin-top: 10px; }
+.admin-bulk-template-btn:hover { background: #dbeafe; }
+.admin-bulk-paste-area { width: 100%; box-sizing: border-box; min-height: 140px; margin-top: 10px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-family: 'Inter',monospace; font-size: 12px; resize: vertical; }
+.admin-bulk-file-wrap { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 18px; text-align: center; margin-top: 14px; }
+.admin-bulk-file-wrap input[type="file"] { font-size: 12px; }
+.admin-bulk-file-name { font-size: 12px; color: #1e293b; font-weight: 600; margin-top: 8px; }
+.admin-bulk-summary { display: flex; gap: 10px; margin: 14px 0; }
+.admin-bulk-summary-chip { flex: 1; border-radius: 10px; padding: 10px 12px; text-align: center; }
+.admin-bulk-summary-chip strong { display: block; font-size: 20px; }
+.admin-bulk-summary-chip.ok { background: #f0fdf4; color: #15803d; }
+.admin-bulk-summary-chip.skip { background: #fff7ed; color: #c2410c; }
+.admin-bulk-results-list { max-height: 220px; overflow-y: auto; border: 1px solid #f0f4fc; border-radius: 10px; }
+.admin-bulk-results-row { display: flex; justify-content: space-between; gap: 10px; padding: 8px 12px; font-size: 12px; border-bottom: 1px solid #f0f4fc; }
+.admin-bulk-results-row:last-child { border-bottom: none; }
+.admin-bulk-results-row .bulk-row-email { color: #1e293b; font-weight: 600; }
+.admin-bulk-results-row .bulk-row-reason { color: #c2410c; text-align: right; }
+.admin-bulk-results-row.created .bulk-row-reason { color: #15803d; }
+.admin-bulk-map-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.admin-bulk-map-row { display: flex; flex-direction: column; gap: 4px; }
+.admin-bulk-map-row label { font-size: 12px; font-weight: 700; color: #334155; }
+.admin-bulk-map-row select { padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; font-family: 'Inter',sans-serif; background: #fff; }
+.admin-bulk-req-badge { display: inline-block; background: #fee2e2; color: #b91c1c; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; padding: 2px 6px; border-radius: 6px; vertical-align: middle; }
+.admin-bulk-map-row--attention { background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 10px; }
+.admin-bulk-map-locked { display: flex; align-items: center; gap: 8px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 8px 10px; font-size: 12px; }
+.admin-bulk-map-locked--neutral { background: #f8fafc; border-color: #e2e8f0; }
+.admin-bulk-map-locked--neutral .admin-bulk-map-locked-icon { color: #94a3b8; }
+.admin-bulk-map-locked-icon { color: #16a34a; font-weight: 700; }
+.admin-bulk-map-locked-text { flex: 1; color: #1e293b; }
+.admin-bulk-preview-wrap { overflow-x: auto; border: 1px solid #f0f4fc; border-radius: 10px; margin-top: 8px; }
+.admin-bulk-preview-table { border-collapse: collapse; width: 100%; font-size: 11px; white-space: nowrap; }
+.admin-bulk-preview-table th, .admin-bulk-preview-table td { padding: 6px 10px; border-bottom: 1px solid #f0f4fc; text-align: left; }
+.admin-bulk-preview-table th { background: #f8faff; color: #64748b; font-weight: 700; text-transform: uppercase; font-size: 10px; }
 .admin-btn-danger-solid { flex: 1; padding: 13px; border: none; border-radius: 12px; background: #e8375a; color: #fff; font-family: 'Nunito',sans-serif; font-size: 15px; font-weight: 800; cursor: pointer; transition: background .2s; }
 .admin-btn-danger-solid:hover { background: #c42e4b; }
 
@@ -452,7 +493,7 @@ body { display: flex; }
   .admin-dropdown { flex: 1 1 0; min-width: 130px; }
   .admin-filter-btn { width: 100%; justify-content: center; }
   .admin-action-btns { flex: 1 1 100%; width: 100%; margin-left: 0; }
-  .admin-btn-add, .admin-btn-delete { flex: 1; justify-content: center; }
+  .admin-btn-add, .admin-btn-delete, .admin-btn-bulk { flex: 1; justify-content: center; }
   .admin-modal-box { max-width: 100%; }
   .admin-topbar-left { width: 100%; text-align: center; }
 
@@ -524,7 +565,7 @@ body { display: flex; }
    the row 50/50 — each button gets its own full-width, easy-to-tap row. */
 @media (max-width: 480px) {
   .admin-action-btns { flex-direction: column; }
-  .admin-btn-add, .admin-btn-delete { width: 100%; }
+  .admin-btn-add, .admin-btn-delete, .admin-btn-bulk { width: 100%; }
 }
 
 /* ===== RESET PASSWORD MODAL (:target) ===== */

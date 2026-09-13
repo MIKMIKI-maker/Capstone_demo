@@ -15,6 +15,7 @@
     href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;family=Nunito:wght@400;600;700;800;900&amp;family=Inter:wght@400;500;600&amp;display=swap"
     rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="../ASSETS/admin_portal.js?v=5"></script>
 </head>
 
@@ -97,7 +98,7 @@
       </div>
       <div class="admin-topbar-actions">
         <a class="admin-trash-link" href="Admin_deleted_accounts.html">
-          <i class="fa-solid fa-trash-can"></i> Deleted Accounts
+          <i class="fa-solid fa-box-archive"></i> Archived Accounts
         </a>
         <a class="admin-notif-btn" href="Admin_notif.html">
           <i class="fa-regular fa-bell"></i>
@@ -163,7 +164,8 @@
       </div>
       <div class="admin-action-btns">
         <button class="admin-btn-add" onclick="showModal('admin-modal-add')" type="button">⊕ Add Account</button>
-        <button class="admin-btn-delete" onclick="showModal('admin-modal-delete')" type="button">🗑 Delete
+        <button class="admin-btn-bulk" onclick="showModal('admin-modal-bulk')" type="button">📥 Bulk Import Students</button>
+        <button class="admin-btn-delete" onclick="showModal('admin-modal-delete')" type="button">🗄️ Archive
           Account</button>
       </div>
     </div>
@@ -213,11 +215,11 @@
         </div>
       </div>
     </div>
-    <!-- Mobile-only: same "Deleted Accounts" link as the topbar above, just
+    <!-- Mobile-only: same "Archived Accounts" link as the topbar above, just
          moved to the bottom of the page — CSS swaps which one is visible
          per breakpoint (see admin-trash-link--mobile-clone). -->
     <a class="admin-trash-link admin-trash-link--mobile-clone" href="Admin_deleted_accounts.html">
-      <i class="fa-solid fa-trash-can"></i> Deleted Accounts
+      <i class="fa-solid fa-box-archive"></i> Archived Accounts
     </a>
   </main>
   <!-- ===== MODAL: VIEW TEACHER (Two-Column Layout) ===== -->
@@ -632,12 +634,74 @@
       </div>
     </form>
   </div>
+  <!-- ===== MODAL: BULK IMPORT ACCOUNTS ===== -->
+  <div class="admin-modal-overlay" id="admin-modal-bulk">
+    <div class="admin-modal-box">
+      <div class="admin-modal-header">
+        <h3 class="admin-modal-title">Bulk Import Students</h3>
+        <p class="admin-modal-sub">Add a whole class roster at once — all rows are enrolled as Students under one Teacher.</p>
+        <button class="admin-modal-close" onclick="hideModal('admin-modal-bulk')" type="button">✕</button>
+      </div>
+      <div class="admin-modal-body">
+        <div class="admin-bulk-map-row">
+          <label>Teacher <span style="font-weight:400;color:#94a3b8;">(every student in this import will be enrolled under this teacher)</span></label>
+          <select class="admin-cond-select" id="admin-bulk-teacher-select" onchange="updateBulkImportButtonState()">
+            <option value="">Select teacher...</option>
+          </select>
+          <div class="admin-field-note" id="admin-bulk-teacher-note" style="display:none;color:#b45309;font-weight:500;">No teacher accounts yet. Add a teacher account first.</div>
+          <div class="admin-bulk-teacher-alert" id="admin-bulk-teacher-alert"><i class="fa-solid fa-triangle-exclamation"></i> Please select a teacher first — the Upload &amp; Import button stays off until you do.</div>
+        </div>
+
+        <div class="admin-bulk-tabs" id="admin-bulk-tabs" style="margin-top:14px;">
+          <button class="admin-bulk-tab admin-bulk-tab--active" id="admin-bulk-tab-file" onclick="switchBulkTab('file')" type="button">📄 Upload File</button>
+          <button class="admin-bulk-tab" id="admin-bulk-tab-paste" onclick="switchBulkTab('paste')" type="button">📋 Paste from Spreadsheet</button>
+        </div>
+        <div class="admin-field-note" style="margin-top:10px;">
+          Columns: <strong>first_name</strong>, last_name, <strong>email</strong> (optional — auto-generated if left out), condition, parent_name.
+        </div>
+
+        <div id="admin-bulk-panel-file">
+          <button class="admin-bulk-template-btn" onclick="downloadBulkTemplate()" type="button">⬇ Download Template (.csv)</button>
+          <div class="admin-bulk-file-wrap">
+            <input type="file" id="admin-bulk-file-input" accept=".csv,.xlsx,.xls" onchange="handleBulkFileChange(this)" />
+            <div class="admin-bulk-file-name" id="admin-bulk-file-name"></div>
+          </div>
+          <div class="admin-field-note">Accepts .csv, .xlsx, or .xls — Excel files are read directly, no need to save as CSV first.</div>
+        </div>
+
+        <div id="admin-bulk-panel-paste" style="display:none">
+          <div class="admin-field-note">Select and copy the cells from Excel or Google Sheets (including the header row), then paste them below.</div>
+          <textarea id="admin-bulk-paste-area" class="admin-bulk-paste-area" placeholder="first_name&#9;last_name&#9;email&#9;condition&#9;parent_name&#10;Juan&#9;Dela Cruz&#9;juan@example.com&#9;ADHD&#9;Ana Dela Cruz" oninput="handleBulkPasteChange()"></textarea>
+        </div>
+
+        <div id="admin-bulk-mapping-panel" style="display:none">
+          <div class="admin-del-warning">⚠️ We couldn't automatically match your file's columns to ours. Map each field below, then confirm.</div>
+          <div class="admin-bulk-map-grid" id="admin-bulk-map-grid"></div>
+          <div class="admin-field-note" style="margin-top:12px;"><strong>Preview</strong> (first rows after mapping):</div>
+          <div class="admin-bulk-preview-wrap"><table class="admin-bulk-preview-table" id="admin-bulk-preview-table"></table></div>
+          <button class="admin-bulk-template-btn" onclick="backToBulkInput()" type="button" style="margin-top:10px;">← Back</button>
+        </div>
+
+        <div id="admin-bulk-results" style="display:none;margin-top:16px;">
+          <div class="admin-bulk-summary">
+            <div class="admin-bulk-summary-chip ok"><strong id="admin-bulk-created-count">0</strong>Added</div>
+            <div class="admin-bulk-summary-chip skip"><strong id="admin-bulk-skipped-count">0</strong>Skipped</div>
+          </div>
+          <div class="admin-bulk-results-list" id="admin-bulk-results-list"></div>
+        </div>
+      </div>
+      <div class="admin-modal-footer-row">
+        <button class="admin-btn-cancel" onclick="hideModal('admin-modal-bulk')" type="button">Close</button>
+        <button class="admin-btn-save admin-btn-green" id="admin-bulk-import-btn" type="button" onclick="handleBulkPrimaryAction()" disabled>Upload &amp; Import</button>
+      </div>
+    </div>
+  </div>
   <!-- ===== MODAL: DELETE ACCOUNT ===== -->
   <div class="admin-modal-overlay" id="admin-modal-delete">
     <div class="admin-modal-box">
       <div class="admin-modal-header">
-        <h3 class="admin-modal-title">Delete Account</h3>
-        <p class="admin-modal-sub">Select the account you want to permanently delete.</p>
+        <h3 class="admin-modal-title">Archive Account</h3>
+        <p class="admin-modal-sub">Select the account you want to archive.</p>
         <button class="admin-modal-close" onclick="hideModal('admin-modal-delete')" type="button">✕</button>
       </div>
       <div class="admin-modal-body">
@@ -650,13 +714,13 @@
           <div class="admin-del-empty admin-placeholder-bar admin-w-full">Loading accounts...</div>
         </div>
         <div class="admin-del-warning">
-          ⚠️ This action is permanent and cannot be undone. All data associated with the selected account(s) will be
-          removed.
+          ⚠️ The selected account(s) will be moved to Archived Accounts and deactivated immediately. Nothing is
+          permanently removed — you can restore them anytime from there.
         </div>
       </div>
       <div class="admin-modal-footer-row">
         <button class="admin-btn-cancel" onclick="hideModal('admin-modal-delete')" type="button">Cancel</button>
-        <button class="admin-btn-danger-solid" id="admin-delete-selected-btn" type="button" onclick="deleteSelectedAccounts()" disabled>🗑 Delete Selected (0)</button>
+        <button class="admin-btn-danger-solid" id="admin-delete-selected-btn" type="button" onclick="deleteSelectedAccounts()" disabled>🗄️ Archive Selected (0)</button>
       </div>
     </div>
   </div>
@@ -792,6 +856,21 @@
       if (id === 'admin-modal-delete') {
         loadAccounts();
       }
+
+      if (id === 'admin-modal-bulk') {
+        document.getElementById('admin-bulk-file-input').value = '';
+        document.getElementById('admin-bulk-file-name').textContent = '';
+        document.getElementById('admin-bulk-paste-area').value = '';
+        document.getElementById('admin-bulk-results').style.display = 'none';
+        document.getElementById('admin-bulk-mapping-panel').style.display = 'none';
+        document.getElementById('admin-bulk-tabs').style.display = 'flex';
+        document.getElementById('admin-bulk-import-btn').textContent = 'Upload & Import';
+        document.getElementById('admin-bulk-import-btn').disabled = true;
+        bulkParsedRows = null;
+        bulkStep = 'input';
+        populateTeacherSelect('bulk');
+        switchBulkTab('file');
+      }
     }
 
     function hideModal(id) { document.getElementById(id).style.display = 'none'; }
@@ -846,7 +925,7 @@
       document.getElementById('admin-delete-count').textContent = count;
       var btn = document.getElementById('admin-delete-selected-btn');
       btn.disabled = count === 0;
-      btn.textContent = '🗑 Delete Selected (' + count + ')';
+      btn.textContent = '🗄️ Archive Selected (' + count + ')';
     }
 
     function renderDeleteList(accounts) {
@@ -1361,6 +1440,405 @@
       });
     }
 
+    function downloadBulkTemplate() {
+      var csv = 'first_name,last_name,email,condition,parent_name\n'
+        + 'Juan,Dela Cruz,juan.delacruz@example.com,ADHD,Ana Dela Cruz\n'
+        + 'Maria,Santos,maria.santos@example.com,ASD,Rosa Santos\n';
+      var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'bulk_account_template.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    var bulkActiveTab = 'file';
+    var bulkStep = 'input'; // 'input' | 'mapping' | 'results'
+    var bulkParsedRows = null; // array-of-arrays: [0] = header row, rest = data rows
+
+    function switchBulkTab(tab) {
+      bulkActiveTab = tab;
+      document.getElementById('admin-bulk-tab-file').classList.toggle('admin-bulk-tab--active', tab === 'file');
+      document.getElementById('admin-bulk-tab-paste').classList.toggle('admin-bulk-tab--active', tab === 'paste');
+      document.getElementById('admin-bulk-panel-file').style.display = tab === 'file' ? 'block' : 'none';
+      document.getElementById('admin-bulk-panel-paste').style.display = tab === 'paste' ? 'block' : 'none';
+      document.getElementById('admin-bulk-results').style.display = 'none';
+      updateBulkImportButtonState();
+    }
+
+    function updateBulkImportButtonState() {
+      var btn = document.getElementById('admin-bulk-import-btn');
+      var hasTeacher = !!document.getElementById('admin-bulk-teacher-select').value;
+      document.getElementById('admin-bulk-teacher-alert').style.display = hasTeacher ? 'none' : 'flex';
+
+      if (bulkStep === 'mapping') {
+        btn.disabled = !hasTeacher; // mapping is otherwise always ready once shown
+        return;
+      }
+      var hasData = bulkActiveTab === 'file' ? !!bulkParsedRows : !!document.getElementById('admin-bulk-paste-area').value.trim();
+      btn.disabled = !hasTeacher || !hasData;
+    }
+
+    // Quotes a field only when it actually needs it (contains a comma, quote,
+    // or newline) — matches how fgetcsv() on the backend expects real CSV.
+    function csvEscapeField(value) {
+      var s = String(value === null || value === undefined ? '' : value);
+      if (/[",\n\r]/.test(s)) {
+        s = '"' + s.replace(/"/g, '""') + '"';
+      }
+      return s;
+    }
+
+    function rowsToCsvText(rows) {
+      return rows.map(function (row) {
+        return row.map(csvEscapeField).join(',');
+      }).join('\r\n');
+    }
+
+    // .csv/.xlsx/.xls are all parsed client-side (via SheetJS, which reads
+    // CSV text the same way it reads a real spreadsheet) into a plain
+    // array-of-arrays. That lets one code path decide, from the header row
+    // alone, whether the file already matches our columns or needs mapping —
+    // regardless of which file type was actually uploaded.
+    function handleBulkFileChange(input) {
+      var file = input.files && input.files.length ? input.files[0] : null;
+      document.getElementById('admin-bulk-results').style.display = 'none';
+      bulkParsedRows = null;
+      if (!file) {
+        document.getElementById('admin-bulk-file-name').textContent = '';
+        updateBulkImportButtonState();
+        return;
+      }
+
+      var nameLower = file.name.toLowerCase();
+      var isCsv = nameLower.endsWith('.csv');
+      document.getElementById('admin-bulk-file-name').textContent = file.name + ' (reading...)';
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          var workbook = isCsv
+            ? XLSX.read(e.target.result, { type: 'string' })
+            : XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+          var sheet = workbook.Sheets[workbook.SheetNames[0]];
+          var rows = XLSX.utils.sheet_to_json(sheet, { header: 1, blankrows: false, defval: '' });
+          bulkParsedRows = rows;
+          document.getElementById('admin-bulk-file-name').textContent = file.name + ' (' + Math.max(rows.length - 1, 0) + ' row(s) detected)';
+        } catch (err) {
+          bulkParsedRows = null;
+          document.getElementById('admin-bulk-file-name').textContent = '';
+          showMuToast('Could not read this file. Please check the format.', true);
+        }
+        updateBulkImportButtonState();
+      };
+      reader.onerror = function () {
+        bulkParsedRows = null;
+        document.getElementById('admin-bulk-file-name').textContent = '';
+        updateBulkImportButtonState();
+        showMuToast('Could not read the selected file.', true);
+      };
+      if (isCsv) reader.readAsText(file);
+      else reader.readAsArrayBuffer(file);
+    }
+
+    function handleBulkPasteChange() {
+      document.getElementById('admin-bulk-results').style.display = 'none';
+      updateBulkImportButtonState();
+    }
+
+    // Cells copied from Excel/Google Sheets paste as tab-separated text;
+    // plain comma-separated text works too — whichever delimiter shows up
+    // in the first line wins.
+    function parsePasteToRows(text) {
+      var lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(function (l) { return l.trim() !== ''; });
+      if (!lines.length) return null;
+      var delimiter = lines[0].indexOf('\t') !== -1 ? '\t' : ',';
+      return lines.map(function (line) { return line.split(delimiter); });
+    }
+
+    function normalizeHeaderName(h) {
+      return String(h || '').toLowerCase().replace(/[^a-z]/g, '');
+    }
+
+    var BULK_REQUIRED_HEADERS = ['firstname', 'email'];
+
+    var BULK_TARGET_FIELDS = [
+      { key: 'full_name', label: 'Full Name (single column — auto-splits into first/last)' },
+      { key: 'first_name', label: 'First Name' },
+      { key: 'last_name', label: 'Last Name' },
+      { key: 'email', label: 'Email' },
+      { key: 'condition', label: 'Condition' },
+      { key: 'parent_name', label: 'Parent/Guardian Name' }
+    ];
+
+    var BULK_HEADER_ALIASES = {
+      first_name: ['firstname', 'fname', 'givenname'],
+      last_name: ['lastname', 'lname', 'surname'],
+      full_name: ['fullname', 'name', 'studentname', 'learnername', 'pangalan', 'buongpangalan'],
+      email: ['email', 'emailaddress', 'emailadd', 'emailaddr'],
+      condition: ['condition', 'disability', 'kondisyon', 'disabilitytype'],
+      parent_name: ['parentname', 'guardianname', 'magulang', 'pangalanngmagulang', 'parentguardianname']
+    };
+
+    function autoDetectColumn(headers, key) {
+      var aliases = BULK_HEADER_ALIASES[key] || [];
+      for (var i = 0; i < headers.length; i++) {
+        if (aliases.indexOf(normalizeHeaderName(headers[i])) !== -1) return i;
+      }
+      return -1;
+    }
+
+    // Dispatches the modal's one primary button: at the input step it tries
+    // the fast path (submit as-is if headers already match ours) and falls
+    // back to the mapping step otherwise; at the mapping step it finalizes.
+    function handleBulkPrimaryAction() {
+      if (!document.getElementById('admin-bulk-teacher-select').value) {
+        showMuToast('Please select a teacher first.', true);
+        return;
+      }
+
+      if (bulkStep === 'mapping') {
+        finalizeAndSubmitMapping();
+        return;
+      }
+
+      var rows = bulkActiveTab === 'file' ? bulkParsedRows : parsePasteToRows(document.getElementById('admin-bulk-paste-area').value);
+      if (!rows || rows.length < 2) {
+        showMuToast('No data rows found.', true);
+        return;
+      }
+      bulkParsedRows = rows;
+
+      var normalizedHeaders = rows[0].map(normalizeHeaderName);
+      var alreadyMatches = BULK_REQUIRED_HEADERS.every(function (h) { return normalizedHeaders.indexOf(h) !== -1; });
+
+      if (alreadyMatches) {
+        sendBulkBlob(new Blob([rowsToCsvText(rows)], { type: 'text/csv' }));
+      } else {
+        openBulkMappingStep(rows[0]);
+      }
+    }
+
+    // Fields where the system genuinely needs a value from somewhere — a
+    // name has to come from either the combined or the separate columns.
+    // Everything else (email, condition, parent name) has a safe default
+    // (auto-generate, or just blank), so it's never forced open.
+    var BULK_NAME_FIELDS = ['full_name', 'first_name', 'last_name'];
+
+    function describeBulkMappingState(key, value, headers, nameFound) {
+      if (value === '-2') return { icon: '✓', text: 'Will auto-generate an email for each student' };
+      if (value !== '-1') return { icon: '✓', text: 'Matched to: <strong>' + escBulk(headers[parseInt(value, 10)] || ('Column ' + (parseInt(value, 10) + 1))) + '</strong>' };
+      if (BULK_NAME_FIELDS.indexOf(key) !== -1 && nameFound) return { icon: '—', text: 'Not needed — a name was already found above' };
+      return { icon: '—', text: 'Not set — will be left blank' };
+    }
+
+    function openBulkMappingStep(headers) {
+      bulkStep = 'mapping';
+      document.getElementById('admin-bulk-tabs').style.display = 'none';
+      document.getElementById('admin-bulk-panel-file').style.display = 'none';
+      document.getElementById('admin-bulk-panel-paste').style.display = 'none';
+      document.getElementById('admin-bulk-mapping-panel').style.display = 'block';
+      document.getElementById('admin-bulk-import-btn').textContent = 'Confirm & Import';
+      updateBulkImportButtonState();
+
+      var grid = document.getElementById('admin-bulk-map-grid');
+      grid.innerHTML = '';
+
+      var nameFound = autoDetectColumn(headers, 'full_name') !== -1 || autoDetectColumn(headers, 'first_name') !== -1;
+
+      BULK_TARGET_FIELDS.forEach(function (f) {
+        var detected = autoDetectColumn(headers, f.key);
+        var initialValue = detected !== -1 ? String(detected) : (f.key === 'email' ? '-2' : '-1');
+        var isNameField = BULK_NAME_FIELDS.indexOf(f.key) !== -1;
+        // Only force an open dropdown when the field truly needs a human
+        // decision: it's part of the name and nothing was auto-detected
+        // for ANY of the name columns yet.
+        var forceOpen = isNameField && !nameFound;
+
+        var row = document.createElement('div');
+        row.className = 'admin-bulk-map-row';
+
+        var label = document.createElement('label');
+        label.textContent = f.label;
+        if (isNameField) {
+          var badge = document.createElement('span');
+          badge.className = 'admin-bulk-req-badge';
+          badge.textContent = 'Required';
+          label.appendChild(document.createTextNode(' '));
+          label.appendChild(badge);
+        }
+        row.appendChild(label);
+
+        var select = document.createElement('select');
+        select.id = 'bulk-map-' + f.key;
+        select.appendChild(new Option('— None —', '-1'));
+        if (f.key === 'email') select.appendChild(new Option('— Auto-generate —', '-2'));
+        headers.forEach(function (h, idx) { select.appendChild(new Option(h || ('Column ' + (idx + 1)), String(idx))); });
+        select.value = initialValue;
+        select.onchange = updateBulkMappingPreview;
+
+        if (forceOpen) {
+          row.classList.add('admin-bulk-map-row--attention');
+          row.appendChild(select);
+        } else {
+          // Auto-detected (or safely defaulted) fields are shown as a plain
+          // confirmation — no way to override the match. Overlap between
+          // the teacher's own file and our template is taken as good;
+          // manual correction is reserved only for the required fields
+          // that truly couldn't be resolved (the forceOpen case above).
+          select.style.display = 'none';
+          var state = describeBulkMappingState(f.key, initialValue, headers, nameFound);
+          var locked = document.createElement('div');
+          locked.className = 'admin-bulk-map-locked' + (state.icon === '✓' ? '' : ' admin-bulk-map-locked--neutral');
+          locked.innerHTML = '<span class="admin-bulk-map-locked-icon">' + state.icon + '</span>'
+            + '<span class="admin-bulk-map-locked-text">' + state.text + '</span>';
+          row.appendChild(locked);
+          row.appendChild(select);
+        }
+
+        grid.appendChild(row);
+      });
+
+      updateBulkMappingPreview();
+    }
+
+    function backToBulkInput() {
+      bulkStep = 'input';
+      document.getElementById('admin-bulk-tabs').style.display = 'flex';
+      document.getElementById('admin-bulk-mapping-panel').style.display = 'none';
+      switchBulkTab(bulkActiveTab);
+      document.getElementById('admin-bulk-import-btn').textContent = 'Upload & Import';
+      updateBulkImportButtonState();
+    }
+
+    function slugifyForEmail(s) {
+      return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/^\.+|\.+$/g, '') || 'user';
+    }
+
+    function getBulkMappedValue(row, key) {
+      var sel = document.getElementById('bulk-map-' + key);
+      if (!sel || sel.value === '-1' || sel.value === '-2') return '';
+      var idx = parseInt(sel.value, 10);
+      return row[idx] !== undefined && row[idx] !== null ? String(row[idx]).trim() : '';
+    }
+
+    // Turns the raw parsed rows + the admin's column-mapping choices into
+    // the exact 5-column shape admin_bulk_add_accounts.php expects — every
+    // row is a Student, enrolled under whichever teacher is selected above
+    // (sent separately, not as a per-row column).
+    function buildBulkMappedRows() {
+      var dataRows = bulkParsedRows.slice(1);
+      var emailMode = document.getElementById('bulk-map-email').value;
+      var out = [['first_name', 'last_name', 'email', 'condition', 'parent_name']];
+      var usedEmails = {};
+
+      dataRows.forEach(function (row) {
+        if (!row.some(function (c) { return String(c || '').trim() !== ''; })) return;
+
+        var fullNameVal = getBulkMappedValue(row, 'full_name');
+        var firstName = getBulkMappedValue(row, 'first_name');
+        var lastName = getBulkMappedValue(row, 'last_name');
+        if (fullNameVal) {
+          var parts = fullNameVal.split(/\s+/);
+          firstName = parts.shift() || '';
+          lastName = parts.join(' ');
+        }
+
+        var email = emailMode === '-2' ? '' : getBulkMappedValue(row, 'email');
+        if (!email) {
+          var base = slugifyForEmail(firstName + '.' + lastName);
+          var candidate = base + '@spedalm.local';
+          var n = 1;
+          while (usedEmails[candidate]) { candidate = base + n + '@spedalm.local'; n++; }
+          email = candidate;
+        }
+        usedEmails[email] = true;
+
+        out.push([firstName, lastName, email, getBulkMappedValue(row, 'condition'), getBulkMappedValue(row, 'parent_name')]);
+      });
+
+      return out;
+    }
+
+    function updateBulkMappingPreview() {
+      var rows = buildBulkMappedRows();
+      var table = document.getElementById('admin-bulk-preview-table');
+      var headerRow = '<tr>' + rows[0].map(function (h) { return '<th>' + h + '</th>'; }).join('') + '</tr>';
+      var bodyRows = rows.slice(1, 6).map(function (r) {
+        return '<tr>' + r.map(function (c) { return '<td>' + escBulk(c) + '</td>'; }).join('') + '</tr>';
+      }).join('');
+      table.innerHTML = headerRow + (bodyRows || '<tr><td colspan="5">No rows to preview.</td></tr>');
+    }
+
+    function finalizeAndSubmitMapping() {
+      var rows = buildBulkMappedRows();
+      if (rows.length < 2) {
+        showMuToast('No valid rows to import.', true);
+        return;
+      }
+      sendBulkBlob(new Blob([rowsToCsvText(rows)], { type: 'text/csv' }));
+    }
+
+    function sendBulkBlob(blob) {
+      var btn = document.getElementById('admin-bulk-import-btn');
+      var busyLabel = 'Importing...';
+      var idleLabel = bulkStep === 'mapping' ? 'Confirm & Import' : 'Upload & Import';
+      btn.disabled = true;
+      btn.textContent = busyLabel;
+
+      var formData = new FormData();
+      formData.append('csv_file', blob, 'bulk_import.csv');
+      formData.append('assigned_teacher_id', document.getElementById('admin-bulk-teacher-select').value);
+      formData.append('csrf_token', _csrfToken);
+
+      fetch('ADMIN_BACKEND/admin_bulk_add_accounts.php', {
+        method: 'POST',
+        body: formData
+      })
+      .then(function (response) { return response.json(); })
+      .then(function (result) {
+        btn.textContent = idleLabel;
+        btn.disabled = false;
+        if (!result.success) {
+          showMuToast(result.message || 'Bulk import failed.', true);
+          return;
+        }
+        renderBulkResults(result);
+        if (result.created > 0) {
+          loadAccounts();
+          updateStats();
+          showMuToast(result.created + ' account(s) added.');
+        }
+      })
+      .catch(function () {
+        btn.textContent = idleLabel;
+        btn.disabled = false;
+        showMuToast('Bulk import request failed.', true);
+      });
+    }
+
+    function renderBulkResults(result) {
+      var skipped = result.results.filter(function (r) { return r.status !== 'created'; });
+      document.getElementById('admin-bulk-created-count').textContent = result.created;
+      document.getElementById('admin-bulk-skipped-count').textContent = skipped.length;
+      var list = document.getElementById('admin-bulk-results-list');
+      if (!skipped.length) {
+        list.innerHTML = '<div class="admin-bulk-results-row created"><span>All rows imported successfully.</span></div>';
+      } else {
+        list.innerHTML = skipped.map(function (r) {
+          return '<div class="admin-bulk-results-row">'
+            + '<span class="bulk-row-email">Row ' + r.row + (r.email ? ' &middot; ' + escBulk(r.email) : '') + '</span>'
+            + '<span class="bulk-row-reason">' + escBulk(r.reason || 'Skipped') + '</span>'
+            + '</div>';
+        }).join('');
+      }
+      document.getElementById('admin-bulk-results').style.display = 'block';
+    }
+
+    function escBulk(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
     function loadAccounts() {
       fetch('ADMIN_BACKEND/admin_list_accounts.php?_t=' + Date.now(), { cache: 'no-store' })
         .then(function (response) { return response.json(); })
@@ -1386,8 +1864,8 @@
     function deleteSelectedAccounts() {
       if (!deleteSelection.size) return;
       showConfirmModal(
-        'Move selected account(s) to Deleted Accounts? You can restore them later.',
-        'Delete', 'Delete accounts?'
+        'Archive selected account(s)? They\'ll move to Archived Accounts and you can restore them later.',
+        'Archive', 'Archive accounts?'
       ).then(function (ok) {
         if (!ok) return;
 
@@ -1409,13 +1887,13 @@
             loadAccounts();
             updateDeleteCount();
             updateStats();
-            showMuToast('Account(s) moved to Deleted Accounts.');
+            showMuToast('Account(s) moved to Archived Accounts.');
           } else {
-            showMuToast(result.message || 'Delete failed.', true);
+            showMuToast(result.message || 'Archive failed.', true);
           }
         })
         .catch(function () {
-          showMuToast('Delete request failed.', true);
+          showMuToast('Archive request failed.', true);
         });
       });
     }
