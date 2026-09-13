@@ -1858,10 +1858,18 @@ function initActivityTheme(){
   (function(){
     var backEl = document.querySelector('.bgl-back-btn');
     if (!backEl) return;
+    // Back only belongs on Review Activities when resuming something that
+    // already exists there (edit_pub_id/draft_id in the URL) — a fresh
+    // template pick from Generate Materials has neither param, so Back
+    // should return there instead, not to a list this activity isn't on yet.
+    var qp = new URLSearchParams(location.search);
+    var isResuming = !!(qp.get('edit_pub_id') || qp.get('draft_id'));
+    var dest = isResuming ? '../Teacher_activies.html' : '../Teacher_generate.html';
+    backEl.setAttribute('href', dest);
+    backEl.title = isResuming ? 'Back to Review Activities' : 'Back to Generate Materials';
     backEl.addEventListener('click', function(e){
       if (!_editingPub || !_editingPub.db_activity_id || !_editingPub.teacherId || _editingPub._saved) return;
       e.preventDefault();
-      var dest = backEl.getAttribute('href');
       fetch('../TEACHER_BACKEND/teacher_lock_activity.php', {
         method: 'POST',
         body: new URLSearchParams({ action: 'lock', teacher_id: _editingPub.teacherId, activity_id: _editingPub.db_activity_id, activity_title: _editingPub.title || 'Activity' })
