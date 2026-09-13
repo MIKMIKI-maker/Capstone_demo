@@ -11,9 +11,30 @@ function setActivityLocked($conn, $teacher_id, $activity_id, $locked) {
         $conn->query("ALTER TABLE teacher_activities ADD COLUMN is_locked TINYINT(1) DEFAULT 0");
     }
     $lockedInt = $locked ? 1 : 0;
-    $stmt = $conn->prepare("UPDATE teacher_activities SET is_locked = ? WHERE id = ? AND teacher_id = ?");
+
+    // Also flip status to draft the moment editing starts (Edit clicked)
+    // and back to published once it's saved (see teacher_lock_activity.php
+    // and teacher_update_activity.php, the only two callers). This means:
+    // - Review Activities' Published list no longer needs to guess which
+    //   row is "the real one" when duplicate titles exist — a row being
+    //   edited just isn't published anymore until the teacher re-confirms
+    //   it, so there's nothing stale left sitting in Published to hide.
+    // - Editing a published activity now genuinely disappears from the
+    //   student's materials list while in progress (status='draft'),
+    //   rather than staying visible-but-blocked as before — student_get_
+    //   materials.php only ever checked status='published', never is_locked.
+    // Restricted to WHERE status='published' on lock so this can't
+    // accidentally "publish" a genuine draft that gets locked for some
+    // unrelated reason; unlock is unconditional since its only caller
+    // (teacher_update_activity.php) only ever runs for a just-edited,
+    // previously-published activity.
+    if ($locked) {
+        $stmt = $conn->prepare("UPDATE teacher_activities SET is_locked = 1, status = 'draft' WHERE id = ? AND teacher_id = ? AND status = 'published'");
+    } else {
+        $stmt = $conn->prepare("UPDATE teacher_activities SET is_locked = 0, status = 'published' WHERE id = ? AND teacher_id = ?");
+    }
     if (!$stmt) return;
-    $stmt->bind_param("iii", $lockedInt, $activity_id, $teacher_id);
+    $stmt->bind_param("ii", $activity_id, $teacher_id);
     $stmt->execute();
     $stmt->close();
 }

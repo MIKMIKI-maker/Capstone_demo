@@ -44,9 +44,16 @@ if ($single_id) {
     echo json_encode($activity);
 } else {
     /*
-     * Deduplicated list: one row per activity_title.
-     * For each title: latest published row wins; fallback to latest draft row.
-     * This prevents duplicates caused by publish-creates-new-row behaviour.
+     * Every published row is shown — no dedup by title. That used to hide
+     * whichever wasn't "the latest" per title, including a real, currently-
+     * published activity whenever an accidental duplicate (e.g. a publish
+     * click repeated because of a slow connection) or an edit-in-progress
+     * happened to share its title. Editing no longer leaves a stale
+     * published duplicate behind anyway — see setActivityLocked() in
+     * teacher_activity_lock_helpers.php, which now flips a row to 'draft'
+     * for the duration of the edit.
+     * Drafts still dedup to the latest per title, so in-progress autosaves
+     * of the same not-yet-published activity don't clutter the Drafts tab.
      */
     $stmt = $conn->prepare(
         "SELECT ta.id, ta.activity_title, ta.activity_description,
@@ -63,14 +70,13 @@ if ($single_id) {
                 ) AS learner
          FROM teacher_activities ta
          WHERE ta.teacher_id = ?
-           AND ta.id IN (
-               SELECT COALESCE(
-                   MAX(CASE WHEN status = 'published' THEN id END),
-                   MAX(CASE WHEN status = 'draft'     THEN id END)
+           AND (
+               ta.status = 'published'
+               OR ta.id IN (
+                   SELECT MAX(id) FROM teacher_activities
+                   WHERE teacher_id = ? AND status = 'draft'
+                   GROUP BY activity_title
                )
-               FROM teacher_activities
-               WHERE teacher_id = ?
-               GROUP BY activity_title
            )
          ORDER BY ta.created_at DESC"
     );

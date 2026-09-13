@@ -315,17 +315,6 @@
                     });
                 });
 
-                // Titles covered by local PUBLISHED items — backend rows with same title are
-                // redundant in the Published tab (local entry is richer: learner, grading, Unpublish).
-                // Computed AFTER the filter above (not before, at page load) — a local entry
-                // whose db_activity_id never got written back (e.g. the publish request's
-                // response never arrived because of a slow connection or an early
-                // navigation away) is dropped by that filter, but its title would otherwise
-                // still land here and wrongly suppress the real backend row for that
-                // activity — hiding it from Review Activities even though it saved fine
-                // server-side and students can already see it.
-                var localPubTitles = new Set(localPublished.map(function(p) { return p.title.trim().toLowerCase(); }));
-
                 // Replace legacy local-storage labels such as student1|ID with
                 // the current learner names resolved by the backend.
                 localPublished.forEach(function(localItem) {
@@ -338,14 +327,15 @@
                     }
                 });
 
-                // Exclude backend rows:
-                // 1. Covered by local DB ID (exact match)
-                // 2. Published rows whose title is already covered by a local published entry
-                //    (avoid showing "—" learner duplicate alongside the richer local entry)
+                // Exclude a backend row only when it's the exact same row as a
+                // local entry (exact db_activity_id match) — every other
+                // published row shows, even if its title happens to match
+                // another one. Duplicate titles are now expected (e.g. two
+                // separate accidental publishes) rather than something to
+                // paper over, so a title-based exclusion here would just
+                // hide a real published activity again.
                 var dedupedBackend = backend.filter(function(a) {
-                    if (coveredDbIds.has(String(a.id))) return false;
-                    if (a.status === 'published' && localPubTitles.has(a.title.trim().toLowerCase())) return false;
-                    return true;
+                    return !coveredDbIds.has(String(a.id));
                 });
 
                 // allActivities keeps ALL local drafts + ALL local published + filtered backend
