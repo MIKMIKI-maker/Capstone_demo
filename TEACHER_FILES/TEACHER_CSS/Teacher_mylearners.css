@@ -141,6 +141,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-s
 /* ── ACTIVITY HISTORY ── */
 .teacher-history-card { background: var(--white); border-radius: 18px; padding: 22px 24px; box-shadow: var(--shadow-sm); border: 1px solid #E8EDF4; }
 .teacher-history-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 16px; }
+.teacher-history-scroll { max-height: 480px; overflow-y: auto; padding-right: 4px; }
 .teacher-history-row { display: grid; grid-template-columns: 96px minmax(130px, 200px) 60px 70px 140px 140px; align-items: center; column-gap: 14px; padding: 14px 0; border-bottom: 1px solid #F1F5F9; }
 .teacher-history-row:hover { background: #FAFBFC; }
 .teacher-history-row:last-child { border-bottom: none; }
@@ -197,7 +198,7 @@ body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-s
 .teacher-ring-label { font-size: 15px !important; }
 
 /* ── ACTIVITY HISTORY ENHANCEMENTS ── */
-.teacher-history-header { display: grid; grid-template-columns: 96px minmax(130px, 200px) 60px 70px 140px 140px; align-items: center; column-gap: 14px; padding: 0 0 10px; border-bottom: 2px solid #E8EDF4; margin-bottom: 4px; }
+.teacher-history-header { display: grid; grid-template-columns: 96px minmax(130px, 200px) 60px 70px 140px 140px; align-items: center; column-gap: 14px; padding: 0 0 10px; border-bottom: 2px solid #E8EDF4; margin-bottom: 4px; position: sticky; top: 0; background: var(--white); z-index: 1; }
 .teacher-history-header span { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
 .teacher-history-header span:nth-child(3) { text-align: right; }
 .teacher-history-header span:nth-child(4),

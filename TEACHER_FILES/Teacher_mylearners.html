@@ -214,11 +214,13 @@
                         <!-- ACTIVITY HISTORY — backend: inject rows -->
                         <div class="teacher-history-card">
                             <div class="teacher-history-title">Activity History</div>
-                            <div class="teacher-history-row">
-                                <span class="teacher-history-date">— —, ——</span>
-                                <span class="teacher-history-activity">—</span>
-                                <span class="teacher-history-score" style="color:#CBD5E1;">—</span>
-                                <span class="teacher-history-badge badge-notstarted">—</span>
+                            <div class="teacher-history-scroll" id="teacher-history-scroll">
+                                <div class="teacher-history-row">
+                                    <span class="teacher-history-date">— —, ——</span>
+                                    <span class="teacher-history-activity">—</span>
+                                    <span class="teacher-history-score" style="color:#CBD5E1;">—</span>
+                                    <span class="teacher-history-badge badge-notstarted">—</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -519,18 +521,16 @@
         // ── Activity history ──────────────────────────────────────
         var _historyActivities = [];
         function renderActivityHistory(activities) {
-            const container = document.querySelector('.teacher-history-card');
+            const container = document.getElementById('teacher-history-scroll');
             if (!container) return;
             _historyActivities = activities || [];
 
             if (!activities || activities.length === 0) {
-                container.innerHTML = '<div class="teacher-history-title">Activity History</div>' +
-                    '<div class="teacher-history-empty">No activities assigned yet.</div>';
+                container.innerHTML = '<div class="teacher-history-empty">No activities assigned yet.</div>';
                 return;
             }
 
-            let html = '<div class="teacher-history-title">Activity History</div>' +
-                '<div class="teacher-history-header">' +
+            let html = '<div class="teacher-history-header">' +
                 '<span>Date</span><span>Activity</span><span>Score</span><span>Retakes</span><span>Assistance Level</span><span>Status</span></div>';
 
             activities.forEach((act, actIdx) => {
