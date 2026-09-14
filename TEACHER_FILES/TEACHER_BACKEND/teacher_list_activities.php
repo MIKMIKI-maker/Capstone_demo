@@ -44,16 +44,19 @@ if ($single_id) {
     echo json_encode($activity);
 } else {
     /*
-     * Every published row is shown — no dedup by title. That used to hide
-     * whichever wasn't "the latest" per title, including a real, currently-
-     * published activity whenever an accidental duplicate (e.g. a publish
-     * click repeated because of a slow connection) or an edit-in-progress
-     * happened to share its title. Editing no longer leaves a stale
-     * published duplicate behind anyway — see setActivityLocked() in
-     * teacher_activity_lock_helpers.php, which now flips a row to 'draft'
-     * for the duration of the edit.
-     * Drafts still dedup to the latest per title, so in-progress autosaves
-     * of the same not-yet-published activity don't clutter the Drafts tab.
+     * Every row is shown — no dedup by title, for drafts or published.
+     * Drafts used to collapse to the latest per title (MAX(id) GROUP BY
+     * activity_title), meant to hide "in-progress autosave clutter." But
+     * autosaves of the same draft already update the same row in place via
+     * db_draft_id (see teacher_save_draft.php) — a new row only appears when
+     * the teacher genuinely starts a separate draft, so the dedup instead
+     * hid real, distinct drafts that happened to share a title (e.g. two
+     * separate "Match the Pictures" activities). Published rows were fixed
+     * the same way earlier: an accidental duplicate publish, or an
+     * edit-in-progress, used to hide a real published activity sharing a
+     * title. Editing no longer leaves a stale published duplicate behind
+     * anyway — see setActivityLocked() in teacher_activity_lock_helpers.php,
+     * which now flips a row to 'draft' for the duration of the edit.
      */
     $stmt = $conn->prepare(
         "SELECT ta.id, ta.activity_title, ta.activity_description,
@@ -70,17 +73,9 @@ if ($single_id) {
                 ) AS learner
          FROM teacher_activities ta
          WHERE ta.teacher_id = ?
-           AND (
-               ta.status = 'published'
-               OR ta.id IN (
-                   SELECT MAX(id) FROM teacher_activities
-                   WHERE teacher_id = ? AND status = 'draft'
-                   GROUP BY activity_title
-               )
-           )
          ORDER BY ta.updated_at DESC"
     );
-    $stmt->bind_param("ii", $teacher_id, $teacher_id);
+    $stmt->bind_param("i", $teacher_id);
     $stmt->execute();
     $result = $stmt->get_result();
 
