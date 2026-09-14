@@ -1425,7 +1425,7 @@ function initActivityTheme(){
 
     if (_stuMode) {
       _stuLastScore = correctCount; _stuLastTotal = totalItems;
-      _stuSlideScores[state.currentIndex] = { correct: correctCount, total: totalItems, ansItems: _mtgResults.map(function(r){return{label:(r.item.left.img?'':r.item.left.emoji)||'?',img:r.item.left.img||'',studentAnswer:r.matchedItem?(r.matchedItem.right.img?'📷':r.matchedItem.right.emoji)||'—':'—',correctAnswer:(r.item.right.img?'📷':r.item.right.emoji)||'—',correct:r.correct};}) };
+      _stuSlideScores[state.currentIndex] = { correct: correctCount, total: totalItems, ansItems: _mtgResults.map(function(r){return{label:r.item.left.img?'':(r.item.left.emoji||'?'),img:r.item.left.img||'',studentAnswer:r.matchedItem?(r.matchedItem.right.img||r.matchedItem.right.emoji||'—'):'—',correctAnswer:r.item.right.img||r.item.right.emoji||'—',correct:r.correct};}) };
       var _ts = state.activities.length, _isLast = state.currentIndex >= _ts - 1;
       var _allDone = _stuSlideScores.filter(Boolean).length === _ts && _stuSlideScores.every(function(s){ return s && (s.correct / s.total) >= PASS_THRESHOLD; });
       if (_ts > 1 && !_isLast && percent >= PASS_THRESHOLD) {
@@ -2394,6 +2394,10 @@ function initActivityTheme(){
             return _isImgLike(it.thought) ? compressItemThumb(it.thought).then(function(thumb){ it.thought = thumb; }) : Promise.resolve();
           })).concat(_struggledRaw.map(function(it){
             return _isImgLike(it.correct) ? compressItemThumb(it.correct).then(function(thumb){ it.correct = thumb; }) : Promise.resolve();
+          })).concat(_allAnsItems.map(function(it){
+            return _isImgLike(it.studentAnswer) ? compressItemThumb(it.studentAnswer).then(function(thumb){ it.studentAnswer = thumb; }) : Promise.resolve();
+          })).concat(_allAnsItems.map(function(it){
+            return _isImgLike(it.correctAnswer) ? compressItemThumb(it.correctAnswer).then(function(thumb){ it.correctAnswer = thumb; }) : Promise.resolve();
           }))).then(function(){
             var _struggledItems = _struggledRaw.map(function(it){ return { label: it.label, correct: it.correct, thought: it.thought, img: it.img }; });
             var record = { pubId:_stuPubId, studentId: sessionStorage.getItem('student_record_id')||'', title:pub.title||'Activity', type:'Matching',

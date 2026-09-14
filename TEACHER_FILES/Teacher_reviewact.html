@@ -261,6 +261,19 @@ var _currentSub = null; // currently open submission
 
 /* ── Helpers ── */
 function esc(s){ var d=document.createElement('div');d.textContent=s||'';return d.innerHTML; }
+// Matching-type submissions can carry the actual picture (a data: URI or an
+// uploaded image URL) as the student's / correct answer instead of a text
+// label — render those as a thumbnail instead of dumping the raw URL as text.
+function isImgLike(s){ return typeof s === 'string' && (s.indexOf('data:image') === 0 || /^https?:\/\//i.test(s)); }
+// esc() only escapes for text-node position (no quote escaping), which isn't
+// safe to drop straight into an attribute value — a URL containing a `"`
+// could otherwise break out of src="..." and inject markup.
+function escAttr(s){ return esc(s).replace(/"/g, '&quot;'); }
+function answerCell(val){
+  return isImgLike(val)
+    ? '<img src="' + escAttr(val) + '" style="width:28px;height:28px;object-fit:cover;border-radius:6px;vertical-align:middle;" alt="">'
+    : esc(val || '—');
+}
 // MySQL datetime strings are UTC but carry no timezone marker, so appending
 // 'Z' keeps the Date constructor from treating them as already being in the
 // browser's local time (PHT, off by 8 hours).
@@ -423,14 +436,14 @@ function openModal(s) {
       itemNum++;
       var ok = it.correct;
       var itemCell = it.img
-        ? '<img src="' + it.img + '" style="width:28px;height:28px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:6px;" alt="">' + esc(it.label || '')
+        ? '<img src="' + escAttr(it.img) + '" style="width:28px;height:28px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:6px;" alt="">' + esc(it.label || '')
         : esc(it.label || '—');
       tbody.insertAdjacentHTML('beforeend',
         '<tr>' +
           '<td style="color:#94a3b8;">' + itemNum + '</td>' +
           '<td>' + itemCell + '</td>' +
-          '<td>' + esc(it.studentAnswer || '—') + '</td>' +
-          '<td>' + esc(it.correctAnswer || '—') + '</td>' +
+          '<td>' + answerCell(it.studentAnswer) + '</td>' +
+          '<td>' + answerCell(it.correctAnswer) + '</td>' +
           '<td class="' + (ok ? 'rv-ok' : 'rv-bad') + '">' + (ok ? '✓' : '✗') + '</td>' +
         '</tr>'
       );
