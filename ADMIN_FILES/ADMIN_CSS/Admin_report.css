@@ -1,0 +1,466 @@
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+  background: #eaf0fc;
+}
+
+body { display: flex; }
+
+/* ===== SIDEBAR ===== */
+.admin-sidebar {
+  width: 260px;
+  min-width: 260px;
+  background: #1E3A8A;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.admin-sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 26px 20px 22px;
+  border-bottom: 1px solid rgba(255,255,255,.10);
+}
+
+.admin-sidebar-logo-img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.admin-sidebar-logo-text { display: flex; flex-direction: column; }
+
+.admin-sidebar-title {
+  display: block;
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  font-family: 'Poppins', sans-serif;
+  line-height: 1.2;
+}
+
+.admin-sidebar-sub {
+  display: block;
+  color: rgba(255,255,255,.55);
+  font-size: 12px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.admin-sidebar-nav {
+  flex: 1;
+  padding: 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  border-radius: 12px;
+  color: rgba(255,255,255,.65);
+  text-decoration: none;
+  font-size: 14px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  transition: .25s ease;
+  position: relative;
+}
+
+.admin-nav-item i:first-child { font-size: 16px; width: 18px; }
+
+.admin-nav-arrow {
+  margin-left: auto;
+  font-size: 11px !important;
+  opacity: 0;
+  transition: .25s ease;
+}
+
+.admin-nav-item:hover { background: rgba(255,255,255,.10); color: #fff; }
+.admin-nav-item:hover .admin-nav-arrow { opacity: 1; }
+.admin-nav-item.active { background: rgba(255,255,255,.18); color: #fff; font-weight: 600; }
+.admin-nav-item.active .admin-nav-arrow { opacity: 1; }
+
+.admin-sidebar-footer {
+  padding: 16px 12px 20px;
+  border-top: 1px solid rgba(255,255,255,.10);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(255,255,255,.08);
+  border-radius: 12px;
+}
+
+.admin-user-avatar {
+  width: 38px;
+  height: 38px;
+  background: #F59E0B;
+  color: #fff;
+  border-radius: 50%;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-family: 'Poppins', sans-serif;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.admin-user-info { display: flex; flex-direction: column; }
+
+.admin-user-name {
+  display: block;
+  color: #fff;
+  font-size: 13px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.admin-user-role {
+  display: block;
+  color: rgba(255,255,255,.50);
+  font-family: 'Poppins', sans-serif;
+  font-size: 12px;
+}
+
+.admin-signout-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  color: rgba(255,255,255,.55);
+  text-decoration: none;
+  font-size: 13px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  transition: .25s ease;
+}
+
+.admin-signout-btn:hover { background: rgba(255,255,255,.08); color: #fff; }
+
+
+/* ===== MAIN ===== */
+.admin-main {
+  flex: 1;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 28px 32px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Topbar ── */
+.admin-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.admin-page-title {
+  font-family: 'Nunito', sans-serif;
+  font-size: 26px;
+  font-weight: 900;
+  color: #1a1a2e;
+}
+
+.admin-page-sub { font-size: 13px; color: #999; margin-top: 3px; }
+
+.admin-topbar-right { display: flex; align-items: center; gap: 12px; }
+
+.admin-notif-btn {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  background: #fff;
+  border: 1px solid #E2E8F0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: #1E3A8A;
+  font-size: 17px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  transition: .25s ease;
+  flex-shrink: 0;
+}
+
+.admin-notif-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.10); }
+
+.admin-notif-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  background: #EF4444;
+  border-radius: 50%;
+  border: 2px solid #fff;
+}
+
+
+/* ===== REPORTS CARD ===== */
+.rp-card {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  border: 1px solid #f0ebe1;
+  padding: 8px 22px 26px;
+}
+
+/* ── Term tabs ── */
+.rp-tabs {
+  display: flex;
+  gap: 0;
+  padding: 14px 0 0;
+  border-bottom: 1.5px solid #f0ebe1;
+  margin-bottom: 22px;
+}
+
+.rp-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px 14px;
+  border: none;
+  background: transparent;
+  font-family: 'Poppins', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #aaa;
+  cursor: pointer;
+  border-bottom: 2.5px solid transparent;
+  margin-bottom: -1.5px;
+  transition: color .2s, border-color .2s;
+}
+
+.rp-tab:hover { color: #555; }
+.rp-tab.active { color: #1E3A8A; border-bottom-color: #1E3A8A; }
+
+/* ── Empty / placeholder state ── */
+.rp-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  padding: 48px 20px;
+}
+
+.rp-placeholder-icon { font-size: 40px; margin-bottom: 4px; }
+.rp-placeholder-title { font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 800; color: #999; }
+.rp-placeholder-desc { font-size: 12.5px; color: #bbb; max-width: 340px; line-height: 1.6; }
+
+/* ── Report preview ── */
+.rp-preview-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.rp-preview-title {
+  font-family: 'Nunito', sans-serif;
+  font-size: 18px;
+  font-weight: 900;
+  color: #1a1a2e;
+}
+
+.rp-preview-sub { font-size: 12.5px; color: #aaa; margin-top: 3px; }
+
+.rp-preview-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+.rp-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 20px;
+  background: #1E3A8A;
+  color: #fff;
+  border: 1.5px solid #1E3A8A;
+  border-radius: 12px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s, transform .15s;
+  box-shadow: 0 3px 10px rgba(30,58,138,.25);
+  flex-shrink: 0;
+}
+
+.rp-action-btn:hover { background: #14307a; transform: translateY(-1px); }
+
+.rp-action-btn--outline { background: #fff; color: #1E3A8A; box-shadow: none; }
+.rp-action-btn--outline:hover { background: #EFF6FF; transform: translateY(-1px); }
+
+.rp-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  max-width: 520px;
+}
+
+.rp-stat-card {
+  background: #fafaf8;
+  border: 1px solid #f0ebe1;
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.rp-stat-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.rp-stat-icon--blue   { background: #EFF6FF; }
+.rp-stat-icon--orange { background: #FFFBEB; }
+
+.rp-stat-num {
+  font-family: 'Nunito', sans-serif;
+  font-size: 26px;
+  font-weight: 900;
+  color: #1a1a2e;
+  line-height: 1;
+}
+
+.rp-stat-label { font-size: 12.5px; color: #888; margin-top: 4px; font-weight: 600; }
+
+.rp-preview-note { font-size: 12px; color: #bbb; margin-top: 18px; line-height: 1.6; max-width: 560px; }
+
+/* ── Teacher / Student name lists (on-screen) ── */
+.rp-list-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 22px;
+  max-width: 760px;
+}
+
+.rp-list-block {
+  border: 1px solid #f0ebe1;
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: #fafaf8;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.rp-list-title {
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: #1a1a2e;
+  margin-bottom: 10px;
+}
+
+.rp-name-list {
+  list-style: decimal;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rp-name-list li { font-size: 13px; color: #444; }
+.rp-list-loading, .rp-list-empty { list-style: none; margin-left: -20px; color: #bbb; font-size: 12.5px; }
+
+
+/* ===== PRINT-ONLY REPORT ARTICLE ===== */
+.rp-print-report { display: none; color: #172554; font-family: Georgia, 'Times New Roman', serif; }
+.rp-print-header { display: flex; align-items: center; gap: 16px; padding-bottom: 14px; border-bottom: 3px solid #1E3A8A; }
+.rp-print-header img { width: 64px; height: 64px; object-fit: contain; }
+.rp-print-header h1 { font-size: 22px; color: #1E3A8A; }
+.rp-print-header p { margin-top: 3px; font-size: 11px; color: #475569; }
+.rp-print-meta { display: flex; justify-content: space-between; padding: 12px 0; font-size: 11px; color: #475569; }
+.rp-print-report h2 { margin: 15px 0 7px; padding-bottom: 4px; border-bottom: 1px solid #93C5FD; color: #1E3A8A; font-size: 13px; }
+.rp-print-summary { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; max-width: 420px; }
+.rp-print-summary > div { border: 1px solid #CBD5E1; padding: 9px; }
+.rp-print-summary span, .rp-print-summary strong { display: block; }
+.rp-print-summary span { color: #64748B; font-size: 9px; text-transform: uppercase; }
+.rp-print-summary strong { margin-top: 4px; font-size: 16px; }
+.rp-print-basis { padding: 9px 10px; background: #F8FAFC; font-size: 11px; line-height: 1.5; }
+.rp-print-list-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+.rp-print-list-title { font-size: 11px; font-weight: 700; color: #1E3A8A; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 4px; }
+.rp-print-list { list-style: decimal; padding-left: 18px; font-size: 11px; line-height: 1.7; }
+/* Each teacher/student keeps its whole row together instead of splitting
+   its number from its name across a page break. */
+.rp-print-list li { break-inside: avoid; page-break-inside: avoid; }
+.rp-print-notes { min-height: 58px; border: 1px solid #CBD5E1; padding: 10px; font-size: 11px; line-height: 1.5; }
+.rp-print-signatures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 46px; text-align: center; font-size: 10px; }
+
+@media print {
+  *, *::before, *::after { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { height: auto; overflow: visible; background: #fff; }
+  body.rp-report-print > *:not(.rp-print-report) { display: none !important; }
+  body.rp-report-print .rp-print-report { display: block !important; }
+  @page { margin: 12mm; size: auto; }
+}
+
+/* Download PDF needs the print article actually laid out on-screen (not just
+   under @media print) so html2canvas can render it — shown off-screen at a
+   fixed width so the captured page looks the same regardless of the admin's
+   own window size. */
+body.rp-capture-mode .rp-print-report {
+  display: block;
+  position: fixed;
+  top: 0;
+  left: -10000px;
+  width: 800px;
+  padding: 24px;
+  background: #fff;
+}
+
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  html, body { overflow: auto; height: auto; }
+  body { flex-direction: column; }
+  .admin-sidebar { width: 100%; height: auto; min-width: unset; }
+  .admin-sidebar-nav { flex-direction: row; flex-wrap: wrap; }
+  .admin-sidebar-footer { display: none; }
+  .admin-main { height: auto; overflow-y: unset; padding: 16px; }
+  .admin-topbar-left { width: 100%; text-align: center; }
+  .rp-tabs { flex-wrap: wrap; row-gap: 6px; }
+  .rp-stat-grid { grid-template-columns: 1fr; max-width: 100%; }
+  .rp-preview-actions { width: 100%; flex-direction: column; }
+  .rp-action-btn { width: 100%; justify-content: center; }
+  .rp-list-grid { grid-template-columns: 1fr; max-width: 100%; }
+}
