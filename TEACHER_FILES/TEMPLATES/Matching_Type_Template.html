@@ -2103,7 +2103,7 @@ function initActivityTheme(){
           cv.height = Math.round(img.height * ratio);
           cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
           resolve(cv.toDataURL('image/jpeg', 0.6));
-        } catch(e) { resolve(''); } // cross-origin image tainted the canvas — skip the thumbnail, don't block submission
+        } catch(e) { resolve(dataURL); } // cross-origin image tainted the canvas so it can't be compressed — fall back to the original URL; a plain <img> can still display it fine, only reading its pixels into a canvas needs CORS
       };
       img.onerror = function() { resolve(''); };
       img.src = dataURL;

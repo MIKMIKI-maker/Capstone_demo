@@ -487,17 +487,19 @@
                         var _lbl = item.label || '?';
                         var _isIcon = _lbl.length <= 2; // short emoji/glyph vs. a text fallback like "Item 4"
                         var _iconHtml = item.img
-                            ? '<img src="' + item.img + '" class="tn-struggle-thumb" alt="">'
+                            ? '<img src="' + escHtml(item.img) + '" class="tn-struggle-thumb" alt="">'
                             : '<span class="tn-struggle-emoji' + (_isIcon ? '' : ' tn-struggle-emoji--text') + '">' + escHtml(_lbl) + '</span>';
                         // A wrongly-picked or correct answer that was itself a picture (not an
-                        // emoji) arrives here as a compressed data-URL thumbnail — show it as an
-                        // actual inline image instead of dumping the raw data-URL as escaped text.
-                        function _isImgData(s){ return typeof s === 'string' && s.indexOf('data:image') === 0; }
+                        // emoji) arrives here as a compressed data-URL thumbnail, or — when the
+                        // teacher's image URL couldn't be compressed (cross-origin) — the original
+                        // URL itself. Either way, show it as an actual inline image instead of
+                        // dumping the raw URL as escaped text.
+                        function _isImgData(s){ return typeof s === 'string' && (s.indexOf('data:image') === 0 || /^https?:\/\//i.test(s)); }
                         var _thoughtHtml = _isImgData(item.thought)
-                            ? '<img src="' + item.thought + '" class="tn-struggle-inline-thumb" alt="">'
+                            ? '<img src="' + escHtml(item.thought) + '" class="tn-struggle-inline-thumb" alt="">'
                             : '<b>' + escHtml(item.thought || '') + '</b>';
                         var _correctHtml = _isImgData(item.correct)
-                            ? '<img src="' + item.correct + '" class="tn-struggle-inline-thumb" alt="">'
+                            ? '<img src="' + escHtml(item.correct) + '" class="tn-struggle-inline-thumb" alt="">'
                             : escHtml(item.correct || '');
                         chipsWrap.innerHTML += '<div class="tn-struggle-item">'
                             + _iconHtml

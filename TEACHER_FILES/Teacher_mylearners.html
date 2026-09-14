@@ -585,13 +585,24 @@
                 var lbl = item.label || '?';
                 var isIcon = lbl.length <= 2;
                 var iconHtml = item.img
-                    ? '<img src="' + item.img + '" class="sm-struggle-thumb" alt="">'
+                    ? '<img src="' + escHtml(item.img) + '" class="sm-struggle-thumb" alt="">'
                     : '<span class="sm-struggle-emoji' + (isIcon ? '' : ' sm-struggle-emoji--text') + '">' + escHtml(lbl) + '</span>';
+                // A wrongly-picked or correct answer that was itself a picture (not text)
+                // arrives here as a compressed data-URL thumbnail, or — when the teacher's
+                // image URL couldn't be compressed (cross-origin) — the original URL itself.
+                // Show it as an actual inline image instead of dumping the raw URL as text.
+                var isImgData = function(s){ return typeof s === 'string' && (s.indexOf('data:image') === 0 || /^https?:\/\//i.test(s)); };
+                var thoughtHtml = isImgData(item.thought)
+                    ? '<img src="' + escHtml(item.thought) + '" class="sm-struggle-inline-thumb" alt="">'
+                    : '<b>' + escHtml(item.thought || '') + '</b>';
+                var correctHtml = isImgData(item.correct)
+                    ? '<img src="' + escHtml(item.correct) + '" class="sm-struggle-inline-thumb" alt="">'
+                    : escHtml(item.correct || '');
                 chipsWrap.innerHTML += '<div class="sm-struggle-item">'
                     + iconHtml
                     + '<span class="sm-struggle-text">'
-                    +   '<span class="sm-struggle-main">' + (item.thought ? 'Keeps placing this in <b>' + escHtml(item.thought) + '</b>' : 'Repeatedly got this wrong') + '</span>'
-                    +   (item.correct ? '<span class="sm-struggle-correct">Correct: ' + escHtml(item.correct) + '</span>' : '')
+                    +   '<span class="sm-struggle-main">' + (item.thought ? 'Keeps placing this in ' + thoughtHtml : 'Repeatedly got this wrong') + '</span>'
+                    +   (item.correct ? '<span class="sm-struggle-correct">Correct: ' + correctHtml + '</span>' : '')
                     + '</span>'
                     + '</div>';
             });
