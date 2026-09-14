@@ -224,6 +224,36 @@ body {
   max-height: 82vh; overflow-y: auto; position: relative;
   box-shadow: 0 20px 60px rgba(0,0,0,.25);
 }
+/* ---- Completed Activities (reuses .student-perf-* look) ---- */
+/* Caps the list's own height once it grows past a handful of rows, instead
+   of letting the card (and the whole page under it) stretch indefinitely —
+   same reasoning as the Admin Reports roster lists. */
+#completedList { max-height: 340px; overflow-y: auto; padding-right: 4px; }
+.student-completed-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 12px 0; border-bottom: 1px solid #f1f5f9; flex-wrap: wrap;
+}
+.student-completed-row:last-child { border-bottom: none; }
+.student-completed-info { min-width: 0; }
+.student-completed-title { font-weight: 700; font-size: 14px; color: #1e293b; }
+.student-completed-meta { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+.student-completed-review-btn {
+  flex-shrink: 0; border: none; cursor: pointer; padding: 8px 16px;
+  border-radius: 999px; font-weight: 700; font-size: 13px;
+  background: var(--blue); color: #fff;
+}
+.student-completed-review-btn:hover { opacity: .9; }
+
+/* Briefly pulses #completedCard when arriving via the "Completed" stat-card
+   shortcut on My Materials (Student_progress.html#completedCard), so it's
+   obvious which card that shortcut landed on. */
+.student-completed-card--highlight {
+  animation: studentCompletedHighlightPulse 1.5s ease-in-out 2;
+}
+@keyframes studentCompletedHighlightPulse {
+  0%, 100% { box-shadow: 0 10px 0 rgba(36, 58, 94, .08), 0 18px 30px rgba(36, 58, 94, .12); }
+  50%      { box-shadow: 0 0 0 4px var(--blue, #2f6fed), 0 18px 30px rgba(36, 58, 94, .12); }
+}
 .pg-modal-close {
   position: absolute; top: 14px; right: 14px; z-index: 2;
   width: 30px; height: 30px; border-radius: 50%; border: none;

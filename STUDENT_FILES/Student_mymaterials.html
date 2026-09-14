@@ -126,30 +126,27 @@
         <span>🔍</span>
         <input id="searchInput" name="search_activities" placeholder="Search activities..." type="text" />
       </div>
-      <div class="student-filter-tabs">
-        <button class="student-ftab student-active" data-filter="all" type="button">All</button>
-        <button class="student-ftab" data-filter="completed" type="button">Completed</button>
-        <button class="student-ftab" data-filter="new" type="button">New</button>
-      </div>
     </div>
 
-    <!-- STAT CARDS -->
+    <!-- STAT CARDS — each is a shortcut, not just a number. Completed still
+         never lists its cards on this page (see renderFromData); this is
+         just a quick way to jump to where they actually live. -->
     <div class="student-stat-cards">
-      <div class="student-stat-card student-stat-card--blue">
+      <div class="student-stat-card student-stat-card--blue student-stat-card--clickable" onclick="scrollToActiveList()" title="View your active activities below" role="button" tabindex="0">
         <span class="student-stat-icon">📘</span>
         <div>
           <div class="student-stat-number student-stat-number--blue" id="statTotal">0</div>
           <div class="student-stat-label">Total Materials</div>
         </div>
       </div>
-      <div class="student-stat-card student-stat-card--green">
+      <div class="student-stat-card student-stat-card--green student-stat-card--clickable" onclick="window.location.href='Student_progress.html#completedCard'" title="View completed activities in My Progress" role="button" tabindex="0">
         <span class="student-stat-icon">✅</span>
         <div>
           <div class="student-stat-number student-stat-number--green" id="statCompleted">0</div>
           <div class="student-stat-label">Completed</div>
         </div>
       </div>
-      <div class="student-stat-card student-stat-card--orange">
+      <div class="student-stat-card student-stat-card--orange student-stat-card--clickable" onclick="scrollToActiveList()" title="View your new and in-progress activities below" role="button" tabindex="0">
         <span class="student-stat-icon">🚀</span>
         <div>
           <div class="student-stat-number student-stat-number--orange" id="statNew">0</div>
@@ -235,9 +232,12 @@
       ].join('');
     }
 
-    function renderAllActivities(items) {
+    function renderAllActivities(items, allCaughtUp) {
+      var emptyMsg = allCaughtUp
+        ? '<div class="student-mat-empty">🎉 You\'re all caught up!<br><span style="font-size:14px;font-weight:500;">You have completed all your assigned activities. Check <strong>My Progress</strong> to review them.</span></div>'
+        : '<div class="student-mat-empty">📭 No activities yet. Your teacher will assign some soon.</div>';
       var inner = items.length === 0
-        ? '<div class="student-mat-empty">📭 No activities yet. Your teacher will assign some soon.</div>'
+        ? emptyMsg
         : items.map(function(a, i){ return renderCard(a, i); }).join('') +
           '<div class="student-cheer"><span class="student-cheer-panda">🐼</span>' +
           '<div class="student-cheer-bubble"><strong>Great job!</strong><span>Keep learning and have fun! 💗</span></div>' +
@@ -245,6 +245,21 @@
           '<span class="student-cheer-rainbow">🌈</span></div>';
       return '<div class="student-material-list">' + inner + '</div>';
     }
+
+    function scrollToActiveList() {
+      var el = document.getElementById('gradingSections');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    // Stat cards are role="button" for screen readers, so they need a
+    // keyboard activation path too, not just onclick (which only fires on
+    // a pointer click).
+    document.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('.student-stat-card--clickable').forEach(function (card) {
+        card.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); card.click(); }
+        });
+      });
+    });
 
     function showNotEnrolledMaterials() {
       document.getElementById('statTotal').textContent = '0';
@@ -317,21 +332,26 @@
       document.getElementById('statNew').textContent = dbNew;
       document.getElementById('statCompleted').textContent = dbCompleted;
 
-      var allForRender = dbMaterials.map(function(m) {
-        return {
-          id:              m.id,
-          db_activity_id:  m.id,
-          title:           m.activity_title,
-          type:            m.activity_type || 'Matching',
-          subject:         m.subject || '',
-          difficulty:      m.difficulty || 'Easy',
-          progress_status: m.progress_status,
-          score:           m.score,
-        };
-      });
+      // Completed activities move to My Progress instead of staying listed
+      // here — keeps this page to just what the learner still needs to do.
+      var activeForRender = dbMaterials
+        .filter(function(m) { return m.progress_status !== 'completed'; })
+        .map(function(m) {
+          return {
+            id:              m.id,
+            db_activity_id:  m.id,
+            title:           m.activity_title,
+            type:            m.activity_type || 'Matching',
+            subject:         m.subject || '',
+            difficulty:      m.difficulty || 'Easy',
+            progress_status: m.progress_status,
+            score:           m.score,
+          };
+        });
+      var allCaughtUp = total > 0 && activeForRender.length === 0;
 
       document.getElementById('gradingSections').innerHTML =
-        renderAllActivities(allForRender) + renderFilesSection(uploadedFiles || []);
+        renderAllActivities(activeForRender, allCaughtUp) + renderFilesSection(uploadedFiles || []);
       highlightActivityFromQuery();
     }
 
@@ -438,14 +458,6 @@
         })
         .catch(function(){ showNotEnrolledMaterials(); });
     }
-
-    // Filter tabs
-    document.querySelectorAll('.student-ftab').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        document.querySelectorAll('.student-ftab').forEach(function (b) { b.classList.remove('student-active'); });
-        btn.classList.add('student-active');
-      });
-    });
 
     // Full-view toggle
     var fvBtn = document.getElementById('fullviewBtn');

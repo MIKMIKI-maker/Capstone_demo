@@ -7,7 +7,7 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>SPED ALM - My Progress</title>
     <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
-    <link href="STUDENT_CSS/Student_progress.css?v=16" rel="stylesheet" />
+    <link href="STUDENT_CSS/Student_progress.css?v=17" rel="stylesheet" />
     <link href="STUDENT_CSS/student_responsive.css?v=6" rel="stylesheet" />
     <link
         href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;family=Nunito:wght@400;600;700;800;900&amp;display=swap"
@@ -162,6 +162,20 @@
                 </div>
             </div>
         </div>
+        <!-- COMPLETED ACTIVITIES (moved here from My Materials once passed) -->
+        <div class="student-perf-card" id="completedCard" style="margin-bottom:20px;">
+            <div class="student-perf-header">
+                <span class="student-perf-title">✅ Completed Activities</span>
+                <span class="student-perf-tag" id="completedCount">— Activities</span>
+            </div>
+            <div id="completedList">
+                <div class="student-perf-empty">
+                    <div class="student-perf-empty-icon">🎯</div>
+                    <p class="student-perf-empty-title">No completed activities yet</p>
+                    <p class="student-perf-empty-desc">Activities you pass will show up here, ready to review anytime.</p>
+                </div>
+            </div>
+        </div>
         <!-- CONTENT GRID -->
         <div class="student-content-grid">
             <!-- Performance by Activity -->
@@ -257,6 +271,36 @@
         overlay.addEventListener('click', function(e) { if (e.target === overlay) closeNotesModal(); });
     })();
 
+    // Same template map Student_mymaterials.html uses to open an activity.
+    var TPL_MAP = {
+        'Matching':         '../TEACHER_FILES/TEMPLATES/Matching_Type_Template.html',
+        'Sorting':          '../TEACHER_FILES/TEMPLATES/Sorting_Type_Template.html',
+        'Sequencing':       '../TEACHER_FILES/TEMPLATES/Sequencing_Type_Template.html',
+        'CheckOrX':         '../TEACHER_FILES/TEMPLATES/Check_ Or_Not_Template.html',
+        'LetterID':         '../TEACHER_FILES/TEMPLATES/Identification_Template.html',
+        'PictureLabeling':  '../TEACHER_FILES/TEMPLATES/Picture_ Labeling_Template.html',
+        'WrittenResponse':  '../TEACHER_FILES/TEMPLATES/Written_Response_Template.html',
+        'Tracing':          '../TEACHER_FILES/TEMPLATES/Tracing_Template.html'
+    };
+
+    // Opens the real activity again so the learner can actually re-answer it
+    // for review — but with review_mode=1, which every template checks
+    // alongside its own "already passed" check before deciding whether to
+    // save anything. That guarantees this practice run can't touch
+    // learner_progress/activity_submissions, so it can never reset the
+    // Completed status or send the activity back to My Materials, even if
+    // this browser has no local record of the original pass.
+    function reviewActivity(dbId, type) {
+        var tpl = TPL_MAP[type];
+        if (!tpl) { alert('Review is not supported yet for this activity type.'); return; }
+        var lsActs = [];
+        try { lsActs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch (e) {}
+        var match = lsActs.find(function(a) { return String(a.db_activity_id) === String(dbId); });
+        var pubId = match ? match.id : String(dbId);
+        sessionStorage.setItem('stu_return_url', window.location.href);
+        window.location.href = tpl + '?student_mode=1&review_mode=1&pub_id=' + encodeURIComponent(pubId);
+    }
+
     function fmtDate(iso) {
         if (!iso) return '—';
         return new Date(iso).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
@@ -303,6 +347,27 @@
             fillGreen.style.strokeDashoffset = CIRC - (CIRC * compPct / 100);
             fillGreen.closest('.student-ov-stat').querySelector('.student-circle-num').textContent = completed;
             fillGreen.closest('.student-ov-stat').querySelector('.student-circle-denom').textContent = '/' + totalActivities;
+        }
+
+        // Completed Activities — the ones that actually passed (score >= 80),
+        // matching the same threshold My Materials uses to move an activity
+        // out of the active list.
+        var completedActivities = activities.filter(function(r) { return (r.score || 0) >= 80; });
+        var completedList = document.getElementById('completedList');
+        document.getElementById('completedCount').textContent = completedActivities.length + ' Activit' + (completedActivities.length === 1 ? 'y' : 'ies');
+        if (completedActivities.length === 0) {
+            completedList.innerHTML = '<div class="student-perf-empty"><div class="student-perf-empty-icon">🎯</div><p class="student-perf-empty-title">No completed activities yet</p><p class="student-perf-empty-desc">Activities you pass will show up here, ready to review anytime.</p></div>';
+        } else {
+            completedList.innerHTML = completedActivities.map(function(r) {
+                var sc = (r.is_finalized && r.finalized_score !== null) ? r.finalized_score : (r.score || 0);
+                return '<div class="student-completed-row">'
+                    + '<div class="student-completed-info">'
+                    +   '<div class="student-completed-title">' + escStr(r.activity_title) + (r.is_finalized ? ' <span style="font-size:10px;background:#dbeafe;color:#1d4ed8;padding:1px 6px;border-radius:8px;font-weight:600;">Finalized</span>' : '') + '</div>'
+                    +   '<div class="student-completed-meta">' + escStr(r.activity_type || r.subject || 'Activity') + ' · ' + sc + '% · Completed: ' + fmtDate(r.assessment_date) + '</div>'
+                    + '</div>'
+                    + '<button class="student-completed-review-btn" type="button" onclick="reviewActivity(\'' + escStr(r.activity_id) + '\',\'' + escStr(r.activity_type) + '\')">🔁 Review</button>'
+                    + '</div>';
+            }).join('');
         }
 
         // Performance cards
@@ -410,6 +475,22 @@
         // Date
         document.querySelector('.student-page-sub').textContent =
             'Generated: ' + new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) + '  ·  School Year: 2025–2026';
+
+        highlightCompletedCardFromHash();
+    }
+
+    // Arriving here via the "Completed" stat-card shortcut on My Materials
+    // (Student_mymaterials.html) lands on #completedCard — scroll to it and
+    // pulse it once so it's obvious that's where the shortcut landed.
+    var _completedHighlightedOnce = false;
+    function highlightCompletedCardFromHash() {
+        if (_completedHighlightedOnce || window.location.hash !== '#completedCard') return;
+        var card = document.getElementById('completedCard');
+        if (!card) return;
+        _completedHighlightedOnce = true;
+        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        card.classList.add('student-completed-card--highlight');
+        setTimeout(function () { card.classList.remove('student-completed-card--highlight'); }, 3000);
     }
 
     function escStr(s) {

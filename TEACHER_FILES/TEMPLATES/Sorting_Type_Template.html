@@ -959,7 +959,7 @@ function initActivityTheme(){
   const $ = id => document.getElementById(id);
   var _stuMode = false, _stuPubId = '', _stuRetake = 0,
       _stuLastScore = null, _stuLastTotal = null, _stuProg = [], _stuSlideScores = [], _stuSlideRetakes = {}, _stuSubmitDone = false, _stuSubmissionPromise = null,
-      _stuScaffoldLevel = {}, _stuLockedItems = {}, _stuMissedLabels = {}, _stuMissedDetail = {}, _stuMissCountByIdx = {}, PASS_THRESHOLD = 0.8, _stuAlreadyPassed = false, _stuPubMeta = null;
+      _stuScaffoldLevel = {}, _stuLockedItems = {}, _stuMissedLabels = {}, _stuMissedDetail = {}, _stuMissCountByIdx = {}, PASS_THRESHOLD = 0.8, _stuAlreadyPassed = false, _stuReviewMode = false, _stuPubMeta = null;
 
   // Level 1 (after 3 failed attempts): anchor ONE item in its correct bin —
   // the item the student has actually gotten wrong the most (not just item 0)
@@ -2429,6 +2429,7 @@ function initActivityTheme(){
     // Already passed and submitted before — this session is just practice,
     // so nothing here should be recorded or re-sent to the teacher again.
     _stuAlreadyPassed = !!(prev && prev.percent >= Math.round(PASS_THRESHOLD*100));
+    _stuReviewMode = p.get('review_mode') === '1';
 
     function showNotAvailable() {
       document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Poppins,sans-serif;gap:16px;padding:32px;text-align:center;">'
@@ -2536,7 +2537,7 @@ function initActivityTheme(){
           // Show final summary right away — the recording/notification below
           // finishes compressing thumbnails in the background afterward.
           var _fi=pct>=100?'images/perfect.png':pct>=80?'images/goodjob.png':'images/tryagain.png';
-          var _fm=(pct>=80?'Excellent work! 🌟':pct>=50?'Good effort! Keep practicing! ⭐':'Keep trying! Practice makes perfect! 💪') + (_stuAlreadyPassed ? ' (Practice mode — not recorded)' : '');
+          var _fm=(pct>=80?'Excellent work! 🌟':pct>=50?'Good effort! Keep practicing! ⭐':'Keep trying! Practice makes perfect! 💪') + ((_stuAlreadyPassed || _stuReviewMode) ? ' (Practice mode — not recorded)' : '');
           $('srtModalEmoji').src=_fi; $('srtModalScore').textContent=_totCorrect+' / '+_totItems+' correct ('+pct+'%)'; $('srtModalMsg').textContent=_fm;
           $('srtModalCloseBtn').style.display='none'; $('srtModalTryBtn').style.display='none';
           $('srtStudentSubmitBtn').textContent='🏠 Go to Dashboard';
@@ -2545,7 +2546,7 @@ function initActivityTheme(){
           if(_slideCount>1){_stuSlideScores.forEach(function(s,si){var sp=Math.round((s.correct/s.total)*100);var sc=sp>=80?'#1f9d44':sp>=50?'#ca8a04':'#e23b54';var sr=_stuSlideRetakes[si]||0;var rd=document.createElement('div');rd.style.cssText='display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:13px;align-items:center;';rd.innerHTML='<span style="font-weight:600;">Slide '+(si+1)+(sr>0?' <span style="color:#e23b54;font-size:10px;">('+sr+'× retake)</span>':'')+'</span><span style="font-weight:700;color:'+sc+';">'+s.correct+'/'+s.total+' ('+sp+'%)</span>';_fbR.appendChild(rd);});}
           _stuSubmitDone=true;
 
-          if (_stuAlreadyPassed) return;
+          if (_stuAlreadyPassed || _stuReviewMode) return;
 
           var _scaffoldUsed = Math.max(0, ...Object.keys(_stuScaffoldLevel).map(function(k){ return _stuScaffoldLevel[k]; }));
           var _struggledRaw = [];

@@ -173,6 +173,8 @@ body {
   transition: transform .18s ease;
 }
 .student-stat-card:hover { transform: translateY(-3px); }
+.student-stat-card--clickable { cursor: pointer; }
+.student-stat-card--clickable:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
 .student-stat-card--blue   { background: #eaf2ff; }
 .student-stat-card--green  { background: #e8faf0; }
 .student-stat-card--orange { background: #fdf4e3; }

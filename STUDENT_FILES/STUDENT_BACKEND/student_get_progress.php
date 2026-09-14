@@ -50,7 +50,7 @@ $stmt2->close();
 
 // Activity performance list (with finalized score + retake count)
 $stmt3 = $conn->prepare("
-    SELECT a.activity_title, a.subject, lp.score, lp.assessment_date,
+    SELECT a.id AS activity_id, a.activity_title, a.activity_type, a.subject, lp.score, lp.assessment_date,
            CASE WHEN lp.score >= 80 THEN 'Completed' ELSE 'In Progress' END AS status_label,
            sub.retake_count, sub.finalized_score, sub.is_finalized, sub.assistance_level, sub.answers_json
     FROM learner_progress lp

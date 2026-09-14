@@ -977,7 +977,7 @@ function initActivityTheme(){
   const $ = id => document.getElementById(id);
   var _stuMode = false, _stuPubId = '', _stuRetake = 0,
       _stuLastScore = null, _stuLastTotal = null, _stuProg = [], _stuSlideScores = [], _stuSlideRetakes = {}, _stuSubmitDone = false, _stuSubmissionPromise = null,
-      _stuScaffoldLevel = {}, _stuLockedSteps = {}, _stuMissedLabels = {}, _stuMissedDetail = {}, _stuMissCountByIdx = {}, PASS_THRESHOLD = 0.8, _stuAlreadyPassed = false, _stuPubMeta = null;
+      _stuScaffoldLevel = {}, _stuLockedSteps = {}, _stuMissedLabels = {}, _stuMissedDetail = {}, _stuMissCountByIdx = {}, PASS_THRESHOLD = 0.8, _stuAlreadyPassed = false, _stuReviewMode = false, _stuPubMeta = null;
 
   // Level 1 (after 3 failed attempts): anchor the 2 steps the student has
   // actually gotten wrong the most (not just the first 2) — every other
@@ -2251,6 +2251,7 @@ function initActivityTheme(){
     // Already passed and submitted before — this session is just practice,
     // so nothing here should be recorded or re-sent to the teacher again.
     _stuAlreadyPassed = !!(prev && prev.percent >= Math.round(PASS_THRESHOLD*100));
+    _stuReviewMode = p.get('review_mode') === '1';
 
     function showNotAvailable() {
       document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Poppins,sans-serif;gap:16px;padding:32px;text-align:center;">'
@@ -2355,7 +2356,7 @@ function initActivityTheme(){
           var _totItems=_stuSlideScores.reduce(function(s,x){return s+x.total;},0);
           var pct = Math.round((_totCorrect / _totItems) * 100);
           if (pct < Math.round(PASS_THRESHOLD*100)) { alert('You need at least ' + Math.round(PASS_THRESHOLD*100) + '% to submit this activity. Keep trying!'); return; }
-          if (!_stuAlreadyPassed) {
+          if (!_stuAlreadyPassed && !_stuReviewMode) {
             var _scaffoldUsed = Math.max(0, ...Object.keys(_stuScaffoldLevel).map(function(k){ return _stuScaffoldLevel[k]; }));
             var _struggledItems = [];
             Object.keys(_stuMissedDetail).forEach(function(si){
@@ -2404,7 +2405,7 @@ function initActivityTheme(){
           }
           // Show final summary before going home
           var _fi=pct>=100?'images/perfect.png':pct>=80?'images/goodjob.png':'images/tryagain.png';
-          var _fm=(pct>=80?'Excellent work! 🌟':pct>=50?'Good effort! Keep practicing! ⭐':'Keep trying! Practice makes perfect! 💪') + (_stuAlreadyPassed ? ' (Practice mode — not recorded)' : '');
+          var _fm=(pct>=80?'Excellent work! 🌟':pct>=50?'Good effort! Keep practicing! ⭐':'Keep trying! Practice makes perfect! 💪') + ((_stuAlreadyPassed || _stuReviewMode) ? ' (Practice mode — not recorded)' : '');
           $('seqModalEmoji').src=_fi; $('seqModalScore').textContent=_totCorrect+' / '+_totItems+' correct ('+pct+'%)'; $('seqModalMsg').textContent=_fm;
           $('seqModalCloseBtn').style.display='none'; $('seqModalTryBtn').style.display='none';
           $('seqStudentSubmitBtn').textContent='🏠 Go to Dashboard';

@@ -922,7 +922,7 @@ const $  = id => document.getElementById(id);
 
 var _stuMode = false, _stuPubId = '', _stuRetake = 0,
     _stuLastScore = null, _stuLastTotal = null, _stuProg = [], _stuSlideScores = [], _stuSlideRetakes = {}, _stuSubmitDone = false, _stuSubmissionPromise = null,
-    _stuScaffoldLevel = {}, _stuMissedLabels = {}, _stuMissedDetail = {}, PASS_THRESHOLD = 0.8, _stuAlreadyPassed = false, _stuPubMeta = null;
+    _stuScaffoldLevel = {}, _stuMissedLabels = {}, _stuMissedDetail = {}, PASS_THRESHOLD = 0.8, _stuAlreadyPassed = false, _stuReviewMode = false, _stuPubMeta = null;
 
 // Level 1 (after 3 failed attempts): show a "first letter" ghost hint in
 // every still-empty slot — no word is removed from the bank, the student
@@ -2155,6 +2155,7 @@ loadPublishedForEditIfAny();
   // Already passed and submitted before — this session is just practice,
   // so nothing here should be recorded or re-sent to the teacher again.
   _stuAlreadyPassed = !!(prev && prev.percent >= Math.round(PASS_THRESHOLD*100));
+  _stuReviewMode = p.get('review_mode') === '1';
 
   function showNotAvailable(){
     document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Poppins,sans-serif;gap:16px;padding:32px;text-align:center;">'
@@ -2265,7 +2266,7 @@ loadPublishedForEditIfAny();
         // Show final summary right away — the recording/notification below
         // finishes compressing thumbnails in the background afterward.
         var _fi=pct>=100?'images/perfect.png':pct>=80?'images/goodjob.png':'images/tryagain.png';
-        var _fm=(pct>=80?'Excellent work! 🌟':pct>=50?'Good effort! Keep practicing! ⭐':'Keep trying! Practice makes perfect! 💪') + (_stuAlreadyPassed ? ' (Practice mode — not recorded)' : '');
+        var _fm=(pct>=80?'Excellent work! 🌟':pct>=50?'Good effort! Keep practicing! ⭐':'Keep trying! Practice makes perfect! 💪') + ((_stuAlreadyPassed || _stuReviewMode) ? ' (Practice mode — not recorded)' : '');
         $('lblModalEmoji').src=_fi; $('lblModalScore').textContent=_totCorrect+' / '+_totItems+' correct ('+pct+'%)'; $('lblModalMsg').textContent=_fm;
         $('lblModalCloseBtn').style.display='none'; $('lblModalTryBtn').style.display='none';
         $('lblStudentSubmitBtn').textContent='🏠 Go to Dashboard';
@@ -2275,7 +2276,7 @@ loadPublishedForEditIfAny();
         $('lblModalOverlay').classList.add('show');
         _stuSubmitDone=true;
 
-        if (_stuAlreadyPassed) return;
+        if (_stuAlreadyPassed || _stuReviewMode) return;
 
         var _scaffoldUsed = Math.max(0, ...Object.keys(_stuScaffoldLevel).map(function(k){ return _stuScaffoldLevel[k]; }));
         var _struggledRaw = [];
