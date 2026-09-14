@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
   <title>SPED ALM - Reports</title>
   <link href="ADMIN_CSS/animations.css" rel="stylesheet" />
-  <link href="ADMIN_CSS/Admin_report.css?v=2" rel="stylesheet" />
+  <link href="ADMIN_CSS/Admin_report.css?v=3" rel="stylesheet" />
   <link href="ADMIN_CSS/admin_responsive.css" rel="stylesheet" />
   <link
     href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;family=Nunito:wght@400;600;700;800;900&amp;family=Inter:wght@400;500;600&amp;display=swap"
@@ -155,18 +155,9 @@
             </div>
           </div>
         </div>
-        <p class="rp-preview-note">This report counts every currently registered teacher and student account. Totals are the same across terms — only the term label on the printed report changes.</p>
+        <p class="rp-preview-note">Each teacher is its own section, with their active student roster listed underneath. Totals are the same across terms — only the term label on the printed report changes.</p>
 
-        <div class="rp-list-grid">
-          <div class="rp-list-block">
-            <h3 class="rp-list-title">🧑‍🏫 Teachers</h3>
-            <ol class="rp-name-list" id="rp-teacher-list"><li class="rp-list-loading">Loading…</li></ol>
-          </div>
-          <div class="rp-list-block">
-            <h3 class="rp-list-title">🎓 Students</h3>
-            <ol class="rp-name-list" id="rp-student-list"><li class="rp-list-loading">Loading…</li></ol>
-          </div>
-        </div>
+        <div class="rp-sections" id="rp-sections"><p class="rp-list-loading">Loading…</p></div>
       </div>
     </div>
   </main>
@@ -184,17 +175,8 @@
       <div><span>Total Students</span><strong id="rpPrintStudents"></strong></div>
     </div>
     <p class="rp-print-basis"><strong>Basis of report:</strong> Count of all currently registered teacher and student accounts in the SPED ALM system as of the date above.</p>
-    <h2>2. Teacher and Student List</h2>
-    <div class="rp-print-list-grid">
-      <div>
-        <p class="rp-print-list-title">Teachers</p>
-        <ol class="rp-print-list" id="rpPrintTeacherList"></ol>
-      </div>
-      <div>
-        <p class="rp-print-list-title">Students</p>
-        <ol class="rp-print-list" id="rpPrintStudentList"></ol>
-      </div>
-    </div>
+    <h2>2. Teacher and Student Report</h2>
+    <div id="rpPrintSections"></div>
     <h2>3. Remarks</h2>
     <div class="rp-print-notes">&nbsp;</div>
     <footer class="rp-print-signatures"><div>____________________________<br><strong>School Administrator</strong></div><div>____________________________<br><strong>School Coordinator</strong></div><div>____________________________<br><strong>Principal</strong></div></footer>
@@ -209,32 +191,51 @@
       return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
-    function fullName(acc) {
-      return ((acc.first_name || '') + ' ' + (acc.last_name || '')).trim() || acc.admin_email || 'Unnamed';
-    }
-
     function fetchStats() {
       if (statsCache) return Promise.resolve(statsCache);
-      return fetch('ADMIN_BACKEND/admin_list_accounts.php?_t=' + Date.now(), { cache: 'no-store' })
+      return fetch('ADMIN_BACKEND/admin_report_roster.php?_t=' + Date.now(), { cache: 'no-store' })
         .then(function (r) { return r.json(); })
-        .then(function (accounts) {
-          accounts = Array.isArray(accounts) ? accounts : [];
-          var teacherNames = accounts.filter(function (a) { return a.role === 'teacher'; }).map(fullName).sort();
-          var studentNames = accounts.filter(function (a) { return a.role === 'student'; }).map(fullName).sort();
+        .then(function (data) {
+          if (!data || !data.success) throw new Error((data && data.message) || 'Failed to load roster');
           statsCache = {
-            teachers: teacherNames.length,
-            students: studentNames.length,
-            teacherNames: teacherNames,
-            studentNames: studentNames
+            teachers: data.total_teachers,
+            students: data.total_students,
+            sections: data.sections || []
           };
           return statsCache;
         });
     }
 
-    function renderNameList(el, names) {
-      el.innerHTML = names.length
-        ? names.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('')
-        : '<li class="rp-list-empty">None recorded.</li>';
+    // teacher_accounts.class_section is admin-settable but usually left
+    // blank — fall back to a label built from the teacher's own name so a
+    // section is never shown with no heading at all.
+    function sectionLabel(sec) {
+      return sec.class_section || ('Class of ' + sec.teacher_name);
+    }
+
+    function renderSections(container, sections, isPrint) {
+      if (!sections.length) {
+        container.innerHTML = '<p class="rp-list-empty">No teachers recorded.</p>';
+        return;
+      }
+      var sectionCls = isPrint ? 'rp-print-section' : 'rp-section-block';
+      var titleCls   = isPrint ? 'rp-print-section-title' : 'rp-section-title';
+      var labelCls   = isPrint ? 'rp-print-section-label' : 'rp-section-label';
+      var listCls    = isPrint ? 'rp-print-list' : 'rp-name-list';
+      var studentListCls = isPrint ? 'rp-print-list' : 'rp-name-list rp-section-student-list';
+
+      container.innerHTML = sections.map(function (sec) {
+        var studentsHtml = sec.students.length
+          ? sec.students.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('')
+          : '<li class="rp-list-empty">No students recorded.</li>';
+        return '<div class="' + sectionCls + '">'
+          + '<p class="' + titleCls + '">SECTION: ' + esc(sectionLabel(sec)) + '</p>'
+          + '<p class="' + labelCls + '">Teacher</p>'
+          + '<ol class="' + listCls + '"><li>' + esc(sec.teacher_name) + '</li></ol>'
+          + '<p class="' + labelCls + '">Students</p>'
+          + '<ol class="' + studentListCls + '">' + studentsHtml + '</ol>'
+          + '</div>';
+      }).join('');
     }
 
     function selectTerm(term) {
@@ -252,8 +253,11 @@
         if (currentTerm !== term) return;
         document.getElementById('rp-total-teachers').textContent = stats.teachers;
         document.getElementById('rp-total-students').textContent = stats.students;
-        renderNameList(document.getElementById('rp-teacher-list'), stats.teacherNames);
-        renderNameList(document.getElementById('rp-student-list'), stats.studentNames);
+        renderSections(document.getElementById('rp-sections'), stats.sections, false);
+      }).catch(function (err) {
+        if (currentTerm !== term) return;
+        document.getElementById('rp-sections').innerHTML = '<p class="rp-list-empty">Could not load the roster. Please try again.</p>';
+        console.error(err);
       });
     }
 
@@ -265,8 +269,7 @@
       document.getElementById('rpPrintDate').textContent = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
       document.getElementById('rpPrintTeachers').textContent = statsCache.teachers;
       document.getElementById('rpPrintStudents').textContent = statsCache.students;
-      renderNameList(document.getElementById('rpPrintTeacherList'), statsCache.teacherNames);
-      renderNameList(document.getElementById('rpPrintStudentList'), statsCache.studentNames);
+      renderSections(document.getElementById('rpPrintSections'), statsCache.sections, true);
     }
 
     // Opens the browser's own print dialog, where the admin picks a physical

@@ -365,31 +365,41 @@ body { display: flex; }
 
 .rp-preview-note { font-size: 12px; color: #bbb; margin-top: 18px; line-height: 1.6; max-width: 560px; }
 
-/* ── Teacher / Student name lists (on-screen) ── */
-.rp-list-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+/* ── Section (per-teacher) breakdown, on-screen ── */
+.rp-sections {
+  display: flex;
+  flex-direction: column;
   gap: 16px;
   margin-top: 22px;
-  max-width: 760px;
+  max-width: 640px;
 }
 
-.rp-list-block {
+.rp-section-block {
   border: 1px solid #f0ebe1;
   border-radius: 14px;
-  padding: 14px 16px;
+  padding: 16px 18px;
   background: #fafaf8;
-  max-height: 320px;
-  overflow-y: auto;
 }
 
-.rp-list-title {
+.rp-section-title {
   font-family: 'Nunito', sans-serif;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 800;
-  color: #1a1a2e;
+  color: #1E3A8A;
+  text-decoration: underline;
   margin-bottom: 10px;
 }
+
+.rp-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  margin: 10px 0 4px;
+}
+
+.rp-section-label:first-of-type { margin-top: 0; }
 
 .rp-name-list {
   list-style: decimal;
@@ -400,7 +410,18 @@ body { display: flex; }
 }
 
 .rp-name-list li { font-size: 13px; color: #444; }
-.rp-list-loading, .rp-list-empty { list-style: none; margin-left: -20px; color: #bbb; font-size: 12.5px; }
+/* Used both as a standalone paragraph (initial "Loading…"/error states) and
+   as a list item inside .rp-name-list (an empty roster) — list-style:none
+   keeps the latter from getting a stray "1." next to it. */
+.rp-list-loading, .rp-list-empty { list-style: none; color: #bbb; font-size: 12.5px; }
+
+/* Long rosters scroll inside their own section instead of stretching the
+   whole page — same reasoning as before, just now scoped per teacher. */
+.rp-section-student-list {
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
 
 
 /* ===== PRINT-ONLY REPORT ARTICLE ===== */
@@ -417,8 +438,18 @@ body { display: flex; }
 .rp-print-summary span { color: #64748B; font-size: 9px; text-transform: uppercase; }
 .rp-print-summary strong { margin-top: 4px; font-size: 16px; }
 .rp-print-basis { padding: 9px 10px; background: #F8FAFC; font-size: 11px; line-height: 1.5; }
-.rp-print-list-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
-.rp-print-list-title { font-size: 11px; font-weight: 700; color: #1E3A8A; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 4px; }
+
+/* ── Per-teacher section breakdown (print) ── */
+.rp-print-section { margin-bottom: 16px; break-inside: avoid; page-break-inside: avoid; }
+.rp-print-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1E3A8A;
+  text-decoration: underline;
+  margin-bottom: 6px;
+}
+.rp-print-section-label { font-size: 10px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: .4px; margin: 8px 0 2px; }
+.rp-print-section-label:first-of-type { margin-top: 0; }
 .rp-print-list { list-style: decimal; padding-left: 18px; font-size: 11px; line-height: 1.7; }
 /* Each teacher/student keeps its whole row together instead of splitting
    its number from its name across a page break. */
@@ -462,5 +493,5 @@ body.rp-capture-mode .rp-print-report {
   .rp-stat-grid { grid-template-columns: 1fr; max-width: 100%; }
   .rp-preview-actions { width: 100%; flex-direction: column; }
   .rp-action-btn { width: 100%; justify-content: center; }
-  .rp-list-grid { grid-template-columns: 1fr; max-width: 100%; }
+  .rp-sections { max-width: 100%; }
 }
