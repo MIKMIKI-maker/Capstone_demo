@@ -14,8 +14,7 @@ $result = $conn->query("SELECT
     COUNT(*) AS total_users,
     SUM(role = 'teacher') AS teachers,
     SUM(role = 'teacher' AND last_login IS NOT NULL) AS active_teachers,
-    SUM(role = 'student') AS student_accounts,
-    SUM(status = 'active') AS active_accounts
+    SUM(role = 'student') AS student_accounts
 FROM admin_accounts
 WHERE is_deleted = 0 OR is_deleted IS NULL");
 
@@ -67,6 +66,13 @@ if ($lsRes) { $stats['active_students'] = (int)$lsRes->fetch_assoc()['cnt']; $ls
 // Active teachers: last_seen within 2 minutes
 $ltRes = $conn->query("SELECT COUNT(*) AS cnt FROM admin_accounts WHERE role='teacher' AND last_seen > DATE_SUB(NOW(), INTERVAL 2 MINUTE) AND (is_deleted = 0 OR is_deleted IS NULL)");
 if ($ltRes) { $stats['active_teachers'] = (int)$ltRes->fetch_assoc()['cnt']; $ltRes->close(); }
+
+// Active accounts (Manage Users card): currently online across all roles,
+// same last_seen-based definition the table's status badge uses — not the
+// stored `status` column, which gates login and would give a different number.
+$stats['active_accounts'] = 0;
+$laRes = $conn->query("SELECT COUNT(*) AS cnt FROM admin_accounts WHERE last_seen > DATE_SUB(NOW(), INTERVAL 2 MINUTE) AND (is_deleted = 0 OR is_deleted IS NULL)");
+if ($laRes) { $stats['active_accounts'] = (int)$laRes->fetch_assoc()['cnt']; $laRes->close(); }
 
 $conn->close();
 echo json_encode($stats);
