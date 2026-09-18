@@ -229,54 +229,30 @@ body { display: flex; }
 /* ===== REPORTS CARD ===== */
 .rp-card {
   background: #fff;
-  border-radius: 18px;
-  box-shadow: 0 2px 8px rgba(0,0,0,.05);
-  border: 1px solid #f0ebe1;
-  padding: 8px 22px 26px;
+  border-radius: 20px;
+  box-shadow: 0 16px 40px rgba(30,58,138,.08), 0 2px 8px rgba(0,0,0,.04);
+  border: 1px solid #eef0f5;
+  padding: 26px 26px 30px;
+  position: relative;
+  overflow: hidden;
+  /* .rp-card is a flex item inside .admin-main (a flex column with
+     overflow-y:auto). Giving a flex item any overflow other than
+     "visible" makes its automatic min-height resolve to 0 per the
+     flexbox spec — without flex-shrink:0, that let the flex algorithm
+     squash this card down to fit the viewport instead of letting the
+     page scroll, silently clipping everything past the fold. */
+  flex-shrink: 0;
 }
 
-/* ── Term tabs ── */
-.rp-tabs {
-  display: flex;
-  gap: 0;
-  padding: 14px 0 0;
-  border-bottom: 1.5px solid #f0ebe1;
-  margin-bottom: 22px;
+/* Thin brand-color strip along the top edge — gives the card an identity
+   instead of just being a plain white box like every other panel. */
+.rp-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, #1E3A8A, #3B82F6 55%, #93C5FD);
 }
-
-.rp-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px 14px;
-  border: none;
-  background: transparent;
-  font-family: 'Poppins', sans-serif;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: #aaa;
-  cursor: pointer;
-  border-bottom: 2.5px solid transparent;
-  margin-bottom: -1.5px;
-  transition: color .2s, border-color .2s;
-}
-
-.rp-tab:hover { color: #555; }
-.rp-tab.active { color: #1E3A8A; border-bottom-color: #1E3A8A; }
-
-/* ── Empty / placeholder state ── */
-.rp-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 6px;
-  padding: 48px 20px;
-}
-
-.rp-placeholder-icon { font-size: 40px; margin-bottom: 4px; }
-.rp-placeholder-title { font-family: 'Nunito', sans-serif; font-size: 15px; font-weight: 800; color: #999; }
-.rp-placeholder-desc { font-size: 12.5px; color: #bbb; max-width: 340px; line-height: 1.6; }
 
 /* ── Report preview ── */
 .rp-preview-head {
@@ -285,17 +261,19 @@ body { display: flex; }
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  margin-bottom: 18px;
+  margin-bottom: 22px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f1f4f9;
 }
 
 .rp-preview-title {
   font-family: 'Nunito', sans-serif;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 900;
   color: #1a1a2e;
 }
 
-.rp-preview-sub { font-size: 12.5px; color: #aaa; margin-top: 3px; }
+.rp-preview-sub { font-size: 13px; color: #6b7789; margin-top: 4px; }
 
 .rp-preview-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 
@@ -312,42 +290,44 @@ body { display: flex; }
   font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
-  transition: background .2s, transform .15s;
-  box-shadow: 0 3px 10px rgba(30,58,138,.25);
+  transition: background .2s ease, transform .2s ease, box-shadow .2s ease;
+  box-shadow: 0 10px 22px rgba(30,58,138,.3), 0 3px 8px rgba(30,58,138,.18);
   flex-shrink: 0;
 }
 
-.rp-action-btn:hover { background: #14307a; transform: translateY(-1px); }
+.rp-action-btn:hover { background: #14307a; transform: translateY(-2px); box-shadow: 0 14px 28px rgba(30,58,138,.38), 0 4px 10px rgba(30,58,138,.22); }
 
-.rp-action-btn--outline { background: #fff; color: #1E3A8A; box-shadow: none; }
-.rp-action-btn--outline:hover { background: #EFF6FF; transform: translateY(-1px); }
+.rp-action-btn--outline { background: #fff; color: #1E3A8A; box-shadow: 0 2px 6px rgba(30,58,138,.08); border-color: #dbe4f5; }
+.rp-action-btn--outline:hover { background: #EFF6FF; transform: translateY(-2px); box-shadow: 0 6px 16px rgba(30,58,138,.14); }
 
 .rp-stat-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
-  max-width: 520px;
+  gap: 16px;
+  max-width: 680px;
 }
 
 .rp-stat-card {
-  background: #fafaf8;
-  border: 1px solid #f0ebe1;
-  border-radius: 14px;
-  padding: 16px 18px;
+  background: linear-gradient(160deg, #fafbff, #f4f6fb);
+  border: 1px solid #eef0f5;
+  border-radius: 16px;
+  padding: 18px 20px;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
+  box-shadow: 0 6px 16px rgba(15,23,42,.05);
 }
 
 .rp-stat-icon {
-  width: 46px;
-  height: 46px;
-  border-radius: 12px;
+  width: 54px;
+  height: 54px;
+  border-radius: 15px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 22px;
   flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.03);
 }
 
 .rp-stat-icon--blue   { background: #EFF6FF; }
@@ -355,15 +335,15 @@ body { display: flex; }
 
 .rp-stat-num {
   font-family: 'Nunito', sans-serif;
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 900;
   color: #1a1a2e;
   line-height: 1;
 }
 
-.rp-stat-label { font-size: 12.5px; color: #888; margin-top: 4px; font-weight: 600; }
+.rp-stat-label { font-size: 13px; color: #666; margin-top: 4px; font-weight: 600; }
 
-.rp-preview-note { font-size: 12px; color: #bbb; margin-top: 18px; line-height: 1.6; max-width: 560px; }
+.rp-preview-note { font-size: 12.5px; color: #7c8aa3; margin-top: 18px; line-height: 1.6; max-width: 640px; }
 
 /* ── Section (per-teacher) breakdown, on-screen ── */
 .rp-sections {
@@ -371,49 +351,130 @@ body { display: flex; }
   flex-direction: column;
   gap: 16px;
   margin-top: 22px;
-  max-width: 640px;
+  max-width: 680px;
 }
 
 .rp-section-block {
-  border: 1px solid #f0ebe1;
-  border-radius: 14px;
-  padding: 16px 18px;
-  background: #fafaf8;
+  border: 1px solid #eef0f5;
+  border-radius: 16px;
+  padding: 18px 20px 20px;
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(15,23,42,.05);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Left accent bar instead of an underlined heading — reads as a section
+   marker at a glance without the dated "underlined text" look. */
+.rp-section-block::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, #1E3A8A, #60A5FA);
+}
+
+.rp-section-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.rp-section-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: #EFF6FF;
+  color: #1E3A8A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.rp-section-eyebrow {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #7c8aa3;
+  text-transform: uppercase;
+  letter-spacing: .5px;
 }
 
 .rp-section-title {
   font-family: 'Nunito', sans-serif;
-  font-size: 13.5px;
+  font-size: 14.5px;
   font-weight: 800;
-  color: #1E3A8A;
-  text-decoration: underline;
-  margin-bottom: 10px;
+  color: #1a1a2e;
+  margin-top: 1px;
 }
 
+.rp-section-teacher {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1E3A8A;
+  background: #F8FAFC;
+  border: 1px solid #eef0f5;
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 14px;
+}
+
+.rp-section-teacher i { font-size: 12px; color: #93a5c4; }
+
 .rp-section-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  color: #999;
+  color: #6b7789;
   text-transform: uppercase;
   letter-spacing: .4px;
-  margin: 10px 0 4px;
+  margin: 10px 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .rp-section-label:first-of-type { margin-top: 0; }
 
+.rp-section-count {
+  background: #EEF2FF;
+  color: #1E3A8A;
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 1px 8px;
+  border-radius: 999px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 .rp-name-list {
   list-style: decimal;
-  padding-left: 20px;
+  list-style-position: inside;
+  padding-left: 4px;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.rp-name-list li { font-size: 13px; color: #444; }
+.rp-name-list li {
+  font-size: 13px;
+  color: #333;
+  padding: 8px 12px;
+  background: #fafbfd;
+  border: 1px solid #f1f4f9;
+  border-radius: 9px;
+}
+.rp-name-list li::marker { color: #6b7789; font-weight: 700; }
+
 /* Used both as a standalone paragraph (initial "Loading…"/error states) and
    as a list item inside .rp-name-list (an empty roster) — list-style:none
    keeps the latter from getting a stray "1." next to it. */
-.rp-list-loading, .rp-list-empty { list-style: none; color: #bbb; font-size: 12.5px; }
+.rp-list-loading, .rp-list-empty { list-style: none; color: #7c8aa3; font-size: 13px; }
+.rp-name-list li.rp-list-empty { background: transparent; border: none; padding: 0; }
 
 /* Long rosters scroll inside their own section instead of stretching the
    whole page — same reasoning as before, just now scoped per teacher. */
@@ -422,6 +483,48 @@ body { display: flex; }
   overflow-y: auto;
   padding-right: 4px;
 }
+
+/* ── Section list pagination (same pattern as Activity Library / Manage
+   Users) — paginates the on-screen cards only, never the printed report. ── */
+.rp-sections-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #f1f4f9;
+  max-width: 680px;
+}
+
+.rp-footer-info { font-size: 13px; color: #7c8aa3; }
+.rp-footer-info strong { color: #445069; }
+
+.rp-pagination { display: flex; align-items: center; gap: 6px; }
+
+.rp-pg-btn {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 9px;
+  border: 1px solid #eef0f5;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Poppins', sans-serif;
+  transition: background .2s, color .2s, border-color .2s;
+}
+
+.rp-pg-btn:hover:not(:disabled):not(.rp-pg-active) { background: #EFF6FF; }
+.rp-pg-btn:disabled { opacity: .35; cursor: not-allowed; }
+.rp-pg-active { background: #1E3A8A !important; color: #fff !important; border-color: #1E3A8A !important; }
+.rp-pg-ellipsis { color: #aaa; padding: 0 4px; font-size: 14px; }
 
 
 /* ===== PRINT-ONLY REPORT ARTICLE ===== */
@@ -489,9 +592,9 @@ body.rp-capture-mode .rp-print-report {
   .admin-sidebar-footer { display: none; }
   .admin-main { height: auto; overflow-y: unset; padding: 16px; }
   .admin-topbar-left { width: 100%; text-align: center; }
-  .rp-tabs { flex-wrap: wrap; row-gap: 6px; }
   .rp-stat-grid { grid-template-columns: 1fr; max-width: 100%; }
   .rp-preview-actions { width: 100%; flex-direction: column; }
   .rp-action-btn { width: 100%; justify-content: center; }
   .rp-sections { max-width: 100%; }
+  .rp-sections-footer { max-width: 100%; justify-content: center; text-align: center; }
 }

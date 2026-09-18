@@ -9,18 +9,16 @@
   <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
   <title>SPED ALM - Reports</title>
   <link href="ADMIN_CSS/animations.css" rel="stylesheet" />
-  <link href="ADMIN_CSS/Admin_report.css?v=3" rel="stylesheet" />
+  <link href="ADMIN_CSS/Admin_report.css?v=8" rel="stylesheet" />
   <link href="ADMIN_CSS/admin_responsive.css" rel="stylesheet" />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;family=Nunito:wght@400;600;700;800;900&amp;family=Inter:wght@400;500;600&amp;display=swap"
-    rel="stylesheet" />
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
-  <script src="../ASSETS/admin_portal.js?v=5"></script>
+  <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
+  <link href="../ASSETS/vendor/fontawesome/css/all.min.css" rel="stylesheet" />
+  <script src="../ASSETS/admin_portal.js?v=14"></script>
   <!-- Used only by the "Download PDF" button, to generate an actual .pdf file
        client-side (instead of routing through the browser's print dialog like
        the "Print" button does). -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="../ASSETS/vendor/js/html2canvas.min.js"></script>
+  <script src="../ASSETS/vendor/js/jspdf.umd.min.js"></script>
 </head>
 
 <body>
@@ -108,26 +106,13 @@
       </div>
     </header>
 
-    <!-- TERM TABS -->
+    <!-- REPORT -->
     <div class="rp-card">
-      <div class="rp-tabs" id="rp-term-tabs">
-        <button class="rp-tab" data-term="First" type="button">First Term</button>
-        <button class="rp-tab" data-term="Second" type="button">Second Term</button>
-        <button class="rp-tab" data-term="Third" type="button">Third Term</button>
-      </div>
-
-      <!-- Nothing selected yet -->
-      <div class="rp-placeholder" id="rp-placeholder">
-        <div class="rp-placeholder-icon">🗂️</div>
-        <p class="rp-placeholder-title">Select a term above</p>
-        <p class="rp-placeholder-desc">Choose First, Second, or Third Term to view its summary report before printing.</p>
-      </div>
-
       <!-- Report preview (view before print) -->
-      <div class="rp-preview" id="rp-preview" hidden>
+      <div class="rp-preview" id="rp-preview">
         <div class="rp-preview-head">
           <div>
-            <h2 class="rp-preview-title" id="rp-preview-title">First Term Report</h2>
+            <h2 class="rp-preview-title" id="rp-preview-title">Term Summary Report</h2>
             <p class="rp-preview-sub">Reviewing this summary before printing.</p>
           </div>
           <div class="rp-preview-actions">
@@ -158,6 +143,13 @@
         <p class="rp-preview-note">Each teacher is its own section, with their active student roster listed underneath. Totals are the same across terms — only the term label on the printed report changes.</p>
 
         <div class="rp-sections" id="rp-sections"><p class="rp-list-loading">Loading…</p></div>
+
+        <!-- Paginates the on-screen section cards only — the printed/PDF
+             report below always includes every section, page or no page. -->
+        <div class="rp-sections-footer" id="rp-sections-footer" hidden>
+          <span class="rp-footer-info" id="rp-footer-info"></span>
+          <div class="rp-pagination" id="rp-pagination"></div>
+        </div>
       </div>
     </div>
   </main>
@@ -168,7 +160,7 @@
       <img src="../ASSETS/School_logo.png" alt="School logo">
       <div><h1>Mamatid Elementary School</h1><p>Special Education Program &middot; SPED ALM</p><p>Term Summary Report</p></div>
     </header>
-    <div class="rp-print-meta"><span>Grading period: <strong id="rpPrintTerm"></strong></span><span>Date: <strong id="rpPrintDate"></strong></span></div>
+    <div class="rp-print-meta"><span>Date: <strong id="rpPrintDate"></strong></span></div>
     <h2>1. Summary</h2>
     <div class="rp-print-summary">
       <div><span>Total Teachers</span><strong id="rpPrintTeachers"></strong></div>
@@ -183,9 +175,9 @@
   </article>
 
   <script>
-    var TERM_LABELS = { First: 'First Term', Second: 'Second Term', Third: 'Third Term' };
-    var currentTerm = null;
     var statsCache = null;
+    var reportPage = 1;
+    var RP_PAGE_SIZE = 5;
 
     function esc(s) {
       return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -218,54 +210,128 @@
         container.innerHTML = '<p class="rp-list-empty">No teachers recorded.</p>';
         return;
       }
-      var sectionCls = isPrint ? 'rp-print-section' : 'rp-section-block';
-      var titleCls   = isPrint ? 'rp-print-section-title' : 'rp-section-title';
-      var labelCls   = isPrint ? 'rp-print-section-label' : 'rp-section-label';
-      var listCls    = isPrint ? 'rp-print-list' : 'rp-name-list';
-      var studentListCls = isPrint ? 'rp-print-list' : 'rp-name-list rp-section-student-list';
+
+      // Print output stays a plain, formal document (decimal-numbered lists,
+      // "SECTION: X" text header) — that's what a printed report is expected
+      // to look like. The on-screen preview below gets its own richer
+      // markup instead of reusing the print layout 1:1.
+      if (isPrint) {
+        container.innerHTML = sections.map(function (sec) {
+          var studentsHtml = sec.students.length
+            ? sec.students.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('')
+            : '<li class="rp-list-empty">No students recorded.</li>';
+          return '<div class="rp-print-section">'
+            + '<p class="rp-print-section-title">SECTION: ' + esc(sectionLabel(sec)) + '</p>'
+            + '<p class="rp-print-section-label">Teacher</p>'
+            + '<ol class="rp-print-list"><li>' + esc(sec.teacher_name) + '</li></ol>'
+            + '<p class="rp-print-section-label">Students</p>'
+            + '<ol class="rp-print-list">' + studentsHtml + '</ol>'
+            + '</div>';
+        }).join('');
+        return;
+      }
 
       container.innerHTML = sections.map(function (sec) {
         var studentsHtml = sec.students.length
           ? sec.students.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('')
           : '<li class="rp-list-empty">No students recorded.</li>';
-        return '<div class="' + sectionCls + '">'
-          + '<p class="' + titleCls + '">SECTION: ' + esc(sectionLabel(sec)) + '</p>'
-          + '<p class="' + labelCls + '">Teacher</p>'
-          + '<ol class="' + listCls + '"><li>' + esc(sec.teacher_name) + '</li></ol>'
-          + '<p class="' + labelCls + '">Students</p>'
-          + '<ol class="' + studentListCls + '">' + studentsHtml + '</ol>'
+        return '<div class="rp-section-block">'
+          + '<div class="rp-section-head">'
+          +   '<span class="rp-section-icon"><i class="fa-solid fa-chalkboard-user"></i></span>'
+          +   '<div class="rp-section-head-text">'
+          +     '<p class="rp-section-eyebrow">Section</p>'
+          +     '<p class="rp-section-title">' + esc(sectionLabel(sec)) + '</p>'
+          +   '</div>'
+          + '</div>'
+          + '<div class="rp-section-teacher"><i class="fa-solid fa-user-tie"></i>' + esc(sec.teacher_name) + '</div>'
+          + '<p class="rp-section-label">Students <span class="rp-section-count">' + sec.students.length + '</span></p>'
+          + '<ol class="rp-name-list rp-section-student-list">' + studentsHtml + '</ol>'
           + '</div>';
       }).join('');
     }
 
-    function selectTerm(term) {
-      currentTerm = term;
-      document.querySelectorAll('.rp-tab').forEach(function (b) {
-        b.classList.toggle('active', b.dataset.term === term);
-      });
-      document.getElementById('rp-placeholder').hidden = true;
-      var preview = document.getElementById('rp-preview');
-      preview.hidden = false;
-      document.getElementById('rp-preview-title').textContent = TERM_LABELS[term] + ' Report';
+    // Same prev/1…/next pattern used on Activity Library and Manage Users —
+    // only the on-screen section cards are paginated; the printed/PDF
+    // report always includes every section regardless of what page the
+    // admin was looking at when they clicked Print.
+    function renderReportPagination(totalPages, page) {
+      var el = document.getElementById('rp-pagination');
+      if (!el || totalPages <= 1) { if (el) el.innerHTML = ''; return; }
 
+      var pages = [];
+      if (totalPages <= 5) {
+        for (var i = 1; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages = [1, 2, 3];
+        if (page > 4) pages.push('…');
+        if (page > 3 && page < totalPages - 2) pages.push(page);
+        if (page < totalPages - 2) pages.push('…');
+        pages.push(totalPages);
+        pages = pages.filter(function (v, i, a) { return a.indexOf(v) === i; });
+      }
+
+      var html = '<button class="rp-pg-btn" onclick="goReportPage(' + (page - 1) + ')" ' + (page === 1 ? 'disabled' : '') + '><i class="fa-solid fa-chevron-left"></i></button>';
+      pages.forEach(function (p) {
+        if (p === '…') {
+          html += '<span class="rp-pg-ellipsis">…</span>';
+        } else {
+          html += '<button class="rp-pg-btn ' + (p === page ? 'rp-pg-active' : '') + '" onclick="goReportPage(' + p + ')">' + p + '</button>';
+        }
+      });
+      html += '<button class="rp-pg-btn" onclick="goReportPage(' + (page + 1) + ')" ' + (page === totalPages ? 'disabled' : '') + '><i class="fa-solid fa-chevron-right"></i></button>';
+      el.innerHTML = html;
+    }
+
+    function renderReportSections() {
+      var sections = statsCache.sections;
+      var container = document.getElementById('rp-sections');
+      var footer = document.getElementById('rp-sections-footer');
+
+      if (!sections.length) {
+        renderSections(container, sections, false);
+        footer.hidden = true;
+        return;
+      }
+
+      var totalPages = Math.ceil(sections.length / RP_PAGE_SIZE);
+      reportPage = Math.min(Math.max(reportPage, 1), totalPages);
+      var start = (reportPage - 1) * RP_PAGE_SIZE;
+      var page = sections.slice(start, start + RP_PAGE_SIZE);
+
+      renderSections(container, page, false);
+
+      footer.hidden = false;
+      document.getElementById('rp-footer-info').innerHTML = 'Showing <strong>' + (start + 1) + ' to ' + Math.min(start + RP_PAGE_SIZE, sections.length) + '</strong> of <strong>' + sections.length + '</strong> sections';
+      renderReportPagination(totalPages, reportPage);
+    }
+
+    function goReportPage(p) {
+      window.showQuickLoading();
+      reportPage = p;
+      renderReportSections();
+      window.hideQuickLoading();
+    }
+
+    // Loads the roster summary straight into the preview on page open — no
+    // term to pick first, since the totals are the same system-wide and
+    // don't vary by grading period.
+    function loadReport() {
       fetchStats().then(function (stats) {
-        // Ignore a stale response if the admin switched tabs again while it was loading.
-        if (currentTerm !== term) return;
         document.getElementById('rp-total-teachers').textContent = stats.teachers;
         document.getElementById('rp-total-students').textContent = stats.students;
-        renderSections(document.getElementById('rp-sections'), stats.sections, false);
+        reportPage = 1;
+        renderReportSections();
       }).catch(function (err) {
-        if (currentTerm !== term) return;
         document.getElementById('rp-sections').innerHTML = '<p class="rp-list-empty">Could not load the roster. Please try again.</p>';
+        document.getElementById('rp-sections-footer').hidden = true;
         console.error(err);
       });
     }
 
     // Fills in the hidden print article's fields from the currently loaded
-    // term/stats — shared by both the Print and Download PDF paths so they
-    // never show stale or mismatched data.
+    // stats — shared by both the Print and Download PDF paths so they never
+    // show stale or mismatched data.
     function populatePrintReport() {
-      document.getElementById('rpPrintTerm').textContent = TERM_LABELS[currentTerm];
       document.getElementById('rpPrintDate').textContent = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
       document.getElementById('rpPrintTeachers').textContent = statsCache.teachers;
       document.getElementById('rpPrintStudents').textContent = statsCache.students;
@@ -275,11 +341,11 @@
     // Opens the browser's own print dialog, where the admin picks a physical
     // printer (or "Save as PDF" from there too, if they prefer).
     function printReport() {
-      if (!currentTerm || !statsCache) { alert('Please wait for the report to finish loading.'); return; }
+      if (!statsCache) { alert('Please wait for the report to finish loading.'); return; }
       var previousTitle = document.title;
       populatePrintReport();
       document.body.classList.add('rp-report-print');
-      document.title = TERM_LABELS[currentTerm] + ' Report - ' + new Date().toISOString().slice(0, 10);
+      document.title = 'Term Summary Report - ' + new Date().toISOString().slice(0, 10);
       var restoreTitle = function () {
         document.title = previousTitle;
         document.body.classList.remove('rp-report-print');
@@ -294,7 +360,7 @@
     // file (via jsPDF), then triggers a direct download — no print dialog,
     // no "choose a destination" step, unlike the Print button above.
     function downloadPdfReport() {
-      if (!currentTerm || !statsCache) { alert('Please wait for the report to finish loading.'); return; }
+      if (!statsCache) { alert('Please wait for the report to finish loading.'); return; }
       if (!window.html2canvas || !window.jspdf) {
         alert('The PDF library failed to load (check your internet connection) — try the Print button instead.');
         return;
@@ -329,7 +395,7 @@
           heightLeft -= pageHeight;
         }
 
-        pdf.save(TERM_LABELS[currentTerm] + ' Report - ' + new Date().toISOString().slice(0, 10) + '.pdf');
+        pdf.save('Term Summary Report - ' + new Date().toISOString().slice(0, 10) + '.pdf');
       }).catch(function (err) {
         document.body.classList.remove('rp-capture-mode');
         console.error(err);
@@ -341,10 +407,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-      document.getElementById('rp-term-tabs').addEventListener('click', function (e) {
-        var btn = e.target.closest('.rp-tab');
-        if (btn) selectTerm(btn.dataset.term);
-      });
+      loadReport();
       document.getElementById('rp-print-btn').addEventListener('click', printReport);
       document.getElementById('rp-pdf-btn').addEventListener('click', downloadPdfReport);
 

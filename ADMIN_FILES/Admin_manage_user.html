@@ -9,14 +9,12 @@
   <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
   <title>SPED ALM - Manage Users</title>
   <link href="ADMIN_CSS/animations.css" rel="stylesheet" />
-   <link href="ADMIN_CSS/Admin_manage_user.css?v=10" rel="stylesheet" />
+   <link href="ADMIN_CSS/Admin_manage_user.css?v=11" rel="stylesheet" />
   <link href="ADMIN_CSS/admin_responsive.css" rel="stylesheet" />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;family=Nunito:wght@400;600;700;800;900&amp;family=Inter:wght@400;500;600&amp;display=swap"
-    rel="stylesheet" />
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="../ASSETS/admin_portal.js?v=5"></script>
+  <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
+  <link href="../ASSETS/vendor/fontawesome/css/all.min.css" rel="stylesheet" />
+  <script src="../ASSETS/vendor/js/xlsx.full.min.js"></script>
+  <script src="../ASSETS/admin_portal.js?v=14"></script>
 </head>
 
 <body>
@@ -96,9 +94,6 @@
         <p class="admin-page-sub">Manage teachers, students and admin accounts</p>
       </div>
       <div class="admin-topbar-actions">
-        <a class="admin-trash-link" href="Admin_deleted_accounts.html">
-          <i class="fa-solid fa-box-archive"></i> Archived Accounts
-        </a>
         <a class="admin-notif-btn" href="Admin_notif.html">
           <i class="fa-regular fa-bell"></i>
           <span class="admin-notif-badge"></span>
@@ -214,12 +209,6 @@
         </div>
       </div>
     </div>
-    <!-- Mobile-only: same "Archived Accounts" link as the topbar above, just
-         moved to the bottom of the page — CSS swaps which one is visible
-         per breakpoint (see admin-trash-link--mobile-clone). -->
-    <a class="admin-trash-link admin-trash-link--mobile-clone" href="Admin_deleted_accounts.html">
-      <i class="fa-solid fa-box-archive"></i> Archived Accounts
-    </a>
   </main>
   <!-- ===== MODAL: VIEW TEACHER (Two-Column Layout) ===== -->
   <div class="admin-modal-overlay" id="admin-modal-view-teacher">
@@ -641,7 +630,7 @@
             <input type="file" id="admin-bulk-file-input" accept=".csv,.xlsx,.xls" onchange="handleBulkFileChange(this)" />
             <div class="admin-bulk-file-name" id="admin-bulk-file-name"></div>
           </div>
-          <div class="admin-field-note">Accepts .csv, .xlsx, or .xls — Excel files are read directly, no need to save as CSV first.</div>
+          <div class="admin-field-note">Accepts .csv, .xlsx, or .xls (max 2MB) — Excel files are read directly, no need to save as CSV first.</div>
         </div>
 
         <div id="admin-bulk-panel-paste" style="display:none">
@@ -677,6 +666,9 @@
       <div class="admin-modal-header">
         <h3 class="admin-modal-title">Archive Account</h3>
         <p class="admin-modal-sub">Select the account you want to archive.</p>
+        <a class="admin-trash-link" href="Admin_deleted_accounts.html" style="margin-top:8px;">
+          <i class="fa-solid fa-box-archive"></i> View Archived Accounts
+        </a>
         <button class="admin-modal-close" onclick="hideModal('admin-modal-delete')" type="button">✕</button>
       </div>
       <div class="admin-modal-body">
@@ -1358,6 +1350,7 @@
 
       // Close modal immediately
       hideModal('admin-modal-edit');
+      window.showActionLoading();
 
       // Send data to backend
       fetch('ADMIN_BACKEND/admin_manage_user_save.php', {
@@ -1387,7 +1380,8 @@
 
       // Close modal immediately
       hideModal('admin-modal-add');
-      
+      window.showActionLoading();
+
       // Send data to backend
       fetch('ADMIN_BACKEND/admin_add_account.php', {
         method: 'POST',
@@ -1433,6 +1427,7 @@
     var bulkActiveTab = 'file';
     var bulkStep = 'input'; // 'input' | 'mapping' | 'results'
     var bulkParsedRows = null; // array-of-arrays: [0] = header row, rest = data rows
+    var BULK_FILE_MAX_BYTES = 2 * 1024 * 1024; // must match admin_bulk_add_accounts.php's own cap
 
     function switchBulkTab(tab) {
       bulkActiveTab = tab;
@@ -1485,6 +1480,14 @@
       if (!file) {
         document.getElementById('admin-bulk-file-name').textContent = '';
         updateBulkImportButtonState();
+        return;
+      }
+
+      if (file.size > BULK_FILE_MAX_BYTES) {
+        input.value = '';
+        document.getElementById('admin-bulk-file-name').textContent = '';
+        updateBulkImportButtonState();
+        showMuToast('File is too large (max 2MB).', true);
         return;
       }
 
@@ -1843,6 +1846,7 @@
         'Archive', 'Archive accounts?'
       ).then(function (ok) {
         if (!ok) return;
+        window.showActionLoading();
 
         fetch('ADMIN_BACKEND/admin_delete_account.php', {
           method: 'POST',
@@ -1947,6 +1951,7 @@
 
       // Close modal immediately
       hideModal('admin-modal-reset');
+      window.showActionLoading();
 
       // Send data to backend
       fetch('ADMIN_BACKEND/admin_reset_password.php', {

@@ -595,25 +595,22 @@ img, video, canvas { max-width: 100%; height: auto; }
   .iep-cond-badge { font-size: 9px; padding: 2px 7px; }
 
   /* .teacher-toast (shared app-wide toast, e.g. the "Please select a
-     learner..." popup) has no width of its own — position:fixed + no
-     max-width made the browser's shrink-to-fit algorithm pick an oddly
-     narrow box for a long message, wrapping it across 3-4 lines instead
-     of using the phone's actual width. Force it onto one line at a size
-     that fits. */
+     learner..." popup) floats center-screen with no width of its own —
+     position:fixed + no max-width made the browser's shrink-to-fit
+     algorithm pick an oddly narrow box for a long message on a phone.
+     Give it real left/right bounds and drop the horizontal half of the
+     centering transform (the vertical half still centers it). */
   .teacher-toast {
     left: 12px;
     right: 12px;
     max-width: none;
-    transform: translateY(20px);
-    padding: 10px 14px;
+    transform: translateY(-50%) scale(.92);
+    padding: 12px 16px;
     gap: 8px;
-    font-size: 10.5px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 12px;
   }
-  .teacher-toast.show { transform: translateY(0); }
-  .teacher-toast i { font-size: 13px; flex-shrink: 0; }
+  .teacher-toast.show { transform: translateY(-50%) scale(1); }
+  .teacher-toast i { font-size: 15px; flex-shrink: 0; }
 
   /* Learning Activity Plan (First/Second/Third Grading) stays 3 columns
      side by side on a phone instead of stacking — shrink everything

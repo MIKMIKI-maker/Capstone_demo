@@ -9,13 +9,10 @@
     <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
     <link href="STUDENT_CSS/Student_progress.css?v=17" rel="stylesheet" />
     <link href="STUDENT_CSS/student_responsive.css?v=6" rel="stylesheet" />
-    <link
-        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;family=Nunito:wght@400;600;700;800;900&amp;display=swap"
-        rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&amp;display=swap"
-        rel="stylesheet" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
-    <script src="../ASSETS/student_portal.js?v=10" defer></script>
+    <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
+    <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
+    <link href="../ASSETS/vendor/fontawesome/css/all.min.css" rel="stylesheet" />
+    <script src="../ASSETS/student_portal.js?v=18" defer></script>
 </head>
 
 <body>
@@ -553,7 +550,7 @@
     });
     </script>
 <script>(function(){var _id=sessionStorage.getItem('student_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>
-<script>(function(){var _s=document.createElement('style');_s.textContent='.student-notif-badge{display:none!important}.student-notif-badge.has-notifs{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:50%;background:#ef4444;color:#fff;font-size:9px;font-weight:700;display:flex!important;align-items:center;justify-content:center;padding:0 2px;border:2px solid #fff}';document.head.appendChild(_s);var sid=sessionStorage.getItem('student_record_id')||'';var tid=sessionStorage.getItem('teacher_id')||'';if(!sid||!tid)return;fetch('STUDENT_BACKEND/student_notif_count.php?student_id='+encodeURIComponent(sid)+'&teacher_id='+encodeURIComponent(tid)).then(function(r){return r.json();}).then(function(d){var cnt=d&&d.unread>0?d.unread:0;if(cnt>0){var b=document.querySelector('.student-notif-badge');if(b){b.textContent=cnt>9?'9+':cnt;b.classList.add('has-notifs');}}}).catch(function(){});})();</script>
+<script>(function(){var _s=document.createElement('style');_s.textContent='.student-notif-badge{display:none!important}.student-notif-badge.has-notifs{position:absolute;top:-6px;right:-6px;min-width:21px;height:21px;border-radius:50%;background:#ef4444;color:#fff;font-size:11.5px;font-weight:800;display:flex!important;align-items:center;justify-content:center;padding:0 4px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.25)}';document.head.appendChild(_s);var sid=sessionStorage.getItem('student_record_id')||'';var tid=sessionStorage.getItem('teacher_id')||'';if(!sid||!tid)return;fetch('STUDENT_BACKEND/student_notif_count.php?student_id='+encodeURIComponent(sid)+'&teacher_id='+encodeURIComponent(tid)).then(function(r){return r.json();}).then(function(d){var cnt=d&&d.unread>0?d.unread:0;if(cnt>0){var b=document.querySelector('.student-notif-badge');if(b){b.textContent=cnt>9?'9+':cnt;b.classList.add('has-notifs');}}}).catch(function(){});})();</script>
 </body>
 
 </html>

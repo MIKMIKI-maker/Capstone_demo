@@ -9,13 +9,11 @@
   <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
   <title>SPED ALM - Activity Library</title>
   <link href="ADMIN_CSS/animations.css" rel="stylesheet" />
-  <link href="ADMIN_CSS/Admin_activity_library.css?v=3" rel="stylesheet" />
+  <link href="ADMIN_CSS/Admin_activity_library.css?v=4" rel="stylesheet" />
   <link href="ADMIN_CSS/admin_responsive.css" rel="stylesheet" />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;family=Nunito:wght@400;600;700;800;900&amp;family=Inter:wght@400;500;600&amp;display=swap"
-    rel="stylesheet" />
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
-  <script src="../ASSETS/admin_portal.js?v=5"></script>
+  <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
+  <link href="../ASSETS/vendor/fontawesome/css/all.min.css" rel="stylesheet" />
+  <script src="../ASSETS/admin_portal.js?v=14"></script>
 </head>
 
 <body>
@@ -250,7 +248,6 @@
               <th>Activity Title</th>
               <th>Template Type</th>
               <th>Teacher</th>
-              <th>Status</th>
               <th>Date Created</th>
               <th>Actions</th>
             </tr>
@@ -569,11 +566,13 @@
 
     /* ── Tab switching ── */
     function switchTab(tab) {
+      window.showQuickLoading();
       currentTab = tab;
       currentPage = 1;
       document.querySelectorAll('.al-tab').forEach(function(b){ b.classList.remove('active'); });
       document.getElementById('al-tab-' + tab).classList.add('active');
       applyFilter();
+      window.hideQuickLoading();
     }
 
     function updateTabCounts() {
@@ -586,7 +585,11 @@
     }
 
     /* ── Filter + paginate ── */
-    function applyFilter() {
+    // resetPage defaults to true (any real filter/search/tab change starts
+    // back at page 1) — goPage() passes false since it's re-deriving the
+    // filtered list to render a page the admin explicitly picked, and
+    // resetting here would always snap it straight back to page 1.
+    function applyFilter(resetPage) {
       var q       = (document.getElementById('al-search-input').value || '').toLowerCase();
       var types   = getActiveTypeFilters();
       updateFilterDot();
@@ -623,7 +626,7 @@
         }
       }
 
-      currentPage = 1;
+      if (resetPage !== false) currentPage = 1;
       renderTable(filtered);
     }
 
@@ -698,7 +701,6 @@
             +     '</span>'
             +   '</div>'
             + '</td>'
-            + '<td><span class="al-status al-status-pub"><span class="al-dot al-dot-green"></span>Published</span></td>'
             + '<td>'
             +   '<div class="al-td-date">'
             +     '<span class="al-date-main">' + dt.date + '</span>'
@@ -732,11 +734,6 @@
           +       '<span class="al-teacher-role">' + esc(a.teacherRole) + '</span>'
           +     '</span>'
           +   '</div>'
-          + '</td>'
-          + '<td>'
-          +   (isDraft
-          ?    '<span class="al-status al-status-draft"><span class="al-dot al-dot-amber"></span>Draft</span>'
-          :    '<span class="al-status al-status-pub"><span class="al-dot al-dot-green"></span>Published</span>')
           + '</td>'
           + '<td>'
           +   '<div class="al-td-date">'
@@ -788,8 +785,10 @@
     }
 
     function goPage(p) {
+      window.showQuickLoading();
       currentPage = p;
-      applyFilter();
+      applyFilter(false);
+      window.hideQuickLoading();
     }
 
     /* ── View modal ── */
@@ -798,7 +797,6 @@
       if (!a) return;
       var dt      = formatDate(a.savedAt);
       var typeCls = TYPE_BADGE[a.type] || 'al-tb-gray';
-      var isDraft = a.status === 'Draft';
       var ini     = initials(a.teacherName);
 
       document.getElementById('al-modal-title').textContent = a.title;
@@ -815,9 +813,6 @@
         + mRow('Deadline',      a.deadline
             ? new Date(a.deadline + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
             : '<span style="color:#94a3b8;">No deadline set</span>')
-        + mRow('Status',        isDraft
-            ? '<span class="al-status al-status-draft"><span class="al-dot al-dot-amber"></span>Draft</span>'
-            : '<span class="al-status al-status-pub"><span class="al-dot al-dot-green"></span>Published</span>')
         + '</div>';
 
       document.getElementById('admin-view-modal').style.display = 'flex';

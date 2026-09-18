@@ -170,9 +170,6 @@ body { display: flex; }
     text-decoration: none; transition: border-color .2s, color .2s;
 }
 .admin-trash-link:hover { border-color: #ef4444; color: #ef4444; }
-/* Hidden by default (desktop keeps the topbar link); shown only on mobile
-   via the media query below, which hides the topbar one instead. */
-.admin-trash-link--mobile-clone { display: none; }
 .admin-page-title { font-family: 'Nunito',sans-serif; font-size: 26px; font-weight: 900; color: #1a1a2e; }
 .admin-page-sub { font-size: 13px; color: #999; margin-top: 4px; }
 .admin-topbar-right { display: flex; align-items: center; gap: 12px; }
@@ -479,11 +476,6 @@ body { display: flex; }
   .admin-stat-card { min-width: 0; }
   .admin-topbar { flex-direction: column; align-items: flex-start; }
   .admin-topbar-actions { width: 100%; }
-  /* "Deleted Accounts" moves down near pagination on mobile (see the
-     clone added after the pagination bar); hide the topbar original and
-     let the notif bell (already pinned top-right by admin_portal.js)
-     have the row to itself. */
-  .admin-topbar-actions .admin-trash-link { display: none; }
   .admin-filter-search { width: 100%; }
   /* Search gets its own full-width row (flex-basis:100% below); the two
      filter dropdowns then wrap onto the next row together instead of each
@@ -496,23 +488,6 @@ body { display: flex; }
   .admin-btn-add, .admin-btn-delete, .admin-btn-bulk { flex: 1; justify-content: center; }
   .admin-modal-box { max-width: 100%; }
   .admin-topbar-left { width: 100%; text-align: center; }
-
-  /* Mobile-only clone of "Deleted Accounts", placed right after the
-     pagination bar at the very bottom of the table card. */
-  .admin-trash-link--mobile-clone {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    margin: 8px 0 16px;
-    padding: 10px;
-    border-radius: 10px;
-    border: 1px solid #e0dbd0;
-    color: #555;
-    font-size: 13px;
-    font-weight: 600;
-    text-decoration: none;
-  }
 
   /* Same approach as Activity Library's table: instead of squeezing 6
      columns into a phone width (which overlapped text), let the whole
