@@ -263,9 +263,11 @@
                         <!-- TEACHER NOTES — backend: inject notes -->
                         <div class="teacher-notes-card">
                             <div class="teacher-notes-title">Teacher's Notes /<br />Recommendations</div>
-                            <div class="teacher-notes-empty">No notes yet. Click + Add Note to add a recommendation for
-                                this student.</div>
-                            <button class="btn-add-note" type="button">+ Add Note</button>
+                            <div id="teacherNotesList">
+                                <div class="teacher-notes-empty">No notes yet. Click + Add Note to add a recommendation for
+                                    this student.</div>
+                            </div>
+                            <button class="btn-add-note" id="btnAddNote" type="button">+ Add Note</button>
                         </div>
                     </div>
                 </div><!-- /teacher-progress-grid -->
@@ -625,31 +627,60 @@
         }
 
         // ── Notes ─────────────────────────────────────────────────
-        function renderTeacherNotes(notes) {
-            const card = document.querySelector('.teacher-notes-card');
-            if (!card) return;
+        // Wired once — the button itself is static now (only #teacherNotesList
+        // gets rebuilt on every render), so re-attaching per render would just
+        // stack duplicate listeners.
+        document.getElementById('btnAddNote')?.addEventListener('click', openNoteModal);
 
-            let html = '<div class="teacher-notes-title">Teacher\'s Notes / Recommendations</div>';
+        function renderTeacherNotes(notes) {
+            const list = document.getElementById('teacherNotesList');
+            if (!list) return;
 
             if (!notes || notes.length === 0) {
-                html += '<div class="teacher-notes-empty">No notes yet. Click + Add Note to add a recommendation.</div>';
-            } else {
-                notes.forEach(n => {
-                    const dateStr = n.created_at
-                        ? new Date(n.created_at.replace(' ', 'T') + 'Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                        : '';
-                    html += `<div class="teacher-note-item">
-                        <div class="teacher-note-text">${escHtml(n.note)}</div>
-                        ${dateStr ? '<div class="teacher-note-date">' + dateStr + '</div>' : ''}
-                    </div>`;
-                });
+                list.innerHTML = '<div class="teacher-notes-empty">No notes yet. Click + Add Note to add a recommendation.</div>';
+                return;
             }
 
-            html += '<button class="btn-add-note" type="button">+ Add Note</button>';
-            card.innerHTML = html;
+            list.innerHTML = notes.map(n => {
+                const dateStr = n.created_at
+                    ? new Date(n.created_at.replace(' ', 'T') + 'Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                    : '';
+                const label = n.source === 'activity'
+                    ? '📋 ' + escHtml(n.activity_title || 'Activity')
+                    : '📋 General Note';
+                const delType = n.source === 'activity' ? 'activity' : 'general';
+                return `<div class="teacher-note-item">
+                    <div class="teacher-note-head">
+                        <span class="teacher-note-label">${label}</span>
+                        <button class="teacher-note-del" type="button" onclick="deleteTeacherNote('${delType}', ${n.id})" title="Delete note">🗑️</button>
+                    </div>
+                    <div class="teacher-note-text">${escHtml(n.note)}</div>
+                    ${dateStr ? '<div class="teacher-note-date">' + dateStr + '</div>' : ''}
+                </div>`;
+            }).join('');
+        }
 
-            // Re-attach listener after innerHTML rebuild
-            card.querySelector('.btn-add-note')?.addEventListener('click', openNoteModal);
+        // `type` picks the endpoint/param: a general note (typed via + Add
+        // Note) is deleted outright; an activity note only clears the
+        // comment on that submission — the score/finalized status stay put.
+        function deleteTeacherNote(type, id) {
+            if (!confirm('Delete this note? This cannot be undone.')) return;
+            const action = type === 'activity' ? 'delete_activity_note' : 'delete';
+            const param  = type === 'activity' ? 'submission_id' : 'note_id';
+            const url = 'TEACHER_BACKEND/teacher_save_note.php?action=' + action
+                + '&' + param + '=' + encodeURIComponent(id)
+                + '&teacher_id=' + TEACHER_ID + '&student_id=' + encodeURIComponent(currentStudentId);
+            fetch(url, { method: 'POST' })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.success) {
+                        window.showToast('Note deleted.');
+                        loadLearnerProgress();
+                    } else {
+                        window.showToast('Could not delete note: ' + (res.message || 'Unknown error'), 'error');
+                    }
+                })
+                .catch(() => window.showToast('Network error — please try again.', 'error'));
         }
 
         // ── Note modal ────────────────────────────────────────────

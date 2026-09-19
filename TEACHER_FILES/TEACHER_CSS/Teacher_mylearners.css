@@ -188,6 +188,10 @@ body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-s
 .teacher-notes-card { background: var(--white); border-radius: 18px; padding: 22px 24px; box-shadow: var(--shadow-sm); border: 1px solid #E8EDF4; }
 .teacher-notes-title { font-size: 15px; font-weight: 700; color: var(--accent); margin-bottom: 14px; }
 .teacher-notes-empty { font-size: 13px; color: #94A3B8; font-style: italic; text-align: center; padding: 18px 0 22px; line-height: 1.6; }
+/* Caps the list's own height once notes pile up, instead of the card
+   just growing taller and taller — same reasoning as the skills/history
+   cards next to it. */
+#teacherNotesList { max-height: 340px; overflow-y: auto; padding-right: 4px; }
 .btn-add-note { display: block; width: 100%; padding: 12px; background: var(--white); border: 1.5px solid #BFDBFE; color: var(--accent); border-radius: 12px; font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: var(--transition); text-align: center; margin-top: 4px; }
 .btn-add-note:hover { background: #EFF6FF; }
 
@@ -211,6 +215,10 @@ body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-s
 /* ── NOTES ITEMS ── */
 .teacher-note-item { padding: 12px 0; border-bottom: 1px solid #F1F5F9; }
 .teacher-note-item:last-of-type { border-bottom: none; }
+.teacher-note-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.teacher-note-label { font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .04em; }
+.teacher-note-del { background: none; border: none; font-size: 13px; color: #94A3B8; cursor: pointer; line-height: 1; padding: 2px 4px; border-radius: 6px; transition: var(--transition); }
+.teacher-note-del:hover { color: var(--red); background: #FEF2F2; }
 .teacher-note-text { font-size: 13px; color: var(--text); line-height: 1.55; }
 .teacher-note-date { font-size: 12px; color: #94A3B8; margin-top: 4px; }
 

@@ -38,6 +38,17 @@ if ($action === 'save') {
     $stmt->execute();
     echo json_encode(['success' => true]);
     $stmt->close();
+
+} elseif ($action === 'delete_activity_note') {
+    // Clears just the comment left while finalizing a submission — the
+    // score/assistance level/finalized status are untouched, only the
+    // note text goes away.
+    $submission_id = isset($_REQUEST['submission_id']) ? intval($_REQUEST['submission_id']) : 0;
+    $stmt = $conn->prepare("UPDATE activity_submissions SET teacher_note = NULL WHERE id=? AND teacher_id=?");
+    $stmt->bind_param("ii", $submission_id, $teacher_id);
+    $stmt->execute();
+    echo json_encode(['success' => true]);
+    $stmt->close();
 }
 
 $conn->close();

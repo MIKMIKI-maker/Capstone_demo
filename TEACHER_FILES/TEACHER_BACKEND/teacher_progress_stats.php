@@ -208,15 +208,55 @@ if ($stmt) {
 }
 
 // ── Teacher notes ─────────────────────────────────────────────────────────────
+// Two sources feed the notes panel: general notes typed via "+ Add Note",
+// and per-activity comments left while finalizing a submission. Each is
+// tagged with `source` (+ `activity_title` for the latter) so the UI can
+// label them apart and target the right delete endpoint for each.
+$notes = [];
+
 $stmt = safeQuery($conn,
     "SELECT id, note, created_at FROM student_notes WHERE teacher_id = ? AND student_id = ? ORDER BY created_at DESC LIMIT 20",
     "ii", $teacher_id, $student_id
 );
 if ($stmt) {
     $r = $stmt->get_result();
-    while ($n = $r->fetch_assoc()) { $progress['notes'][] = $n; }
+    while ($n = $r->fetch_assoc()) {
+        $notes[] = [
+            'source'         => 'general',
+            'id'             => (int)$n['id'],
+            'note'           => $n['note'],
+            'created_at'     => $n['created_at'],
+            'activity_title' => null,
+        ];
+    }
     $stmt->close();
 }
+
+$stmt = safeQuery($conn,
+    "SELECT sub.id AS submission_id, sub.teacher_note AS note, sub.finalized_at AS created_at, ta.activity_title
+     FROM activity_submissions sub
+     JOIN teacher_activities ta ON ta.id = sub.activity_id
+     WHERE sub.student_id = ? AND sub.teacher_id = ? AND sub.is_finalized = 1
+       AND sub.teacher_note IS NOT NULL AND sub.teacher_note != ''
+     ORDER BY sub.finalized_at DESC LIMIT 20",
+    "ii", $student_id, $teacher_id
+);
+if ($stmt) {
+    $r = $stmt->get_result();
+    while ($n = $r->fetch_assoc()) {
+        $notes[] = [
+            'source'         => 'activity',
+            'id'             => (int)$n['submission_id'],
+            'note'           => $n['note'],
+            'created_at'     => $n['created_at'],
+            'activity_title' => $n['activity_title'],
+        ];
+    }
+    $stmt->close();
+}
+
+usort($notes, function ($a, $b) { return strcmp($b['created_at'] ?? '', $a['created_at'] ?? ''); });
+$progress['notes'] = $notes;
 
 echo json_encode($progress);
 $conn->close();
