@@ -75,9 +75,14 @@ $stats['recent_activities'] = $recent;
 // Per-student progress
 $stmt = $conn->prepare(
     "SELECT s.id, s.student_name, s.disability_type, s.status,
-        (SELECT lp.score FROM learner_progress lp WHERE lp.student_id = s.id AND lp.teacher_id = ?
-         ORDER BY lp.created_at DESC LIMIT 1) AS last_score,
-        (SELECT COUNT(*) FROM learner_progress lp WHERE lp.student_id = s.id AND lp.teacher_id = ?) AS activity_count
+        (SELECT ROUND(AVG(CASE WHEN sub.is_finalized = 1 AND sub.finalized_score IS NOT NULL THEN sub.finalized_score ELSE lp.score END))
+         FROM learner_progress lp
+         JOIN teacher_activities ta ON ta.id = lp.activity_id AND ta.teacher_id = lp.teacher_id
+         LEFT JOIN activity_submissions sub ON sub.student_id = lp.student_id AND sub.activity_id = lp.activity_id AND sub.teacher_id = lp.teacher_id
+         WHERE lp.student_id = s.id AND lp.teacher_id = ?) AS last_score,
+        (SELECT COUNT(*) FROM learner_progress lp
+         JOIN teacher_activities ta ON ta.id = lp.activity_id AND ta.teacher_id = lp.teacher_id
+         WHERE lp.student_id = s.id AND lp.teacher_id = ?) AS activity_count
      FROM students s
      WHERE s.teacher_id = ?
      ORDER BY s.student_name ASC

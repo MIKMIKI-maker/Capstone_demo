@@ -224,7 +224,7 @@
         '<div class="student-mat-progress-bar"><div class="student-mat-progress-fill" style="width:' + pct + '%;background:' + (completed ? '#16a34a' : '') + '"></div></div>',
         '<span class="student-mat-progress-pct">' + pct + '%</span>',
         '</div>',
-        '<button class="student-mat-card-btn" type="button" style="' + btnStyle + '" onclick="startActivity(\'' + esc(act.id) + '\',\'' + esc(act.type) + '\')">' + btnLabel + '</button>',
+        '<button class="student-mat-card-btn" type="button" style="' + btnStyle + '" onclick="startActivity(\'' + esc(act.id) + '\',\'' + esc(act.type) + '\',' + ((completed || inProgress) ? 'true' : 'false') + ')">' + btnLabel + '</button>',
         '</div>'
       ].join('');
     }
@@ -475,7 +475,7 @@
       'WrittenResponse':  '../TEACHER_FILES/TEMPLATES/Written_Response_Template.html',
       'Tracing':          '../TEACHER_FILES/TEMPLATES/Tracing_Template.html'
     };
-    function startActivity(dbId, type) {
+    function startActivity(dbId, type, isReview) {
       var tpl = TPL_MAP[type];
       if (!tpl) { alert('Activity type not supported yet.'); return; }
       // Map DB activity id back to localStorage pub id so the template can
@@ -485,7 +485,13 @@
       var match = lsActs.find(function(a) { return String(a.db_activity_id) === String(dbId); });
       var pubId = match ? match.id : String(dbId);
       sessionStorage.setItem('stu_return_url', window.location.href);
-      window.location.href = tpl + '?student_mode=1&pub_id=' + encodeURIComponent(pubId);
+      // A card already showing "Review" (completed or in-progress) reopens
+      // the activity in review_mode=1 — every template checks that flag
+      // before saving anything, so re-answering here can't overwrite the
+      // original submission's score/retake history (same guarantee
+      // Student_progress.html's reviewActivity() already gives).
+      var reviewParam = isReview ? '&review_mode=1' : '';
+      window.location.href = tpl + '?student_mode=1' + reviewParam + '&pub_id=' + encodeURIComponent(pubId);
     }
 
     // Reload when teacher publishes while student tab is visible

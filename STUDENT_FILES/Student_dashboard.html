@@ -328,8 +328,12 @@
         var todayPanel = document.getElementById('student-panel-today');
 
         // "Recent" = published within the last 7 days (use created_at from DB)
+        // and not already completed — a finished activity belongs in My
+        // Progress, not back here still showing "NEW"/"Start" (matches the
+        // same completed-filter My Materials already applies).
         var cutoff = Date.now() - 7 * 86400000;
         var recent = materials.filter(function(a) {
+          if (a.progress_status === 'completed') return false;
           // MySQL datetime strings are UTC but carry no timezone marker, so
           // appending 'Z' keeps the Date constructor from treating them as
           // already being in the browser's local time (PHT).

@@ -346,10 +346,12 @@
             fillGreen.closest('.student-ov-stat').querySelector('.student-circle-denom').textContent = '/' + totalActivities;
         }
 
-        // Completed Activities — the ones that actually passed (score >= 80),
-        // matching the same threshold My Materials uses to move an activity
-        // out of the active list.
-        var completedActivities = activities.filter(function(r) { return (r.score || 0) >= 80; });
+        // Completed Activities — passed (score >= 80) OR already finalized by
+        // the teacher. A finalized submission is the teacher's final word on
+        // it regardless of the score they gave, so it's done either way —
+        // matches the same rule My Materials/Dashboard use to stop treating
+        // an activity as still-in-progress/retakeable.
+        var completedActivities = activities.filter(function(r) { return r.is_finalized == 1 || (r.score || 0) >= 80; });
         var completedList = document.getElementById('completedList');
         document.getElementById('completedCount').textContent = completedActivities.length + ' Activit' + (completedActivities.length === 1 ? 'y' : 'ies');
         if (completedActivities.length === 0) {

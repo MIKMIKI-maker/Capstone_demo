@@ -25,15 +25,18 @@ $student_record_id = (int)$rec['student_record_id'];
 $stmt = $conn->prepare("
     SELECT a.id, a.activity_title, a.activity_description, a.activity_type, a.subject,
            a.grade_level, a.difficulty, a.status AS activity_status, a.created_at,
-           lp.score, lp.assessment_date,
+           CASE WHEN sub.is_finalized = 1 AND sub.finalized_score IS NOT NULL THEN sub.finalized_score ELSE lp.score END AS score,
+           lp.assessment_date,
            CASE
                WHEN lp.id IS NULL THEN 'new'
+               WHEN sub.is_finalized = 1 THEN 'completed'
                WHEN lp.score >= 80 THEN 'completed'
                ELSE 'in_progress'
            END AS progress_status
     FROM teacher_activities a
     INNER JOIN activity_assignments aa ON aa.activity_id = a.id AND aa.student_id = ?
     LEFT JOIN learner_progress lp ON lp.activity_id = a.id AND lp.student_id = ?
+    LEFT JOIN activity_submissions sub ON sub.student_id = lp.student_id AND sub.activity_id = lp.activity_id AND sub.teacher_id = lp.teacher_id
     WHERE a.status = 'published'
     ORDER BY a.created_at DESC
 ");
