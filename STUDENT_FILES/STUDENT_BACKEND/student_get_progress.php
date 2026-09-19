@@ -77,7 +77,7 @@ $stmt4->close();
 
 // Activity-specific notes from finalized submissions
 $stmt5 = $conn->prepare("
-    SELECT sub.teacher_note AS note, sub.finalized_at AS created_at, ta.activity_title
+    SELECT sub.teacher_note AS note, sub.finalized_at AS created_at, ta.activity_title, ta.subject
     FROM activity_submissions sub
     JOIN teacher_activities ta ON ta.id = sub.activity_id
     WHERE sub.student_id = ? AND sub.teacher_id = ? AND sub.is_finalized = 1 AND sub.teacher_note IS NOT NULL AND sub.teacher_note != ''

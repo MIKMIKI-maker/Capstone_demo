@@ -647,11 +647,16 @@
                     : '';
                 // The same activity title can show up more than once (a
                 // learner can have several separate assignments named the
-                // same thing), so the label carries the date too — without
-                // it there'd be no way to tell which specific attempt a
-                // comment like "Sort the Pictures" belongs to.
+                // same thing) — even the same day, so date alone doesn't
+                // always disambiguate. The subject (Cognitive, Language,
+                // etc. — same thing "Performance by Activity" shows under
+                // each score) plus the date is what actually tells two
+                // "Match the Pictures" comments apart.
+                const subject = n.subject ? n.subject.charAt(0).toUpperCase() + n.subject.slice(1) : '';
                 const label = n.source === 'activity'
-                    ? '📋 ' + escHtml(n.activity_title || 'Activity') + (dateStr ? ' · ' + dateStr : '')
+                    ? '📋 ' + escHtml(n.activity_title || 'Activity')
+                        + (subject ? ' · ' + escHtml(subject) : '')
+                        + (dateStr ? ' · ' + dateStr : '')
                     : '📋 General Note';
                 const delType = n.source === 'activity' ? 'activity' : 'general';
                 return `<div class="teacher-note-item">

@@ -233,7 +233,7 @@ if ($stmt) {
 }
 
 $stmt = safeQuery($conn,
-    "SELECT sub.id AS submission_id, sub.teacher_note AS note, sub.finalized_at AS created_at, ta.activity_title
+    "SELECT sub.id AS submission_id, sub.teacher_note AS note, sub.finalized_at AS created_at, ta.activity_title, ta.subject
      FROM activity_submissions sub
      JOIN teacher_activities ta ON ta.id = sub.activity_id
      WHERE sub.student_id = ? AND sub.teacher_id = ? AND sub.is_finalized = 1
@@ -250,6 +250,7 @@ if ($stmt) {
             'note'           => $n['note'],
             'created_at'     => $n['created_at'],
             'activity_title' => $n['activity_title'],
+            'subject'        => $n['subject'],
         ];
     }
     $stmt->close();
