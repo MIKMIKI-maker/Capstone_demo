@@ -196,11 +196,13 @@
             <button class="student-notes-trigger" id="studentNotesTrigger" type="button">📝 Teacher's Notes / Recommendations</button>
             <div class="student-notes-card" id="studentNotesCard">
                 <div class="student-notes-title">Teacher's Notes / Recommendations</div>
-                <div class="student-notes-empty">
-                    <div class="student-notes-empty-icon">📝</div>
-                    <p class="student-notes-empty-title">No notes yet</p>
-                    <p class="student-notes-empty-desc">Your teacher's feedback and recommendations will appear here.
-                    </p>
+                <div id="notesList">
+                    <div class="student-notes-empty">
+                        <div class="student-notes-empty-icon">📝</div>
+                        <p class="student-notes-empty-title">No notes yet</p>
+                        <p class="student-notes-empty-desc">Your teacher's feedback and recommendations will appear here.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -210,23 +212,25 @@
                 <span class="student-history-title">Activity History</span>
                 <span class="student-history-count" id="historyCount">— records</span>
             </div>
-            <table class="student-history-table">
-                <thead>
-                    <tr>
-                        <th style="width:130px;">Date Submitted</th>
-                        <th style="width:220px;">Activity</th>
-                        <th style="width:130px;">Type · Grading</th>
-                        <th style="width:100px;">Score</th>
-                        <th style="width:100px;">Retakes</th>
-                        <th style="width:160px;">Assistance Level</th>
-                        <th style="width:110px;">Status</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody id="historyBody">
-                    <tr><td class="student-history-empty" colspan="8">No activity history yet.</td></tr>
-                </tbody>
-            </table>
+            <div class="student-history-scroll">
+                <table class="student-history-table">
+                    <thead>
+                        <tr>
+                            <th style="width:130px;">Date Submitted</th>
+                            <th style="width:220px;">Activity</th>
+                            <th style="width:130px;">Type · Grading</th>
+                            <th style="width:100px;">Score</th>
+                            <th style="width:100px;">Retakes</th>
+                            <th style="width:160px;">Assistance Level</th>
+                            <th style="width:110px;">Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody">
+                        <tr><td class="student-history-empty" colspan="8">No activity history yet.</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </main>
 
@@ -443,9 +447,9 @@
         }
 
         // Teacher's Notes
-        var notesCard = document.querySelector('.student-notes-card');
+        var notesCard = document.getElementById('notesList');
         if (notesCard) {
-            var notesHtml = '<div class="student-notes-title">Teacher\'s Notes / Recommendations</div>';
+            var notesHtml = '';
             if (!notes || notes.length === 0) {
                 notesHtml += '<div class="student-notes-empty">'
                     + '<div class="student-notes-empty-icon">📝</div>'

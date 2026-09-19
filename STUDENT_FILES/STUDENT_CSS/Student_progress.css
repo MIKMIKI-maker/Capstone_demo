@@ -205,6 +205,10 @@ body {
 .student-perf-empty-desc, .student-notes-empty-desc {
   max-width: 320px; color: var(--ink-soft); font-weight: 500; font-size: 14px; line-height: 1.4;
 }
+/* Caps each list's own height once it grows past a handful of rows,
+   instead of letting the card keep stretching taller than its neighbor
+   in the grid — same reasoning as #completedList below. */
+#perfList, #notesList { max-height: 340px; overflow-y: auto; padding-right: 4px; }
 
 /* Mobile-only trigger for the Teacher's Notes modal — the card itself
    stays the source of truth (moved into the modal on open, see the
@@ -266,12 +270,16 @@ body {
 
 /* ---- Activity history ---- */
 .student-history-card {
-  padding: 18px 22px; border-radius: var(--r-lg); background: var(--card); overflow-x: auto;
+  padding: 18px 22px; border-radius: var(--r-lg); background: var(--card);
   box-shadow: 0 10px 0 rgba(36, 58, 94, .08), 0 18px 30px rgba(36, 58, 94, .12);
 }
 .student-history-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .student-history-title { font-family: var(--font-head); font-weight: 700; font-size: 18px; color: var(--ink); }
 .student-history-count { color: var(--ink-soft); font-weight: 600; font-size: 13px; }
+/* Caps the table's own height once records pile up, instead of letting
+   the card (and the page under it) stretch indefinitely. The header row
+   stays sticky so it doesn't scroll away with the records under it. */
+.student-history-scroll { max-height: 420px; overflow: auto; }
 /* table-layout:fixed makes the column width:% set on each <th> actually
    binding — with the default "auto" layout, the browser was re-sizing
    columns off their (mostly short) cell content instead and ignoring
@@ -284,6 +292,7 @@ body {
   letter-spacing: .04em; text-transform: uppercase; color: var(--ink-soft);
   border-bottom: 2px solid #eef2f8;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  position: sticky; top: 0; z-index: 1; background: var(--card);
 }
 .student-history-table td {
   padding: 10px 12px; font-size: 15px; color: var(--ink);
@@ -368,7 +377,7 @@ body {
   }
   #studentNotesModalCard { padding: 40px 20px 20px; }
 
-  /* .student-history-card already has overflow-x:auto, but the table
+  /* .student-history-scroll already has overflow:auto, but the table
      itself had no min-width — with none of its own, the browser's table
      auto-layout just crushed all 7 columns (badges included) to fit the
      phone width instead of actually overflowing into that scrollbar.
@@ -409,8 +418,10 @@ body {
      under, same as a phone) just cut the last columns off entirely
      instead of making them reachable. Undo it here and let the table
      shrink-to-fit the page width instead — smaller text, but every
-     column stays visible on paper. */
-  .student-history-card { overflow-x: visible; }
+     column stays visible on paper. Same reasoning for the perf/notes
+     lists and the history scroller's max-height — a scrollbar can't be
+     scrolled on paper, so print needs every row visible instead. */
+  #perfList, #notesList, .student-history-scroll { max-height: none; overflow: visible; }
   .student-history-table { min-width: 0; font-size: 11px; }
   .student-history-table th,
   .student-history-table td { padding: 6px 8px; }
