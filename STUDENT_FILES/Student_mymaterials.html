@@ -12,6 +12,7 @@
   <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
   <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
   <link href="../ASSETS/vendor/fontawesome/css/all.min.css" rel="stylesheet" />
+  <script src="../ASSETS/vendor/js/jspdf.umd.min.js"></script>
   <script src="../ASSETS/student_portal.js?v=18" defer></script>
 </head>
 
@@ -270,21 +271,27 @@
         '</div>';
     }
 
+    function escJs(s) {
+      return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
+
     function renderFileCard(file) {
       var isLink = file.link_url && file.link_url.length > 0;
       var mime = file.file_type || '';
+      var isImage = !isLink && mime.indexOf('image') >= 0;
       var icon = isLink ? '🔗' : '📄';
       if (!isLink) {
         if (mime.indexOf('pdf') >= 0) icon = '📕';
-        else if (mime.indexOf('image') >= 0) icon = '🖼️';
+        else if (isImage) icon = '🖼️';
         else if (mime.indexOf('word') >= 0 || mime.indexOf('document') >= 0) icon = '📝';
         else if (mime.indexOf('video') >= 0) icon = '🎬';
         else if (mime.indexOf('audio') >= 0) icon = '🎵';
       }
       // Files uploaded after the Cloudinary migration store a full URL in
       // file_name; older entries are still a bare local filename.
-      var url = esc(isLink ? file.link_url
-        : (file.file_name.indexOf('http') === 0 ? file.file_name : '../TEACHER_FILES/uploads/materials/' + file.file_name));
+      var rawUrl = isLink ? file.link_url
+        : (file.file_name.indexOf('http') === 0 ? file.file_name : '../TEACHER_FILES/uploads/materials/' + file.file_name);
+      var url = esc(rawUrl);
       var subText = isLink
         ? '<span style="background:#dcfce7;color:#15803d;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;">LINK</span>'
         : (function(){
@@ -300,13 +307,62 @@
           '<div style="font-size:11px;color:#4ade80;margin-top:4px;">' + subText + '</div>' +
         '</div>' +
         '<div style="display:flex;gap:8px;flex-shrink:0;">' +
-          // download works reliably for same-origin uploads; a cross-origin
-          // (Cloudinary) URL still opens/saves per the browser's own rules —
-          // not something this attribute can force across origins.
-          (isLink ? '' : '<a href="' + url + '" download="' + esc(file.file_original_name || file.title) + '" style="padding:8px 14px;background:#fff;color:#16a34a;border:1.5px solid #16a34a;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">⬇ Download</a>') +
+          (isLink ? '' : isImage
+            // Pictures download as a PDF instead of the raw image — a plain
+            // <a download> can't transform the file, so this goes through
+            // canvas+jsPDF instead. Falls back to the original file if the
+            // image is cross-origin without CORS headers (canvas can't read
+            // pixels from it, so no PDF can be built from it either).
+            ? '<button type="button" onclick="downloadImageAsPdf(\'' + escJs(rawUrl) + '\', \'' + escJs((file.file_original_name || file.title || 'download').replace(/\.[^.\/]+$/, '')) + '\')" style="padding:8px 14px;background:#fff;color:#16a34a;border:1.5px solid #16a34a;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">⬇ Download PDF</button>'
+            // download works reliably for same-origin uploads; a cross-origin
+            // (Cloudinary) URL still opens/saves per the browser's own rules —
+            // not something this attribute can force across origins.
+            : '<a href="' + url + '" download="' + esc(file.file_original_name || file.title) + '" style="padding:8px 14px;background:#fff;color:#16a34a;border:1.5px solid #16a34a;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">⬇ Download</a>') +
           '<a href="' + url + '" target="_blank" rel="noopener" style="padding:8px 16px;background:#16a34a;color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">' + (isLink ? 'Open 🔗' : 'Open 📂') + '</a>' +
         '</div>' +
       '</div>';
+    }
+
+    // Wraps an uploaded picture in a one-page PDF sized to the image itself,
+    // instead of downloading the raw file. `crossOrigin` lets the canvas
+    // read a same-CORS-enabled image's pixels (Cloudinary sends the right
+    // headers); if that's not the case here, drawing taints the canvas and
+    // toDataURL() throws — caught below to fall back to a plain download of
+    // the original image rather than leaving the click looking like it did
+    // nothing.
+    function downloadImageAsPdf(url, baseName) {
+      var img = new Image();
+      img.crossOrigin = 'anonymous';
+      function plainDownload() {
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = baseName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+      img.onload = function () {
+        try {
+          var canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          canvas.getContext('2d').drawImage(img, 0, 0);
+          var imgData = canvas.toDataURL('image/jpeg', 0.92);
+          var JsPdfCtor = window.jspdf && window.jspdf.jsPDF;
+          // 96 CSS px/inch, 25.4mm/inch — good enough for a downloadable doc.
+          var pxToMm = 25.4 / 96;
+          var wMm = img.naturalWidth * pxToMm;
+          var hMm = img.naturalHeight * pxToMm;
+          var pdf = new JsPdfCtor({ orientation: wMm > hMm ? 'landscape' : 'portrait', unit: 'mm', format: [wMm, hMm] });
+          pdf.addImage(imgData, 'JPEG', 0, 0, wMm, hMm);
+          pdf.save(baseName + '.pdf');
+        } catch (e) {
+          if (window.showToast) window.showToast('Could not convert to PDF — downloading the original image instead.', 'error');
+          plainDownload();
+        }
+      };
+      img.onerror = plainDownload;
+      img.src = url;
     }
 
     function renderFilesSection(files) {
