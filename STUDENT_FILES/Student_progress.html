@@ -7,7 +7,7 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>SPED ALM - My Progress</title>
     <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
-    <link href="STUDENT_CSS/Student_progress.css?v=17" rel="stylesheet" />
+    <link href="STUDENT_CSS/Student_progress.css?v=19" rel="stylesheet" />
     <link href="STUDENT_CSS/student_responsive.css?v=6" rel="stylesheet" />
     <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
     <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
@@ -160,6 +160,10 @@
             </div>
         </div>
         <!-- COMPLETED ACTIVITIES (moved here from My Materials once passed) -->
+        <!-- Mobile-only trigger — opens the card below inside a modal
+             instead of it sitting inline and eating up phone-screen
+             space. Hidden on desktop, where the card just stays inline. -->
+        <button class="student-completed-trigger" id="studentCompletedTrigger" type="button">✅ Completed Activities</button>
         <div class="student-perf-card" id="completedCard" style="margin-bottom:20px;">
             <div class="student-perf-header">
                 <span class="student-perf-title">✅ Completed Activities</span>
@@ -243,6 +247,14 @@
         </div>
     </div>
 
+    <!-- COMPLETED ACTIVITIES MODAL (mobile only — same node-swap approach
+         as the Teacher's Notes modal above) -->
+    <div class="pg-modal-overlay" id="studentCompletedOverlay">
+        <div class="pg-modal-card" id="studentCompletedModalCard">
+            <button class="pg-modal-close" id="studentCompletedCloseBtn" type="button">✖</button>
+        </div>
+    </div>
+
     <script>
     /* ── Teacher's Notes card → modal on mobile ── */
     (function() {
@@ -270,6 +282,31 @@
         trigger.addEventListener('click', openNotesModal);
         closeBtn.addEventListener('click', closeNotesModal);
         overlay.addEventListener('click', function(e) { if (e.target === overlay) closeNotesModal(); });
+    })();
+
+    /* ── Completed Activities card → modal on mobile ── */
+    (function() {
+        var card = document.getElementById('completedCard');
+        var trigger = document.getElementById('studentCompletedTrigger');
+        var overlay = document.getElementById('studentCompletedOverlay');
+        var modalCard = document.getElementById('studentCompletedModalCard');
+        var closeBtn = document.getElementById('studentCompletedCloseBtn');
+        if (!card || !trigger || !overlay || !modalCard || !closeBtn) return;
+        var homeParent = card.parentNode, homeNext = card.nextSibling;
+
+        function openCompletedModal() {
+            modalCard.appendChild(card);
+            card.classList.add('student-completed-card--in-modal');
+            overlay.classList.add('show');
+        }
+        function closeCompletedModal() {
+            overlay.classList.remove('show');
+            card.classList.remove('student-completed-card--in-modal');
+            homeParent.insertBefore(card, homeNext);
+        }
+        trigger.addEventListener('click', openCompletedModal);
+        closeBtn.addEventListener('click', closeCompletedModal);
+        overlay.addEventListener('click', function(e) { if (e.target === overlay) closeCompletedModal(); });
     })();
 
     // Same template map Student_mymaterials.html uses to open an activity.
@@ -502,6 +539,16 @@
         var card = document.getElementById('completedCard');
         if (!card) return;
         _completedHighlightedOnce = true;
+
+        // On mobile the card itself is display:none (swapped for the
+        // trigger button, see the modal script above) — scrolling/pulsing
+        // a hidden element does nothing visible, so open the modal instead.
+        var trigger = document.getElementById('studentCompletedTrigger');
+        if (trigger && getComputedStyle(trigger).display !== 'none') {
+            trigger.click();
+            return;
+        }
+
         card.scrollIntoView({ behavior: 'smooth', block: 'start' });
         card.classList.add('student-completed-card--highlight');
         setTimeout(function () { card.classList.remove('student-completed-card--highlight'); }, 3000);

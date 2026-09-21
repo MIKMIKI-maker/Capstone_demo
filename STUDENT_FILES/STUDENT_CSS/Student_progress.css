@@ -216,6 +216,21 @@ body {
    on desktop, where the card is inline as normal. */
 .student-notes-trigger { display: none; }
 
+/* Completed Activities: unlike Teacher's Notes above, this trigger stays
+   on at every width (not just mobile) — the card lives in a modal on
+   desktop too now, always the source of truth (moved in on open, see
+   the page's JS). */
+.student-perf-card#completedCard { display: none; }
+.student-perf-card#completedCard.student-completed-card--in-modal { display: block; }
+.student-completed-trigger {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; margin-bottom: 20px; padding: 13px 14px;
+  background: #fff; color: var(--ink); border: 1.5px solid #e2e8f0; border-radius: 14px;
+  font-family: var(--font-head); font-size: 14px; font-weight: 700;
+  box-shadow: 0 6px 16px rgba(36, 58, 94, .07); cursor: pointer;
+}
+#studentCompletedModalCard { padding: 40px 20px 20px; }
+
 /* Generic small modal (progress page) — overlay + centered card,
    reused for the Teacher's Notes modal. */
 .pg-modal-overlay {

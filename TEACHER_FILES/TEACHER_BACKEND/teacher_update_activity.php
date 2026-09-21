@@ -16,6 +16,11 @@ $activity_id    = isset($_POST['activity_id'])    ? intval($_POST['activity_id']
 $activity_title = isset($_POST['activity_title']) ? trim($_POST['activity_title'])   : '';
 $subject        = isset($_POST['subject'])        ? trim($_POST['subject'])          : '';
 $content_json   = isset($_POST['content_json'])   ? $_POST['content_json']           : null;
+// Compressed (~160px) preview image, auto-derived client-side from the
+// activity's first uploaded picture — only overwrite the stored one when a
+// new value is actually sent, so re-saving without touching images doesn't
+// wipe out a thumbnail that was already there.
+$thumbnail      = isset($_POST['thumbnail'])      ? $_POST['thumbnail']              : null;
 $deadline       = isset($_POST['deadline'])       ? trim($_POST['deadline'])         : '';
 if ($deadline === '') $deadline = null;
 // The teacher chose "Save Draft" instead of finishing/re-confirming the
@@ -42,12 +47,21 @@ if (!$conn) {
     exit;
 }
 
-$stmt = $conn->prepare("UPDATE teacher_activities SET activity_title = ?, subject = ?, content_json = ?, deadline = ? WHERE id = ? AND teacher_id = ?");
-if (!$stmt) {
-    echo json_encode(['success' => false, 'message' => 'Query preparation failed']);
-    exit;
+if ($thumbnail !== null && $thumbnail !== '') {
+    $stmt = $conn->prepare("UPDATE teacher_activities SET activity_title = ?, subject = ?, content_json = ?, deadline = ?, thumbnail = ? WHERE id = ? AND teacher_id = ?");
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Query preparation failed']);
+        exit;
+    }
+    $stmt->bind_param("sssssii", $activity_title, $subject, $content_json, $deadline, $thumbnail, $activity_id, $teacher_id);
+} else {
+    $stmt = $conn->prepare("UPDATE teacher_activities SET activity_title = ?, subject = ?, content_json = ?, deadline = ? WHERE id = ? AND teacher_id = ?");
+    if (!$stmt) {
+        echo json_encode(['success' => false, 'message' => 'Query preparation failed']);
+        exit;
+    }
+    $stmt->bind_param("ssssii", $activity_title, $subject, $content_json, $deadline, $activity_id, $teacher_id);
 }
-$stmt->bind_param("ssssii", $activity_title, $subject, $content_json, $deadline, $activity_id, $teacher_id);
 
 if ($stmt->execute()) {
     if ($saveAsDraft) {

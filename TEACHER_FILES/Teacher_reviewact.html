@@ -217,7 +217,14 @@
     <div class="rv-final-row">
       <span class="rv-final-label">Final Score (%):</span>
       <input class="rv-final-input" id="modalFinalScore" type="number" min="0" max="100" placeholder="—" />
-      <span class="rv-final-hint">Leave blank to use auto-computed score</span>
+      <span class="rv-final-hint" id="rvFinalHint">Leave blank to use auto-computed score</span>
+    </div>
+    <!-- System suggestion based on how many attempts it took to pass —
+         already pre-filled into the Final Score field above; this just
+         explains why. The teacher can edit that field freely, and nothing
+         is graded until they hit Save. -->
+    <div id="modalScoreSuggestion" style="display:none;margin:-2px 0 14px;font-size:12px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;align-items:center;gap:8px;flex-wrap:wrap;">
+      <span>💡 <strong id="modalSuggestText"></strong> Pwede mo pa ring i-edit at ikaw pa rin ang magfi-finalize.</span>
     </div>
 
     <button type="button" class="rv-save-btn" id="modalSaveBtn" onclick="saveAssessment()">💾 Save Assessment</button>
@@ -398,6 +405,23 @@ function openModal(s) {
     chipEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;background:#fff7ed;color:#c2410c;">🔁 ' + retakes + ' Retake' + (retakes === 1 ? '' : 's') + ' before this submission</span>';
   }
 
+  // System-suggested score based on how many attempts it took to pass —
+  // 1st=100%, 2nd=90%, 3rd=70%, 4th and beyond floors at 60%. Pre-filled
+  // straight into the Final Score field below (not just a hint) so the
+  // teacher's job is to review/edit it, not type one from scratch — but
+  // nothing is actually graded until they hit Save.
+  var suggestBox = document.getElementById('modalScoreSuggestion');
+  var suggestedScore = null;
+  if (retakes >= 1) {
+    suggestedScore = retakes === 1 ? 90 : (retakes === 2 ? 70 : 60);
+    var attemptNum = retakes + 1;
+    document.getElementById('modalSuggestText').textContent =
+      'Pumasa sa attempt #' + attemptNum + ' — na-prefill ang Final Score sa ' + suggestedScore + '% base sa attempts.';
+    suggestBox.style.display = 'flex';
+  } else {
+    suggestBox.style.display = 'none';
+  }
+
   // Needs-review banner — shown when the system had to simplify the activity for this student
   var reviewBanner = document.getElementById('modalNeedsReviewBanner');
   if (s.scaffold_used >= 2) {
@@ -471,9 +495,27 @@ function openModal(s) {
   });
 
   document.getElementById('modalNote').value = s.teacher_note || '';
-  document.getElementById('modalFinalScore').value = s.finalized_score !== null ? s.finalized_score : '';
-  document.getElementById('modalSaveBtn').disabled = false;
-  document.getElementById('modalSaveBtn').textContent = '💾 Save Assessment';
+  // Prior finalized score always wins (respects what the teacher already
+  // decided) — only fall back to the attempt-based suggestion when this
+  // submission has never been finalized yet.
+  document.getElementById('modalFinalScore').value =
+    s.finalized_score !== null ? s.finalized_score : (suggestedScore !== null ? suggestedScore : '');
+
+  // Finalizing is a one-time action — once a grade is finalized it's
+  // locked for good, so a teacher can't casually re-grade a submission
+  // back and forth. The whole assessment (score, note, assistance level)
+  // freezes together since Save writes them as one record.
+  var isLocked = !!s.is_finalized;
+  document.getElementById('modalFinalScore').disabled = isLocked;
+  document.getElementById('modalNote').disabled = isLocked;
+  document.querySelectorAll('#assistGrid input[type=radio]').forEach(function (r) { r.disabled = isLocked; });
+  document.getElementById('modalSaveBtn').disabled = isLocked;
+  document.getElementById('modalSaveBtn').textContent = isLocked ? '🔒 Already Finalized' : '💾 Save Assessment';
+  document.getElementById('rvFinalHint').textContent = isLocked
+    ? 'Naka-finalize na ang gradeng ito — hindi na ito mababago.'
+    : 'Leave blank to use auto-computed score';
+  if (isLocked) suggestBox.style.display = 'none'; // editing is moot once locked
+
   document.getElementById('rvModal').classList.add('open');
 }
 

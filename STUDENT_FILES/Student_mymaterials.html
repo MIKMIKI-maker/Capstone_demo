@@ -7,7 +7,7 @@
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
   <title>SPED ALM - My Materials</title>
   <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
-  <link href="STUDENT_CSS/Student_mymaterials.css?v=7" rel="stylesheet" />
+  <link href="STUDENT_CSS/Student_mymaterials.css?v=9" rel="stylesheet" />
   <link href="STUDENT_CSS/student_responsive.css?v=6" rel="stylesheet" />
   <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
   <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
@@ -158,6 +158,15 @@
 
   </main>
 
+  <!-- Hover preview popover for activity thumbnails — filled in and
+       positioned by the delegated listener below, dismissed on
+       mouseleave (never needs a click to close). -->
+  <div id="actHoverPreview" class="act-hover-preview">
+    <div class="act-hover-preview-imgwrap" id="actHoverPreviewImgWrap"></div>
+    <div class="act-hover-preview-title" id="actHoverPreviewTitle"></div>
+    <div class="act-hover-preview-type" id="actHoverPreviewType"></div>
+  </div>
+
   <script>
     var TYPE_COLOR = { 'Matching': 'purple', 'Sorting': 'blue', 'Sequencing': 'green' };
     var COLOR_CYCLE = ['orange', 'blue', 'purple', 'green', 'amber', 'pink'];
@@ -204,7 +213,7 @@
         ? { text: 'IN PROGRESS', cls: 'student-mat-badge--in-progress' }
         : getBadge(act.deadline);
       var thumb = act.thumbnail
-        ? '<img src="' + esc(act.thumbnail) + '" alt="thumbnail" style="width:80px;height:80px;object-fit:cover;border-radius:12px;" />'
+        ? '<img src="' + esc(act.thumbnail) + '" alt="thumbnail" style="width:80px;height:80px;object-fit:contain;background:#f8faff;border-radius:12px;" />'
         : '<span style="font-size:48px;">' + getTypeEmoji(act.type) + '</span>';
       var dueText = act.deadline
         ? '<div class="student-mat-deadline">📅 Due: ' +
@@ -217,7 +226,7 @@
         '<div class="student-material-card student-mat--' + color + '" data-id="' + esc(act.id) + '" data-status="' + (completed ? 'completed' : 'new') + '">',
         '<span class="student-mat-badge ' + badge.cls + '">' + badge.text + '</span>',
         '<span class="student-mat-star">&#9734;</span>',
-        '<div class="student-mat-card-thumb">' + thumb + '</div>',
+        '<div class="student-mat-card-thumb act-thumb-hover" data-thumb="' + esc(act.thumbnail || '') + '" data-title="' + esc(act.title) + '" data-type="' + esc(act.type) + '" data-icon="' + esc(getTypeEmoji(act.type)) + '">' + thumb + '</div>',
         '<div class="student-mat-card-title">' + esc(act.title) + '</div>',
         '<div class="student-mat-card-tag">' + esc(act.type) + '</div>',
         dueText,
@@ -243,6 +252,50 @@
           '<span class="student-cheer-rainbow">🌈</span></div>';
       return '<div class="student-material-list">' + inner + '</div>';
     }
+
+    /* ── Hover preview popover for activity thumbnails ──
+       Delegated on #gradingSections (cards get re-rendered wholesale on
+       every refresh, so binding to individual .act-thumb-hover nodes
+       would mean re-binding every time). */
+    (function () {
+      var wrap = document.getElementById('gradingSections');
+      var pop = document.getElementById('actHoverPreview');
+      if (!wrap || !pop) return;
+      var imgWrap = document.getElementById('actHoverPreviewImgWrap');
+      var titleEl = document.getElementById('actHoverPreviewTitle');
+      var typeEl = document.getElementById('actHoverPreviewType');
+
+      function positionPop(anchor) {
+        var r = anchor.getBoundingClientRect();
+        pop.style.display = 'block';
+        var popW = pop.offsetWidth || 220;
+        var spaceRight = window.innerWidth - r.right;
+        var left = spaceRight >= popW + 16 ? r.right + 10 : r.left - popW - 10;
+        if (left < 8) left = 8;
+        var top = Math.min(r.top, window.innerHeight - (pop.offsetHeight || 200) - 8);
+        if (top < 8) top = 8;
+        pop.style.left = left + 'px';
+        pop.style.top = top + 'px';
+      }
+
+      wrap.addEventListener('mouseover', function (e) {
+        var anchor = e.target.closest('.act-thumb-hover');
+        if (!anchor) return;
+        var thumb = anchor.getAttribute('data-thumb');
+        imgWrap.innerHTML = thumb
+          ? '<img src="' + thumb + '" alt="" />'
+          : '<div class="act-hover-preview-fallback">' + (anchor.getAttribute('data-icon') || '📄') + '</div>';
+        titleEl.textContent = anchor.getAttribute('data-title') || '';
+        typeEl.textContent = anchor.getAttribute('data-type') || '';
+        positionPop(anchor);
+      });
+      wrap.addEventListener('mouseout', function (e) {
+        var anchor = e.target.closest('.act-thumb-hover');
+        if (!anchor) return;
+        if (anchor.contains(e.relatedTarget)) return;
+        pop.style.display = 'none';
+      });
+    })();
 
     function scrollToActiveList() {
       var el = document.getElementById('gradingSections');
@@ -399,6 +452,7 @@
             difficulty:      m.difficulty || 'Easy',
             progress_status: m.progress_status,
             score:           m.score,
+            thumbnail:       m.thumbnail || null,
           };
         });
       var allCaughtUp = total > 0 && activeForRender.length === 0;

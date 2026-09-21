@@ -11,7 +11,7 @@
     <title>Review Activities – SPED ALM</title>
     <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
     <link href="../ASSETS/vendor/fontawesome/css/all.min.css" rel="stylesheet" />
-    <link href="TEACHER_CSS/Teacher_activies.css?v=1" rel="stylesheet" />
+    <link href="TEACHER_CSS/Teacher_activies.css?v=3" rel="stylesheet" />
     <link href="TEACHER_CSS/teacher_responsive.css?v=75" rel="stylesheet" />
 </head>
 
@@ -145,6 +145,14 @@
                     </tbody>
                 </table>
                 </div>
+            </div>
+            <!-- Hover preview popover for activity thumbnails — filled in
+                 and positioned by showActPreview()/hideActPreview() below,
+                 never clicked/closed manually (mouseleave hides it). -->
+            <div id="actHoverPreview" class="act-hover-preview">
+                <div class="act-hover-preview-imgwrap" id="actHoverPreviewImgWrap"></div>
+                <div class="act-hover-preview-title" id="actHoverPreviewTitle"></div>
+                <div class="act-hover-preview-type" id="actHoverPreviewType"></div>
             </div>
             <!-- BACK BUTTON -->
             <button class="btn-back-iep" onclick="window.location.href='Teacher_IEP.html'" type="button">
@@ -300,6 +308,7 @@
                         savedAt:  a.created_at    || '',
                         status:   (a.status || '').toLowerCase() === 'draft' ? 'draft' : 'published',
                         is_locked: !!a.is_locked,
+                        thumbnail: a.thumbnail || null,
                         _isLocal: false
                     };
                 });
@@ -429,6 +438,52 @@
             document.getElementById('count-uploads').textContent   = uploads;
         }
 
+        /* ── Hover preview popover for activity thumbnails ──
+           Delegated on the tbody (rows get re-rendered wholesale on every
+           refresh, so binding to individual .act-thumb-hover nodes would
+           mean re-binding every time — one listener on the stable
+           container instead). */
+        (function () {
+            var tbody = document.getElementById('activitiesTableBody');
+            var pop = document.getElementById('actHoverPreview');
+            if (!tbody || !pop) return;
+            var imgWrap = document.getElementById('actHoverPreviewImgWrap');
+            var titleEl = document.getElementById('actHoverPreviewTitle');
+            var typeEl = document.getElementById('actHoverPreviewType');
+
+            function positionPop(anchor) {
+                var r = anchor.getBoundingClientRect();
+                pop.style.display = 'block'; // measure first so offsetWidth is accurate
+                var popW = pop.offsetWidth || 220;
+                var spaceRight = window.innerWidth - r.right;
+                var left = spaceRight >= popW + 16 ? r.right + 10 : r.left - popW - 10;
+                if (left < 8) left = 8;
+                var top = Math.min(r.top, window.innerHeight - (pop.offsetHeight || 200) - 8);
+                if (top < 8) top = 8;
+                pop.style.left = left + 'px';
+                pop.style.top = top + 'px';
+            }
+
+            tbody.addEventListener('mouseover', function (e) {
+                var anchor = e.target.closest('.act-thumb-hover');
+                if (!anchor) return;
+                var thumb = anchor.getAttribute('data-thumb');
+                imgWrap.innerHTML = thumb
+                    ? '<img src="' + thumb + '" alt="" />'
+                    : '<div class="act-hover-preview-fallback">' + (anchor.getAttribute('data-icon') || '🖼️') + '</div>';
+                titleEl.textContent = anchor.getAttribute('data-title') || '';
+                typeEl.textContent = anchor.getAttribute('data-type') || '';
+                positionPop(anchor);
+            });
+            tbody.addEventListener('mouseout', function (e) {
+                var anchor = e.target.closest('.act-thumb-hover');
+                if (!anchor) return;
+                // Ignore moving between children of the same thumb (img -> wrapper etc.)
+                if (anchor.contains(e.relatedTarget)) return;
+                pop.style.display = 'none';
+            });
+        })();
+
         /* ── Render table rows ── */
         function renderActivities(activities) {
             var tbody = document.getElementById('activitiesTableBody');
@@ -517,9 +572,13 @@
 
                 var _typeIcons = {Matching:'🔗',Sorting:'🗂️',Sequencing:'🔢',LetterID:'🔤',PictureLabeling:'🏷️',WrittenResponse:'✏️',CheckOrX:'✅',Tracing:'✍️',Upload:'📎'};
                 var _fallbackIcon = _typeIcons[a.type] || '🖼️';
-                var _tb = a.thumbnail
-                    ? '<img src="'+esc(a.thumbnail)+'" style="width:44px;height:44px;object-fit:cover;border-radius:8px;flex:none;" />'
+                var _tbInner = a.thumbnail
+                    ? '<img src="'+esc(a.thumbnail)+'" style="width:44px;height:44px;object-fit:contain;background:#f8fafc;border-radius:8px;flex:none;" />'
                     : '<div style="width:44px;height:44px;border-radius:8px;background:#eef2f8;display:flex;align-items:center;justify-content:center;font-size:22px;flex:none;">'+_fallbackIcon+'</div>';
+                // Hovering shows a bigger preview popover (see showActPreview
+                // below) — data-* attrs carry what it needs instead of huge
+                // inline handler strings.
+                var _tb = '<div class="act-thumb-hover" data-thumb="'+esc(a.thumbnail||'')+'" data-title="'+esc(a.title)+'" data-type="'+esc(a.type)+'" data-icon="'+esc(_fallbackIcon)+'">'+_tbInner+'</div>';
                 return '<tr>'
                     + '<td class="teacher-activity-title"><div style="display:flex;align-items:center;gap:10px;">'+_tb+'<span>'+esc(a.title)+'</span></div></td>'
                     + '<td>' + esc(a.type) + '</td>'

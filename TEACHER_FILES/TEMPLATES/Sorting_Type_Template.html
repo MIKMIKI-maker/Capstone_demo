@@ -332,15 +332,24 @@ function initActivityTheme(){
   .srt-instr{ text-align:center; font-size:.5em; font-weight:500; color:var(--srt-text); opacity:.85; margin:6px 0 22px; }
 
   /* Category bins */
-  .srt-bins{ display:grid; gap:18px; margin-bottom:26px; }
+  .srt-bins{ display:grid; gap:18px; margin-bottom:26px; width:100%; box-sizing:border-box; }
   .srt-bin{
     background:#fff; border:3px dashed #e2c98f; border-radius:18px; padding:14px; min-height:6em;
     transition:border-color .12s ease, background .12s ease;
+    /* Safety net: a dropped chip snaps back into the grid via
+       rerenderBoard() (see startItemDrag/onItemDragEnd in JS), but this
+       still guarantees nothing can ever visually poke outside the bin's
+       own rounded card, on any screen size. */
+    overflow:hidden;
   }
   .srt-bin.dragover{ border-color:var(--blue); background:#eaf2ff; }
   .srt-bin-head{ display:flex; align-items:center; gap:8px; justify-content:center; margin-bottom:10px; font-weight:700; font-size:.5em; color:var(--srt-text); }
   .srt-bin-head .b-ic{ font-size:calc(1.3em * var(--img-scale,1)); }
   .srt-bin-icon-img{ width:calc(1.3em * var(--img-scale,1)); height:calc(1.3em * var(--img-scale,1)); object-fit:cover; border-radius:6px; }
+  /* auto-fill + minmax computes each cell from the bin's OWN available
+     width, so cells can never be narrower than the chip that has to sit
+     in them — this is what actually prevents overlap between dropped
+     items, on any screen size including mobile. */
   .srt-bin-items{ display:grid; grid-template-columns:repeat(auto-fill, minmax(calc(5.5em * var(--img-scale,1)), 1fr)); gap:10px; justify-items:center; min-height:2.2em; }
 
   /* border style variants — applies to bins and pool chips */
@@ -356,6 +365,11 @@ function initActivityTheme(){
     background:#fff; border:3px solid #e2c98f; border-radius:18px; padding:16px;
     display:grid; grid-template-columns:repeat(auto-fill, minmax(calc(5.5em * var(--img-scale,1)), 1fr));
     gap:14px; justify-items:center; min-height:3em;
+    /* Explicit width:100% so the pool always spans the same width as the
+       bins row above it — without this it could render narrower than its
+       container on some screens, squeezing every dragged picture into one
+       cramped column instead of spreading across the available width. */
+    width:100%; box-sizing:border-box;
   }
   .srt-stage.bs-dashed .srt-pool{ border-style:dashed; }
   .srt-stage.bs-solid .srt-pool{ border-radius:8px; }
@@ -364,13 +378,28 @@ function initActivityTheme(){
   .srt-chip{
     background:#fff; border:3px solid #e2c98f; border-radius:14px; padding:8px;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    width:calc(5.5em * var(--img-scale,1)); cursor:pointer; user-select:none; touch-action:none; position:relative;
+    /* max-width:100% + box-sizing so a chip can never be wider than the
+       grid cell rerenderBoard() drops it into — without this a chip
+       whose fixed em-width happened to exceed a narrow phone's bin
+       column would spill past its neighbor instead of wrapping to a
+       new row. */
+    width:calc(5.5em * var(--img-scale,1)); max-width:100%; box-sizing:border-box;
+    cursor:pointer; user-select:none; touch-action:none; position:relative; overflow:hidden;
     box-shadow:0 4px 10px rgba(36,58,94,.08); transition:transform .08s ease, border-color .12s ease;
   }
   .srt-chip:hover{ transform:translateY(-2px); }
   .srt-chip.sel{ border-color:var(--blue) !important; }
-  .srt-chip.dragging{ box-shadow:0 10px 24px rgba(36,58,94,.3); z-index:1000; pointer-events:none; }
-  .srt-chip-img{ width:100%; height:calc(2.6em * var(--img-scale,1)); object-fit:contain; display:block; }
+  /* Shrinks slightly around the exact point the student is holding it
+     (transform-origin is set to the grab point in JS) — makes the "held"
+     picture read as smaller/lighter while dragging, especially useful on
+     a small phone screen where a full-size chip could cover a whole bin. */
+  .srt-chip.dragging{ box-shadow:0 10px 24px rgba(36,58,94,.3); z-index:1000; pointer-events:none; transform:scale(.82); }
+  /* Fixed-size slot so the picture always scales proportionally to fit
+     it (object-fit:contain) instead of the chip growing/shrinking to
+     match the picture's own aspect ratio — a portrait or landscape photo
+     both land at the same on-screen size now. */
+  .srt-chip-imgwrap{ width:100%; height:calc(2.6em * var(--img-scale,1)); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .srt-chip-img{ width:100%; height:100%; object-fit:contain; display:block; }
   .srt-chip-emoji{ font-size:calc(2.2em * var(--img-scale,1)); line-height:1; }
   .srt-chip-name{ font-weight:700; font-size:.42em; margin-top:5px; color:var(--srt-text); text-align:center; }
 
@@ -567,6 +596,28 @@ function initActivityTheme(){
        clips real content if the stage is ever taller than its box —
        let it grow with the page instead of hard-cutting the preview. */
     .srt-stage{ overflow-y:visible; overflow-x:hidden; }
+    /* Smaller minimum slot size on a phone-width bin/pool so several
+       chips still fit per row instead of the grid falling back to one
+       narrow column per line — min() caps the em-based size at a small
+       fixed pixel ceiling too, since the em value alone (tied to the
+       stage's font-size, not the viewport) could still be too wide to
+       fit more than one column on a genuinely narrow phone. */
+    .srt-bin-items{ grid-template-columns:repeat(auto-fill, minmax(min(calc(4.4em * var(--img-scale,1)), 84px), 1fr)); gap:6px; }
+    .srt-pool{ grid-template-columns:repeat(auto-fill, minmax(min(calc(4.4em * var(--img-scale,1)), 84px), 1fr)); gap:6px; padding:10px; }
+    .srt-chip{ width:min(calc(4.4em * var(--img-scale,1)), 84px); padding:5px; }
+    .srt-chip-imgwrap{ height:min(calc(2.6em * var(--img-scale,1)), 52px); }
+    .srt-stage{ padding:16px; }
+    /* Fixed 2 columns (not auto-fill) — a bin only gets half the screen
+       width, and auto-fill still measured it as "only room for one" at
+       some phone widths, stacking every dropped item into one tall
+       column. A flat repeat(2,1fr) always gives 2 per row regardless of
+       exactly how narrow the bin is; the chip's own width stays capped
+       via min() below so it just centers in its half instead of
+       stretching to fill it. */
+    .srt-bin-items{ grid-template-columns:repeat(2, 1fr); gap:5px; }
+    .srt-bin-items .srt-chip{ width:min(calc(4.4em * var(--img-scale,1)), 62px); max-width:100%; padding:4px; }
+    .srt-bin-items .srt-chip-imgwrap{ height:min(calc(2.6em * var(--img-scale,1)), 40px); }
+    .srt-bin{ padding:10px; }
   }
 
   @media (max-width:640px){
@@ -603,6 +654,39 @@ function initActivityTheme(){
      uses that space instead of centering into empty air. */
   @media (max-width:640px){
     body.srt-preview-only .srt-stage{ justify-content:flex-start; padding-top:26px; }
+    /* Title/instruction font-size is em-based off the stage's own
+       font-size (which a teacher can set arbitrarily large) — a long
+       title at that size wraps into 3-4 lines on a phone and can eat up
+       half the screen before the actual activity even shows. min() caps
+       it at a fixed, always-reasonable mobile size regardless of that
+       setting. */
+    body.srt-preview-only .srt-title{ font-size:min(1.25em, 24px); line-height:1.25; }
+    body.srt-preview-only .srt-instr{ font-size:min(.5em, 13px); margin:4px 0 14px; }
+
+    /* Pin the Try Again / Check answers bar to the very bottom of the
+       screen instead of it sitting right after the pool with a big
+       empty gap trailing below. .srt-stage-inner becomes the flex
+       column that actually does the pushing; .srt-pool grows to fill
+       the leftover space and centers its own rows within it (the bins
+       above it stay in normal flow, unsorted items are what students
+       are actively working with). */
+    /* padding-top clears the fixed Exit button (top:14px, ~36px tall)
+       instead of the title crowding right underneath it; padding-bottom
+       keeps the button bar off the very bottom edge. */
+    body.srt-preview-only .srt-stage{ padding-top:56px; padding-bottom:80px; }
+    body.srt-preview-only .srt-stage-inner{ display:flex; flex-direction:column; flex:1; width:100%; }
+    body.srt-preview-only .srt-pool{ flex:1; align-content:center; }
+    /* Both buttons the same width instead of each hugging its own label
+       length ("Try Again" reading noticeably smaller than "Check answers") —
+       and a fixed, compact height instead of the em-based padding (tied
+       to the stage's own configurable font-size) making them look thick
+       and oversized on a phone. */
+    body.srt-preview-only .srt-stage-btnrow{ width:100%; max-width:320px; margin:0 auto; }
+    body.srt-preview-only .srt-mini{ flex:1; padding:12px 16px; font-size:14px; }
+    /* Score-result modal's Retake/Submit buttons — same "compact, fixed
+       size instead of desktop-sized" treatment as the stage's own
+       Try Again/Check answers bar above. */
+    .srt-modal-actions button{ padding:10px 14px; font-size:13px; border-radius:12px; }
   }
   /* ── SPOTLIGHT TOUR ── */
   .srt-btn--help{background:#ffc34d;color:#5c4400;box-shadow:0 4px 0 #d9a416;}
@@ -1344,7 +1428,11 @@ function initActivityTheme(){
   function chip(itemIndex){
     const item = currentActivity().items[itemIndex];
     const el = document.createElement("div"); el.className = "srt-chip"; el.dataset.i = itemIndex;
-    if (item.img){ const im = document.createElement("img"); im.className = "srt-chip-img"; im.src = item.img; el.appendChild(im); }
+    if (item.img){
+      const wrap = document.createElement("div"); wrap.className = "srt-chip-imgwrap";
+      const im = document.createElement("img"); im.className = "srt-chip-img"; im.src = item.img;
+      wrap.appendChild(im); el.appendChild(wrap);
+    }
     else { const sp = document.createElement("div"); sp.className = "srt-chip-emoji"; sp.textContent = item.emoji || "?"; el.appendChild(sp); }
     if (item.name){ const nm = document.createElement("div"); nm.className = "srt-chip-name"; nm.textContent = item.name; el.appendChild(nm); }
     if (isLocked(itemIndex)){
@@ -1451,10 +1539,14 @@ function initActivityTheme(){
     const rect = el.getBoundingClientRect();
     dragOffsetX = e.clientX - rect.left; dragOffsetY = e.clientY - rect.top;
     dragEl = el;
-    el.classList.add("dragging");
     el.style.position = "fixed";
     el.style.left = rect.left + "px"; el.style.top = rect.top + "px";
     el.style.width = rect.width + "px";
+    // Shrink around the actual grab point (not the box center), so the
+    // picture stays under the finger/cursor instead of jumping sideways
+    // when the .dragging class's scale(.82) kicks in.
+    el.style.transformOrigin = dragOffsetX + "px " + dragOffsetY + "px";
+    el.classList.add("dragging");
     document.body.appendChild(el); // escape any scaled/scrolling ancestor so real screen coordinates apply
     document.addEventListener("pointermove", onItemDragMove);
     document.addEventListener("pointerup", onItemDragEnd, { once:true });
@@ -2251,17 +2343,136 @@ function initActivityTheme(){
   $("srtPubBtn").addEventListener("click", openPublishModal);
   $("srtPublishCancelBtn").addEventListener("click", closePublishModal);
 
+  // Auto-derives the activity's thumbnail: prefers the first uploaded
+  // (data:) image found anywhere in its content, and falls back to
+  // rendering the first usable item emoji onto a small canvas — so an
+  // emoji-only activity (no uploaded photos) still gets a real image-look
+  // thumbnail instead of the generic type icon everywhere.
+  function _scanForDataImage(node, depth) {
+    if (depth > 6 || node == null) return '';
+    if (typeof node === 'string') return node.indexOf('data:image') === 0 ? node : '';
+    if (Array.isArray(node)) {
+      for (var i = 0; i < node.length; i++) {
+        var r = _scanForDataImage(node[i], depth + 1);
+        if (r) return r;
+      }
+      return '';
+    }
+    if (typeof node === 'object') {
+      for (var k in node) {
+        if (!Object.prototype.hasOwnProperty.call(node, k)) continue;
+        var r2 = _scanForDataImage(node[k], depth + 1);
+        if (r2) return r2;
+      }
+    }
+    return '';
+  }
+  // Collects up to 4 distinct item emoji (skipping the "?" broken-item
+  // placeholder) instead of stopping at the first one — a small grid of
+  // them reads much more like an actual peek of the activity than a
+  // single giant emoji would.
+  // Finds the first {categories:[], items:[]} activity object — Sorting's
+  // real shape — so the fallback thumbnail can show actual category bins
+  // instead of a generic grid.
+  function _scanForSortingData(node, depth) {
+    if (depth > 6 || node == null) return null;
+    if (Array.isArray(node)) {
+      for (var i = 0; i < node.length; i++) {
+        var r = _scanForSortingData(node[i], depth + 1);
+        if (r) return r;
+      }
+      return null;
+    }
+    if (typeof node === 'object') {
+      if (Array.isArray(node.categories) && Array.isArray(node.items)) return node;
+      for (var k in node) {
+        if (!Object.prototype.hasOwnProperty.call(node, k)) continue;
+        var r2 = _scanForSortingData(node[k], depth + 1);
+        if (r2) return r2;
+      }
+    }
+    return null;
+  }
+  // Draws a couple of unsorted item emoji above two colored category bins
+  // (using each category's own icon) — a miniature look-alike of the real
+  // "drag into the right bin" screen.
+  function _renderSortingThumb(activity) {
+    try {
+      var cats = (activity.categories || []).filter(function (c) { return c; }).slice(0, 2);
+      var items = (activity.items || []).filter(function (it) { return it && it.emoji && it.emoji !== '?'; }).slice(0, 3);
+      var cv = document.createElement('canvas');
+      cv.width = 160; cv.height = 160;
+      var ctx = cv.getContext('2d');
+      ctx.fillStyle = '#eef1fb'; ctx.fillRect(0, 0, 160, 160);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      if (items.length) {
+        ctx.font = '26px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';
+        var startX = 80 - (items.length - 1) * 20;
+        items.forEach(function (it, idx) { ctx.fillText(it.emoji, startX + idx * 40, 26); });
+      }
+      if (cats.length) {
+        var binY = 92, binH = 48, binW = 64, gap = 12;
+        var totalW = cats.length * binW + (cats.length - 1) * gap;
+        var startBinX = (160 - totalW) / 2;
+        var colors = ['#c7f9dc', '#dbe4ff'];
+        cats.forEach(function (cat, i) {
+          var x = startBinX + i * (binW + gap), y = binY, w = binW, h = binH, r = 10;
+          ctx.fillStyle = colors[i % colors.length];
+          ctx.beginPath();
+          ctx.moveTo(x + r, y);
+          ctx.arcTo(x + w, y, x + w, y + h, r);
+          ctx.arcTo(x + w, y + h, x, y + h, r);
+          ctx.arcTo(x, y + h, x, y, r);
+          ctx.arcTo(x, y, x + w, y, r);
+          ctx.closePath();
+          ctx.fill();
+          ctx.font = '24px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';
+          ctx.fillStyle = '#000';
+          ctx.fillText(cat.icon || '🗂️', x + w / 2, y + h / 2);
+        });
+      }
+      return cv.toDataURL('image/png');
+    } catch (e) { return ''; }
+  }
+  function findFirstDataImage(node, depth) {
+    var img = _scanForDataImage(node, depth || 0);
+    if (img) return img;
+    var sortData = _scanForSortingData(node, depth || 0);
+    return sortData ? _renderSortingThumb(sortData) : '';
+  }
+
+  // Captures a real screenshot of the rendered preview stage (background,
+  // bins/cards, actual design) via the html2canvas library already loaded
+  // for PDF export — a genuine "what the activity looks like" thumbnail
+  // instead of a synthetic icon/emoji mockup. Falls back to the old
+  // content-scan approach if html2canvas is unavailable or the capture
+  // itself fails for any reason (e.g. a cross-origin image tainting it).
+  function _captureStageThumb(callback) {
+    var stageEl = document.getElementById('srtStage');
+    if (stageEl && window.html2canvas) {
+      html2canvas(stageEl, { scale: 1.5, useCORS: true, backgroundColor: null, logging: false })
+        .then(function(canvas) { callback(canvas.toDataURL('image/png')); })
+        .catch(function() { callback(state.thumb || findFirstDataImage(state.activities, 0)); });
+    } else {
+      callback(state.thumb || findFirstDataImage(state.activities, 0));
+    }
+  }
+
   function compressThumb(dataURL, callback) {
     if (!dataURL) { callback(''); return; }
     var img = new Image();
     img.onload = function() {
-      var MAX = 160;
+      // 320px / .8 quality (was 160px / .55) — the source is now often a
+      // real html2canvas screenshot of the whole stage instead of a
+      // simple few-color icon, so the old aggressive compression read as
+      // visibly blurry/low-res once displayed.
+      var MAX = 320;
       var ratio = Math.min(MAX / img.width, MAX / img.height, 1);
       var cv = document.createElement('canvas');
       cv.width = Math.round(img.width * ratio);
       cv.height = Math.round(img.height * ratio);
       cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-      callback(cv.toDataURL('image/jpeg', 0.55));
+      callback(cv.toDataURL('image/jpeg', 0.8));
     };
     img.onerror = function() { callback(''); };
     img.src = dataURL;
@@ -2303,6 +2514,8 @@ function initActivityTheme(){
 
     var domain = document.querySelector('input[name="srtDomain"]:checked').value;
     var firstTitle = (state.activities[0] && state.activities[0].title) || 'Untitled Activity';
+    _captureStageThumb(function(thumbSrc) {
+    state.thumb = thumbSrc;
     compressThumb(state.thumb, function(smallThumb) {
 
     if (_editingPub) {
@@ -2326,6 +2539,7 @@ function initActivityTheme(){
         fdU.append('activity_title', firstTitle);
         fdU.append('subject', domain);
         fdU.append('content_json', JSON.stringify(state));
+        fdU.append('thumbnail', smallThumb || '');
         fdU.append('deadline', deadline);
         fetch('../TEACHER_BACKEND/teacher_update_activity.php', { method: 'POST', body: fdU })
           .then(function(r){ return r.json(); })
@@ -2373,6 +2587,7 @@ function initActivityTheme(){
     fdC.append('status', 'published');
     fdC.append('assigned_student_ids', JSON.stringify(_assignedIds));
     fdC.append('content_json', JSON.stringify(state));
+    fdC.append('thumbnail', smallThumb || '');
     fdC.append('deadline', deadline);
     fetch('../TEACHER_BACKEND/teacher_create_activity.php', { method: 'POST', body: fdC })
     .then(function(r){ return r.json(); }).then(function(d){
@@ -2393,6 +2608,7 @@ function initActivityTheme(){
       window.showToast('Could not reach the server to publish this activity. Please check your connection and try again.', 'error', 4500);
     });
     }); // end compressThumb
+    }); // end _captureStageThumb
   }
   $("srtPublishConfirmBtn").addEventListener("click", confirmPublish);
 
@@ -2468,6 +2684,11 @@ function initActivityTheme(){
       var retakeText = _stuRetake > 0
         ? '<p style="color:#fca5a5;font-size:13px;margin:0;">You have retaken this ' + _stuRetake + ' time(s).</p>'
         : '';
+      var parentGuideText = '<style>@keyframes pgGlow{0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,.65);}50%{box-shadow:0 0 0 12px rgba(251,191,36,0);}}</style>'
+        + '<div style="display:flex;align-items:center;gap:10px;background:#fbbf24;border:2px solid #f59e0b;border-radius:16px;padding:14px 24px;max-width:460px;animation:pgGlow 1.6s ease-in-out infinite;">'
+        + '<span style="font-size:28px;">⚠️</span>'
+        + '<span style="color:#78350f;font-size:14px;font-weight:800;text-align:left;line-height:1.4;">Kailangan ng gabay ng magulang o guardian sa pagsagot nito!</span>'
+        + '</div>';
 
       var splash = document.createElement('div');
       splash.id = 'stuSplash';
@@ -2475,7 +2696,7 @@ function initActivityTheme(){
       splash.innerHTML = splashThumb
         + '<h1 style="color:#fff;font-family:Fredoka,Poppins,sans-serif;font-size:32px;font-weight:700;margin:0;max-width:520px;line-height:1.2;">' + (pub.title || state.activities[0]&&state.activities[0].title || 'Activity') + '</h1>'
         + '<p style="color:#93c5fd;font-size:15px;margin:0;">Sorting Type</p>'
-        + dueText + retakeText
+        + dueText + retakeText + parentGuideText
         + '<button id="stuSplashBtn" style="margin-top:12px;background:#22c55e;color:#fff;border:none;padding:18px 56px;border-radius:18px;font-family:Fredoka,Poppins,sans-serif;font-size:24px;font-weight:700;cursor:pointer;box-shadow:0 6px 0 #15803d;">▶ Start Activity</button>'
         + '<button onclick="window.history.back()" style="background:transparent;color:#93c5fd;border:none;font-size:14px;cursor:pointer;margin-top:4px;">← Exit</button>';
       document.body.appendChild(splash);
@@ -2608,11 +2829,30 @@ function initActivityTheme(){
     // Not cached on this device at all — pull it from the server. This is
     // what makes the activity actually playable on a student's own
     // device/browser instead of only the one that published it.
-    function fetchRemoteActivity() {
-      fetch('../../STUDENT_FILES/STUDENT_BACKEND/student_get_activity_content.php?activity_id=' + encodeURIComponent(_stuPubId))
+    // student_get_activity_content.php only understands the numeric DB
+    // activity_id — but _stuPubId can also be a local "pub-<timestamp>"
+    // string (whenever this SAME browser also has a local publish record
+    // for it, e.g. a teacher testing their own activity as "student" on
+    // the same machine). Passing that string straight through silently
+    // fails the fetch (intval() on it is 0), which fell back to whatever
+    // stale content was cached instead of ever reaching the server — so
+    // resolve the real numeric id from published_activities first.
+    function _resolveNumericActivityId() {
+      var pubs = [];
+      try { pubs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+      var match = pubs.find(function(p){ return p.id === _stuPubId; });
+      if (match && match.db_activity_id) return match.db_activity_id;
+      return _stuPubId;
+    }
+    // `fallbackCached` is only used if this fetch itself fails (offline/
+    // connection issue) — a successful fetch always wins even when a
+    // local cache exists, since content_json in the DB is the one thing
+    // a teacher's edit/republish actually changes.
+    function fetchRemoteActivity(fallbackCached) {
+      fetch('../../STUDENT_FILES/STUDENT_BACKEND/student_get_activity_content.php?activity_id=' + encodeURIComponent(_resolveNumericActivityId()))
         .then(function(r){ return r.json(); })
         .then(function(d){
-          if (!d.success || !d.content) { applyStudentMode(null); return; }
+          if (!d.success || !d.content) { useCachedOrUnavailable(fallbackCached); return; }
           var pubs = [];
           try { pubs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
           var idx = pubs.findIndex(function(p){ return p.id === _stuPubId; });
@@ -2629,7 +2869,11 @@ function initActivityTheme(){
           _idb.save('pub_data_' + _stuPubId, d.content, function(){});
           applyStudentMode(d.content);
         })
-        .catch(function(){ applyStudentMode(null); });
+        .catch(function(){ useCachedOrUnavailable(fallbackCached); });
+    }
+    function useCachedOrUnavailable(cached) {
+      if (cached) applyStudentModeFreshLock(cached);
+      else applyStudentMode(null);
     }
 
     // Cached content can be stale on whether the teacher has since locked
@@ -2652,11 +2896,10 @@ function initActivityTheme(){
     }
 
     _idb.load('pub_data_' + _stuPubId, function(err, saved) {
-      if (saved) { applyStudentModeFreshLock(saved); return; }
+      if (saved) { fetchRemoteActivity(saved); return; }
       var ls = null;
       try { ls = JSON.parse(localStorage.getItem('pub_data_' + _stuPubId) || 'null'); } catch(e){}
-      if (ls) { applyStudentModeFreshLock(ls); return; }
-      fetchRemoteActivity();
+      fetchRemoteActivity(ls);
     });
   })();
 

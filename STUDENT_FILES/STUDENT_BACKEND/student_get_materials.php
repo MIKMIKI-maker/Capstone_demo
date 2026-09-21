@@ -24,7 +24,7 @@ $student_record_id = (int)$rec['student_record_id'];
 // Only return activities explicitly assigned to this student via activity_assignments
 $stmt = $conn->prepare("
     SELECT a.id, a.activity_title, a.activity_description, a.activity_type, a.subject,
-           a.grade_level, a.difficulty, a.status AS activity_status, a.created_at,
+           a.grade_level, a.difficulty, a.status AS activity_status, a.created_at, a.thumbnail,
            CASE WHEN sub.is_finalized = 1 AND sub.finalized_score IS NOT NULL THEN sub.finalized_score ELSE lp.score END AS score,
            lp.assessment_date,
            CASE

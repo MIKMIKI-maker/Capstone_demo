@@ -150,6 +150,14 @@ function getTeacherDatabaseConnection() {
     if ($lock_col && $lock_col->num_rows == 0) {
         $conn->query("ALTER TABLE teacher_activities ADD COLUMN is_locked TINYINT(1) DEFAULT 0");
     }
+    // Compressed (~160px) preview image, auto-derived client-side from the
+    // first uploaded picture in the activity — previously only ever saved
+    // to the publishing teacher's own localStorage, so it never reached
+    // the DB and was always blank for students/other devices.
+    $thumb_col = $conn->query("SHOW COLUMNS FROM teacher_activities LIKE 'thumbnail'");
+    if ($thumb_col && $thumb_col->num_rows == 0) {
+        $conn->query("ALTER TABLE teacher_activities ADD COLUMN thumbnail LONGTEXT DEFAULT NULL");
+    }
 
     // Create IEP materials table
     $createIEPTableSql = "CREATE TABLE IF NOT EXISTS iep_materials (

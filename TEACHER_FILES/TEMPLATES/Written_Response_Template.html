@@ -508,11 +508,17 @@ function initActivityTheme(){
   }
 
   @media (max-width:640px){
-    /* .wrt-grid was a fixed 2-column layout, so each item's num+image+
-       answer-input row had barely any width left for the input on a
-       phone — it rendered as an almost invisible sliver. Stacking to
-       1 column gives each item its full row width to write an answer in. */
-    .wrt-grid{ grid-template-columns:1fr; }
+    /* 3 columns like the other templates' mobile item grids, instead of
+       stacking every item into its own full-width row (took a lot of
+       scrolling for even 4-5 items). The card itself switches from a
+       horizontal num+image+input row to a stacked column so a narrow
+       ~1/3-width cell still has room for a small, usable answer box. */
+    .wrt-grid{ grid-template-columns:repeat(3, 1fr); gap:10px; }
+    .wrt-scard{ flex-direction:column; padding:10px 8px; gap:6px; text-align:center; }
+    .wrt-scard-img{ width:40px; height:40px; }
+    .wrt-scard-emoji{ font-size:32px; }
+    .wrt-scard-num{ font-size:11px; }
+    .wrt-scard-input{ width:100%; font-size:15px; padding:4px 2px; }
     .wrt-top{ padding:12px 14px; gap:10px; }
     .wrt-top h1{ font-size:17px; }
     .wrt-back-btn{ order:-1; flex-basis:100%; justify-content:center; }
@@ -548,6 +554,39 @@ function initActivityTheme(){
      that space instead of centering into empty air. */
   @media (max-width:640px){
     body.wrt-preview-only .wrt-stage{ justify-content:flex-start; padding-top:26px; }
+    /* Title/instruction font-size is em-based off the stage's own
+       font-size (which a teacher can set arbitrarily large) — a long
+       title at that size wraps into 3-4 lines on a phone and can eat up
+       half the screen before the actual activity even shows. min() caps
+       it at a fixed, always-reasonable mobile size regardless of that
+       setting. */
+    body.wrt-preview-only .wrt-title{ font-size:min(1.25em, 24px); line-height:1.25; }
+    body.wrt-preview-only .wrt-instr{ font-size:min(.5em, 13px); margin:4px 0 14px; }
+
+    /* Pin the Try Again / Check answers bar to the very bottom of the
+       screen instead of it sitting right after the answer grid with a
+       big empty gap trailing below. .wrt-stage-inner becomes the flex
+       column that actually does the pushing; .wrt-grid grows to fill
+       the leftover space and centers its own rows within it, so the
+       answer items stay visually centered in the area above the bar
+       instead of sticking to the top. */
+    /* padding-top clears the fixed Exit button (top:14px, ~36px tall)
+       instead of the title crowding right underneath it; padding-bottom
+       keeps the button bar off the very bottom edge. */
+    body.wrt-preview-only .wrt-stage{ padding-top:56px; padding-bottom:80px; }
+    body.wrt-preview-only .wrt-stage-inner{ display:flex; flex-direction:column; flex:1; width:100%; }
+    body.wrt-preview-only .wrt-grid{ flex:1; align-content:center; }
+    /* Both buttons the same width instead of each hugging its own label
+       length ("Try Again" reading noticeably smaller than "Check answers") —
+       and a fixed, compact height instead of the em-based padding (tied
+       to the stage's own configurable font-size) making them look thick
+       and oversized on a phone. */
+    body.wrt-preview-only .wrt-stage-btnrow{ width:100%; max-width:320px; margin:0 auto; }
+    body.wrt-preview-only .wrt-mini{ flex:1; padding:12px 16px; font-size:14px; }
+    /* Score-result modal's Retake/Submit buttons — same "compact, fixed
+       size instead of desktop-sized" treatment as the stage's own
+       Try Again/Check answers bar above. */
+    .wrt-modal-actions button{ padding:10px 14px; font-size:13px; border-radius:12px; }
   }
 
   /* ===== PRINTABLE WORKSHEET (Generate Printable button / PDF via browser print) ===== */
@@ -2042,17 +2081,126 @@ function initActivityTheme(){
   $("wrtPubBtn").addEventListener("click", openPublishModal);
   $("wrtPublishCancelBtn").addEventListener("click", closePublishModal);
 
+  // Auto-derives the activity's thumbnail: prefers the first uploaded
+  // (data:) image found anywhere in its content, and falls back to
+  // rendering the first usable item emoji onto a small canvas — so an
+  // emoji-only activity (no uploaded photos) still gets a real image-look
+  // thumbnail instead of the generic type icon everywhere.
+  function _scanForDataImage(node, depth) {
+    if (depth > 6 || node == null) return '';
+    if (typeof node === 'string') return node.indexOf('data:image') === 0 ? node : '';
+    if (Array.isArray(node)) {
+      for (var i = 0; i < node.length; i++) {
+        var r = _scanForDataImage(node[i], depth + 1);
+        if (r) return r;
+      }
+      return '';
+    }
+    if (typeof node === 'object') {
+      for (var k in node) {
+        if (!Object.prototype.hasOwnProperty.call(node, k)) continue;
+        var r2 = _scanForDataImage(node[k], depth + 1);
+        if (r2) return r2;
+      }
+    }
+    return '';
+  }
+  // Collects up to 4 distinct item emoji (skipping the "?" broken-item
+  // placeholder) instead of stopping at the first one — a small grid of
+  // them reads much more like an actual peek of the activity than a
+  // single giant emoji would.
+  // Finds one real {emoji, correct, variations} item — Written Response's
+  // real shape — so the fallback thumbnail can show the actual picture
+  // next to a "write your answer" lines mockup.
+  function _scanForWrittenItem(node, depth, out) {
+    if (depth > 6 || node == null || out.length >= 1) return;
+    if (Array.isArray(node)) {
+      for (var i = 0; i < node.length && out.length < 1; i++) _scanForWrittenItem(node[i], depth + 1, out);
+      return;
+    }
+    if (typeof node === 'object') {
+      if (typeof node.emoji === 'string' && node.emoji !== '?' && 'correct' in node && 'variations' in node) {
+        out.push({ em: node.emoji });
+      }
+      for (var k in node) {
+        if (out.length >= 1) return;
+        if (!Object.prototype.hasOwnProperty.call(node, k)) continue;
+        _scanForWrittenItem(node[k], depth + 1, out);
+      }
+    }
+  }
+  // Draws the picture card above a few ruled lines + a pencil — a
+  // miniature look-alike of the real "write the answer" screen.
+  function _renderWrittenThumb(item) {
+    try {
+      var cv = document.createElement('canvas');
+      cv.width = 160; cv.height = 160;
+      var ctx = cv.getContext('2d');
+      ctx.fillStyle = '#eef1fb'; ctx.fillRect(0, 0, 160, 160);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      var x = 45, y = 16, w = 70, h = 60, r = 12;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+      ctx.fill();
+      ctx.font = '34px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';
+      ctx.fillStyle = '#000';
+      ctx.fillText(item.em, x + w / 2, y + h / 2 + 1);
+      ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 2;
+      [98, 116, 134].forEach(function (ly, i) {
+        var lw = i === 2 ? 60 : 90;
+        ctx.beginPath(); ctx.moveTo(80 - lw / 2, ly); ctx.lineTo(80 + lw / 2, ly); ctx.stroke();
+      });
+      ctx.font = '20px sans-serif';
+      ctx.fillText('✏️', 22, 130);
+      return cv.toDataURL('image/png');
+    } catch (e) { return ''; }
+  }
+  function findFirstDataImage(node, depth) {
+    var img = _scanForDataImage(node, depth || 0);
+    if (img) return img;
+    var items = [];
+    _scanForWrittenItem(node, depth || 0, items);
+    return items.length ? _renderWrittenThumb(items[0]) : '';
+  }
+
+  // Captures a real screenshot of the rendered preview stage (background,
+  // bins/cards, actual design) via the html2canvas library already loaded
+  // for PDF export — a genuine "what the activity looks like" thumbnail
+  // instead of a synthetic icon/emoji mockup. Falls back to the old
+  // content-scan approach if html2canvas is unavailable or the capture
+  // itself fails for any reason (e.g. a cross-origin image tainting it).
+  function _captureStageThumb(callback) {
+    var stageEl = document.getElementById('wrtStage');
+    if (stageEl && window.html2canvas) {
+      html2canvas(stageEl, { scale: 1.5, useCORS: true, backgroundColor: null, logging: false })
+        .then(function(canvas) { callback(canvas.toDataURL('image/png')); })
+        .catch(function() { callback(state.thumb || findFirstDataImage(state.activities, 0)); });
+    } else {
+      callback(state.thumb || findFirstDataImage(state.activities, 0));
+    }
+  }
+
   function compressThumb(dataURL, callback) {
     if (!dataURL) { callback(''); return; }
     var img = new Image();
     img.onload = function() {
-      var MAX = 160;
+      // 320px / .8 quality (was 160px / .55) — the source is now often a
+      // real html2canvas screenshot of the whole stage instead of a
+      // simple few-color icon, so the old aggressive compression read as
+      // visibly blurry/low-res once displayed.
+      var MAX = 320;
       var ratio = Math.min(MAX / img.width, MAX / img.height, 1);
       var cv = document.createElement('canvas');
       cv.width = Math.round(img.width * ratio);
       cv.height = Math.round(img.height * ratio);
       cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-      callback(cv.toDataURL('image/jpeg', 0.55));
+      callback(cv.toDataURL('image/jpeg', 0.8));
     };
     img.onerror = function() { callback(''); };
     img.src = dataURL;
@@ -2089,6 +2237,8 @@ function initActivityTheme(){
     if (deadline < _todayStr) { window.showToast("Deadline can't be in the past — please choose today or a later date.", 'error', 4500); return; }
     var domain = document.querySelector('input[name="wrtDomain"]:checked').value;
     var firstTitle = (state.activities[0] && state.activities[0].title) || 'Untitled Activity';
+    _captureStageThumb(function(thumbSrc) {
+    state.thumb = thumbSrc;
     compressThumb(state.thumb, function(smallThumb) {
 
     if (_editingPub) {
@@ -2109,6 +2259,7 @@ function initActivityTheme(){
         fdU.append('activity_title', firstTitle);
         fdU.append('subject', domain);
         fdU.append('content_json', JSON.stringify(state));
+        fdU.append('thumbnail', smallThumb || '');
         fdU.append('deadline', deadline);
         fetch('../TEACHER_BACKEND/teacher_update_activity.php', { method: 'POST', body: fdU })
           .then(function(r){ return r.json(); })
@@ -2164,6 +2315,7 @@ function initActivityTheme(){
     fdC.append('status', 'published');
     fdC.append('assigned_student_ids', JSON.stringify(_assignedIds));
     fdC.append('content_json', JSON.stringify(state));
+    fdC.append('thumbnail', smallThumb || '');
     fdC.append('deadline', deadline);
     fetch('../TEACHER_BACKEND/teacher_create_activity.php', { method: 'POST', body: fdC })
     .then(function(r){ return r.json(); }).then(function(d){
@@ -2182,6 +2334,7 @@ function initActivityTheme(){
       }
     }).catch(function(){
       window.showToast('Could not reach the server to publish this activity. Please check your connection and try again.', 'error', 4500);
+    });
     });
     });
   }
@@ -2259,6 +2412,11 @@ function initActivityTheme(){
       var retakeText = _stuRetake > 0
         ? '<p style="color:#fca5a5;font-size:13px;margin:0;">You have retaken this ' + _stuRetake + ' time(s).</p>'
         : '';
+      var parentGuideText = '<style>@keyframes pgGlow{0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,.65);}50%{box-shadow:0 0 0 12px rgba(251,191,36,0);}}</style>'
+        + '<div style="display:flex;align-items:center;gap:10px;background:#fbbf24;border:2px solid #f59e0b;border-radius:16px;padding:14px 24px;max-width:460px;animation:pgGlow 1.6s ease-in-out infinite;">'
+        + '<span style="font-size:28px;">⚠️</span>'
+        + '<span style="color:#78350f;font-size:14px;font-weight:800;text-align:left;line-height:1.4;">Kailangan ng gabay ng magulang o guardian sa pagsagot nito!</span>'
+        + '</div>';
 
       var splash = document.createElement('div');
       splash.id = 'stuSplash';
@@ -2266,7 +2424,7 @@ function initActivityTheme(){
       splash.innerHTML = splashThumb
         + '<h1 style="color:#fff;font-family:Fredoka,Poppins,sans-serif;font-size:32px;font-weight:700;margin:0;max-width:520px;line-height:1.2;">' + (pub.title || state.activities[0]&&state.activities[0].title || 'Activity') + '</h1>'
         + '<p style="color:#93c5fd;font-size:15px;margin:0;">Written Response</p>'
-        + dueText + retakeText
+        + dueText + retakeText + parentGuideText
         + '<button id="stuSplashBtn" style="margin-top:12px;background:#22c55e;color:#fff;border:none;padding:18px 56px;border-radius:18px;font-family:Fredoka,Poppins,sans-serif;font-size:24px;font-weight:700;cursor:pointer;box-shadow:0 6px 0 #15803d;transition:transform .1s;">▶ Start Activity</button>'
         + '<button onclick="window.history.back()" style="background:transparent;color:#93c5fd;border:none;font-size:14px;cursor:pointer;margin-top:4px;">← Exit</button>';
       document.body.appendChild(splash);
@@ -2396,11 +2554,30 @@ function initActivityTheme(){
       });
     }
 
-    function fetchRemoteActivity() {
-      fetch('../../STUDENT_FILES/STUDENT_BACKEND/student_get_activity_content.php?activity_id=' + encodeURIComponent(_stuPubId))
+    // student_get_activity_content.php only understands the numeric DB
+    // activity_id — but _stuPubId can also be a local "pub-<timestamp>"
+    // string (whenever this SAME browser also has a local publish record
+    // for it, e.g. a teacher testing their own activity as "student" on
+    // the same machine). Passing that string straight through silently
+    // fails the fetch (intval() on it is 0), which fell back to whatever
+    // stale content was cached instead of ever reaching the server — so
+    // resolve the real numeric id from published_activities first.
+    function _resolveNumericActivityId() {
+      var pubs = [];
+      try { pubs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+      var match = pubs.find(function(p){ return p.id === _stuPubId; });
+      if (match && match.db_activity_id) return match.db_activity_id;
+      return _stuPubId;
+    }
+    // `fallbackCached` is only used if this fetch itself fails (offline/
+    // connection issue) — a successful fetch always wins even when a
+    // local cache exists, since content_json in the DB is the one thing
+    // a teacher's edit/republish actually changes.
+    function fetchRemoteActivity(fallbackCached) {
+      fetch('../../STUDENT_FILES/STUDENT_BACKEND/student_get_activity_content.php?activity_id=' + encodeURIComponent(_resolveNumericActivityId()))
         .then(function(r){ return r.json(); })
         .then(function(d){
-          if (!d.success || !d.content) { applyStudentMode(null); return; }
+          if (!d.success || !d.content) { useCachedOrUnavailable(fallbackCached); return; }
           var pubs = [];
           try { pubs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
           var idx = pubs.findIndex(function(p){ return p.id === _stuPubId; });
@@ -2417,7 +2594,11 @@ function initActivityTheme(){
           _idb.save('pub_data_' + _stuPubId, d.content, function(){});
           applyStudentMode(d.content);
         })
-        .catch(function(){ applyStudentMode(null); });
+        .catch(function(){ useCachedOrUnavailable(fallbackCached); });
+    }
+    function useCachedOrUnavailable(cached) {
+      if (cached) applyStudentModeFreshLock(cached);
+      else applyStudentMode(null);
     }
 
     // Cached content can be stale on whether the teacher has since locked
@@ -2440,11 +2621,10 @@ function initActivityTheme(){
     }
 
     _idb.load('pub_data_' + _stuPubId, function(err, saved) {
-      if (saved) { applyStudentModeFreshLock(saved); return; }
+      if (saved) { fetchRemoteActivity(saved); return; }
       var ls = null;
       try { ls = JSON.parse(localStorage.getItem('pub_data_' + _stuPubId) || 'null'); } catch(e){}
-      if (ls) { applyStudentModeFreshLock(ls); return; }
-      fetchRemoteActivity();
+      fetchRemoteActivity(ls);
     });
   })();
 

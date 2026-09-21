@@ -8,7 +8,7 @@
   <title>SPED ALM - Student Dashboard</title>
   <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
 
-  <link href="STUDENT_CSS/Student_dashboard.css?v=11" rel="stylesheet" />
+  <link href="STUDENT_CSS/Student_dashboard.css?v=19" rel="stylesheet" />
   <link href="STUDENT_CSS/student_responsive.css?v=6" rel="stylesheet" />
   <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
   <!-- Fredoka = the rounded game font from the design -->
@@ -184,12 +184,13 @@
       <div class="student-banner-deco-circle"></div>
     </section>
     <!-- ACTIVITIES -->
-    <section class="student-activities-card">
+    <section class="student-activities-card" id="studentActivitiesCard">
       <div class="student-activities-header">
         <div class="student-act-tabs">
           <button class="student-act-tab student-active" onclick="switchTab(this, 'today')" type="button">Today's
             Activities</button>
           <button class="student-act-tab" onclick="switchTab(this, 'materials')" type="button">All Materials</button>
+          <button class="student-act-tab" onclick="switchTab(this, 'completed')" type="button">✅ Completed</button>
         </div>
         <span class="student-act-done" id="student-act-done-count">0/0 done</span>
       </div>
@@ -197,7 +198,17 @@
       <div class="student-act-panel" id="student-panel-today"></div>
       <!-- All Materials Panel -->
       <div class="student-act-panel" id="student-panel-materials" style="display:none;"></div>
+      <!-- Completed Activities Panel -->
+      <div class="student-act-panel" id="student-panel-completed" style="display:none;"></div>
     </section>
+    <!-- Hover preview popover for activity thumbnails — filled in and
+         positioned by the delegated listener below, dismissed on
+         mouseleave (never needs a click to close). -->
+    <div id="actHoverPreview" class="act-hover-preview">
+      <div class="act-hover-preview-imgwrap" id="actHoverPreviewImgWrap"></div>
+      <div class="act-hover-preview-title" id="actHoverPreviewTitle"></div>
+      <div class="act-hover-preview-type" id="actHoverPreviewType"></div>
+    </div>
     <script>
       var TYPE_COLOR = { 'Matching': 'purple', 'Sorting': 'blue', 'Sequencing': 'green' };
       var COLOR_CYCLE = ['orange', 'blue', 'purple', 'green', 'amber', 'pink'];
@@ -222,13 +233,13 @@
         var color = TYPE_COLOR[act.type] || COLOR_CYCLE[idx % COLOR_CYCLE.length];
         var badge = getBadgeD(act.deadline);
         var thumb = act.thumbnail
-          ? '<img src="' + escD(act.thumbnail) + '" alt="thumb" style="width:44px;height:44px;object-fit:cover;border-radius:10px;" />'
+          ? '<img src="' + escD(act.thumbnail) + '" alt="thumb" style="width:44px;height:44px;object-fit:contain;background:#f8faff;border-radius:10px;" />'
           : '<span style="font-size:30px;line-height:1;">' + getEmojiD(act.type) + '</span>';
         var due = act.deadline
           ? ' · Due ' + new Date(act.deadline + 'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})
           : '';
         return '<div class="student-act-row student-act-row--' + color + '">' +
-          '<div class="student-act-row-thumb">' + thumb + '</div>' +
+          '<div class="student-act-row-thumb act-thumb-hover" data-thumb="' + escD(act.thumbnail || '') + '" data-title="' + escD(act.title) + '" data-type="' + escD(act.type) + '" data-icon="' + escD(getEmojiD(act.type)) + '">' + thumb + '</div>' +
           '<div class="student-act-row-info">' +
             '<div class="student-act-row-title">' + escD(act.title) + '</div>' +
             '<div class="student-act-row-sub">' + escD(act.type) + ' · ' + act.grading + ' Grading' + due + '</div>' +
@@ -310,6 +321,22 @@
         }
       }
 
+      // True when the given UTC-ish MySQL datetime string falls on the same
+      // *local calendar day* as right now — not just "within N hours" —
+      // so "Today's Activities" empties out and refills exactly at
+      // midnight, matching whatever the teacher assigns that specific day.
+      function isToday(mysqlDatetime) {
+        if (!mysqlDatetime) return false;
+        // MySQL datetime strings are UTC but carry no timezone marker, so
+        // appending 'Z' keeps the Date constructor from treating them as
+        // already being in the browser's local time (PHT).
+        var d = new Date(mysqlDatetime.replace(' ', 'T') + 'Z');
+        var now = new Date();
+        return d.getFullYear() === now.getFullYear() &&
+               d.getMonth()    === now.getMonth()    &&
+               d.getDate()     === now.getDate();
+      }
+
       function renderActivities(rawMaterials) {
         // Normalize DB field names to what renderActRow expects
         var materials = rawMaterials.map(function(m) {
@@ -321,29 +348,28 @@
             deadline:        m.deadline || '',
             thumbnail:       m.thumbnail || '',
             progress_status: m.progress_status || 'new',
-            created_at:      m.created_at || ''
+            created_at:      m.created_at || '',
+            score:           m.score,
+            assessment_date: m.assessment_date || ''
           };
         });
 
         var todayPanel = document.getElementById('student-panel-today');
 
-        // "Recent" = published within the last 7 days (use created_at from DB)
-        // and not already completed — a finished activity belongs in My
-        // Progress, not back here still showing "NEW"/"Start" (matches the
-        // same completed-filter My Materials already applies).
-        var cutoff = Date.now() - 7 * 86400000;
+        // "Today's Activities" = assigned/published on today's calendar
+        // date specifically, and not already completed. Tomorrow this list
+        // is empty again unless the teacher publishes something new that
+        // day — older not-yet-done activities are still reachable from
+        // My Materials, this panel is a same-day-only glance.
         var recent = materials.filter(function(a) {
           if (a.progress_status === 'completed') return false;
-          // MySQL datetime strings are UTC but carry no timezone marker, so
-          // appending 'Z' keeps the Date constructor from treating them as
-          // already being in the browser's local time (PHT).
-          return a.created_at && (new Date(a.created_at.replace(' ', 'T') + 'Z').getTime() >= cutoff);
+          return isToday(a.created_at);
         });
 
         if (recent.length === 0) {
           todayPanel.innerHTML = '<div class="student-act-empty"><div class="student-act-empty-icon">📋</div>' +
-            '<p class="student-act-empty-title">No activities yet</p>' +
-            '<p class="student-act-empty-desc">Your teacher\'s assigned activities will appear here once available.</p></div>';
+            '<p class="student-act-empty-title">No activities for today</p>' +
+            '<p class="student-act-empty-desc">Check back if your teacher assigns something new today. Older activities are in My Materials.</p></div>';
         } else {
           todayPanel.innerHTML = recent.map(renderActRow).join('');
         }
@@ -351,6 +377,58 @@
         var doneCount = materials.filter(function(a){ return a.progress_status === 'completed'; }).length;
         document.getElementById('student-act-done-count').textContent = doneCount + '/' + materials.length + ' done';
         updateProgressBanner(doneCount, materials.length);
+        renderCompletedActivities(materials);
+      }
+
+      /* ── Completed Activities: own container on the dashboard, always
+         inline (no modal) — reuses the same materials fetch above. ── */
+      function renderCompletedRow(act, idx) {
+        var color = TYPE_COLOR[act.type] || COLOR_CYCLE[idx % COLOR_CYCLE.length];
+        var thumb = act.thumbnail
+          ? '<img src="' + escD(act.thumbnail) + '" alt="thumb" style="width:44px;height:44px;object-fit:contain;background:#f8faff;border-radius:10px;" />'
+          : '<span style="font-size:30px;line-height:1;">' + getEmojiD(act.type) + '</span>';
+        var scoreText = (act.score !== null && act.score !== undefined) ? act.score + '%' : '';
+        var doneText = act.assessment_date
+          ? 'Completed ' + new Date(act.assessment_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          : '';
+        var sub = [act.type, scoreText, doneText].filter(Boolean).join(' · ');
+        return '<div class="student-act-row student-act-row--' + color + '">' +
+          '<div class="student-act-row-thumb act-thumb-hover" data-thumb="' + escD(act.thumbnail || '') + '" data-title="' + escD(act.title) + '" data-type="' + escD(act.type) + '" data-icon="' + escD(getEmojiD(act.type)) + '">' + thumb + '</div>' +
+          '<div class="student-act-row-info">' +
+            '<div class="student-act-row-title">' + escD(act.title) + '</div>' +
+            '<div class="student-act-row-sub">' + escD(sub) + '</div>' +
+          '</div>' +
+          '<button class="student-act-row-btn student-act-row-btn--review" type="button" onclick="reviewActivity(\'' + escD(act.id) + '\',\'' + escD(act.type) + '\')">🔁 Review</button>' +
+          '</div>';
+      }
+
+      function renderCompletedActivities(materials) {
+        var panel = document.getElementById('student-panel-completed');
+        if (!panel) return;
+        var completed = materials.filter(function(a) { return a.progress_status === 'completed'; });
+        if (!completed.length) {
+          panel.innerHTML = '<div class="student-act-empty"><div class="student-act-empty-icon">🎯</div>' +
+            '<p class="student-act-empty-title">No completed activities yet</p>' +
+            '<p class="student-act-empty-desc">Activities you pass will show up here, ready to review anytime.</p></div>';
+        } else {
+          panel.innerHTML = completed.map(renderCompletedRow).join('');
+        }
+      }
+
+      // Reopens a passed activity for practice, with review_mode=1 — every
+      // template checks that flag (alongside its own "already passed"
+      // check) before deciding whether to save anything, so replaying it
+      // here can never overwrite the real score or send it back to
+      // in-progress. Mirrors Student_progress.html's reviewActivity().
+      function reviewActivity(dbId, type) {
+        var tpl = _TPL[type];
+        if (!tpl) { alert('Review is not supported yet for this activity type.'); return; }
+        var lsActs = [];
+        try { lsActs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch (e) {}
+        var match = lsActs.find(function(a) { return String(a.db_activity_id) === String(dbId); });
+        var pubId = match ? match.id : String(dbId);
+        sessionStorage.setItem('stu_return_url', window.location.href);
+        window.location.href = tpl + '?student_mode=1&review_mode=1&pub_id=' + encodeURIComponent(pubId);
       }
 
       /* ── "All Materials" tab: files the teacher has actually uploaded
@@ -580,6 +658,50 @@
         document.getElementById('student-panel-' + panel).style.display = 'flex';
       }
 
+      /* ── Hover preview popover for activity thumbnails ──
+         Delegated on the whole Activities card (rows get re-rendered
+         wholesale on every refresh, so binding to individual
+         .act-thumb-hover nodes would mean re-binding every time). */
+      (function () {
+        var card = document.getElementById('studentActivitiesCard');
+        var pop = document.getElementById('actHoverPreview');
+        if (!card || !pop) return;
+        var imgWrap = document.getElementById('actHoverPreviewImgWrap');
+        var titleEl = document.getElementById('actHoverPreviewTitle');
+        var typeEl = document.getElementById('actHoverPreviewType');
+
+        function positionPop(anchor) {
+          var r = anchor.getBoundingClientRect();
+          pop.style.display = 'block'; // measure first so offsetWidth is accurate
+          var popW = pop.offsetWidth || 220;
+          var spaceRight = window.innerWidth - r.right;
+          var left = spaceRight >= popW + 16 ? r.right + 10 : r.left - popW - 10;
+          if (left < 8) left = 8;
+          var top = Math.min(r.top, window.innerHeight - (pop.offsetHeight || 200) - 8);
+          if (top < 8) top = 8;
+          pop.style.left = left + 'px';
+          pop.style.top = top + 'px';
+        }
+
+        card.addEventListener('mouseover', function (e) {
+          var anchor = e.target.closest('.act-thumb-hover');
+          if (!anchor) return;
+          var thumb = anchor.getAttribute('data-thumb');
+          imgWrap.innerHTML = thumb
+            ? '<img src="' + thumb + '" alt="" />'
+            : '<div class="act-hover-preview-fallback">' + (anchor.getAttribute('data-icon') || '📋') + '</div>';
+          titleEl.textContent = anchor.getAttribute('data-title') || '';
+          typeEl.textContent = anchor.getAttribute('data-type') || '';
+          positionPop(anchor);
+        });
+        card.addEventListener('mouseout', function (e) {
+          var anchor = e.target.closest('.act-thumb-hover');
+          if (!anchor) return;
+          if (anchor.contains(e.relatedTarget)) return;
+          pop.style.display = 'none';
+        });
+      })();
+
       document.addEventListener('visibilitychange', function(){ if (!document.hidden) loadDashboard(); });
       loadDashboard();
       // Recheck enrollment while the dashboard remains open so assignments appear without
@@ -605,7 +727,13 @@
           <button class="student-story-btn" onclick="closeStoryViewer()" type="button">✕</button>
         </div>
       </div>
-      <img class="student-story-img" id="storyImg" src="" alt="Story slide" />
+      <!-- storyImgUnder sits behind storyImg and only gets a src while a
+           page-turn drag is in progress (see the pageflip IIFE below) —
+           it's the "next page" the turning top page reveals as it lifts
+           away. -->
+      <img class="student-story-img student-story-img--under" id="storyImgUnder" src="" alt="" />
+      <img class="student-story-img student-story-img--top" id="storyImg" src="" alt="Story slide" />
+      <div class="student-story-page-shade" id="storyPageShade"></div>
       <div class="student-story-nav student-story-nav--prev" onclick="storyPrev()"></div>
       <div class="student-story-nav student-story-nav--next" onclick="storyNext()"></div>
       <div class="student-story-counter" id="storyCounter"></div>
@@ -774,6 +902,104 @@
     }
     window.storyNext = function(){ showSlide(_idx + 1); };
     window.storyPrev = function(){ showSlide(_idx - 1); };
+
+    // Swipe-to-turn-the-page, as an actual 3D page flip (mobile single-
+    // slide view only — the desktop coverflow has its own click-through
+    // nav). storyImgUnder is the destination slide, laid in behind the
+    // current one; storyImg is the physical "page" that rotates around
+    // its spine edge (left edge when turning forward, right edge when
+    // turning back) to reveal it. Purely additive: it only commits once
+    // the drag crosses SWIPE_COMMIT, so a plain tap still falls through
+    // untouched to the existing .student-story-nav--prev/--next zones.
+    (function(){
+      var frame = document.getElementById('storyFrameSingle');
+      var img = document.getElementById('storyImg');
+      var imgUnder = document.getElementById('storyImgUnder');
+      var shade = document.getElementById('storyPageShade');
+      if (!frame || !img || !imgUnder || !shade) return;
+      var SWIPE_COMMIT = 60;
+      var dragging = false, dragStartX = 0, dragDX = 0, targetIdx = -1, goingNext = true;
+
+      function pauseForDrag(){
+        cancelAnimationFrame(_raf);
+        _elapsedPaused += performance.now() - _startTs;
+      }
+      function resumeAfterDrag(){
+        _startTs = performance.now();
+        if (!_paused) _raf = requestAnimationFrame(tick);
+      }
+      function resetFlipVisuals(){
+        img.style.transition = '';
+        img.style.transform = '';
+        shade.style.transition = '';
+        shade.style.opacity = '0';
+        imgUnder.src = '';
+      }
+      function onDown(e){
+        if (_cfMode || !document.getElementById('storyViewer').classList.contains('show')) return;
+        dragging = true; dragStartX = e.clientX; dragDX = 0; targetIdx = -1;
+        img.classList.remove('anim-next', 'anim-prev');
+        img.style.transition = 'none';
+        shade.style.transition = 'none';
+        pauseForDrag();
+      }
+      function onMove(e){
+        if (!dragging) return;
+        dragDX = e.clientX - dragStartX;
+        goingNext = dragDX < 0;
+        var nextTarget = goingNext ? _idx + 1 : _idx - 1;
+        var canFlip = nextTarget >= 0 && nextTarget < STORY.slides.length;
+        if (!canFlip) {
+          // Nothing to reveal past the first/last slide — just resist a
+          // little instead of flipping onto nothing.
+          img.style.transformOrigin = '50% 50%';
+          img.style.transform = 'translateX(' + (dragDX * 0.25) + 'px)';
+          shade.style.opacity = '0';
+          return;
+        }
+        if (targetIdx !== nextTarget) {
+          targetIdx = nextTarget;
+          imgUnder.src = STORY.slides[targetIdx];
+        }
+        var w = frame.clientWidth || 320;
+        var progress = Math.min(Math.abs(dragDX) / (w * 0.65), 1); // 0..1
+        var angle = progress * 150; // how far the page has turned, in degrees
+        img.style.transformOrigin = goingNext ? 'left center' : 'right center';
+        img.style.transform = 'rotateY(' + (goingNext ? -angle : angle) + 'deg)';
+        shade.style.background = goingNext
+          ? 'linear-gradient(90deg, rgba(0,0,0,0) 55%, rgba(0,0,0,.55) 100%)'
+          : 'linear-gradient(270deg, rgba(0,0,0,0) 55%, rgba(0,0,0,.55) 100%)';
+        shade.style.opacity = String(progress * 0.6);
+      }
+      function onUp(){
+        if (!dragging) return;
+        dragging = false;
+        var committing = targetIdx !== -1 && Math.abs(dragDX) >= SWIPE_COMMIT;
+        img.style.transition = 'transform .28s ease-in';
+        shade.style.transition = 'opacity .28s ease-in';
+        if (committing) {
+          // Finish the flip past 90° (the page is edge-on/invisible here
+          // thanks to backface-visibility:hidden) so the swap underneath
+          // is never caught mid-motion.
+          img.style.transform = 'rotateY(' + (goingNext ? -150 : 150) + 'deg)';
+          shade.style.opacity = '0';
+          var goNext = goingNext;
+          setTimeout(function(){
+            resetFlipVisuals();
+            if (goNext) storyNext(); else storyPrev();
+          }, 200);
+        } else {
+          img.style.transform = 'rotateY(0deg)';
+          setTimeout(resetFlipVisuals, 300);
+          resumeAfterDrag();
+        }
+        dragDX = 0;
+      }
+      frame.addEventListener('pointerdown', onDown);
+      frame.addEventListener('pointermove', onMove);
+      frame.addEventListener('pointerup', onUp);
+      frame.addEventListener('pointercancel', onUp);
+    })();
     window.storyTogglePause = function(){
       _paused = !_paused;
       document.getElementById('storyPauseBtn').textContent = _paused ? '▶' : '⏸';

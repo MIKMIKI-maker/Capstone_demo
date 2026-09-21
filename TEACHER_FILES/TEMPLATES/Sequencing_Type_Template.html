@@ -569,6 +569,20 @@ function initActivityTheme(){
     .seq-thumb{ height:40px; font-size:20px; }
     .seq-side-name{ font-size:10px; padding:4px 5px; }
     .seq-media-tabs button{ font-size:8.5px; padding:2.5px 0; }
+
+    /* .seq-grid's column count is a teacher-configurable setting
+       (state.cols, up to 4) applied as an inline style via JS — on a
+       narrow phone that could mean 4 columns crammed into one row, each
+       so thin that the step picture/emoji (sized off the stage's own
+       font-size, not the column's actual width) rendered far bigger than
+       its own card and spilled over the neighboring ones. Force at most
+       2 per row on mobile (!important beats the inline style) and cap
+       the picture/emoji size in real pixels as a second safety net. */
+    .seq-grid{ grid-template-columns:repeat(2, 1fr) !important; gap:12px; }
+    .seq-card-it{ padding:8px; padding-top:22px; }
+    .seq-card-it-img{ height:min(calc(3.6em * var(--img-scale,1)), 70px); }
+    .seq-card-it-emoji{ font-size:min(calc(3em * var(--img-scale,1)), 56px); }
+    .seq-card-it-name{ font-size:11px; margin-top:6px; }
   }
 
   /* Real student/preview mode centers the stage's content vertically in
@@ -580,6 +594,39 @@ function initActivityTheme(){
      that space instead of centering into empty air. */
   @media (max-width:640px){
     body.seq-preview-only .seq-stage{ justify-content:flex-start; padding-top:26px; }
+    /* Title/instruction font-size is em-based off the stage's own
+       font-size (which a teacher can set arbitrarily large) — a long
+       title at that size wraps into 3-4 lines on a phone and can eat up
+       half the screen before the actual activity even shows. min() caps
+       it at a fixed, always-reasonable mobile size regardless of that
+       setting. */
+    body.seq-preview-only .seq-title{ font-size:min(1.25em, 24px); line-height:1.25; }
+    body.seq-preview-only .seq-instr{ font-size:min(.5em, 13px); margin:4px 0 14px; }
+
+    /* Pin the Try Again / Check answers bar to the very bottom of the
+       screen instead of it sitting right after the step grid with a
+       big empty gap trailing below. .seq-stage-inner becomes the flex
+       column that actually does the pushing; .seq-grid grows to fill
+       the leftover space and centers its own rows within it, so the
+       steps stay visually centered in the area above the bar instead
+       of sticking to the top. */
+    /* padding-top clears the fixed Exit button (top:14px, ~36px tall)
+       instead of the title crowding right underneath it; padding-bottom
+       keeps the button bar off the very bottom edge. */
+    body.seq-preview-only .seq-stage{ padding-top:56px; padding-bottom:80px; }
+    body.seq-preview-only .seq-stage-inner{ display:flex; flex-direction:column; flex:1; width:100%; }
+    body.seq-preview-only .seq-grid{ flex:1; align-content:center; }
+    /* Both buttons the same width instead of each hugging its own label
+       length ("Try Again" reading noticeably smaller than "Check answers") —
+       and a fixed, compact height instead of the em-based padding (tied
+       to the stage's own configurable font-size) making them look thick
+       and oversized on a phone. */
+    body.seq-preview-only .seq-stage-btnrow{ width:100%; max-width:320px; margin:0 auto; }
+    body.seq-preview-only .seq-mini{ flex:1; padding:12px 16px; font-size:14px; }
+    /* Score-result modal's Retake/Submit buttons — same "compact, fixed
+       size instead of desktop-sized" treatment as the stage's own
+       Try Again/Check answers bar above. */
+    .seq-modal-actions button{ padding:10px 14px; font-size:13px; border-radius:12px; }
   }
   /* ===== DESIGN FOR SCORING ===== */
   .seq-modal-emoji{
@@ -2057,17 +2104,135 @@ function initActivityTheme(){
   $("seqPubBtn").addEventListener("click", openPublishModal);
   $("seqPublishCancelBtn").addEventListener("click", closePublishModal);
 
+  // Auto-derives the activity's thumbnail: prefers the first uploaded
+  // (data:) image found anywhere in its content, and falls back to
+  // rendering the first usable item emoji onto a small canvas — so an
+  // emoji-only activity (no uploaded photos) still gets a real image-look
+  // thumbnail instead of the generic type icon everywhere.
+  function _scanForDataImage(node, depth) {
+    if (depth > 6 || node == null) return '';
+    if (typeof node === 'string') return node.indexOf('data:image') === 0 ? node : '';
+    if (Array.isArray(node)) {
+      for (var i = 0; i < node.length; i++) {
+        var r = _scanForDataImage(node[i], depth + 1);
+        if (r) return r;
+      }
+      return '';
+    }
+    if (typeof node === 'object') {
+      for (var k in node) {
+        if (!Object.prototype.hasOwnProperty.call(node, k)) continue;
+        var r2 = _scanForDataImage(node[k], depth + 1);
+        if (r2) return r2;
+      }
+    }
+    return '';
+  }
+  // Collects up to 4 distinct item emoji (skipping the "?" broken-item
+  // placeholder) instead of stopping at the first one — a small grid of
+  // them reads much more like an actual peek of the activity than a
+  // single giant emoji would.
+  // Finds the first steps:[] array — Sequencing's real shape — preserving
+  // array order, since order IS the correct answer for this type.
+  function _scanForSteps(node, depth) {
+    if (depth > 6 || node == null) return null;
+    if (Array.isArray(node)) {
+      for (var i = 0; i < node.length; i++) {
+        var r = _scanForSteps(node[i], depth + 1);
+        if (r) return r;
+      }
+      return null;
+    }
+    if (typeof node === 'object') {
+      if (Array.isArray(node.steps)) return node.steps;
+      for (var k in node) {
+        if (!Object.prototype.hasOwnProperty.call(node, k)) continue;
+        var r2 = _scanForSteps(node[k], depth + 1);
+        if (r2) return r2;
+      }
+    }
+    return null;
+  }
+  // Draws up to 3 steps in order, each numbered, with arrows between them
+  // — a miniature look-alike of the real "put these in order" screen.
+  function _renderSequenceThumb(steps) {
+    try {
+      var cells = steps.filter(function (s) { return s && s.emoji && s.emoji !== '?'; }).slice(0, 3);
+      if (!cells.length) return '';
+      var cv = document.createElement('canvas');
+      cv.width = 160; cv.height = 160;
+      var ctx = cv.getContext('2d');
+      ctx.fillStyle = '#eef1fb'; ctx.fillRect(0, 0, 160, 160);
+      var cardW = 38, cardH = 38, gap = 14;
+      var totalW = cells.length * cardW + (cells.length - 1) * gap;
+      var startX = (160 - totalW) / 2, y = 70;
+      ctx.font = '22px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      cells.forEach(function (s, idx) {
+        var x = startX + idx * (cardW + gap), r = 8;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + cardW, y, x + cardW, y + cardH, r);
+        ctx.arcTo(x + cardW, y + cardH, x, y + cardH, r);
+        ctx.arcTo(x, y + cardH, x, y, r);
+        ctx.arcTo(x, y, x + cardW, y, r);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.fillText(s.emoji, x + cardW / 2, y + cardH / 2 + 1);
+        ctx.beginPath(); ctx.fillStyle = '#7c3aed';
+        ctx.arc(x + 8, y - 3, 8, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 10px "Poppins",sans-serif';
+        ctx.fillText(String(idx + 1), x + 8, y - 3);
+        ctx.font = '22px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';
+        if (idx < cells.length - 1) {
+          ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(x + cardW + 3, y + cardH / 2); ctx.lineTo(x + cardW + gap - 3, y + cardH / 2); ctx.stroke();
+        }
+      });
+      return cv.toDataURL('image/png');
+    } catch (e) { return ''; }
+  }
+  function findFirstDataImage(node, depth) {
+    var img = _scanForDataImage(node, depth || 0);
+    if (img) return img;
+    var steps = _scanForSteps(node, depth || 0);
+    return steps ? _renderSequenceThumb(steps) : '';
+  }
+
+  // Captures a real screenshot of the rendered preview stage (background,
+  // bins/cards, actual design) via the html2canvas library already loaded
+  // for PDF export — a genuine "what the activity looks like" thumbnail
+  // instead of a synthetic icon/emoji mockup. Falls back to the old
+  // content-scan approach if html2canvas is unavailable or the capture
+  // itself fails for any reason (e.g. a cross-origin image tainting it).
+  function _captureStageThumb(callback) {
+    var stageEl = document.getElementById('seqStage');
+    if (stageEl && window.html2canvas) {
+      html2canvas(stageEl, { scale: 1.5, useCORS: true, backgroundColor: null, logging: false })
+        .then(function(canvas) { callback(canvas.toDataURL('image/png')); })
+        .catch(function() { callback(state.thumb || findFirstDataImage(state.activities, 0)); });
+    } else {
+      callback(state.thumb || findFirstDataImage(state.activities, 0));
+    }
+  }
+
   function compressThumb(dataURL, callback) {
     if (!dataURL) { callback(''); return; }
     var img = new Image();
     img.onload = function() {
-      var MAX = 160;
+      // 320px / .8 quality (was 160px / .55) — the source is now often a
+      // real html2canvas screenshot of the whole stage instead of a
+      // simple few-color icon, so the old aggressive compression read as
+      // visibly blurry/low-res once displayed.
+      var MAX = 320;
       var ratio = Math.min(MAX / img.width, MAX / img.height, 1);
       var cv = document.createElement('canvas');
       cv.width = Math.round(img.width * ratio);
       cv.height = Math.round(img.height * ratio);
       cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-      callback(cv.toDataURL('image/jpeg', 0.55));
+      callback(cv.toDataURL('image/jpeg', 0.8));
     };
     img.onerror = function() { callback(''); };
     img.src = dataURL;
@@ -2086,6 +2251,8 @@ function initActivityTheme(){
 
     var domain = document.querySelector('input[name="seqDomain"]:checked').value;
     var firstTitle = (state.activities[0] && state.activities[0].title) || 'Untitled Activity';
+    _captureStageThumb(function(thumbSrc) {
+    state.thumb = thumbSrc;
     compressThumb(state.thumb, function(smallThumb) {
 
     if (_editingPub) {
@@ -2106,6 +2273,7 @@ function initActivityTheme(){
         fdU.append('activity_title', firstTitle);
         fdU.append('subject', domain);
         fdU.append('content_json', JSON.stringify(state));
+        fdU.append('thumbnail', smallThumb || '');
         fdU.append('deadline', deadline);
         fetch('../TEACHER_BACKEND/teacher_update_activity.php', { method: 'POST', body: fdU })
           .then(function(r){ return r.json(); })
@@ -2153,6 +2321,7 @@ function initActivityTheme(){
     fdC.append('status', 'published');
     fdC.append('assigned_student_ids', JSON.stringify(_assignedIds));
     fdC.append('content_json', JSON.stringify(state));
+    fdC.append('thumbnail', smallThumb || '');
     fdC.append('deadline', deadline);
     fetch('../TEACHER_BACKEND/teacher_create_activity.php', { method: 'POST', body: fdC })
     .then(function(r){ return r.json(); }).then(function(d){
@@ -2173,6 +2342,7 @@ function initActivityTheme(){
       window.showToast('Could not reach the server to publish this activity. Please check your connection and try again.', 'error', 4500);
     });
     }); // end compressThumb
+    }); // end _captureStageThumb
   }
   $("seqPublishConfirmBtn").addEventListener("click", confirmPublish);
 
@@ -2290,6 +2460,11 @@ function initActivityTheme(){
       var retakeText = _stuRetake > 0
         ? '<p style="color:#fca5a5;font-size:13px;margin:0;">You have retaken this ' + _stuRetake + ' time(s).</p>'
         : '';
+      var parentGuideText = '<style>@keyframes pgGlow{0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,.65);}50%{box-shadow:0 0 0 12px rgba(251,191,36,0);}}</style>'
+        + '<div style="display:flex;align-items:center;gap:10px;background:#fbbf24;border:2px solid #f59e0b;border-radius:16px;padding:14px 24px;max-width:460px;animation:pgGlow 1.6s ease-in-out infinite;">'
+        + '<span style="font-size:28px;">⚠️</span>'
+        + '<span style="color:#78350f;font-size:14px;font-weight:800;text-align:left;line-height:1.4;">Kailangan ng gabay ng magulang o guardian sa pagsagot nito!</span>'
+        + '</div>';
 
       var splash = document.createElement('div');
       splash.id = 'stuSplash';
@@ -2297,7 +2472,7 @@ function initActivityTheme(){
       splash.innerHTML = splashThumb
         + '<h1 style="color:#fff;font-family:Fredoka,Poppins,sans-serif;font-size:32px;font-weight:700;margin:0;max-width:520px;line-height:1.2;">' + (pub.title || state.activities[0]&&state.activities[0].title || 'Activity') + '</h1>'
         + '<p style="color:#93c5fd;font-size:15px;margin:0;">Sequencing Type</p>'
-        + dueText + retakeText
+        + dueText + retakeText + parentGuideText
         + '<button id="stuSplashBtn" style="margin-top:12px;background:#22c55e;color:#fff;border:none;padding:18px 56px;border-radius:18px;font-family:Fredoka,Poppins,sans-serif;font-size:24px;font-weight:700;cursor:pointer;box-shadow:0 6px 0 #15803d;">▶ Start Activity</button>'
         + '<button onclick="window.history.back()" style="background:transparent;color:#93c5fd;border:none;font-size:14px;cursor:pointer;margin-top:4px;">← Exit</button>';
       document.body.appendChild(splash);
@@ -2417,11 +2592,30 @@ function initActivityTheme(){
       });
     }
 
-    function fetchRemoteActivity() {
-      fetch('../../STUDENT_FILES/STUDENT_BACKEND/student_get_activity_content.php?activity_id=' + encodeURIComponent(_stuPubId))
+    // student_get_activity_content.php only understands the numeric DB
+    // activity_id — but _stuPubId can also be a local "pub-<timestamp>"
+    // string (whenever this SAME browser also has a local publish record
+    // for it, e.g. a teacher testing their own activity as "student" on
+    // the same machine). Passing that string straight through silently
+    // fails the fetch (intval() on it is 0), which fell back to whatever
+    // stale content was cached instead of ever reaching the server — so
+    // resolve the real numeric id from published_activities first.
+    function _resolveNumericActivityId() {
+      var pubs = [];
+      try { pubs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
+      var match = pubs.find(function(p){ return p.id === _stuPubId; });
+      if (match && match.db_activity_id) return match.db_activity_id;
+      return _stuPubId;
+    }
+    // `fallbackCached` is only used if this fetch itself fails (offline/
+    // connection issue) — a successful fetch always wins even when a
+    // local cache exists, since content_json in the DB is the one thing
+    // a teacher's edit/republish actually changes.
+    function fetchRemoteActivity(fallbackCached) {
+      fetch('../../STUDENT_FILES/STUDENT_BACKEND/student_get_activity_content.php?activity_id=' + encodeURIComponent(_resolveNumericActivityId()))
         .then(function(r){ return r.json(); })
         .then(function(d){
-          if (!d.success || !d.content) { applyStudentMode(null); return; }
+          if (!d.success || !d.content) { useCachedOrUnavailable(fallbackCached); return; }
           var pubs = [];
           try { pubs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
           var idx = pubs.findIndex(function(p){ return p.id === _stuPubId; });
@@ -2438,7 +2632,11 @@ function initActivityTheme(){
           _idb.save('pub_data_' + _stuPubId, d.content, function(){});
           applyStudentMode(d.content);
         })
-        .catch(function(){ applyStudentMode(null); });
+        .catch(function(){ useCachedOrUnavailable(fallbackCached); });
+    }
+    function useCachedOrUnavailable(cached) {
+      if (cached) applyStudentModeFreshLock(cached);
+      else applyStudentMode(null);
     }
 
     // Cached content can be stale on whether the teacher has since locked
@@ -2461,11 +2659,10 @@ function initActivityTheme(){
     }
 
     _idb.load('pub_data_' + _stuPubId, function(err, saved) {
-      if (saved) { applyStudentModeFreshLock(saved); return; }
+      if (saved) { fetchRemoteActivity(saved); return; }
       var ls = null;
       try { ls = JSON.parse(localStorage.getItem('pub_data_' + _stuPubId) || 'null'); } catch(e){}
-      if (ls) { applyStudentModeFreshLock(ls); return; }
-      fetchRemoteActivity();
+      fetchRemoteActivity(ls);
     });
   })();
 

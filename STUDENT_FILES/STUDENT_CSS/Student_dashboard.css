@@ -482,7 +482,12 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 4px 0;
+  padding: 4px 4px 4px 0;
+  /* Caps the panel's own height once the list grows past a handful of
+     rows, instead of the whole card stretching taller and taller —
+     same reasoning as #completedList/#perfList on the Progress page. */
+  max-height: 420px;
+  overflow-y: auto;
 }
 
 /* Activity row card (shown in dashboard panels) */
@@ -530,6 +535,32 @@ body {
   text-decoration: none; display: inline-block;
 }
 .student-act-row-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #16a34a; }
+
+/* "Review" button variant for the Completed Activities tab panel */
+.student-act-row-btn--review { background: #2f6fed; box-shadow: 0 3px 0 #1d4ed8; }
+
+/* Activity thumbnail hover preview — see the delegated mouseover/mouseout
+   handlers near switchTab() for the show/hide/position logic. */
+.act-thumb-hover { cursor: default; }
+.act-hover-preview {
+  display: none; position: fixed; z-index: 20000; width: 220px;
+  background: #fff; border-radius: 14px; padding: 12px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, .22); border: 1px solid #e5e9f2;
+  pointer-events: none;
+}
+.act-hover-preview-imgwrap {
+  width: 100%; height: 140px; border-radius: 10px; overflow: hidden;
+  background: #eef2f8; display: flex; align-items: center; justify-content: center;
+  margin-bottom: 8px;
+}
+.act-hover-preview-imgwrap img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.act-hover-preview-fallback { font-size: 44px; }
+.act-hover-preview-title {
+  font-family: var(--font-head); font-weight: 700; font-size: 13.5px;
+  color: var(--ink); line-height: 1.3;
+}
+.act-hover-preview-type { font-size: 11.5px; color: var(--ink-soft); margin-top: 2px; }
+.student-act-row-btn--review:active { box-shadow: 0 1px 0 #1d4ed8; }
 
 .student-act-empty {
   width: 100%;
@@ -822,10 +853,30 @@ body {
 
 .student-story-viewer { position: fixed; inset: 0; z-index: 100000; background: rgba(10, 14, 26, .92); display: none; align-items: center; justify-content: center; }
 .student-story-viewer.show { display: flex; }
-.student-story-frame { position: relative; width: min(94vw, 480px); height: min(92vh, 854px); background: #111; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
-.student-story-img { width: 100%; height: 100%; object-fit: contain; background: #000; display: block; }
-.student-story-img.anim-next { animation: studyStoryNext .4s cubic-bezier(.2,.7,.3,1); }
-.student-story-img.anim-prev { animation: studyStoryPrev .4s cubic-bezier(.2,.7,.3,1); }
+.student-story-frame { position: relative; width: min(94vw, 480px); height: min(92vh, 854px); background: #111; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  /* Swipe-to-turn-the-page reads the pointer's own X movement — this
+     stops the browser's own touch scroll/pan from fighting it. Depth for
+     the rotateY page-flip below. */
+  touch-action: none; perspective: 1600px; }
+.student-story-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; display: block; }
+.student-story-img--under { z-index: 1; }
+/* The top image is the physical "page" that flips — preserve-3d/backface-
+   hidden so it visually disappears past the 90° mark instead of showing a
+   mirrored image, exactly like a real page once it's edge-on to you. */
+.student-story-img--top { z-index: 2; transform-style: preserve-3d; backface-visibility: hidden; will-change: transform; }
+.student-story-img--top.anim-next { animation: studyStoryNext .4s cubic-bezier(.2,.7,.3,1); }
+.student-story-img--top.anim-prev { animation: studyStoryPrev .4s cubic-bezier(.2,.7,.3,1); }
+/* Darkens the turning page's underside as it lifts, and casts a soft
+   shadow onto the page being revealed — the one detail that sells "paper"
+   instead of a flat image spinning in place. */
+.student-story-page-shade { position: absolute; inset: 0; z-index: 3; pointer-events: none; opacity: 0; }
+/* Rotate the phone and the frame actually grows to use the extra width
+   instead of staying the same narrow portrait box — the slides
+   themselves stay portrait (object-fit:contain still letterboxes them),
+   but the frame/flip stage itself gets noticeably bigger and roomier. */
+@media (orientation: landscape) {
+  .student-story-frame { width: min(85vw, 720px); height: min(94vh, 900px); }
+}
 @keyframes studyStoryNext { from { opacity: 0; transform: translateX(36px) scale(.97); } to { opacity: 1; transform: translateX(0) scale(1); } }
 @keyframes studyStoryPrev { from { opacity: 0; transform: translateX(-36px) scale(.97); } to { opacity: 1; transform: translateX(0) scale(1); } }
 .student-story-progress { position: absolute; top: 12px; left: 12px; right: 12px; z-index: 3; display: flex; gap: 5px; }

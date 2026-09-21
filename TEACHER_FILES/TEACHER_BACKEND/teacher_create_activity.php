@@ -28,6 +28,10 @@ $status = isset($_POST['status']) ? trim($_POST['status']) : 'draft';
 // Full activity content (slides/items/answer keys/design settings) so any
 // device can load it later — not just the browser that published it.
 $content_json = isset($_POST['content_json']) ? $_POST['content_json'] : null;
+// Compressed (~160px) preview image, auto-derived client-side from the
+// activity's first uploaded picture — blank when it has none.
+$thumbnail = isset($_POST['thumbnail']) ? $_POST['thumbnail'] : null;
+if ($thumbnail === '') $thumbnail = null;
 $deadline = isset($_POST['deadline']) ? trim($_POST['deadline']) : '';
 if ($deadline === '') $deadline = null;
 // JSON array of students.id values to assign this activity to
@@ -56,8 +60,8 @@ if (!$teacher_conn) {
 }
 
 // Insert activity into teacher database
-$sql = "INSERT INTO teacher_activities (teacher_id, activity_title, activity_description, activity_type, subject, grade_level, difficulty, status, content_json, deadline)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+$sql = "INSERT INTO teacher_activities (teacher_id, activity_title, activity_description, activity_type, subject, grade_level, difficulty, status, content_json, deadline, thumbnail)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 $stmt = $teacher_conn->prepare($sql);
 
 if (!$stmt) {
@@ -65,7 +69,7 @@ if (!$stmt) {
     exit;
 }
 
-$stmt->bind_param("isssssssss", $teacher_id, $activity_title, $activity_description, $activity_type, $subject, $grade_level, $difficulty, $status, $content_json, $deadline);
+$stmt->bind_param("issssssssss", $teacher_id, $activity_title, $activity_description, $activity_type, $subject, $grade_level, $difficulty, $status, $content_json, $deadline, $thumbnail);
 
 if ($stmt->execute()) {
     $activity_id = $stmt->insert_id;
