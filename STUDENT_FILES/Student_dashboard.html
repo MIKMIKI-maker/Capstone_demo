@@ -142,7 +142,7 @@
       <div class="student-pcard-label">YOUR TEACHER</div>
       <div class="student-pcard-name" id="dash-teacher-name">—</div>
       <div class="student-pcard-sub">Special Education Teacher</div>
-      <span class="student-badge-active">● Active</span>
+      <span class="student-badge-active" id="dash-teacher-badge" style="display:none;">● Active</span>
     </div>
   </div>
 </section>
@@ -253,51 +253,23 @@
         var todayPanel = document.getElementById('student-panel-today');
         var allPanel   = document.getElementById('student-panel-materials');
         var teacherEl  = document.getElementById('dash-teacher-name');
+        // An admin can pre-assign a teacher before that teacher has actually
+        // enrolled the student (created a `students` row for them) — the
+        // student shouldn't see who that is yet, since nothing's confirmed
+        // on the teacher's side. student_get_profile.php only ever returns
+        // a teacher once real enrollment exists, so this always stays the
+        // plain "not yet enrolled" state until then.
         if (teacherEl) teacherEl.textContent = 'No teacher assigned';
         document.getElementById('student-act-done-count').textContent = '0/0 done';
         updateProgressBanner(0, 0);
 
-        // "Not yet enrolled" only makes sense when there's truly no teacher
-        // in the picture at all. An admin may have already assigned one even
-        // though the teacher hasn't enrolled the student into their class
-        // yet (no `students` row, so no activities to show) — in that case
-        // show a softer "no activities yet" message instead, since the
-        // student does have a teacher, just no published activities.
-        function renderEmpty(hasTeacher) {
-          var msg = hasTeacher
-            ? '<div class="student-act-empty">' +
-                '<div class="student-act-empty-icon">📋</div>' +
-                '<p class="student-act-empty-title">No activities yet</p>' +
-                '<p class="student-act-empty-desc">Your teacher hasn\'t added any activities for you yet. Check back soon!</p>' +
-              '</div>'
-            : '<div class="student-act-empty">' +
-                '<div class="student-act-empty-icon">🏫</div>' +
-                '<p class="student-act-empty-title">Not yet enrolled</p>' +
-                '<p class="student-act-empty-desc">You are not yet enrolled in a teacher\'s class. Please wait for your teacher to assign you.</p>' +
-              '</div>';
-          if (todayPanel) todayPanel.innerHTML = msg;
-          if (allPanel)   allPanel.innerHTML   = msg;
-        }
-
-        if (sid && teacherEl) {
-          fetch('STUDENT_BACKEND/student_get_profile.php?admin_account_id=' + encodeURIComponent(sid))
-            .then(function(r){ return r.json(); })
-            .then(function(td){
-              var hasTeacher = !!(td.success && td.teacher_name);
-              renderEmpty(hasTeacher);
-              if (hasTeacher) teacherEl.textContent = td.teacher_name;
-              if (td.success && td.teacher_photo) {
-                var tp = document.getElementById('dash-teacher-photo');
-                if (tp) {
-                  tp.src = td.teacher_photo; tp.style.display = 'block';
-                  var tSample = document.getElementById('dash-teacher-avatar');
-                  if (tSample) tSample.style.display = 'none';
-                }
-              }
-            }).catch(function(){ renderEmpty(false); });
-        } else {
-          renderEmpty(false);
-        }
+        var msg = '<div class="student-act-empty">' +
+            '<div class="student-act-empty-icon">🏫</div>' +
+            '<p class="student-act-empty-title">Not yet enrolled</p>' +
+            '<p class="student-act-empty-desc">You are not yet enrolled in a teacher\'s class. Please wait for your teacher to assign you.</p>' +
+          '</div>';
+        if (todayPanel) todayPanel.innerHTML = msg;
+        if (allPanel)   allPanel.innerHTML   = msg;
       }
 
       function updateProgressBanner(completed, total) {
@@ -597,6 +569,15 @@
                           tp.src = td.teacher_photo; tp.style.display = 'block';
                           var tSample = document.getElementById('dash-teacher-avatar');
                           if (tSample) tSample.style.display = 'none';
+                        }
+                      }
+                      if (td.success && td.teacher_name) {
+                        var badge = document.getElementById('dash-teacher-badge');
+                        if (badge) {
+                          var isActive = td.teacher_status !== 'inactive';
+                          badge.textContent = isActive ? '● Active' : '● Inactive';
+                          badge.classList.toggle('student-badge-inactive', !isActive);
+                          badge.style.display = 'inline-block';
                         }
                       }
                     }).catch(function(){});
