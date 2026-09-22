@@ -186,6 +186,13 @@
       });
     }
 
+    // Escapes first, THEN turns **word** into <strong> — safe against a
+    // message containing real HTML/asterisks used for anything else, since
+    // by the time this runs there are no live tags left to reinterpret.
+    function formatNotifMessage(text) {
+      return escapeHtml(text).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    }
+
     function timeAgo(isoStr) {
       if (!isoStr) return '';
       var timestampUtc = isoStr.indexOf('Z') === -1 && isoStr.indexOf('T') === -1
@@ -235,7 +242,7 @@
       document.getElementById('studentNotifModalIcon').textContent = ic.icon;
       document.getElementById('studentNotifModalType').textContent = notifTypeLabel(n.type);
       document.getElementById('studentNotifModalTitle').textContent = n.title;
-      document.getElementById('studentNotifModalMsg').textContent = n.message;
+      document.getElementById('studentNotifModalMsg').innerHTML = formatNotifMessage(n.message);
       document.getElementById('studentNotifModalMeta').textContent = (n.from ? 'From ' + n.from + ' · ' : '') + timeAgo(n.createdAt);
       document.getElementById('studentNotifModalOverlay').style.display = 'flex';
     }
@@ -299,7 +306,7 @@
             '<div class="student-notif-row1">' +
               '<span class="student-notif-title">' + escapeHtml(n.title) + '</span>' +
             '</div>' +
-            '<p class="student-notif-text">' + escapeHtml(n.message) + '</p>' +
+            '<p class="student-notif-text">' + formatNotifMessage(n.message) + '</p>' +
             '<span class="student-notif-time">' + (n.from ? 'From ' + escapeHtml(n.from) + ' · ' : '') + timeAgo(n.createdAt) + '</span>' +
           '</div>' +
           '<div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;min-width:70px;margin-left:auto;">' +

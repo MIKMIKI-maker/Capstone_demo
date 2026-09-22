@@ -103,7 +103,7 @@ if ($stmt->execute()) {
     // parent email is on file.
     $welcomeTitle = "Welcome to SPED ALM, {$student_name}!";
     $welcomeMsg = "Your learning journey starts here! \xF0\x9F\x8E\x89\n\n"
-        . "You have been successfully enrolled by {$teacher_label}, your assigned teacher.\n\n"
+        . "You have been successfully enrolled by **{$teacher_label}**, your assigned teacher.\n\n"
         . "Explore, learn, and enjoy your activities at your own pace. Remember, every little step you take is a step toward learning and growing. \xF0\x9F\x92\x99\n\n"
         . "We're happy to have you with us! \xF0\x9F\x8C\x88";
     $welcomeStmt = $conn->prepare("INSERT INTO student_notifications (teacher_id, student_id, title, message, notification_type) VALUES (?, ?, ?, ?, 'welcome')");
