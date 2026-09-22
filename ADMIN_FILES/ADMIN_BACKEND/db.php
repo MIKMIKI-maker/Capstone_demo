@@ -96,10 +96,21 @@ function getDatabaseConnection() {
     // has been bootstrapped once, skip re-running ~20 CREATE/ALTER/SHOW COLUMNS
     // queries on every single request. Local XAMPP is fast enough that this
     // check isn't worth the complexity, so it always re-verifies the schema.
+    //
+    // This used to just check "does admin_accounts exist" — true forever after
+    // the first deploy, which is exactly the bug the TOTP migration below had
+    // to work around by living outside this gate. A version counter fixes it
+    // properly: bump SCHEMA_VERSION whenever a new migration is added inside
+    // the block below, and remote re-runs it until its stored version
+    // catches up, instead of every future migration needing the same
+    // move-it-outside-the-gate workaround forever.
+    $SCHEMA_VERSION = 2;
     $needsSetup = true;
     if ($envHost !== false && $envHost !== '') {
-        $tblCheck = $conn->query("SHOW TABLES LIKE 'admin_accounts'");
-        $needsSetup = !($tblCheck && $tblCheck->num_rows > 0);
+        $conn->query("CREATE TABLE IF NOT EXISTS schema_meta (component VARCHAR(50) PRIMARY KEY, version INT NOT NULL)");
+        $verRes = $conn->query("SELECT version FROM schema_meta WHERE component = 'admin'");
+        $verRow = $verRes ? $verRes->fetch_assoc() : null;
+        $needsSetup = !$verRow || (int)$verRow['version'] < $SCHEMA_VERSION;
     }
 
     if ($needsSetup) {
@@ -194,6 +205,11 @@ function getDatabaseConnection() {
         $h_admin = password_hash('Admin@123', PASSWORD_DEFAULT);
         $conn->query("INSERT IGNORE INTO admin_accounts (admin_email, admin_password, first_name, last_name, school_name, role, status)
             VALUES ('admin@spedalm.edu.ph', '$h_admin', 'Admin', 'User', 'Mamatid Elementary School', 'admin', 'active')");
+    }
+
+    if ($envHost !== false && $envHost !== '') {
+        $conn->query("INSERT INTO schema_meta (component, version) VALUES ('admin', $SCHEMA_VERSION)
+                      ON DUPLICATE KEY UPDATE version = $SCHEMA_VERSION");
     }
 
     }

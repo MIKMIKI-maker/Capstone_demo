@@ -525,7 +525,7 @@
         var _snam = sessionStorage.getItem('student_name') || '';
         if (!_sid) { showNotEnrolled(); return; }
 
-        fetch('STUDENT_BACKEND/student_check_enrollment.php?student_id=' + encodeURIComponent(_sid) + '&student_name=' + encodeURIComponent(_snam))
+        fetch('STUDENT_BACKEND/student_check_enrollment.php?student_id=' + encodeURIComponent(_sid) + '&student_name=' + encodeURIComponent(_snam) + '&_t=' + Date.now(), { cache: 'no-store' })
           .then(function(r){ return r.json(); })
           .then(function(d) {
             if (!d.enrolled) { showNotEnrolled(_sid); return; }
@@ -554,9 +554,14 @@
                 }
                 renderActivities(d.materials || []);
 
-                // Teacher name + photo
+                // Teacher name + photo — cache-busted like the other fetches
+                // on this page. Without it, a mobile browser reusing a
+                // cached response from before the teacher enrolled this
+                // student (when teacher_name was legitimately empty) would
+                // keep showing "no teacher" even after real enrollment,
+                // since the request URL never changes on its own.
                 if (tid) {
-                  fetch('STUDENT_BACKEND/student_get_profile.php?admin_account_id=' + encodeURIComponent(_sid))
+                  fetch('STUDENT_BACKEND/student_get_profile.php?admin_account_id=' + encodeURIComponent(_sid) + '&_t=' + Date.now(), { cache: 'no-store' })
                     .then(function(r){ return r.json(); })
                     .then(function(td){
                       if (td.success && td.teacher_name) {

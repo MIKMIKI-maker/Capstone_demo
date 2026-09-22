@@ -520,7 +520,7 @@
       var _snam = sessionStorage.getItem('student_name') || '';
       if (!_sid) { showNotEnrolledMaterials(); return; }
 
-      fetch('STUDENT_BACKEND/student_check_enrollment.php?student_id=' + encodeURIComponent(_sid) + '&student_name=' + encodeURIComponent(_snam))
+      fetch('STUDENT_BACKEND/student_check_enrollment.php?student_id=' + encodeURIComponent(_sid) + '&student_name=' + encodeURIComponent(_snam) + '&_t=' + Date.now(), { cache: 'no-store' })
         .then(function(r){ return r.json(); })
         .then(function(d) {
           if (!d.enrolled) { showNotEnrolledMaterials(); return; }

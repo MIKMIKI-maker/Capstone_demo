@@ -46,10 +46,20 @@ function getTeacherDatabaseConnection() {
     // has been bootstrapped once, skip re-running the ~40 CREATE/ALTER/SHOW COLUMNS
     // queries below on every single request. Local XAMPP is fast enough that this
     // check isn't worth the complexity, so it always re-verifies the schema.
+    //
+    // This used to just check "does teacher_accounts exist" — true forever after
+    // the first deploy, which meant every migration added below AFTER that first
+    // deploy (e.g. teacher_activities.thumbnail) silently never ran on the
+    // remote database, since the whole block got skipped. A version counter
+    // fixes that: bump SCHEMA_VERSION whenever a new migration is added below,
+    // and remote re-runs the block until its stored version catches up.
+    $SCHEMA_VERSION = 2;
     $needsSetup = true;
     if ($envHost !== false && $envHost !== '') {
-        $tblCheck = $conn->query("SHOW TABLES LIKE 'teacher_accounts'");
-        $needsSetup = !($tblCheck && $tblCheck->num_rows > 0);
+        $conn->query("CREATE TABLE IF NOT EXISTS schema_meta (component VARCHAR(50) PRIMARY KEY, version INT NOT NULL)");
+        $verRes = $conn->query("SELECT version FROM schema_meta WHERE component = 'teacher'");
+        $verRow = $verRes ? $verRes->fetch_assoc() : null;
+        $needsSetup = !$verRow || (int)$verRow['version'] < $SCHEMA_VERSION;
     }
 
     if ($needsSetup) {
@@ -352,6 +362,11 @@ function getTeacherDatabaseConnection() {
         UNIQUE KEY unique_student_notification (student_id, notif_key),
         FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    if ($envHost !== false && $envHost !== '') {
+        $conn->query("INSERT INTO schema_meta (component, version) VALUES ('teacher', $SCHEMA_VERSION)
+                      ON DUPLICATE KEY UPDATE version = $SCHEMA_VERSION");
+    }
 
     }
 
