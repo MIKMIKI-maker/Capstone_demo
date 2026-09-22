@@ -53,7 +53,7 @@ function getTeacherDatabaseConnection() {
     // remote database, since the whole block got skipped. A version counter
     // fixes that: bump SCHEMA_VERSION whenever a new migration is added below,
     // and remote re-runs the block until its stored version catches up.
-    $SCHEMA_VERSION = 2;
+    $SCHEMA_VERSION = 3;
     $needsSetup = true;
     if ($envHost !== false && $envHost !== '') {
         $conn->query("CREATE TABLE IF NOT EXISTS schema_meta (component VARCHAR(50) PRIMARY KEY, version INT NOT NULL)");
@@ -118,6 +118,14 @@ function getTeacherDatabaseConnection() {
     $col_check = $conn->query("SHOW COLUMNS FROM students LIKE 'admin_account_id'");
     if ($col_check && $col_check->num_rows == 0) {
         $conn->query("ALTER TABLE students ADD COLUMN admin_account_id INT NULL DEFAULT NULL");
+    }
+    // age is in the CREATE TABLE above, but that statement is a no-op once
+    // the table already exists — an install from before age was added here
+    // would otherwise never get the column, breaking teacher_add_learner.php's
+    // INSERT the same way teacher_activities.thumbnail did.
+    $age_col = $conn->query("SHOW COLUMNS FROM students LIKE 'age'");
+    if ($age_col && $age_col->num_rows == 0) {
+        $conn->query("ALTER TABLE students ADD COLUMN age INT NULL DEFAULT NULL");
     }
 
     // Create activities table

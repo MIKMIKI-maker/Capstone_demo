@@ -223,7 +223,7 @@
                         <div class="teacher-form-row">
                             <div class="teacher-form-group">
                                 <label>Age</label>
-                                <input id="enroll-age" min="1" max="30" placeholder="e.g. 10" type="number" />
+                                <input id="enroll-age" min="5" max="30" placeholder="e.g. 10" type="number" />
                             </div>
                             <div class="teacher-form-group">
                                 <label>Assigned Section</label>
@@ -243,7 +243,9 @@
                             </div>
                             <div class="teacher-form-group">
                                 <label>Contact Number</label>
-                                <input id="enroll-parent-phone" placeholder="e.g. 09XX XXX XXXX" type="text" />
+                                <input id="enroll-parent-phone" placeholder="e.g. 09XX XXX XXXX" type="text"
+                                    inputmode="numeric" maxlength="11"
+                                    oninput="this.value = this.value.replace(/\D/g, '').slice(0, 11)" />
                             </div>
                         </div>
                         <div class="teacher-form-row">
@@ -503,6 +505,18 @@
         /* ── Submit enrollment ── */
         function enrollStudent() {
             if (!selectedStudentData) return;
+
+            var ageVal = document.getElementById('enroll-age').value;
+            if (ageVal && Number(ageVal) < 5) {
+                window.showToast('Age must be at least 5.', 'error');
+                return;
+            }
+            var phoneVal = document.getElementById('enroll-parent-phone').value.replace(/\D/g, '');
+            if (phoneVal && phoneVal.length !== 11) {
+                window.showToast('Contact number must be 11 digits.', 'error');
+                return;
+            }
+
             var btn = document.getElementById('btn-enroll-submit');
             btn.disabled = true;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enrolling…';
@@ -512,15 +526,24 @@
             fd.append('admin_account_id',  selectedStudentData.admin_id || 0);
             fd.append('student_name',      selectedStudentData.name);
             fd.append('disability_type',   selectedStudentData.condition);
-            fd.append('age',               document.getElementById('enroll-age').value || '0');
+            fd.append('age',               ageVal || '0');
             fd.append('grade_level',       document.getElementById('enroll-section').value || '');
             fd.append('parent_name',       document.getElementById('enroll-parent-name').value);
-            fd.append('parent_phone',      document.getElementById('enroll-parent-phone').value);
+            fd.append('parent_phone',      phoneVal);
             fd.append('parent_email',      document.getElementById('enroll-parent-email').value);
 
-            fetch('TEACHER_BACKEND/teacher_add_learner.php', { method: 'POST', body: fd })
+            // The backend sends the parent-notification email inline before
+            // responding, which can take several seconds on a slow mail
+            // provider — bound the wait client-side too so the button can't
+            // stay stuck on "Enrolling…" forever if something upstream hangs
+            // longer than that.
+            var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+            var timeoutId = ctrl ? setTimeout(function () { ctrl.abort(); }, 20000) : null;
+
+            fetch('TEACHER_BACKEND/teacher_add_learner.php', { method: 'POST', body: fd, signal: ctrl ? ctrl.signal : undefined })
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
+                    if (timeoutId) clearTimeout(timeoutId);
                     if (data.success) {
                         closeModal();
                         loadLearners();
@@ -531,8 +554,11 @@
                         btn.disabled = false;
                         btn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Enroll Student';
                     }
-                }).catch(function() {
-                    window.showToast('Failed to enroll student. Please try again.', 'error');
+                }).catch(function(err) {
+                    if (timeoutId) clearTimeout(timeoutId);
+                    window.showToast(err && err.name === 'AbortError'
+                        ? 'Enrollment is taking too long. Please check My Learners before retrying.'
+                        : 'Failed to enroll student. Please try again.', 'error');
                     btn.disabled = false;
                     btn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Enroll Student';
                 });
