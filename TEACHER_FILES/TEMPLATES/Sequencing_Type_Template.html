@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <script src="../../ASSETS/portal_guard.js?v=2" data-portal-role="teacher,student" data-status-path="../../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../../ADMIN_FILES/login_screen.html?session=expired"></script>
-<script src="../../ASSETS/teacher_portal.js?v=15"></script>
+<script src="../../ASSETS/teacher_portal.js?v=16"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SPED ALM — Sequencing Template Generator</title>
@@ -2448,7 +2448,7 @@ function initActivityTheme(){
     }
 
     function applyStudentMode(saved) {
-      if (!saved) { showNotAvailable(); return; }
+      if (!saved) { if (window.finishStudentLaunch) window.finishStudentLaunch(); showNotAvailable(); return; }
 
       Object.assign(state, saved);
       state.currentIndex = 0;
@@ -2514,6 +2514,7 @@ function initActivityTheme(){
         if (fs.requestFullscreen) fs.requestFullscreen().catch(function(){});
         else if (fs.webkitRequestFullscreen) fs.webkitRequestFullscreen();
         splash.remove();
+        if (window.finishStudentLaunch) window.finishStudentLaunch();
         initActivityTheme();
 
         document.body.classList.add('seq-preview-only');

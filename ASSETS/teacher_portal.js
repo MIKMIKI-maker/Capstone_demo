@@ -1,6 +1,20 @@
 (function () {
   'use strict';
 
+  // Activity templates render their teacher editor before the student content
+  // arrives. Keep that editor out of the learner's view during the handoff.
+  if (new URLSearchParams(window.location.search).get('student_mode') === '1') {
+    document.documentElement.classList.add('student-launch-loading');
+    var studentLaunchStyle = document.createElement('style');
+    studentLaunchStyle.textContent =
+      'html.student-launch-loading body > *{visibility:hidden!important}' +
+      'html.student-launch-loading #stuSplash{display:none!important}';
+    document.head.appendChild(studentLaunchStyle);
+    window.finishStudentLaunch = function () {
+      document.documentElement.classList.remove('student-launch-loading');
+    };
+  }
+
   // Shared floating success/failure toast for every teacher page — replaces
   // the page-local showIepToast() (Teacher_IEP.html) with one definition
   // everyone calls, plus the error/red variant that one never had.
