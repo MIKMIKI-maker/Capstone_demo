@@ -206,6 +206,7 @@
       if (type === 'achievement')  return { icon: '⭐', cls: 'student-notif-icon--gold'   };
       if (type === 'reminder')     return { icon: '🔔', cls: 'student-notif-icon--blue'   };
       if (type === 'alert')        return { icon: '⚠️', cls: 'student-notif-icon--red'    };
+      if (type === 'welcome')      return { icon: '🌟', cls: 'student-notif-icon--gold'   };
       return                              { icon: '💬', cls: 'student-notif-icon--purple' };
     }
 
@@ -225,7 +226,7 @@
     }
 
     function notifTypeLabel(type) {
-      var labels = { message: 'Message', reminder: 'Reminder', achievement: 'Achievement', alert: 'Alert', new_activity: 'New Activity', new_material: 'New Material', graded: 'Graded' };
+      var labels = { message: 'Message', reminder: 'Reminder', achievement: 'Achievement', alert: 'Alert', new_activity: 'New Activity', new_material: 'New Material', graded: 'Graded', welcome: 'Welcome' };
       return labels[type] || 'Message';
     }
 
