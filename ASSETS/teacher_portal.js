@@ -290,6 +290,16 @@
   }
 
   function initNotifPolling() {
+    // TEMPLATES/*.html serves double duty — a teacher builds/previews the
+    // activity there, but the exact same page also renders it for a real
+    // student (?student_mode=1). sessionStorage.teacher_id isn't a reliable
+    // "am I a teacher" check on that page: the student side stores its own
+    // assigned teacher's id under that same key (for fetching that
+    // teacher's materials), which pollRetakeAlerts()'s truthy-check reads as
+    // "a teacher is logged in" and then hits a teacher-only endpoint with no
+    // teacher session behind it — a 401 on every student answering an
+    // activity. student_mode=1 unambiguously means this is not a teacher.
+    if (new URLSearchParams(window.location.search).get('student_mode') === '1') return;
     pollRetakeAlerts();
     window.setInterval(function () {
       if (document.hidden) return;
