@@ -119,7 +119,10 @@ body {
   width: 64px; height: 64px; border-radius: 50%; object-fit: cover; display: block;
   box-shadow: 0 6px 0 rgba(36, 58, 94, .12);
 }
-.student-pcard-photo-sample { display: none; }  /* lalabas lang kapag walang totoong larawan */
+/* .student-pcard-photo itself now defaults to display:none inline (no more
+   dummy src="ASSETS/*.png" that never existed, just to 404 into revealing
+   this) — so the sample icon is the one visible by default now, and JS
+   flips the two once a real photo is actually fetched. */
 
 
 .student-main {
