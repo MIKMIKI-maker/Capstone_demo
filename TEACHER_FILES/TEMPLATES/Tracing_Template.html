@@ -2842,7 +2842,15 @@ function initActivityTheme(){
       // so it's never actually painted/visible. (Fullscreen still won't
       // engage this way — browsers only grant that from a real user
       // gesture — but activities aren't broken without it.)
-      document.getElementById('stuSplashBtn').click();
+      // A truly-synchronous click (fired the instant the splash is appended,
+      // with zero elapsed time/paint since the page loaded) skipped whatever
+      // implicit "let the page settle first" cushion a real human click
+      // always had — that gap was apparently load-bearing for some of the
+      // render calls below, since without it the activity sometimes stayed
+      // stuck showing the raw teacher-editor markup instead of the actual
+      // activity. Deferring one tick (after a real layout/paint pass) is
+      // enough to fix that while still needing no visible manual tap.
+      setTimeout(function () { document.getElementById('stuSplashBtn').click(); }, 50);
     }
 
     // student_get_activity_content.php only understands the numeric DB
