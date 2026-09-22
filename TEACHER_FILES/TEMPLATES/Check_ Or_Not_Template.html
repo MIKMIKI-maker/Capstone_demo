@@ -2086,7 +2086,10 @@ function initActivityTheme(){
   function _captureStageThumb(callback) {
     var stageEl = document.getElementById('chkStage');
     if (stageEl && window.html2canvas) {
-      html2canvas(stageEl, { scale: 1.5, useCORS: true, backgroundColor: null, logging: false })
+      html2canvas(stageEl, { scale: 1.5, useCORS: true, backgroundColor: null, logging: false,
+        // The thumbnail should show what the activity looks like, not the
+        // Try Again/Check answers/nav controls baked into the same stage.
+        ignoreElements: function(el) { return !!(el.classList && el.classList.contains('chk-stage-controls')); } })
         .then(function(canvas) { callback(canvas.toDataURL('image/png')); })
         .catch(function() { callback(state.thumb || findFirstDataImage(state.activities, 0)); });
     } else {
@@ -2138,6 +2141,13 @@ function initActivityTheme(){
   }
 
   function confirmPublish() {
+    // The thumbnail capture + compress + upload chain below takes a moment,
+    // and nothing disabled this button while that ran — a second click (or
+    // an impatient double-click) fired this whole function again, publishing
+    // the same activity twice. Guard re-entry with the button's own
+    // disabled state instead of a separate flag.
+    var __publishBtn = $("chkPublishConfirmBtn");
+    if (__publishBtn.disabled) return;
     var deadline = $("chkDeadlineInput").value;
     if (!deadline) { window.showToast("Please set a deadline date before publishing.", 'error', 4500); return; }
     var _today = new Date();
@@ -2145,6 +2155,7 @@ function initActivityTheme(){
     if (deadline < _todayStr) { window.showToast("Deadline can't be in the past — please choose today or a later date.", 'error', 4500); return; }
     var domain = document.querySelector('input[name="chkDomain"]:checked').value;
     var firstTitle = (state.activities[0] && state.activities[0].title) || 'Untitled Activity';
+    __publishBtn.disabled = true;
     _captureStageThumb(function(thumbSrc) {
     state.thumb = thumbSrc;
     compressThumb(state.thumb, function(smallThumb) {
@@ -2174,12 +2185,14 @@ function initActivityTheme(){
           .then(function(d){
             if (d && d.success === false) {
               window.showToast('Save failed: ' + (d.message || 'Unknown error') + ' Please try again.', 'error', 4500);
+              __publishBtn.disabled = false;
               return;
             }
             _finishEdit();
           })
           .catch(function(){
             window.showToast('Could not reach the server to save this activity. Please check your connection and try again.', 'error', 4500);
+            __publishBtn.disabled = false;
           });
       } else {
         _finishEdit();
@@ -2202,7 +2215,7 @@ function initActivityTheme(){
     var existing = [];
     try { existing = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
     existing.push(pub);
-    try { localStorage.setItem('published_activities', JSON.stringify(existing)); } catch(e){ window.showToast('Storage full – try clearing old drafts first.', 'error', 4500); return; }
+    try { localStorage.setItem('published_activities', JSON.stringify(existing)); } catch(e){ window.showToast('Storage full – try clearing old drafts first.', 'error', 4500); __publishBtn.disabled = false; return; }
     _idb.save('pub_data_' + pub.id, JSON.parse(JSON.stringify(state)), function(err){
       if (err) console.warn('IDB save failed:', err);
     });
@@ -2242,9 +2255,11 @@ function initActivityTheme(){
         window.location.href = '../Teacher_activies.html';
       } else {
         window.showToast('Publish failed: ' + (d.message || 'Unknown error') + ' Please try again.', 'error', 4500);
+        __publishBtn.disabled = false;
       }
     }).catch(function(){
       window.showToast('Could not reach the server to publish this activity. Please check your connection and try again.', 'error', 4500);
+      __publishBtn.disabled = false;
     });
     }); // end compressThumb
     }); // end _captureStageThumb
