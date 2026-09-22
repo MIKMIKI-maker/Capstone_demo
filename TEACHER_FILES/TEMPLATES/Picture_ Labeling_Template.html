@@ -2498,6 +2498,17 @@ loadPublishedForEditIfAny();
         });
       });
     });
+
+    // Real students shouldn't need a second "Start Activity" click after
+    // already tapping Start on My Materials — that just added an extra
+    // step before reaching the activity itself. Firing the same click
+    // programmatically runs through the exact same setup path, it just
+    // happens immediately instead of waiting on a second tap. The splash
+    // element is appended and removed within this same synchronous call,
+    // so it's never actually painted/visible. (Fullscreen still won't
+    // engage this way — browsers only grant that from a real user
+    // gesture — but activities aren't broken without it.)
+    document.getElementById('stuSplashBtn').click();
   }
 
   // student_get_activity_content.php only understands the numeric DB
