@@ -36,6 +36,16 @@ if ($notif_key === 'all') {
     // Mark every currently-open note/activity notification read for this student
     $ins = $conn->prepare("INSERT IGNORE INTO student_notification_reads (student_id, notif_key) VALUES (?, ?)");
 
+    // Direct teacher-sent notifications (student_notifications.id, e.g. the
+    // welcome/graded messages) live in their own table with their own
+    // is_read flag — not covered by the note_/activity_ synthetic keys above.
+    $directStmt = $conn->prepare("UPDATE student_notifications SET is_read = 1 WHERE student_id = ?");
+    if ($directStmt) {
+        $directStmt->bind_param("i", $student_id);
+        $directStmt->execute();
+        $directStmt->close();
+    }
+
     $notesStmt = $conn->prepare("SELECT id FROM student_notes WHERE teacher_id=? AND student_id=? ORDER BY created_at DESC LIMIT 15");
     if ($notesStmt) {
         $notesStmt->bind_param("ii", $teacher_id, $student_id);
@@ -71,6 +81,16 @@ if ($notif_key === 'all') {
     }
 
     $ins->close();
+    echo json_encode(['success' => true]);
+} elseif (preg_match('/^\d+$/', $notif_key)) {
+    // Direct teacher-sent notification (student_notifications.id) — scoped to
+    // this session's own student_id so a guessed/tampered id can't mark
+    // someone else's notification read.
+    $notif_id = (int)$notif_key;
+    $stmt = $conn->prepare("UPDATE student_notifications SET is_read = 1 WHERE id = ? AND student_id = ?");
+    $stmt->bind_param("ii", $notif_id, $student_id);
+    $stmt->execute();
+    $stmt->close();
     echo json_encode(['success' => true]);
 } else {
     if ($notif_key === '' || !preg_match('/^(note|activity)_\d+$/', $notif_key)) {

@@ -451,7 +451,11 @@
 
     // Direct teacher messages have a numeric DB id (student_notifications.id).
     // Notes/assigned-activity notifications use a string key like "note_12" / "activity_5"
-    // and live in student_notification_reads instead — they must go to a different endpoint.
+    // and live in student_notification_reads instead. student_mark_notification_read.php
+    // handles both shapes itself now — this used to also call
+    // teacher_notify_student.php for the numeric case, but that endpoint
+    // requires a teacher session and always 401'd when called from here,
+    // which is why marking a direct notification read errored out.
     function _isDbId(id) {
       return /^\d+$/.test(String(id));
     }
@@ -461,27 +465,14 @@
       try { localStorage.setItem(_lsKey('cache'), JSON.stringify(_cachedNotifs)); } catch(e) {}
       var notif = _cachedNotifs[idx];
       var srid = sessionStorage.getItem('student_record_id');
-      var tid  = sessionStorage.getItem('teacher_id');
       if (notif && notif.id && srid) {
-        if (_isDbId(notif.id) && tid) {
-          var fd = new FormData();
-          fd.append('action', 'mark_read');
-          fd.append('teacher_id', tid);
-          fd.append('student_id', srid);
-          fd.append('notif_id', notif.id);
-          fetch('../TEACHER_FILES/TEACHER_BACKEND/teacher_notify_student.php', { method: 'POST', body: fd })
-            .then(function(r) { return r.json(); })
-            .then(function(d) { if (!d || !d.success) window.showToast((d && d.message) || 'Could not mark as read.', 'error'); })
-            .catch(function() { window.showToast('Network error. Could not mark as read.', 'error'); });
-        } else if (!_isDbId(notif.id)) {
-          var fd2 = new FormData();
-          fd2.append('student_id', srid);
-          fd2.append('notif_key', notif.id);
-          fetch('STUDENT_BACKEND/student_mark_notification_read.php', { method: 'POST', body: fd2 })
-            .then(function(r) { return r.json(); })
-            .then(function(d) { if (!d || !d.success) window.showToast((d && d.message) || 'Could not mark as read.', 'error'); })
-            .catch(function() { window.showToast('Network error. Could not mark as read.', 'error'); });
-        }
+        var fd2 = new FormData();
+        fd2.append('student_id', srid);
+        fd2.append('notif_key', notif.id);
+        fetch('STUDENT_BACKEND/student_mark_notification_read.php', { method: 'POST', body: fd2 })
+          .then(function(r) { return r.json(); })
+          .then(function(d) { if (!d || !d.success) window.showToast((d && d.message) || 'Could not mark as read.', 'error'); })
+          .catch(function() { window.showToast('Network error. Could not mark as read.', 'error'); });
       }
       renderNotifs();
       recount();
@@ -494,23 +485,17 @@
       var srid = sessionStorage.getItem('student_record_id');
       var tid  = sessionStorage.getItem('teacher_id');
       if (srid && tid) {
-        var fd = new FormData();
-        fd.append('action', 'mark_read');
-        fd.append('teacher_id', tid);
-        fd.append('student_id', srid);
-
         var fd2 = new FormData();
         fd2.append('student_id', srid);
         fd2.append('teacher_id', tid);
         fd2.append('notif_key', 'all');
 
-        Promise.all([
-          fetch('../TEACHER_FILES/TEACHER_BACKEND/teacher_notify_student.php', { method: 'POST', body: fd }).then(function(r) { return r.json(); }).catch(function() { return { success: false }; }),
-          fetch('STUDENT_BACKEND/student_mark_notification_read.php', { method: 'POST', body: fd2 }).then(function(r) { return r.json(); }).catch(function() { return { success: false }; })
-        ]).then(function(results) {
-          if (results.every(function(d) { return d && d.success; })) window.showToast('All notifications marked as read.');
-          else window.showToast('Could not mark all notifications as read.', 'error');
-        });
+        fetch('STUDENT_BACKEND/student_mark_notification_read.php', { method: 'POST', body: fd2 })
+          .then(function(r) { return r.json(); }).catch(function() { return { success: false }; })
+          .then(function(d) {
+            if (d && d.success) window.showToast('All notifications marked as read.');
+            else window.showToast('Could not mark all notifications as read.', 'error');
+          });
       }
       renderNotifs();
       recount();
