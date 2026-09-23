@@ -399,7 +399,7 @@
         var match = lsActs.find(function(a) { return String(a.db_activity_id) === String(dbId); });
         var pubId = match ? match.id : String(dbId);
         sessionStorage.setItem('stu_return_url', window.location.href);
-        window.location.href = tpl + '?student_mode=1&review_mode=1&pub_id=' + encodeURIComponent(pubId);
+        window.location.href = tpl + '?activity_template_v=18&student_mode=1&review_mode=1&pub_id=' + encodeURIComponent(pubId);
       }
 
       /* ── "All Materials" tab: files the teacher has actually uploaded
@@ -633,7 +633,7 @@
         var match = lsActs.find(function(a) { return String(a.db_activity_id) === String(dbId); });
         var pubId = match ? match.id : String(dbId);
         sessionStorage.setItem('stu_return_url', window.location.href);
-        window.location.href = tpl + '?student_mode=1&pub_id=' + encodeURIComponent(pubId);
+        window.location.href = tpl + '?activity_template_v=18&student_mode=1&pub_id=' + encodeURIComponent(pubId);
       }
 
       function switchTab(btn, panel) {

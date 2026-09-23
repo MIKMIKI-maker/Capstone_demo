@@ -601,7 +601,7 @@
       // original submission's score/retake history (same guarantee
       // Student_progress.html's reviewActivity() already gives).
       var reviewParam = isReview ? '&review_mode=1' : '';
-      window.location.href = tpl + '?student_mode=1' + reviewParam + '&pub_id=' + encodeURIComponent(pubId);
+      window.location.href = tpl + '?activity_template_v=18&student_mode=1' + reviewParam + '&pub_id=' + encodeURIComponent(pubId);
     }
 
     // Reload when teacher publishes while student tab is visible
