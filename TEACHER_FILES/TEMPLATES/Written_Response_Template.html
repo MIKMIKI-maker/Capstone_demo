@@ -2410,6 +2410,7 @@ function initActivityTheme(){
       var pub = pubs.find(function(r){ return r.id === _stuPubId; }) || {};
       _stuPubMeta = pub;
       if (pub.locked) {
+        if (window.finishStudentLaunch) window.finishStudentLaunch();
         document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Poppins,sans-serif;gap:16px;padding:32px;text-align:center;">'
           + '<div style="font-size:72px;">⏸️</div>'
           + '<h2 style="color:#1e3a8a;margin:0;">Activity Temporarily Unavailable</h2>'
