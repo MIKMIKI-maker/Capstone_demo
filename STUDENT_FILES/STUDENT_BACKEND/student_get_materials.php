@@ -29,9 +29,7 @@ $stmt = $conn->prepare("
            lp.assessment_date,
            CASE
                WHEN lp.id IS NULL THEN 'new'
-               WHEN sub.is_finalized = 1 THEN 'completed'
-               WHEN lp.score >= 80 THEN 'completed'
-               ELSE 'in_progress'
+               ELSE 'completed'
            END AS progress_status
     FROM teacher_activities a
     INNER JOIN activity_assignments aa ON aa.activity_id = a.id AND aa.student_id = ?
