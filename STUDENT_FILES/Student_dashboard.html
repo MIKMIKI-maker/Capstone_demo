@@ -8,8 +8,8 @@
   <title>SPED ALM - Student Dashboard</title>
   <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
 
-  <link href="STUDENT_CSS/Student_dashboard.css?v=19" rel="stylesheet" />
-  <link href="STUDENT_CSS/student_responsive.css?v=6" rel="stylesheet" />
+  <link href="STUDENT_CSS/Student_dashboard.css?v=22" rel="stylesheet" />
+  <link href="STUDENT_CSS/student_responsive.css?v=9" rel="stylesheet" />
   <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
   <!-- Fredoka = the rounded game font from the design -->
   <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
@@ -145,21 +145,6 @@
     </div>
   </div>
 </section>
-    <!-- STORIES / READING -->
-    <section class="student-stories-row">
-      <button class="student-story-bubble" onclick="openStoryViewer()" type="button">
-        <span class="student-story-ring"><img src="ASSETS/story/1.jpg" alt="My Holiday Activities" /></span>
-        <span class="student-story-label">My Holiday</span>
-      </button>
-      <button class="student-story-bubble" onclick="openVideoViewer('🧼 How to Wash Your Hands', 'ASSETS/video/How%20to%20wash%20your%20hands.mp4')" type="button">
-        <span class="student-story-ring student-story-ring--video"><span class="student-story-emoji">🧼</span></span>
-        <span class="student-story-label">Wash Hands</span>
-      </button>
-      <button class="student-story-bubble" onclick="openVideoViewer('📖 Read and Learn', 'ASSETS/video/Read%20and%20Learn.mp4')" type="button">
-        <span class="student-story-ring student-story-ring--video"><span class="student-story-emoji">📖</span></span>
-        <span class="student-story-label">Read &amp; Learn</span>
-      </button>
-    </section>
     <!-- PROGRESS BANNER -->
     <section class="student-progress-banner">
       <div class="student-progress-left">
@@ -175,10 +160,10 @@
         </div>
       </div>
       <div class="student-progress-right">
-        <div class="student-star-badge">
-          <span class="student-star-icon">🏆</span>
-          <span class="student-star-label">Star learner!</span>
-        </div>
+        <button class="student-story-bubble student-story-bubble--explore" onclick="openExploreModal()" type="button">
+          <span class="student-story-ring student-story-ring--explore"><span class="student-story-emoji">🧭</span></span>
+          <span class="student-story-label">Explore More</span>
+        </button>
       </div>
       <div class="student-banner-deco-circle"></div>
     </section>
@@ -188,7 +173,7 @@
         <div class="student-act-tabs">
           <button class="student-act-tab student-active" onclick="switchTab(this, 'today')" type="button">Today's
             Activities</button>
-          <button class="student-act-tab" onclick="switchTab(this, 'materials')" type="button">All Materials</button>
+          <button class="student-act-tab" onclick="switchTab(this, 'materials')" type="button">Uploaded Materials</button>
           <button class="student-act-tab" onclick="switchTab(this, 'completed')" type="button">✅ Completed</button>
         </div>
         <span class="student-act-done" id="student-act-done-count">0/0 done</span>
@@ -228,23 +213,31 @@
         return type === 'Matching' ? '🔗' : type === 'Sorting' ? '🧩' : '📋';
       }
 
-      function renderActRow(act, idx) {
+      // Activities are done in the order the teacher published them —
+      // `locked` is true for every activity except the single oldest
+      // still-unfinished one, so a student can't skip ahead to a later
+      // activity before finishing whichever one is next in line.
+      function renderActRow(act, idx, locked, prevTitle) {
         var color = TYPE_COLOR[act.type] || COLOR_CYCLE[idx % COLOR_CYCLE.length];
         var badge = getBadgeD(act.deadline);
         var thumb = act.thumbnail
-          ? '<img src="' + escD(act.thumbnail) + '" alt="thumb" style="width:44px;height:44px;object-fit:contain;background:#f8faff;border-radius:10px;" />'
-          : '<span style="font-size:30px;line-height:1;">' + getEmojiD(act.type) + '</span>';
+          ? '<img src="' + escD(act.thumbnail) + '" alt="thumb" style="width:44px;height:44px;object-fit:contain;background:#f8faff;border-radius:10px;' + (locked ? 'filter:grayscale(1);opacity:.55;' : '') + '" />'
+          : '<span style="font-size:30px;line-height:1;' + (locked ? 'filter:grayscale(1);opacity:.55;' : '') + '">' + getEmojiD(act.type) + '</span>';
         var due = act.deadline
           ? ' · Due ' + new Date(act.deadline + 'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})
           : '';
-        return '<div class="student-act-row student-act-row--' + color + '">' +
+        var lockedSub = locked ? ' · 🔒 Tapusin muna ang "' + escD(prevTitle) + '"' : '';
+        var btn = locked
+          ? '<button class="student-act-row-btn student-act-row-btn--locked" type="button" disabled title="Tapusin muna ang naunang activity">🔒 Locked</button>'
+          : '<button class="student-act-row-btn" type="button" onclick="startActivity(\'' + escD(act.id) + '\',\'' + escD(act.type) + '\')">▶ Start</button>';
+        return '<div class="student-act-row student-act-row--' + color + (locked ? ' student-act-row--locked' : '') + '">' +
           '<div class="student-act-row-thumb act-thumb-hover" data-thumb="' + escD(act.thumbnail || '') + '" data-title="' + escD(act.title) + '" data-type="' + escD(act.type) + '" data-icon="' + escD(getEmojiD(act.type)) + '">' + thumb + '</div>' +
           '<div class="student-act-row-info">' +
             '<div class="student-act-row-title">' + escD(act.title) + '</div>' +
-            '<div class="student-act-row-sub">' + escD(act.type) + ' · ' + act.grading + ' Grading' + due + '</div>' +
+            '<div class="student-act-row-sub">' + escD(act.type) + ' · ' + act.grading + ' Grading' + due + lockedSub + '</div>' +
           '</div>' +
-          '<span class="student-act-row-badge ' + badge.cls + '">' + badge.text + '</span>' +
-          '<button class="student-act-row-btn" type="button" onclick="startActivity(\'' + escD(act.id) + '\',\'' + escD(act.type) + '\')">▶ Start</button>' +
+          (locked ? '' : '<span class="student-act-row-badge ' + badge.cls + '">' + badge.text + '</span>') +
+          btn +
           '</div>';
       }
 
@@ -333,6 +326,13 @@
         var activeActivities = materials.filter(function(a) {
           return a.progress_status !== 'completed';
         });
+
+        // Oldest-published-first — a student works through activities in
+        // the order the teacher assigned them, one at a time, instead of
+        // freely picking any of several open activities.
+        activeActivities.sort(function(a, b) {
+          return (a.created_at || '').localeCompare(b.created_at || '');
+        });
         dashboardActiveActivities = activeActivities;
 
         if (activeActivities.length === 0) {
@@ -340,9 +340,13 @@
             '<p class="student-act-empty-title">No activities for today</p>' +
             '<p class="student-act-empty-desc">New activities from your teacher will appear here.</p></div>';
         } else {
-          todayPanel.innerHTML = activeActivities.map(renderActRow).join('');
+          todayPanel.innerHTML = activeActivities.map(function(act, idx) {
+            return renderActRow(act, idx, idx > 0, idx > 0 ? activeActivities[0].title : '');
+          }).join('');
         }
         renderAllDashboardMaterials();
+        _ttdActivitiesReady = true;
+        maybeShowThingsToDo();
 
         var doneCount = materials.filter(function(a){ return a.progress_status === 'completed'; }).length;
         document.getElementById('student-act-done-count').textContent = doneCount + '/' + materials.length + ' done';
@@ -401,10 +405,11 @@
         window.location.href = tpl + '?activity_template_v=18&student_mode=1&review_mode=1&pub_id=' + encodeURIComponent(pubId);
       }
 
-      /* ── "All Materials" tab: files the teacher has actually uploaded
-         (PDF/Word/PPT/video/audio/links) — a different data source and
-         shape from the game-type activities above, so it gets its own
-         row renderer instead of reusing renderActRow. ── */
+      /* ── "Uploaded Materials" tab: files the teacher has actually uploaded
+         (PDF/Word/PPT/video/audio/links) via the Upload Material modal — a
+         different data source and shape from the game-type activities
+         shown under "Today's Activities", so it gets its own row renderer
+         instead of reusing renderActRow. ── */
       function getFileEmoji(mime, isLink) {
         if (isLink) return '🔗';
         mime = mime || '';
@@ -435,19 +440,16 @@
           '</div>';
       }
 
-      var dashboardActiveActivities = [];
       var dashboardUploadedFiles = [];
+      var dashboardActiveActivities = [];
 
       function renderAllDashboardMaterials() {
         var allPanel = document.getElementById('student-panel-materials');
-        var rows = dashboardActiveActivities.map(renderActRow);
-        if (dashboardUploadedFiles.length) {
-          rows = rows.concat(dashboardUploadedFiles.map(renderMaterialRow));
-        }
+        var rows = dashboardUploadedFiles.map(renderMaterialRow);
         if (!rows.length) {
           allPanel.innerHTML = '<div class="student-act-empty"><div class="student-act-empty-icon">📚</div>' +
             '<p class="student-act-empty-title">No materials yet</p>' +
-            '<p class="student-act-empty-desc">Activities and learning materials from your teacher will appear here.</p></div>';
+            '<p class="student-act-empty-desc">Files your teacher uploads will appear here.</p></div>';
         } else {
           allPanel.innerHTML = rows.join('');
         }
@@ -456,6 +458,51 @@
       function renderUploadedMaterials(files) {
         dashboardUploadedFiles = files || [];
         renderAllDashboardMaterials();
+        _ttdMaterialsReady = true;
+        maybeShowThingsToDo();
+      }
+
+      // "Things To Do" popup — appears once each time the dashboard loads,
+      // listing the one unlocked activity plus every later one still locked
+      // behind it. Both the activities fetch and the materials fetch call
+      // this after they finish, in whichever order they land — the ready
+      // flags make sure it only actually renders once both are in, and only
+      // once per page load.
+      var _ttdActivitiesReady = false, _ttdMaterialsReady = false, _ttdShown = false;
+      function maybeShowThingsToDo() {
+        if (!_ttdActivitiesReady || !_ttdMaterialsReady || _ttdShown) return;
+        if (!dashboardActiveActivities.length) return;
+        _ttdShown = true;
+
+        var currentAct = dashboardActiveActivities[0];
+        var rows = dashboardActiveActivities.map(function(act, idx) {
+          var locked = idx > 0;
+          return '<div class="ttd-row' + (locked ? ' ttd-row--locked' : '') + '">' +
+            '<span class="ttd-row-num">' + (idx + 1) + '</span>' +
+            '<div class="ttd-row-info">' +
+              '<div class="ttd-row-title">' + escD(act.title) + '</div>' +
+              '<div class="ttd-row-sub">' + escD(act.type) + (locked ? ' · 🔒 Locked' : ' · Ready now') + '</div>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+
+        var html = '';
+        if (dashboardActiveActivities.length) {
+          html += '<div class="ttd-sect-label">Activities — sagutan nang sunod-sunod</div>' + rows;
+        }
+        document.getElementById('ttdBody').innerHTML = html;
+
+        var startBtn = document.getElementById('ttdStartBtn');
+        if (currentAct) {
+          startBtn.style.display = '';
+          startBtn.onclick = function() { closeThingsToDo(); startActivity(currentAct.id, currentAct.type); };
+        } else {
+          startBtn.style.display = 'none';
+        }
+        document.getElementById('ttdModal').classList.add('show');
+      }
+      function closeThingsToDo() {
+        document.getElementById('ttdModal').classList.remove('show');
       }
 
       function loadDashboard() {
@@ -547,7 +594,7 @@
             if (d.condition) sessionStorage.setItem('student_condition', d.condition);
             if (d.grade)     sessionStorage.setItem('student_grade', d.grade);
 
-            // Fetch teacher-uploaded materials (files/links) for the "All Materials" tab —
+            // Fetch teacher-uploaded materials (files/links) for the "Uploaded Materials" tab —
             // a separate data source from the game-type activities below.
             fetch('STUDENT_BACKEND/student_get_uploaded_materials.php?_t=' + Date.now(), { cache: 'no-store' })
               .then(function(r) { return r.json(); })
@@ -747,8 +794,8 @@
     </div>
   </div>
 
-  <!-- VIDEO VIEWER — generic, reused for every video bubble in
-       .student-stories-row; openVideoViewer(title, src) swaps in the
+  <!-- VIDEO VIEWER — generic, reused for every video bubble inside the
+       Explore More modal; openVideoViewer(title, src) swaps in the
        right title/source before showing it. -->
   <div class="student-video-viewer" id="videoViewer" onclick="if(event.target===this) closeVideoViewer();">
     <div class="student-video-frame">
@@ -761,6 +808,60 @@
       </video>
     </div>
   </div>
+  <!-- "Explore More" modal — houses the shortcuts that used to sit directly
+       on the dashboard as their own row (My Holiday / Wash Hands / Read &
+       Learn), now behind one clearly-clickable entry point instead. -->
+  <div class="student-video-viewer" id="exploreModal" onclick="if(event.target===this) closeExploreModal();">
+    <div class="student-video-frame student-explore-frame">
+      <div class="student-video-topbar">
+        <span class="student-video-title-txt">🧭 Explore More</span>
+        <button class="student-video-close" onclick="closeExploreModal()" type="button">✕</button>
+      </div>
+      <div class="student-explore-body">
+        <button class="student-story-bubble" onclick="closeExploreModal(); openStoryViewer();" type="button">
+          <span class="student-story-ring"><img src="ASSETS/story/1.jpg" alt="My Holiday Activities" /></span>
+          <span class="student-story-label">My Holiday</span>
+        </button>
+        <button class="student-story-bubble" onclick="closeExploreModal(); openVideoViewer('🧼 How to Wash Your Hands', 'ASSETS/video/How%20to%20wash%20your%20hands.mp4');" type="button">
+          <span class="student-story-ring student-story-ring--video"><span class="student-story-emoji">🧼</span></span>
+          <span class="student-story-label">Wash Hands</span>
+        </button>
+        <button class="student-story-bubble" onclick="closeExploreModal(); openVideoViewer('📖 Read and Learn', 'ASSETS/video/Read%20and%20Learn.mp4');" type="button">
+          <span class="student-story-ring student-story-ring--video"><span class="student-story-emoji">📖</span></span>
+          <span class="student-story-label">Read &amp; Learn</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  <!-- "Things To Do" popup — appears once each dashboard load (see
+       maybeShowThingsToDo in the main script below), listing every open
+       activity in the order the student must complete them, plus any
+       uploaded materials (those aren't locked/ordered — free to open
+       anytime). -->
+  <div class="student-video-viewer" id="ttdModal" onclick="if(event.target===this) closeThingsToDo();">
+    <div class="student-video-frame ttd-frame">
+      <div class="student-video-topbar">
+        <span class="student-video-title-txt">📋 Things To Do</span>
+        <button class="student-video-close" onclick="closeThingsToDo()" type="button">✕</button>
+      </div>
+      <div class="ttd-body" id="ttdBody"></div>
+      <div class="ttd-footer">
+        <button class="ttd-start-btn" id="ttdStartBtn" type="button">▶ Start Now</button>
+      </div>
+    </div>
+  </div>
+  <script>
+  (function(){
+    window.openExploreModal = function(){ document.getElementById('exploreModal').classList.add('show'); };
+    window.closeExploreModal = function(){ document.getElementById('exploreModal').classList.remove('show'); };
+    document.addEventListener('keydown', function(e){
+      var m = document.getElementById('exploreModal');
+      if (m && m.classList.contains('show') && e.key === 'Escape') closeExploreModal();
+      var t = document.getElementById('ttdModal');
+      if (t && t.classList.contains('show') && e.key === 'Escape') closeThingsToDo();
+    });
+  })();
+  </script>
   <script>
   (function(){
     window.openVideoViewer = function(title, src){

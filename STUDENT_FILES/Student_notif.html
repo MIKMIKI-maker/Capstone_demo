@@ -10,7 +10,7 @@
   <title>SPED ALM - Notifications</title>
   <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
   <link href="STUDENT_CSS/Student_notif.css" rel="stylesheet" />
-  <link href="STUDENT_CSS/student_responsive.css?v=6" rel="stylesheet" />
+  <link href="STUDENT_CSS/student_responsive.css?v=8" rel="stylesheet" />
   <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
   <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
   <link href="../ASSETS/vendor/fontawesome/css/all.min.css" rel="stylesheet" />
@@ -94,10 +94,6 @@
         <h1 class="student-page-title">Notifications 🔔</h1>
         <p class="student-page-sub" id="student-unreadCount">0 unread notifications</p>
       </div>
-      <div class="student-page-actions">
-        <button class="student-action-btn" onclick="markAllRead()" type="button">✓ Mark all read</button>
-        <button class="student-action-btn student-action-btn--danger" onclick="clearAll()" type="button">🗑 Clear all</button>
-      </div>
     </header>
     <!-- FILTER ROW -->
     <div class="student-filter-row">
@@ -105,7 +101,13 @@
         <button class="student-ftab student-active" onclick="switchTab(this, 'all')" type="button">All Notifications</button>
         <button class="student-ftab" id="student-unreadTab" onclick="switchTab(this, 'unread')" type="button">Unread (0)</button>
       </div>
-      <button class="student-mark-all-btn" onclick="markAllRead()" type="button">Mark All as Read</button>
+      <div class="student-notif-menu-wrap">
+        <button class="student-notif-menu-btn" onclick="toggleNotifMenu(event)" type="button" aria-label="More options">⋮</button>
+        <div class="student-notif-menu" id="studentNotifMenu">
+          <button type="button" onclick="markAllRead(); closeNotifMenu();">✓ Mark all read</button>
+          <button type="button" class="student-notif-menu-danger" onclick="clearAll(); closeNotifMenu();">🗑 Clear all</button>
+        </div>
+      </div>
     </div>
     <!-- NOTIFICATIONS LIST -->
     <div class="student-notif-list" id="student-notifList"></div>
@@ -448,6 +450,21 @@
       currentPage = 1;
       renderNotifs();
     }
+
+    // "Mark all read" / "Clear all" used to be two separate always-visible
+    // buttons (plus a THIRD "Mark All as Read" button in the filter row
+    // duplicating the first one) — collapsed into one overflow menu here.
+    function toggleNotifMenu(e) {
+      if (e) e.stopPropagation();
+      document.getElementById('studentNotifMenu').classList.toggle('show');
+    }
+    function closeNotifMenu() {
+      document.getElementById('studentNotifMenu').classList.remove('show');
+    }
+    document.addEventListener('click', function(e) {
+      var wrap = document.querySelector('.student-notif-menu-wrap');
+      if (wrap && !wrap.contains(e.target)) closeNotifMenu();
+    });
 
     // Direct teacher messages have a numeric DB id (student_notifications.id).
     // Notes/assigned-activity notifications use a string key like "note_12" / "activity_5"

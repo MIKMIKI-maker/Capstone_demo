@@ -240,6 +240,8 @@ function initActivityTheme(){
   .srt-slide-actions button{ flex:1; cursor:pointer; border:1.5px dashed var(--blue); background:#eaf2ff; color:var(--blue);
     font-family:var(--font); font-weight:700; font-size:12.5px; padding:8px; border-radius:11px; }
   .srt-slide-actions button.danger{ border-color:#f0a8b4; background:#fdeef1; color:#c43a55; }
+  .srt-reset-all-btn{ width:100%; margin-top:8px; cursor:pointer; border:1.5px dashed #e8a33d; background:#fff7ec; color:#b5690a;
+    font-family:var(--font); font-weight:700; font-size:12.5px; padding:8px; border-radius:11px; }
 
   /* Activity type card */
   .srt-type{ display:flex; align-items:center; gap:12px; border:2px solid var(--blue); background:#eaf2ff; border-radius:14px; padding:13px; }
@@ -838,6 +840,7 @@ function initActivityTheme(){
           <button id="srtAddSlide" type="button">+ Add Slide</button>
           <button id="srtDeleteSlide" type="button" class="danger">🗑 Delete</button>
         </div>
+        <button id="srtResetBtn" type="button" class="srt-reset-all-btn">🔄 Reset</button>
       </div>
 
       <div class="srt-card">
@@ -2652,6 +2655,17 @@ function initActivityTheme(){
     syncDesignControls();
     applyAppearance();
   }
+
+  function resetActivity(){
+    if (!confirm("Ibalik sa simula ang buong activity na ito? Mawawala lahat ng ginawa mong pagbabago.")) return;
+    state.activities = [ makeDefaultActivity() ];
+    state.currentIndex = 0;
+    Object.assign(state, structuredClone(DEFAULT_DESIGN));
+    refreshSlideUI();
+    syncDesignControls();
+    applyAppearance();
+  }
+  $("srtResetBtn").addEventListener("click", resetActivity);
 
   $("srtDraftBtn").addEventListener("click", saveDraft);
 

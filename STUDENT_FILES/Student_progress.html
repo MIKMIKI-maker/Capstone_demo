@@ -7,8 +7,8 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>SPED ALM - My Progress</title>
     <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
-    <link href="STUDENT_CSS/Student_progress.css?v=19" rel="stylesheet" />
-    <link href="STUDENT_CSS/student_responsive.css?v=6" rel="stylesheet" />
+    <link href="STUDENT_CSS/Student_progress.css?v=21" rel="stylesheet" />
+    <link href="STUDENT_CSS/student_responsive.css?v=8" rel="stylesheet" />
     <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
     <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
     <link href="../ASSETS/vendor/fontawesome/css/all.min.css" rel="stylesheet" />
@@ -101,7 +101,7 @@
             </div>
         </header>
         <!-- STUDENT OVERVIEW CARD -->
-        <div class="student-overview-card">
+        <div class="student-overview-card" id="studentOverviewCard">
             <!-- Same display:contents-on-desktop / real-flex-on-mobile
                  trick as .student-ov-stats-group below, so the card
                  becomes exactly 2 stacked row-blocks on mobile
@@ -156,24 +156,6 @@
                         </div>
                     </div>
                     <div class="student-ov-stat-label">Activities Completed</div>
-                </div>
-            </div>
-        </div>
-        <!-- COMPLETED ACTIVITIES (moved here from My Materials once passed) -->
-        <!-- Mobile-only trigger — opens the card below inside a modal
-             instead of it sitting inline and eating up phone-screen
-             space. Hidden on desktop, where the card just stays inline. -->
-        <button class="student-completed-trigger" id="studentCompletedTrigger" type="button">✅ Completed Activities</button>
-        <div class="student-perf-card" id="completedCard" style="margin-bottom:20px;">
-            <div class="student-perf-header">
-                <span class="student-perf-title">✅ Completed Activities</span>
-                <span class="student-perf-tag" id="completedCount">— Activities</span>
-            </div>
-            <div id="completedList">
-                <div class="student-perf-empty">
-                    <div class="student-perf-empty-icon">🎯</div>
-                    <p class="student-perf-empty-title">No completed activities yet</p>
-                    <p class="student-perf-empty-desc">Activities you pass will show up here, ready to review anytime.</p>
                 </div>
             </div>
         </div>
@@ -247,14 +229,6 @@
         </div>
     </div>
 
-    <!-- COMPLETED ACTIVITIES MODAL (mobile only — same node-swap approach
-         as the Teacher's Notes modal above) -->
-    <div class="pg-modal-overlay" id="studentCompletedOverlay">
-        <div class="pg-modal-card" id="studentCompletedModalCard">
-            <button class="pg-modal-close" id="studentCompletedCloseBtn" type="button">✖</button>
-        </div>
-    </div>
-
     <script>
     /* ── Teacher's Notes card → modal on mobile ── */
     (function() {
@@ -284,61 +258,6 @@
         overlay.addEventListener('click', function(e) { if (e.target === overlay) closeNotesModal(); });
     })();
 
-    /* ── Completed Activities card → modal on mobile ── */
-    (function() {
-        var card = document.getElementById('completedCard');
-        var trigger = document.getElementById('studentCompletedTrigger');
-        var overlay = document.getElementById('studentCompletedOverlay');
-        var modalCard = document.getElementById('studentCompletedModalCard');
-        var closeBtn = document.getElementById('studentCompletedCloseBtn');
-        if (!card || !trigger || !overlay || !modalCard || !closeBtn) return;
-        var homeParent = card.parentNode, homeNext = card.nextSibling;
-
-        function openCompletedModal() {
-            modalCard.appendChild(card);
-            card.classList.add('student-completed-card--in-modal');
-            overlay.classList.add('show');
-        }
-        function closeCompletedModal() {
-            overlay.classList.remove('show');
-            card.classList.remove('student-completed-card--in-modal');
-            homeParent.insertBefore(card, homeNext);
-        }
-        trigger.addEventListener('click', openCompletedModal);
-        closeBtn.addEventListener('click', closeCompletedModal);
-        overlay.addEventListener('click', function(e) { if (e.target === overlay) closeCompletedModal(); });
-    })();
-
-    // Same template map Student_mymaterials.html uses to open an activity.
-    var TPL_MAP = {
-        'Matching':         '../TEACHER_FILES/TEMPLATES/Matching_Type_Template.html',
-        'Sorting':          '../TEACHER_FILES/TEMPLATES/Sorting_Type_Template.html',
-        'Sequencing':       '../TEACHER_FILES/TEMPLATES/Sequencing_Type_Template.html',
-        'CheckOrX':         '../TEACHER_FILES/TEMPLATES/Check_ Or_Not_Template.html',
-        'LetterID':         '../TEACHER_FILES/TEMPLATES/Identification_Template.html',
-        'PictureLabeling':  '../TEACHER_FILES/TEMPLATES/Picture_ Labeling_Template.html',
-        'WrittenResponse':  '../TEACHER_FILES/TEMPLATES/Written_Response_Template.html',
-        'Tracing':          '../TEACHER_FILES/TEMPLATES/Tracing_Template.html'
-    };
-
-    // Opens the real activity again so the learner can actually re-answer it
-    // for review — but with review_mode=1, which every template checks
-    // alongside its own "already passed" check before deciding whether to
-    // save anything. That guarantees this practice run can't touch
-    // learner_progress/activity_submissions, so it can never reset the
-    // Completed status or send the activity back to My Materials, even if
-    // this browser has no local record of the original pass.
-    function reviewActivity(dbId, type) {
-        var tpl = TPL_MAP[type];
-        if (!tpl) { alert('Review is not supported yet for this activity type.'); return; }
-        var lsActs = [];
-        try { lsActs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch (e) {}
-        var match = lsActs.find(function(a) { return String(a.db_activity_id) === String(dbId); });
-        var pubId = match ? match.id : String(dbId);
-        sessionStorage.setItem('stu_return_url', window.location.href);
-        window.location.href = tpl + '?activity_template_v=18&student_mode=1&review_mode=1&pub_id=' + encodeURIComponent(pubId);
-    }
-
     function fmtDate(iso) {
         if (!iso) return '—';
         return new Date(iso).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
@@ -347,6 +266,20 @@
         if (pct >= 80) return '#16a34a';
         if (pct >= 50) return '#d97706';
         return '#ef4444';
+    }
+
+    // Works the same in the inline desktop card and the mobile modal — both
+    // just render #notesList, so a fresh loadProgress() after deleting
+    // repaints whichever one is currently showing.
+    function deleteNote(noteId, noteType) {
+        if (!confirm('Delete this note? This cannot be undone.')) return;
+        var fd = new FormData();
+        fd.append('note_id', noteId);
+        fd.append('note_type', noteType);
+        fetch('STUDENT_BACKEND/student_delete_note.php', { method: 'POST', body: fd })
+            .then(function(r) { return r.json(); })
+            .then(function(d) { if (d.success) loadProgress(); })
+            .catch(function() {});
     }
 
     function loadProgress() {
@@ -385,29 +318,6 @@
             fillGreen.style.strokeDashoffset = CIRC - (CIRC * compPct / 100);
             fillGreen.closest('.student-ov-stat').querySelector('.student-circle-num').textContent = completed;
             fillGreen.closest('.student-ov-stat').querySelector('.student-circle-denom').textContent = '/' + totalActivities;
-        }
-
-        // Completed Activities — passed (score >= 80) OR already finalized by
-        // the teacher. A finalized submission is the teacher's final word on
-        // it regardless of the score they gave, so it's done either way —
-        // matches the same rule My Materials/Dashboard use to stop treating
-        // an activity as still-in-progress/retakeable.
-        var completedActivities = activities.filter(function(r) { return r.is_finalized == 1 || (r.score || 0) >= 80; });
-        var completedList = document.getElementById('completedList');
-        document.getElementById('completedCount').textContent = completedActivities.length + ' Activit' + (completedActivities.length === 1 ? 'y' : 'ies');
-        if (completedActivities.length === 0) {
-            completedList.innerHTML = '<div class="student-perf-empty"><div class="student-perf-empty-icon">🎯</div><p class="student-perf-empty-title">No completed activities yet</p><p class="student-perf-empty-desc">Activities you pass will show up here, ready to review anytime.</p></div>';
-        } else {
-            completedList.innerHTML = completedActivities.map(function(r) {
-                var sc = (r.is_finalized && r.finalized_score !== null) ? r.finalized_score : (r.score || 0);
-                return '<div class="student-completed-row">'
-                    + '<div class="student-completed-info">'
-                    +   '<div class="student-completed-title">' + escStr(r.activity_title) + (r.is_finalized ? ' <span style="font-size:10px;background:#dbeafe;color:#1d4ed8;padding:1px 6px;border-radius:8px;font-weight:600;">Finalized</span>' : '') + '</div>'
-                    +   '<div class="student-completed-meta">' + escStr(r.activity_type || r.subject || 'Activity') + ' · ' + sc + '% · Completed: ' + fmtDate(r.assessment_date) + '</div>'
-                    + '</div>'
-                    + '<button class="student-completed-review-btn" type="button" onclick="reviewActivity(\'' + escStr(r.activity_id) + '\',\'' + escStr(r.activity_type) + '\')">🔁 Review</button>'
-                    + '</div>';
-            }).join('');
         }
 
         // Performance cards
@@ -512,8 +422,13 @@
                     var noteLabel = actTitle
                         ? (actTitle + (subject ? ' · ' + subject : '') + (dateStr ? ' · ' + dateStr : ''))
                         : 'General Note';
+                    var noteId   = (typeof n === 'object' && n.note_id)   ? n.note_id   : '';
+                    var noteType = (typeof n === 'object' && n.note_type) ? n.note_type : '';
                 notesHtml += '<div style="background:#f0f9ff;border-left:3px solid #3b82f6;border-radius:0 10px 10px 0;padding:12px 14px;">'
+                        + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">'
                         + '<p style="font-size:11px;font-weight:700;color:#3b82f6;margin:0 0 5px;text-transform:uppercase;letter-spacing:.04em;">📋 ' + escStr(noteLabel) + '</p>'
+                        + (noteId ? '<button type="button" onclick="deleteNote(\'' + escStr(noteId) + '\',\'' + escStr(noteType) + '\')" title="Delete this note" style="flex:none;border:none;background:none;cursor:pointer;color:#dc2626;font-size:14px;padding:0 2px;line-height:1;"><i class="fa-solid fa-trash"></i></button>' : '')
+                        + '</div>'
                         + '<p style="font-size:13px;color:#1e293b;line-height:1.6;margin:0;">' + escStr(noteText) + '</p>'
                         + (dateStr && !actTitle ? '<p style="font-size:11px;color:#94a3b8;margin:6px 0 0;">' + dateStr + '</p>' : '')
                         + '</div>';
@@ -531,27 +446,19 @@
     }
 
     // Arriving here via the "Completed" stat-card shortcut on My Materials
-    // (Student_mymaterials.html) lands on #completedCard — scroll to it and
-    // pulse it once so it's obvious that's where the shortcut landed.
+    // (Student_mymaterials.html) lands on #studentOverviewCard — scroll to
+    // it and pulse it once so it's obvious that's where the shortcut landed
+    // (the "Activities Completed" circle lives in this card).
     var _completedHighlightedOnce = false;
     function highlightCompletedCardFromHash() {
-        if (_completedHighlightedOnce || window.location.hash !== '#completedCard') return;
-        var card = document.getElementById('completedCard');
+        if (_completedHighlightedOnce || window.location.hash !== '#studentOverviewCard') return;
+        var card = document.getElementById('studentOverviewCard');
         if (!card) return;
         _completedHighlightedOnce = true;
 
-        // On mobile the card itself is display:none (swapped for the
-        // trigger button, see the modal script above) — scrolling/pulsing
-        // a hidden element does nothing visible, so open the modal instead.
-        var trigger = document.getElementById('studentCompletedTrigger');
-        if (trigger && getComputedStyle(trigger).display !== 'none') {
-            trigger.click();
-            return;
-        }
-
         card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        card.classList.add('student-completed-card--highlight');
-        setTimeout(function () { card.classList.remove('student-completed-card--highlight'); }, 3000);
+        card.classList.add('student-highlight-pulse');
+        setTimeout(function () { card.classList.remove('student-highlight-pulse'); }, 3000);
     }
 
     function escStr(s) {

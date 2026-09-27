@@ -45,13 +45,47 @@
     .rv-empty i { font-size:36px; margin-bottom:10px; display:block; }
 
     /* ── Review modal ── */
-    .rv-modal-bg { position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; padding:16px; }
+    .rv-modal-bg { position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; gap:16px; padding:16px; overflow-y:auto; }
     .rv-modal-bg.open { display:flex; }
-    .rv-modal { background:#fff; border-radius:18px; width:100%; max-width:680px; max-height:90vh; overflow-y:auto; padding:28px 28px 24px; position:relative; }
+    .rv-modal { background:#fff; border-radius:18px; width:100%; max-width:680px; max-height:90vh; overflow-y:auto; padding:28px 28px 24px; position:relative; flex-shrink:0; }
     .rv-modal-close { position:absolute; top:14px; right:16px; background:none; border:none; font-size:20px; color:#64748b; cursor:pointer; line-height:1; }
     .rv-modal-close:hover { color:#1e293b; }
     .rv-modal-title { font-size:16px; font-weight:700; color:#1e293b; margin-bottom:4px; }
     .rv-modal-score { font-size:13px; color:#64748b; margin-bottom:18px; }
+
+    /* ── Non-Graded Rubric reference panel — sits beside the review modal
+         (DepEd's official IND/VC/A/FPP assistance-level rubric) so the
+         teacher can check it while picking an Assistance Level, instead of
+         having to remember or look it up elsewhere mid-grading. */
+    .rv-rubric-panel { background:#fff; border-radius:18px; width:100%; max-width:460px; padding:20px 22px; flex-shrink:0; }
+    .rv-rubric-title { font-size:14px; font-weight:700; color:#7f1d1d; margin-bottom:2px; }
+    .rv-rubric-sub { font-size:11.5px; color:#94a3b8; margin-bottom:14px; }
+    .rv-rubric-tbl { width:100%; table-layout:fixed; border-collapse:collapse; font-size:11.5px; }
+    .rv-rubric-tbl th:nth-child(1), .rv-rubric-tbl td:nth-child(1) { width:15%; }
+    .rv-rubric-tbl th:nth-child(2), .rv-rubric-tbl td:nth-child(2) { width:27%; }
+    .rv-rubric-tbl th:nth-child(3), .rv-rubric-tbl td:nth-child(3) { width:58%; }
+    .rv-rubric-tbl th { text-align:left; padding:6px 7px; background:#f8fafc; color:#64748b; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; border:1px solid #e2e8f0; }
+    .rv-rubric-tbl td { padding:8px 7px; border:1px solid #e2e8f0; vertical-align:top; line-height:1.45; color:#7f1d1d; word-wrap:break-word; }
+    .rv-rubric-tbl td:first-child { font-weight:800; color:#7f1d1d; text-align:center; }
+    .rv-rubric-tbl td:nth-child(2) { font-weight:600; }
+    .rv-rubric-tbl u { text-decoration-color:#b45151; }
+    .rv-rubric-note { font-size:10.5px; color:#94a3b8; margin-top:10px; line-height:1.4; }
+    /* Narrow viewports: stack the rubric under the modal instead of beside
+       it (side-by-side would overflow a phone screen). Both panels size to
+       their own content — .rv-modal-bg's own overflow-y:auto lets the whole
+       overlay scroll if the pair is taller than the viewport, instead of
+       nesting a second scrollbar inside the rubric panel. */
+    @media (max-width:1000px) {
+      .rv-modal-bg { flex-direction:column; align-items:stretch; padding:16px; }
+      .rv-modal, .rv-rubric-panel { max-width:100%; margin:0 auto; }
+    }
+
+    .rv-onetime-warning {
+      display:flex; align-items:center; gap:8px; margin-bottom:18px;
+      background:#fff1f2; border:1px solid #fecdd3; color:#9f1239;
+      font-size:12.5px; font-weight:600; line-height:1.4;
+      border-radius:10px; padding:10px 13px;
+    }
 
     /* ── Item table ── */
     .rv-tbl { width:100%; border-collapse:collapse; font-size:13px; margin-bottom:22px; }
@@ -213,6 +247,13 @@
     <div class="rv-sect-label">Teacher's Note</div>
     <textarea class="rv-notes" id="modalNote" placeholder="Optional observation or feedback for this student..."></textarea>
 
+    <!-- Reminder that finalizing is permanent — shown only before the first
+         save; once locked, the disabled fields + "🔒 Already Finalized"
+         button already make that clear on their own. -->
+    <div class="rv-onetime-warning" id="rvOnetimeWarning">
+      ⚠️ Isang beses lang puwedeng mag-grade nito. Kapag na-save na, hindi na ito mababago.
+    </div>
+
     <!-- Final score -->
     <div class="rv-final-row">
       <span class="rv-final-label">Final Score (%):</span>
@@ -228,6 +269,45 @@
     </div>
 
     <button type="button" class="rv-save-btn" id="modalSaveBtn" onclick="saveAssessment()">💾 Save Assessment</button>
+  </div>
+
+  <!-- Non-Graded Rubric — reference only, sits beside the modal above so
+       it's visible while picking an Assistance Level (see rv-rubric-panel
+       CSS for why it stacks below instead on narrow screens). -->
+  <div class="rv-rubric-panel">
+    <div class="rv-rubric-title">Non-Graded Rubric</div>
+    <div class="rv-rubric-sub">DepEd assistance-level reference</div>
+    <table class="rv-rubric-tbl">
+      <thead><tr><th>Grade</th><th>Description</th><th>Explanation</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>P</td>
+          <td>Proficient</td>
+          <td>The pupil was able to perform/manifest the indicator <u>independently (IND)</u> in 3 attempts without any assistance.</td>
+        </tr>
+        <tr>
+          <td>AP</td>
+          <td>Approaching to Proficient</td>
+          <td>The pupil was able to perform/manifest the indicator in 2 attempts out of 3 trials with <u>verbal cueing (VC)</u>.</td>
+        </tr>
+        <tr>
+          <td>D</td>
+          <td>Developing</td>
+          <td>The pupil was able to perform/manifest the indicator with 2 attempts out of 3 trials with <u>assistance (A)</u>.</td>
+        </tr>
+        <tr>
+          <td>B</td>
+          <td>Beginning</td>
+          <td>The pupil was able to perform/manifest the indicator with 2 out of 3 trials with <u>full physical prompting (FPP)</u> / full assistance (FA).</td>
+        </tr>
+        <tr>
+          <td>NO/NA</td>
+          <td>Not Observed/Not Applicable</td>
+          <td>The pupil was not able to perform the indicator stated.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="rv-rubric-note">NOTE: Most observed performance will be the basis of the final letter grade.</p>
   </div>
 </div>
 
@@ -515,6 +595,7 @@ function openModal(s) {
     ? 'Naka-finalize na ang gradeng ito — hindi na ito mababago.'
     : 'Leave blank to use auto-computed score';
   if (isLocked) suggestBox.style.display = 'none'; // editing is moot once locked
+  document.getElementById('rvOnetimeWarning').style.display = isLocked ? 'none' : 'flex';
 
   document.getElementById('rvModal').classList.add('open');
 }

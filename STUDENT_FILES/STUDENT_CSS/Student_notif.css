@@ -72,16 +72,6 @@ body {
 .student-page-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:22px; }
 .student-page-title { font-family:var(--font-head); font-weight:700; font-size:32px; line-height:1; }
 .student-page-sub { margin-top:6px; color:var(--ink-soft); font-weight:500; font-size:14px; }
-.student-page-actions { display:flex; gap:10px; flex-wrap:wrap; }
-.student-action-btn {
-  cursor:pointer; border:none; padding:11px 16px; border-radius:var(--r-md);
-  background:#fff; color:var(--ink); font-family:var(--font-head); font-weight:700; font-size:13px;
-  box-shadow:0 4px 12px rgba(36,58,94,.10); transition:transform .1s ease;
-}
-.student-action-btn:hover { transform:translateY(-1px); }
-.student-action-btn--danger { color:#d6336c; }
-
-
 /* ---- Filter row ---- */
 .student-filter-row { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:18px; }
 .student-filter-tabs { display:flex; gap:10px; flex-wrap:wrap; }
@@ -92,12 +82,29 @@ body {
 }
 .student-ftab:hover { transform:translateY(-1px); }
 .student-ftab.student-active { background:var(--blue); color:#fff; box-shadow:0 4px 12px rgba(47,111,237,.30); }
-.student-mark-all-btn {
-  cursor:pointer; border:none; padding:11px 18px; border-radius:var(--r-md);
-  background:#eef4ff; color:var(--blue); font-family:var(--font-head); font-weight:700; font-size:13px;
-  transition:background .12s ease;
+
+/* ---- Overflow menu ("Mark all read" / "Clear all"), replacing the old
+   always-visible header buttons plus a third, duplicate "Mark All as Read"
+   button that used to sit right here. ---- */
+.student-notif-menu-wrap { position:relative; }
+.student-notif-menu-btn {
+  cursor:pointer; border:none; width:44px; height:44px; border-radius:50%;
+  background:#fff; color:var(--ink); font-size:20px; font-weight:700; line-height:1;
+  box-shadow:0 3px 8px rgba(36,58,94,.08); transition:transform .1s ease, background .12s ease;
 }
-.student-mark-all-btn:hover { background:#e2ecfd; }
+.student-notif-menu-btn:hover { transform:translateY(-1px); background:#f4f7fd; }
+.student-notif-menu {
+  display:none; flex-direction:column; position:absolute; top:calc(100% + 8px); right:0; z-index:20;
+  min-width:180px; padding:6px; border-radius:var(--r-md); background:#fff;
+  box-shadow:0 10px 30px rgba(36,58,94,.18);
+}
+.student-notif-menu.show { display:flex; }
+.student-notif-menu button {
+  cursor:pointer; border:none; background:none; text-align:left; padding:11px 12px; border-radius:9px;
+  font-family:var(--font-head); font-weight:700; font-size:13.5px; color:var(--ink);
+}
+.student-notif-menu button:hover { background:#f4f7fd; }
+.student-notif-menu-danger { color:#d6336c; }
 
 
 /* ---- Notification list ---- */

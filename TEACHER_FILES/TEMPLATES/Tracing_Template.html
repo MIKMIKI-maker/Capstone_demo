@@ -248,6 +248,8 @@ function initActivityTheme(){
   .trc-slide-actions button{ flex:1; cursor:pointer; border:1.5px dashed var(--purple); background:#f3f1fe; color:var(--purple);
     font-family:var(--font); font-weight:700; font-size:12.5px; padding:8px; border-radius:11px; }
   .trc-slide-actions button.danger{ border-color:#f0a8b4; background:#fdeef1; color:#c43a55; }
+  .trc-reset-all-btn{ width:100%; margin-top:8px; cursor:pointer; border:1.5px dashed #e8a33d; background:#fff7ec; color:#b5690a;
+    font-family:var(--font); font-weight:700; font-size:12.5px; padding:8px; border-radius:11px; }
 
   /* Activity type card */
   .trc-type{ display:flex; align-items:center; gap:12px; border:2px solid var(--purple); background:#f3f1fe; border-radius:14px; padding:13px; }
@@ -726,6 +728,7 @@ function initActivityTheme(){
           <button id="trcAddSlide" type="button">+ Add Slide</button>
           <button id="trcDeleteSlide" type="button" class="danger">🗑 Delete</button>
         </div>
+        <button id="trcResetBtn" type="button" class="trc-reset-all-btn">🔄 Reset</button>
       </div>
 
       <div class="trc-card">
@@ -2729,6 +2732,17 @@ function initActivityTheme(){
     syncDesignControls();
     applyAppearance();
   }
+
+  function resetActivity(){
+    if (!confirm("Ibalik sa simula ang buong activity na ito? Mawawala lahat ng ginawa mong pagbabago.")) return;
+    state.activities = [ makeDefaultActivity() ];
+    state.currentIndex = 0;
+    Object.assign(state, structuredClone(DEFAULT_DESIGN));
+    refreshSlideUI();
+    syncDesignControls();
+    applyAppearance();
+  }
+  $("trcResetBtn").addEventListener("click", resetActivity);
 
   $("trcDraftBtn").addEventListener("click", saveDraft);
 

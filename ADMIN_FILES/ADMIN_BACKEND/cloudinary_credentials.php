@@ -4,6 +4,15 @@
 // docker-compose.yml's environment: block (gitignored, not committed), and
 // on Render via the dashboard's Environment tab — same pattern db.php
 // already uses for DB_HOST etc.
+//
+// Plain XAMPP (no Docker) has no docker-compose.yml to inject these, so it
+// also checks for a local, gitignored override file that calls putenv() —
+// see cloudinary_local.example.php for how to set one up.
+$cloudinaryLocalOverride = __DIR__ . '/cloudinary_local.php';
+if (file_exists($cloudinaryLocalOverride)) {
+    require_once $cloudinaryLocalOverride;
+}
+
 define('CLOUDINARY_CLOUD_NAME', getenv('CLOUDINARY_CLOUD_NAME') ?: '');
 define('CLOUDINARY_API_KEY', getenv('CLOUDINARY_API_KEY') ?: '');
 define('CLOUDINARY_API_SECRET', getenv('CLOUDINARY_API_SECRET') ?: '');

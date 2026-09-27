@@ -66,8 +66,11 @@ $activities = [];
 while ($r = $perf_result->fetch_assoc()) $activities[] = $r;
 $stmt3->close();
 
-// General teacher notes (student_notes table)
-$stmt4 = $conn->prepare("SELECT note, created_at, NULL AS activity_title FROM student_notes WHERE teacher_id = ? AND student_id = ? ORDER BY created_at DESC LIMIT 20");
+// General teacher notes (student_notes table) — note_type/note_id let the
+// student portal target the right row (and the right delete query) when
+// removing one, since these and the activity-linked notes below live in
+// two completely different tables.
+$stmt4 = $conn->prepare("SELECT id AS note_id, 'general' AS note_type, note, created_at, NULL AS activity_title FROM student_notes WHERE teacher_id = ? AND student_id = ? ORDER BY created_at DESC LIMIT 20");
 $stmt4->bind_param("ii", $teacher_id, $student_record_id);
 $stmt4->execute();
 $notes_result = $stmt4->get_result();
@@ -77,7 +80,7 @@ $stmt4->close();
 
 // Activity-specific notes from finalized submissions
 $stmt5 = $conn->prepare("
-    SELECT sub.teacher_note AS note, sub.finalized_at AS created_at, ta.activity_title, ta.subject
+    SELECT sub.id AS note_id, 'activity' AS note_type, sub.teacher_note AS note, sub.finalized_at AS created_at, ta.activity_title, ta.subject
     FROM activity_submissions sub
     JOIN teacher_activities ta ON ta.id = sub.activity_id
     WHERE sub.student_id = ? AND sub.teacher_id = ? AND sub.is_finalized = 1 AND sub.teacher_note IS NOT NULL AND sub.teacher_note != ''

@@ -1,0 +1,5 @@
+<FilesMatch "\.(php|php[3-8]?|phtml|pht)$">
+    Require all denied
+</FilesMatch>
+Options -Indexes
+php_flag engine off

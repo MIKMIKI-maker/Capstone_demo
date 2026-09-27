@@ -7,8 +7,8 @@
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
   <title>SPED ALM - My Materials</title>
   <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
-  <link href="STUDENT_CSS/Student_mymaterials.css?v=9" rel="stylesheet" />
-  <link href="STUDENT_CSS/student_responsive.css?v=6" rel="stylesheet" />
+  <link href="STUDENT_CSS/Student_mymaterials.css?v=10" rel="stylesheet" />
+  <link href="STUDENT_CSS/student_responsive.css?v=8" rel="stylesheet" />
   <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
   <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
   <link href="../ASSETS/vendor/fontawesome/css/all.min.css" rel="stylesheet" />
@@ -118,14 +118,6 @@
       <button class="student-reading-btn" type="button">Read Now ▶</button>
     </div>
 
-    <!-- FILTER ROW -->
-    <div class="student-filter-row">
-      <div class="student-search-box">
-        <span>🔍</span>
-        <input id="searchInput" name="search_activities" placeholder="Search activities..." type="text" />
-      </div>
-    </div>
-
     <!-- STAT CARDS — each is a shortcut, not just a number. Completed still
          never lists its cards on this page (see renderFromData); this is
          just a quick way to jump to where they actually live. -->
@@ -137,7 +129,7 @@
           <div class="student-stat-label">Total Materials</div>
         </div>
       </div>
-      <div class="student-stat-card student-stat-card--green student-stat-card--clickable" onclick="window.location.href='Student_progress.html#completedCard'" title="View completed activities in My Progress" role="button" tabindex="0">
+      <div class="student-stat-card student-stat-card--green student-stat-card--clickable" onclick="window.location.href='Student_progress.html#studentOverviewCard'" title="View your progress" role="button" tabindex="0">
         <span class="student-stat-icon">✅</span>
         <div>
           <div class="student-stat-number student-stat-number--green" id="statCompleted">0</div>
@@ -201,7 +193,7 @@
       return '📄';
     }
 
-    function renderCard(act, idx) {
+    function renderCard(act, idx, locked, prevTitle) {
       var color = TYPE_COLOR[act.type] || COLOR_CYCLE[idx % COLOR_CYCLE.length];
       var ps = act.progress_status || 'new';
       var completed  = ps === 'completed';
@@ -211,30 +203,34 @@
         ? { text: 'COMPLETED', cls: 'student-mat-badge--completed' }
         : inProgress
         ? { text: 'IN PROGRESS', cls: 'student-mat-badge--in-progress' }
+        : locked
+        ? { text: '🔒 LOCKED', cls: 'student-mat-badge--locked' }
         : getBadge(act.deadline);
       var thumb = act.thumbnail
-        ? '<img src="' + esc(act.thumbnail) + '" alt="thumbnail" style="width:80px;height:80px;object-fit:contain;background:#f8faff;border-radius:12px;" />'
-        : '<span style="font-size:48px;">' + getTypeEmoji(act.type) + '</span>';
+        ? '<img src="' + esc(act.thumbnail) + '" alt="thumbnail" style="width:100%;height:100%;object-fit:cover;border-radius:12px;' + (locked ? 'filter:grayscale(1);opacity:.55;' : '') + '" />'
+        : '<span style="font-size:48px;' + (locked ? 'filter:grayscale(1);opacity:.55;' : '') + '">' + getTypeEmoji(act.type) + '</span>';
       var dueText = act.deadline
         ? '<div class="student-mat-deadline">📅 Due: ' +
           new Date(act.deadline + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
           '</div>'
         : '';
-      var btnLabel = (completed || inProgress) ? '🔁 Review' : '&#9654; Start';
+      var lockedNote = locked ? '<div class="student-mat-deadline">🔒 Tapusin muna: "' + esc(prevTitle) + '"</div>' : '';
+      var btnLabel = locked ? '🔒 Locked' : (completed || inProgress) ? '🔁 Review' : '&#9654; Start';
       var btnStyle = (completed || inProgress) ? 'background:#7c3aed;box-shadow:0 3px 0 #5b21b6;' : '';
+      var btnAttrs = locked ? 'disabled' : 'onclick="startActivity(\'' + esc(act.id) + '\',\'' + esc(act.type) + '\',' + ((completed || inProgress) ? 'true' : 'false') + ')"';
       return [
-        '<div class="student-material-card student-mat--' + color + '" data-id="' + esc(act.id) + '" data-status="' + (completed ? 'completed' : 'new') + '">',
+        '<div class="student-material-card student-mat--' + color + (locked ? ' student-material-card--locked' : '') + '" data-id="' + esc(act.id) + '" data-status="' + (completed ? 'completed' : 'new') + '">',
         '<span class="student-mat-badge ' + badge.cls + '">' + badge.text + '</span>',
         '<span class="student-mat-star">&#9734;</span>',
         '<div class="student-mat-card-thumb act-thumb-hover" data-thumb="' + esc(act.thumbnail || '') + '" data-title="' + esc(act.title) + '" data-type="' + esc(act.type) + '" data-icon="' + esc(getTypeEmoji(act.type)) + '">' + thumb + '</div>',
         '<div class="student-mat-card-title">' + esc(act.title) + '</div>',
         '<div class="student-mat-card-tag">' + esc(act.type) + '</div>',
-        dueText,
+        dueText, lockedNote,
         '<div class="student-mat-progress">',
         '<div class="student-mat-progress-bar"><div class="student-mat-progress-fill" style="width:' + pct + '%;background:' + (completed ? '#16a34a' : '') + '"></div></div>',
         '<span class="student-mat-progress-pct">' + pct + '%</span>',
         '</div>',
-        '<button class="student-mat-card-btn" type="button" style="' + btnStyle + '" onclick="startActivity(\'' + esc(act.id) + '\',\'' + esc(act.type) + '\',' + ((completed || inProgress) ? 'true' : 'false') + ')">' + btnLabel + '</button>',
+        '<button class="student-mat-card-btn" type="button" style="' + btnStyle + '" ' + btnAttrs + '>' + btnLabel + '</button>',
         '</div>'
       ].join('');
     }
@@ -245,7 +241,7 @@
         : '<div class="student-mat-empty">📭 No activities yet. Your teacher will assign some soon.</div>';
       var inner = items.length === 0
         ? emptyMsg
-        : items.map(function(a, i){ return renderCard(a, i); }).join('') +
+        : items.map(function(a, i){ return renderCard(a, i, i > 0, i > 0 ? items[0].title : ''); }).join('') +
           '<div class="student-cheer"><span class="student-cheer-panda">🐼</span>' +
           '<div class="student-cheer-bubble"><strong>Great job!</strong><span>Keep learning and have fun! 💗</span></div>' +
           '<p class="student-cheer-text">Small steps every day lead to big progress!</p>' +
@@ -453,8 +449,13 @@
             progress_status: m.progress_status,
             score:           m.score,
             thumbnail:       m.thumbnail || null,
+            created_at:      m.created_at || '',
           };
         });
+      // Oldest-published-first, same rule as the Dashboard — only the
+      // single earliest still-open activity is unlocked at a time, so a
+      // student can't jump straight here and start a later one out of order.
+      activeForRender.sort(function(a, b) { return (a.created_at || '').localeCompare(b.created_at || ''); });
       var allCaughtUp = total > 0 && activeForRender.length === 0;
 
       document.getElementById('gradingSections').innerHTML =

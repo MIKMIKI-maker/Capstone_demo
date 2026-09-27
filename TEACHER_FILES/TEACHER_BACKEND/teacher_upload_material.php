@@ -5,6 +5,43 @@ require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/cloudinary_upload.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/db.php';
 header('Content-Type: application/json');
 
+// Local-disk fallback for plain XAMPP dev, where no Cloudinary account is
+// configured yet (see cloudinary_local.example.php). Only used when
+// Cloudinary itself has no credentials set — if credentials ARE set (as on
+// production/Render) this is never touched and a real Cloudinary failure
+// still fails loudly exactly as before.
+//
+// The filename is always freshly random with an extension derived from the
+// verified MIME type (never the client-supplied name) — the same
+// content-over-extension rule the Cloudinary path already follows — and the
+// folder ships its own .htaccess denying script execution, so a mis-typed
+// file can't end up running as PHP under the webroot.
+function localSaveMaterial($tmpName, $mime) {
+    $mimeExt = [
+        'application/pdf' => 'pdf',
+        'image/jpeg' => 'jpg', 'image/png' => 'png', 'image/gif' => 'gif', 'image/webp' => 'webp',
+        'application/msword' => 'doc',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+        'application/vnd.ms-powerpoint' => 'ppt',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'pptx',
+        'video/mp4' => 'mp4', 'video/mpeg' => 'mpeg', 'video/quicktime' => 'mov',
+        'audio/mpeg' => 'mp3', 'audio/wav' => 'wav', 'audio/ogg' => 'ogg',
+    ];
+    if (!isset($mimeExt[$mime])) return null;
+
+    $dir = __DIR__ . '/../uploads/materials';
+    if (!is_dir($dir) && !mkdir($dir, 0755, true)) return null;
+
+    $htaccess = $dir . '/.htaccess';
+    if (!file_exists($htaccess)) {
+        file_put_contents($htaccess, "<FilesMatch \"\\.(php|php[3-8]?|phtml|pht)\$\">\n    Require all denied\n</FilesMatch>\nOptions -Indexes\nphp_flag engine off\n");
+    }
+
+    $filename = bin2hex(random_bytes(16)) . '.' . $mimeExt[$mime];
+    if (!move_uploaded_file($tmpName, $dir . '/' . $filename)) return null;
+    return $filename;
+}
+
 $teacher_id     = requireTeacherId();
 $student_id     = isset($_POST['student_id'])     ? intval($_POST['student_id'])     : 0;
 $grading_period = isset($_POST['grading_period']) ? trim($_POST['grading_period'])   : 'First';
@@ -68,11 +105,22 @@ if ($hasFile) {
     }
 
     $origName = basename($_FILES['file']['name']);
-    $curlFile = new CURLFile($_FILES['file']['tmp_name'], $fileMime, $origName);
-    $safeName = cloudinaryUpload($curlFile, 'auto', 'materials');
-    if ($safeName === null) {
-        echo json_encode(['success' => false, 'message' => 'Failed to save file. Please try again.']);
-        exit;
+
+    if (defined('CLOUDINARY_API_KEY') && CLOUDINARY_API_KEY !== '') {
+        $curlFile = new CURLFile($_FILES['file']['tmp_name'], $fileMime, $origName);
+        $safeName = cloudinaryUpload($curlFile, 'auto', 'materials');
+        if ($safeName === null) {
+            echo json_encode(['success' => false, 'message' => 'Failed to save file. Please try again.']);
+            exit;
+        }
+    } else {
+        // No Cloudinary account configured (plain XAMPP dev) — save to local
+        // disk instead so uploads still work without one.
+        $safeName = localSaveMaterial($_FILES['file']['tmp_name'], $fileMime);
+        if ($safeName === null) {
+            echo json_encode(['success' => false, 'message' => 'Failed to save file. Please try again.']);
+            exit;
+        }
     }
 
     $fileSize = intval($_FILES['file']['size']);

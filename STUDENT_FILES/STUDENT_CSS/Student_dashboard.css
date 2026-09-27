@@ -311,9 +311,15 @@ body {
   padding: 24px 26px;
   margin-bottom: 20px;
   border-radius: var(--r-lg);
-  background: linear-gradient(135deg, #ffffff, #f4f8ff);
+  background: linear-gradient(120deg, #bce2ff 0%, #d6c8fb 55%, #ffd6ec 100%);
   box-shadow: 0 10px 0 rgba(36, 58, 94, .10),
               0 18px 30px rgba(36, 58, 94, .12);
+}
+
+.student-progress-right {
+  position: relative;
+  z-index: 2;
+  flex: none;
 }
 
 .student-progress-left {
@@ -383,35 +389,6 @@ body {
 .student-progress-stars span {
   font-size: 34px;
   line-height: 1;
-}
-
-.student-progress-right {
-  position: relative;
-  z-index: 2;
-}
-
-.student-star-badge {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 11px 18px;
-  border-radius: 16px;
-  background: var(--gold);
-  box-shadow: 0 6px 0 var(--gold-dark);
-}
-
-.student-star-icon {
-  display: block;
-  font-size: 22px;
-  animation: float 3.4s ease-in-out infinite;
-}
-
-.student-star-label {
-  font-family: var(--font-head);
-  font-weight: 800;
-  font-size: 13px;
-  line-height: 1.05;
-  color: #5c3d00;
 }
 
 .student-banner-deco-circle {
@@ -545,6 +522,14 @@ body {
 
 /* "Review" button variant for the Completed Activities tab panel */
 .student-act-row-btn--review { background: #2f6fed; box-shadow: 0 3px 0 #1d4ed8; }
+
+/* Locked row — every activity except the one next in line, dimmed with a
+   disabled button so a student can't jump ahead before finishing it. */
+.student-act-row--locked { opacity: .6; }
+.student-act-row-btn--locked {
+  background: #cbd5e1; color: #64748b; box-shadow: 0 3px 0 #94a3b8;
+  cursor: not-allowed;
+}
 
 /* Activity thumbnail hover preview — see the delegated mouseover/mouseout
    handlers near switchTab() for the show/hide/position logic. */
@@ -681,10 +666,7 @@ body {
   }
 
   .student-pcard-sub {
-    font-size: 11px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    display: none;
   }
 
   .student-badge-active {
@@ -707,21 +689,9 @@ body {
   .student-progress-text { font-size: 10px; }
   .student-progress-stars { gap: 4px; margin-top: 10px; }
   .student-progress-stars span { font-size: 18px; }
-  .student-star-badge { padding: 7px 10px; gap: 5px; border-radius: 11px; }
-  .student-star-icon { font-size: 13px; }
-  .student-star-label { font-size: 10.5px; }
 
   .student-main {
     padding: 20px;
-  }
-
-  /* With just one story bubble, the row's default left alignment made it
-     look stuck to the side instead of a centered feature. */
-  .student-stories-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
   }
 
   /* .student-notif-btn is pulled out of normal flow by
@@ -761,7 +731,7 @@ body {
 
 @media (max-width: 480px) {
   .student-greeting {
-    font-size: 22px;
+    font-size: 38px;
   }
 
   .student-greeting-star {
@@ -777,15 +747,6 @@ body {
   .student-topbar {
     flex-wrap: wrap;
     gap: 10px;
-  }
-
-  .student-stories-row {
-    overflow-x: auto;
-    padding-bottom: 6px;
-  }
-
-  .student-story-bubble {
-    flex-shrink: 0;
   }
 
   .student-pcard-avatar {
@@ -815,9 +776,10 @@ body {
 
 
 /* ============================================================
-   STORY / READING CAROUSEL
+   STORY / READING CAROUSEL — now surfaced only via the "Explore More"
+   bubble beside the progress banner, which opens a modal containing
+   these same story-bubble buttons (see .student-explore-body below).
    ============================================================ */
-.student-stories-row { display: flex; align-items: center; gap: 14px; margin: 0 0 22px; }
 .student-story-bubble { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; user-select: none; width: 88px; background: none; border: none; font-family: var(--font-body); }
 .student-story-ring {
   width: 76px; height: 76px; border-radius: 50%; padding: 3px;
@@ -836,6 +798,54 @@ body {
    item at a glance. */
 .student-story-ring--video { background: linear-gradient(135deg, #60a5fa, #34d399, #a78bfa); }
 .student-story-emoji { width: 100%; height: 100%; border-radius: 50%; background: #fff; border: 3px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 32px; }
+
+/* "Explore More" — the single entry point that replaced the 3-bubble row
+   (their targets now live inside the modal below) plus the old decorative
+   Star Learner badge, so it needs to visibly announce "tap me" on its own:
+   a bigger ring, an animated glow ring behind it, and a gentle bounce. */
+.student-story-bubble--explore { width: 64px; gap: 4px; }
+.student-story-ring--explore {
+  position: relative;
+  width: 52px; height: 52px;
+  background: linear-gradient(135deg, var(--coral), var(--gold), var(--purple));
+  animation: exploreBounce 2.2s ease-in-out infinite;
+}
+.student-story-ring--explore::before {
+  content: ""; position: absolute; inset: -5px; border-radius: 50%;
+  border: 2.5px solid var(--gold); opacity: .55;
+  animation: explorePulse 1.8s ease-out infinite;
+}
+.student-story-ring--explore .student-story-emoji { font-size: 22px; }
+.student-story-bubble--explore .student-story-label { font-size: 10.5px; max-width: 64px; }
+@keyframes exploreBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+@keyframes explorePulse {
+  0% { transform: scale(1); opacity: .55; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+
+.student-explore-body { display: flex; align-items: flex-start; justify-content: center; gap: 22px; flex-wrap: wrap; padding: 30px 24px; }
+
+/* "Things To Do" popup — reuses .student-video-frame's card chrome, just
+   wider (a list needs more room than the story-bubble row above) and with
+   its own scrollable body so a long activity queue doesn't blow past the
+   viewport. */
+.ttd-frame { max-width: 480px; display: flex; flex-direction: column; max-height: 82vh; }
+.ttd-body { padding: 18px 22px; overflow-y: auto; }
+.ttd-sect-label { font-family: var(--font-head); font-weight: 700; font-size: 12px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+.ttd-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #eef2f7; }
+.ttd-row:last-child { border-bottom: none; }
+.ttd-row-num { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--blue); color: #fff; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+.ttd-row--locked .ttd-row-num { background: #cbd5e1; }
+.ttd-row-info { min-width: 0; }
+.ttd-row-title { font-family: var(--font-head); font-weight: 700; font-size: 13.5px; color: var(--ink); }
+.ttd-row--locked .ttd-row-title { color: var(--ink-soft); }
+.ttd-row-sub { font-size: 11.5px; color: var(--ink-soft); margin-top: 1px; }
+.ttd-footer { padding: 14px 22px 20px; }
+.ttd-start-btn { width: 100%; border: none; cursor: pointer; padding: 13px; border-radius: 14px; background: var(--teal); color: #fff; font-family: var(--font-head); font-weight: 800; font-size: 14px; box-shadow: 0 5px 0 var(--teal-dark); }
+.ttd-start-btn:hover { filter: brightness(1.04); }
 
 /* Wash Hands video modal — a simple rounded video player instead of the
    full story-slide viewer above (native <video> controls handle

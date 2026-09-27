@@ -207,29 +207,14 @@ body {
 }
 /* Caps each list's own height once it grows past a handful of rows,
    instead of letting the card keep stretching taller than its neighbor
-   in the grid — same reasoning as #completedList below. */
-#perfList, #notesList { max-height: 340px; overflow-y: auto; padding-right: 4px; }
+   in the grid. */
+#perfList, #notesList { max-height: 280px; overflow-y: auto; padding-right: 4px; }
 
 /* Mobile-only trigger for the Teacher's Notes modal — the card itself
    stays the source of truth (moved into the modal on open, see the
    page's JS), this button is just its phone-width entry point. Hidden
    on desktop, where the card is inline as normal. */
 .student-notes-trigger { display: none; }
-
-/* Completed Activities: unlike Teacher's Notes above, this trigger stays
-   on at every width (not just mobile) — the card lives in a modal on
-   desktop too now, always the source of truth (moved in on open, see
-   the page's JS). */
-.student-perf-card#completedCard { display: none; }
-.student-perf-card#completedCard.student-completed-card--in-modal { display: block; }
-.student-completed-trigger {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  width: 100%; margin-bottom: 20px; padding: 13px 14px;
-  background: #fff; color: var(--ink); border: 1.5px solid #e2e8f0; border-radius: 14px;
-  font-family: var(--font-head); font-size: 14px; font-weight: 700;
-  box-shadow: 0 6px 16px rgba(36, 58, 94, .07); cursor: pointer;
-}
-#studentCompletedModalCard { padding: 40px 20px 20px; }
 
 /* Generic small modal (progress page) — overlay + centered card,
    reused for the Teacher's Notes modal. */
@@ -244,30 +229,12 @@ body {
   max-height: 82vh; overflow-y: auto; position: relative;
   box-shadow: 0 20px 60px rgba(0,0,0,.25);
 }
-/* ---- Completed Activities (reuses .student-perf-* look) ---- */
-/* Caps the list's own height once it grows past a handful of rows, instead
-   of letting the card (and the whole page under it) stretch indefinitely —
-   same reasoning as the Admin Reports roster lists. */
-#completedList { max-height: 340px; overflow-y: auto; padding-right: 4px; }
-.student-completed-row {
-  display: flex; align-items: center; justify-content: space-between; gap: 14px;
-  padding: 12px 0; border-bottom: 1px solid #f1f5f9; flex-wrap: wrap;
-}
-.student-completed-row:last-child { border-bottom: none; }
-.student-completed-info { min-width: 0; }
-.student-completed-title { font-weight: 700; font-size: 14px; color: #1e293b; }
-.student-completed-meta { font-size: 12px; color: #94a3b8; margin-top: 2px; }
-.student-completed-review-btn {
-  flex-shrink: 0; border: none; cursor: pointer; padding: 8px 16px;
-  border-radius: 999px; font-weight: 700; font-size: 13px;
-  background: var(--blue); color: #fff;
-}
-.student-completed-review-btn:hover { opacity: .9; }
 
-/* Briefly pulses #completedCard when arriving via the "Completed" stat-card
-   shortcut on My Materials (Student_progress.html#completedCard), so it's
-   obvious which card that shortcut landed on. */
-.student-completed-card--highlight {
+/* Briefly pulses the overview card when arriving via the "Completed"
+   stat-card shortcut on My Materials
+   (Student_progress.html#studentOverviewCard), so it's obvious which card
+   that shortcut landed on. */
+.student-highlight-pulse {
   animation: studentCompletedHighlightPulse 1.5s ease-in-out 2;
 }
 @keyframes studentCompletedHighlightPulse {

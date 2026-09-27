@@ -238,6 +238,8 @@ body{font-family:var(--font);color:var(--ink);background:#eef2f9;display:flex;fl
 .lbl-slide-actions button{flex:1;cursor:pointer;border:1.5px dashed var(--purple);background:#f3f1fe;color:var(--purple);
   font-family:var(--font);font-weight:700;font-size:12.5px;padding:8px;border-radius:11px;}
 .lbl-slide-actions button.danger{border-color:#f0a8b4;background:#fdeef1;color:#c43a55;}
+.lbl-reset-all-btn{width:100%;margin-top:8px;cursor:pointer;border:1.5px dashed #e8a33d;background:#fff7ec;color:#b5690a;
+  font-family:var(--font);font-weight:700;font-size:12.5px;padding:8px;border-radius:11px;}
 
 /* Activity type card */
 .lbl-type{display:flex;align-items:center;gap:12px;border:2px solid var(--purple);background:#f3f1fe;border-radius:14px;padding:13px;}
@@ -728,6 +730,7 @@ body.lbl-preview-only .lbl-exit-float{display:flex;}
         <button id="lblAddSlide" type="button">+ Add Slide</button>
         <button id="lblDeleteSlide" type="button" class="danger">🗑 Delete</button>
       </div>
+      <button id="lblResetBtn" type="button" class="lbl-reset-all-btn">🔄 Reset</button>
     </div>
 
     <div class="lbl-card">
@@ -2431,6 +2434,17 @@ function loadDraftIfAny(){
   syncDesignControls();
   applyAppearance();
 }
+function resetActivity(){
+  if (!confirm('Ibalik sa simula ang buong activity na ito? Mawawala lahat ng ginawa mong pagbabago.')) return;
+  state.activities = [ makeDefaultActivity() ];
+  state.currentIndex = 0;
+  Object.assign(state, structuredClone(DEFAULT_DESIGN));
+  refreshSlideUI();
+  syncDesignControls();
+  applyAppearance();
+}
+$('lblResetBtn').addEventListener('click', resetActivity);
+
 $('lblDraftBtn').addEventListener('click', saveDraft);
 
 // Re-open an already-published activity for editing if ?edit_pub_id= in URL.

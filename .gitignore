@@ -1,2 +1,9 @@
 .claude/
 .mcp.json
+ADMIN_FILES/ADMIN_BACKEND/cloudinary_local.php
+
+# Real teacher-uploaded files (local-disk Cloudinary fallback) — user data,
+# not source code. The folder itself (and its execution-blocking .htaccess)
+# stays tracked so a fresh checkout still has it.
+TEACHER_FILES/uploads/materials/*
+!TEACHER_FILES/uploads/materials/.htaccess

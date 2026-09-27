@@ -52,7 +52,7 @@ table { display: block; max-width: 100%; overflow-x: auto; }
 
 /* ---------- Phone ---------- */
 @media (max-width: 480px) {
-  .student-greeting { font-size: 22px; }
+  .student-greeting { font-size: 38px; }
   .student-page-title { font-size: 22px; }
   .student-main { padding: 14px; }
 

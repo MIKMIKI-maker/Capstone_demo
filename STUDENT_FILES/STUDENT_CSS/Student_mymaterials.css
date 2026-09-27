@@ -138,18 +138,6 @@ body {
 
 
 /* ---- Filter row ---- */
-.student-filter-row { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 22px; }
-.student-search-box {
-  flex: 1; min-width: 260px;
-  display: flex; align-items: center; gap: 10px;
-  padding: 15px 20px; border-radius: var(--r-md);
-  background: #fff; box-shadow: 0 4px 12px rgba(36, 58, 94, .08);
-}
-.student-search-box input {
-  flex: 1; border: none; outline: none; background: transparent;
-  font-family: var(--font-body); font-size: 15px; font-weight: 500; color: var(--ink);
-}
-.student-search-box input::placeholder { color: var(--ink-soft); }
 .student-filter-tabs { display: flex; gap: 10px; flex-wrap: wrap; }
 .student-ftab {
   cursor: pointer; border: none;
@@ -252,6 +240,11 @@ body {
 .student-mat-badge--due { background: #ef4444; color: #fff; }
 .student-mat-badge--closed { background: #9ca3af; color: #fff; }
 .student-mat-badge--completed { background: #16a34a; color: #fff; }
+.student-mat-badge--locked { background: #cbd5e1; color: #475569; }
+/* Every activity except the one next in line, oldest-published-first —
+   dimmed with a disabled button so a student can't start it out of order. */
+.student-material-card--locked { opacity: .65; }
+.student-material-card--locked .student-mat-card-btn { background: #cbd5e1 !important; box-shadow: 0 3px 0 #94a3b8 !important; cursor: not-allowed; color: #64748b; }
 .student-mat-deadline {
   font-size: 12.5px; font-weight: 600; color: var(--ink-soft);
   text-align: center; margin-top: 4px; margin-bottom: 2px;
@@ -370,10 +363,8 @@ body.student-fullview .student-main { padding: 28px 44px; }
   .student-sidebar-footer { flex-direction: row; margin: 0 0 0 auto; }
   .student-main { padding: 20px; }
 
-  /* Shrunk enough that the trailing star stays on the same line as
-     the subtitle text instead of wrapping onto its own line below. */
   .student-page-sub { font-size: 13px; }
-  .student-sub-star { font-size: 13px; }
+  .student-sub-star { display: none; }
 
   /* Keep every remaining section's exact desktop layout (search+tabs
      on one row, 3 stat cards side by side, 3-across material cards,
@@ -387,9 +378,6 @@ body.student-fullview .student-main { padding: 28px 44px; }
   .student-fullview-btn,
   .student-reading-card { display: none !important; }
 
-  .student-filter-row { flex-wrap: nowrap; gap: 8px; }
-  .student-search-box { flex: 1; min-width: 0; padding: 8px 10px; }
-  .student-search-box input { min-width: 0; font-size: 11px; }
   .student-filter-tabs { flex-shrink: 0; gap: 4px; }
   .student-ftab { padding: 7px 10px; font-size: 10.5px; }
 
