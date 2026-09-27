@@ -237,6 +237,17 @@
         </div>
     </div>
 
+    <dialog class="tr-reset-dialog" id="resetRecordsDialog" aria-label="Reset learner records" aria-describedby="resetRecordsDescription">
+        <div class="tr-reset-content">
+            <div class="tr-reset-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <p class="tr-reset-message" id="resetRecordsDescription">Reset all learner progress records for this class? This clears score history, notes, and submissions from the teacher and student portals. This action cannot be undone.</p>
+            <form method="dialog" class="tr-reset-actions">
+                <button class="tr-reset-cancel" value="cancel" type="submit">Cancel</button>
+                <button class="tr-reset-confirm" value="confirm" type="submit">Reset Records</button>
+            </form>
+        </div>
+    </dialog>
+
     <script>
         var TEACHER_ID = parseInt(sessionStorage.getItem('teacher_id') || '1');
         var _reportActivities = [];
@@ -484,39 +495,52 @@
             return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
         }
 
+        function confirmResetRecords() {
+            return new Promise(function(resolve) {
+                var dialog = document.getElementById('resetRecordsDialog');
+                function onClose() {
+                    dialog.removeEventListener('close', onClose);
+                    resolve(dialog.returnValue === 'confirm');
+                }
+                dialog.addEventListener('close', onClose);
+                dialog.showModal();
+                dialog.querySelector('.tr-reset-cancel').focus();
+            });
+        }
+
         function resetAllRecords() {
-            if (!confirm('Reset all learner progress records for this class? This will clear the score history, notes, and submissions shown in the teacher and student portals. This action cannot be undone.')) {
-                return;
-            }
+            confirmResetRecords().then(function(confirmed) {
+                if (!confirmed) return;
 
-            var btn = document.getElementById('resetRecordsBtn');
-            if (btn) {
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Resetting...';
-            }
-
-            fetch('TEACHER_BACKEND/teacher_reset_all_records.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'teacher_id=' + encodeURIComponent(TEACHER_ID)
-            })
-            .then(function(r) { return r.json(); })
-            .then(function(d) {
-                if (d && d.success) {
-                    window.showToast('All class records have been reset.', 'success');
-                    loadReports();
-                } else {
-                    window.showToast((d && d.message) || 'Could not reset records.', 'error');
-                }
-            })
-            .catch(function() {
-                window.showToast('Network error. Please try again.', 'error');
-            })
-            .finally(function() {
+                var btn = document.getElementById('resetRecordsBtn');
                 if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fa-solid fa-rotate-left"></i> Reset Records';
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Resetting...';
                 }
+
+                fetch('TEACHER_BACKEND/teacher_reset_all_records.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'teacher_id=' + encodeURIComponent(TEACHER_ID)
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    if (d && d.success) {
+                        window.showToast('All class records have been reset.', 'success');
+                        loadReports();
+                    } else {
+                        window.showToast((d && d.message) || 'Could not reset records.', 'error');
+                    }
+                })
+                .catch(function() {
+                    window.showToast('Network error. Please try again.', 'error');
+                })
+                .finally(function() {
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fa-solid fa-rotate-left"></i> Reset Records';
+                    }
+                });
             });
         }
 
