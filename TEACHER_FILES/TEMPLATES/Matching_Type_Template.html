@@ -2824,6 +2824,67 @@ function initActivityTheme(){
         + '<span style="color:#78350f;font-size:14px;font-weight:800;text-align:left;line-height:1.4;">Kailangan ng gabay ng magulang o guardian sa pagsagot nito!</span>'
         + '</div>';
 
+      // Shown AFTER the student taps Start (not on the intro splash) — a
+      // real-photo demo overlaid on top of the freshly-rendered activity,
+      // so the child sees exactly what to do before touching it. Each
+      // Activity Type ("Pair Matching", "Memory Match", "Grid Match") has
+      // its own mechanic, so the demo branches on the slide's saved mode
+      // instead of always showing the drag-to-match animation.
+      function stuDemoForMatch(mode) {
+        if (mode === 'memory') {
+          return '<style>'
+            + '@keyframes stuMemQ1{0%,18%{opacity:1;}22%,78%{opacity:0;}96%,100%{opacity:1;}}'
+            + '@keyframes stuMemImg1{0%,18%{opacity:0;}22%,90%{opacity:1;}96%,100%{opacity:0;}}'
+            + '@keyframes stuMemQ2{0%,42%{opacity:1;}46%,78%{opacity:0;}96%,100%{opacity:1;}}'
+            + '@keyframes stuMemImg2{0%,42%{opacity:0;}46%,90%{opacity:1;}96%,100%{opacity:0;}}'
+            + '@keyframes stuMemGlow{0%,80%{box-shadow:0 4px 0 rgba(0,0,0,.15);}84%,92%{box-shadow:0 0 0 4px #16a34a;}96%,100%{box-shadow:0 4px 0 rgba(0,0,0,.15);}}'
+            + '@keyframes stuMemHand1{0%,15%{opacity:0;}18%,26%{opacity:1;}30%,100%{opacity:0;}}'
+            + '@keyframes stuMemHand2{0%,39%{opacity:0;}42%,50%{opacity:1;}54%,100%{opacity:0;}}'
+            + '</style>'
+            + '<div style="position:relative;display:flex;align-items:center;justify-content:center;gap:14px;margin:2px 0;">'
+            + '<div style="position:relative;width:60px;height:60px;background:#3b82f6;border-radius:14px;box-shadow:0 4px 0 rgba(0,0,0,.15);animation:stuMemGlow 3.6s ease-in-out infinite;">'
+            + '<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;font-weight:800;animation:stuMemQ1 3.6s ease-in-out infinite;">?</span>'
+            + '<img src="MATCHING/Dog.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:14px;opacity:0;animation:stuMemImg1 3.6s ease-in-out infinite;">'
+            + '</div>'
+            + '<div style="position:relative;width:60px;height:60px;background:#3b82f6;border-radius:14px;box-shadow:0 4px 0 rgba(0,0,0,.15);animation:stuMemGlow 3.6s ease-in-out infinite;">'
+            + '<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;font-weight:800;animation:stuMemQ2 3.6s ease-in-out infinite;">?</span>'
+            + '<img src="MATCHING/Dog.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:14px;opacity:0;animation:stuMemImg2 3.6s ease-in-out infinite;">'
+            + '</div>'
+            + '<div style="position:absolute;left:16px;top:-4px;font-size:26px;animation:stuMemHand1 3.6s ease-in-out infinite;">👆</div>'
+            + '<div style="position:absolute;right:16px;top:-4px;font-size:26px;animation:stuMemHand2 3.6s ease-in-out infinite;">👆</div>'
+            + '</div>'
+            + '<p style="color:#e2e8f0;font-size:14px;margin:0;font-weight:700;">👉 I-tap ang mga baligtad na card para maghanap ng magkatugma!</p>';
+        }
+        if (mode === 'grid') {
+          return '<style>'
+            + '@keyframes stuGridHandL{0%,10%{opacity:0;}14%,30%{opacity:1;}34%,100%{opacity:0;}}'
+            + '@keyframes stuGridHandR{0%,44%{opacity:0;}48%,64%{opacity:1;}68%,100%{opacity:0;}}'
+            + '@keyframes stuGridLine{0%,48%{width:0;opacity:0;}55%,90%{width:120px;opacity:1;}96%,100%{width:120px;opacity:0;}}'
+            + '@keyframes stuGridPick{0%,12%{box-shadow:0 4px 0 rgba(0,0,0,.15);}16%,90%{box-shadow:0 0 0 4px #fbbf24;}96%,100%{box-shadow:0 4px 0 rgba(0,0,0,.15);}}'
+            + '</style>'
+            + '<div style="position:relative;width:220px;height:88px;margin:2px 0;">'
+            + '<img src="MATCHING/Dog.jpg" style="position:absolute;left:6px;top:14px;width:60px;height:60px;object-fit:cover;border-radius:14px;border:3px solid #fff;animation:stuGridPick 3.4s ease-in-out infinite;">'
+            + '<img src="MATCHING/Dog%20house.jpg" style="position:absolute;right:6px;top:14px;width:60px;height:60px;object-fit:cover;border-radius:14px;border:3px solid #fff;box-shadow:0 4px 0 rgba(0,0,0,.15);">'
+            + '<div style="position:absolute;left:66px;top:42px;height:4px;background:#fde68a;border-radius:2px;animation:stuGridLine 3.4s ease-in-out infinite;"></div>'
+            + '<div style="position:absolute;left:14px;top:0px;font-size:28px;animation:stuGridHandL 3.4s ease-in-out infinite;">👆</div>'
+            + '<div style="position:absolute;right:14px;top:0px;font-size:28px;animation:stuGridHandR 3.4s ease-in-out infinite;">👆</div>'
+            + '</div>'
+            + '<p style="color:#e2e8f0;font-size:14px;margin:0;font-weight:700;">👉 I-tap ang larawan, tapos i-tap ang katugma nito!</p>';
+        }
+        return '<style>'
+          + '@keyframes stuDemoHand{0%{left:22px;opacity:1;}38%{left:148px;opacity:1;}62%{left:148px;opacity:1;}80%{left:148px;opacity:0;}81%{left:22px;opacity:0;}100%{left:22px;opacity:1;}}'
+          + '@keyframes stuDemoLine{0%,38%{width:0;opacity:0;}45%,62%{width:120px;opacity:1;}80%,100%{width:120px;opacity:0;}}'
+          + '</style>'
+          + '<div style="position:relative;width:220px;height:88px;margin:2px 0;">'
+          + '<img src="MATCHING/Dog.jpg" style="position:absolute;left:6px;top:14px;width:60px;height:60px;object-fit:cover;border-radius:14px;box-shadow:0 4px 0 rgba(0,0,0,.15);border:3px solid #fff;">'
+          + '<img src="MATCHING/Dog%20house.jpg" style="position:absolute;right:6px;top:14px;width:60px;height:60px;object-fit:cover;border-radius:14px;box-shadow:0 4px 0 rgba(0,0,0,.15);border:3px solid #fff;">'
+          + '<div style="position:absolute;left:66px;top:42px;height:4px;background:#fde68a;border-radius:2px;animation:stuDemoLine 2.6s ease-in-out infinite;"></div>'
+          + '<div style="position:absolute;top:18px;font-size:30px;animation:stuDemoHand 2.6s ease-in-out infinite;">👆</div>'
+          + '</div>'
+          + '<p style="color:#e2e8f0;font-size:14px;margin:0;font-weight:700;">👉 I-drag ang larawan papunta sa katugma nito!</p>';
+      }
+      var demoHTML = stuDemoForMatch((state.activities[0] && state.activities[0].mode) || 'pair');
+
       var splash = document.createElement('div');
       splash.id = 'stuSplash';
       splash.style.cssText = 'position:fixed;inset:0;background:linear-gradient(145deg,#1e3a8a 0%,#1e40af 60%,#1d4ed8 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:99999;padding:32px;text-align:center;';
@@ -2857,6 +2918,16 @@ function initActivityTheme(){
         if (fs.requestFullscreen) fs.requestFullscreen().catch(function(){});
         else if (fs.webkitRequestFullscreen) fs.webkitRequestFullscreen();
         splash.remove();
+        var stuDemoOverlay = document.createElement('div');
+        stuDemoOverlay.id = 'stuDemoOverlay';
+        stuDemoOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.94);display:flex;align-items:center;justify-content:center;z-index:100000;padding:24px;text-align:center;';
+        stuDemoOverlay.innerHTML = '<div style="background:#1e293b;border:3px solid #fbbf24;border-radius:28px;padding:40px 64px;display:flex;flex-direction:column;align-items:center;gap:22px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.5);">'
+          + '<p style="color:#facc15;font-size:23px;font-weight:800;letter-spacing:.6px;margin:0;text-transform:uppercase;">📖 Paano Sagutan</p>'
+          + '<div style="transform:scale(1.3);margin:14px 0;">' + demoHTML + '</div>'
+          + '<button id="stuDemoOkBtn" style="margin-top:10px;background:#22c55e;color:#fff;border:none;padding:18px 60px;border-radius:18px;font-family:Fredoka,Poppins,sans-serif;font-size:24px;font-weight:700;cursor:pointer;box-shadow:0 5px 0 #15803d;">Nakuha ko! ▶</button>'
+          + '</div>';
+        document.body.appendChild(stuDemoOverlay);
+        document.getElementById('stuDemoOkBtn').addEventListener('click', function() { stuDemoOverlay.remove(); });
         if (window.finishStudentLaunch) window.finishStudentLaunch();
         initActivityTheme();
 

@@ -2072,7 +2072,12 @@ function initActivityTheme(){
       // No pass-to-proceed gate — checked (any score) is enough to move on
       // or submit, instead of forcing a retake whenever the score is below
       // PASS_THRESHOLD.
-      var _allDone = _stuSlideScores.filter(Boolean).length === _ts;
+      // Shapes/lines slides are print-only (no Check button, so they can
+      // never populate _stuSlideScores) — count only scoreable slides here,
+      // otherwise an activity with even one shapes slide could never reach
+      // "all done" and the Submit button would never appear.
+      var _scoreable = 0; for (var _si2 = 0; _si2 < _ts; _si2++) { if (!(state.activities[_si2] && state.activities[_si2].mode === 'shapes')) _scoreable++; }
+      var _allDone = _stuSlideScores.filter(Boolean).length === _scoreable;
       if (_ts > 1 && !_isLast) {
         $("trcModalCloseBtn").style.display = ""; $("trcModalCloseBtn").textContent = "Next Slide →"; $("trcModalCloseBtn").dataset.nextSlide = "1";
       } else {
@@ -3223,6 +3228,34 @@ function initActivityTheme(){
         + '<span style="color:#78350f;font-size:14px;font-weight:800;text-align:left;line-height:1.4;">Kailangan ng gabay ng magulang o guardian sa pagsagot nito!</span>'
         + '</div>';
 
+      // Shown AFTER the student taps Start (not on the intro splash) — a
+      // looping pencil-tracing demo overlaid on top of the freshly-rendered
+      // activity, so the child sees exactly what to do before touching it.
+      // "Letters & Numbers" traces a curved dotted line; "Shapes & Lines"
+      // traces a dotted outline, so the demo branches on the slide's saved
+      // mode instead of always showing the letter-arc path.
+      function stuDemoForTrace(mode) {
+        if (mode === 'shapes') {
+          return '<style>'
+            + '@keyframes stuShapeMove{0%,8%{left:14px;top:6px;opacity:1;}25%{left:194px;top:6px;}50%{left:194px;top:46px;}75%{left:14px;top:46px;}92%,96%{left:14px;top:6px;opacity:1;}100%{left:14px;top:6px;opacity:0;}}'
+            + '</style>'
+            + '<div style="position:relative;width:220px;height:60px;margin:2px 0;">'
+            + '<svg width="220" height="60" viewBox="0 0 220 60" style="position:absolute;left:0;top:0;"><path d="M20,10 L200,10 L200,50 L20,50 Z" stroke="#fde68a" stroke-width="4" stroke-dasharray="8,8" fill="none" stroke-linecap="round"/></svg>'
+            + '<div style="position:absolute;font-size:28px;animation:stuShapeMove 2.8s ease-in-out infinite;">✏️</div>'
+            + '</div>'
+            + '<p style="color:#e2e8f0;font-size:14px;margin:0;font-weight:700;">👉 Sundan ang tuldok-tuldok na hugis!</p>';
+        }
+        return '<style>'
+          + '@keyframes stuTraceMove{0%,10%{left:14px;top:34px;opacity:1;}30%{left:70px;top:6px;}50%{left:104px;top:0px;}70%{left:138px;top:6px;}85%,90%{left:194px;top:34px;opacity:1;}96%,100%{left:194px;top:34px;opacity:0;}}'
+          + '</style>'
+          + '<div style="position:relative;width:220px;height:60px;margin:2px 0;">'
+          + '<svg width="220" height="60" viewBox="0 0 220 60" style="position:absolute;left:0;top:0;"><path d="M20,44 Q110,4 200,44" stroke="#fde68a" stroke-width="4" stroke-dasharray="8,8" fill="none" stroke-linecap="round"/></svg>'
+          + '<div style="position:absolute;font-size:28px;animation:stuTraceMove 2.6s ease-in-out infinite;">✏️</div>'
+          + '</div>'
+          + '<p style="color:#e2e8f0;font-size:14px;margin:0;font-weight:700;">👉 Sundan ang tuldok-tuldok na guhit!</p>';
+      }
+      var demoHTML = stuDemoForTrace((state.activities[0] && state.activities[0].mode) || 'letters');
+
       var splash = document.createElement('div');
       splash.id = 'stuSplash';
       splash.style.cssText = 'position:fixed;inset:0;background:linear-gradient(145deg,#1e3a8a 0%,#1e40af 60%,#1d4ed8 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:99999;padding:32px;text-align:center;';
@@ -3256,6 +3289,16 @@ function initActivityTheme(){
         if (fs.requestFullscreen) fs.requestFullscreen().catch(function(){});
         else if (fs.webkitRequestFullscreen) fs.webkitRequestFullscreen();
         splash.remove();
+        var stuDemoOverlay = document.createElement('div');
+        stuDemoOverlay.id = 'stuDemoOverlay';
+        stuDemoOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.94);display:flex;align-items:center;justify-content:center;z-index:100000;padding:24px;text-align:center;';
+        stuDemoOverlay.innerHTML = '<div style="background:#1e293b;border:3px solid #fbbf24;border-radius:28px;padding:40px 64px;display:flex;flex-direction:column;align-items:center;gap:22px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.5);">'
+          + '<p style="color:#facc15;font-size:23px;font-weight:800;letter-spacing:.6px;margin:0;text-transform:uppercase;">📖 Paano Sagutan</p>'
+          + '<div style="transform:scale(1.3);margin:14px 0;">' + demoHTML + '</div>'
+          + '<button id="stuDemoOkBtn" style="margin-top:10px;background:#22c55e;color:#fff;border:none;padding:18px 60px;border-radius:18px;font-family:Fredoka,Poppins,sans-serif;font-size:24px;font-weight:700;cursor:pointer;box-shadow:0 5px 0 #15803d;">Nakuha ko! ▶</button>'
+          + '</div>';
+        document.body.appendChild(stuDemoOverlay);
+        document.getElementById('stuDemoOkBtn').addEventListener('click', function() { stuDemoOverlay.remove(); });
         if (window.finishStudentLaunch) window.finishStudentLaunch();
         initActivityTheme();
 
@@ -3288,7 +3331,7 @@ function initActivityTheme(){
           if (_missing.length>0){alert(_slideCount>1?'Please check all slides first. Missing: Slide '+_missing.join(', Slide '):'Please check your answers first before submitting.');return;}
           var _totCorrect=_stuSlideScores.reduce(function(s,x){return s+x.correct;},0);
           var _totItems=_stuSlideScores.reduce(function(s,x){return s+x.total;},0);
-          var pct = Math.round((_totCorrect / _totItems) * 100);
+          var pct = _totItems > 0 ? Math.round((_totCorrect / _totItems) * 100) : 100;
 
           // Show final summary right away — the recording/notification below
           // finishes compressing thumbnails in the background afterward.

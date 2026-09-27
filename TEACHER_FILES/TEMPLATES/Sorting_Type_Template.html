@@ -352,7 +352,7 @@ function initActivityTheme(){
     overflow:hidden;
   }
   .srt-bin.dragover{ border-color:var(--blue); background:#eaf2ff; }
-  .srt-bin-head{ display:flex; align-items:center; gap:8px; justify-content:center; margin-bottom:10px; font-weight:700; font-size:.5em; color:var(--srt-text); }
+  .srt-bin-head{ display:flex; align-items:center; gap:8px; justify-content:center; margin-bottom:10px; font-weight:700; font-size:.58em; color:var(--srt-text); }
   .srt-bin-head .b-ic{ font-size:calc(1.3em * var(--img-scale,1)); }
   .srt-bin-icon-img{ width:calc(1.3em * var(--img-scale,1)); height:calc(1.3em * var(--img-scale,1)); object-fit:cover; border-radius:6px; }
   /* auto-fill + minmax computes each cell from the bin's OWN available
@@ -382,7 +382,7 @@ function initActivityTheme(){
   }
   .srt-stage.bs-dashed .srt-pool{ border-style:dashed; }
   .srt-stage.bs-solid .srt-pool{ border-radius:8px; }
-  .srt-pool-label{ text-align:center; font-size:.4em; font-weight:700; color:var(--srt-text); opacity:.7; margin-bottom:8px; }
+  .srt-pool-label{ text-align:center; font-size:.48em; font-weight:700; color:var(--srt-text); opacity:.7; margin-bottom:8px; }
 
   .srt-chip{
     background:#fff; border:3px solid #e2c98f; border-radius:14px; padding:8px;
@@ -410,7 +410,7 @@ function initActivityTheme(){
   .srt-chip-imgwrap{ width:100%; height:calc(2.6em * var(--img-scale,1)); display:flex; align-items:center; justify-content:center; overflow:hidden; }
   .srt-chip-img{ width:100%; height:100%; object-fit:contain; display:block; }
   .srt-chip-emoji{ font-size:calc(2.2em * var(--img-scale,1)); line-height:1; }
-  .srt-chip-name{ font-weight:700; font-size:.42em; margin-top:5px; color:var(--srt-text); text-align:center; }
+  .srt-chip-name{ font-weight:700; font-size:.52em; margin-top:5px; color:var(--srt-text); text-align:center; }
 
   /* Odd One Out mode — stacked "which one doesn't belong" round cards */
   .srt-mode-content{ width:100%; box-sizing:border-box; }
@@ -418,7 +418,7 @@ function initActivityTheme(){
   .srt-oo-round{ background:#fff; border:3px solid #e2c98f; border-radius:18px; padding:14px; margin-bottom:18px; }
   .srt-stage.bs-dashed .srt-oo-round{ border-style:dashed; }
   .srt-stage.bs-solid .srt-oo-round{ border-radius:8px; }
-  .srt-oo-round-label{ text-align:center; font-size:.42em; font-weight:800; color:var(--srt-text); opacity:.85; margin-bottom:10px; }
+  .srt-oo-round-label{ text-align:center; font-size:.5em; font-weight:800; color:var(--srt-text); opacity:.85; margin-bottom:10px; }
   .srt-oo-items{ display:flex; flex-wrap:wrap; gap:14px; justify-content:center; }
   .srt-oo-tile{
     background:#fff; border:3px solid #e2c98f; border-radius:14px; padding:8px; cursor:pointer;
@@ -431,10 +431,10 @@ function initActivityTheme(){
   .srt-oo-imgwrap{ width:100%; height:calc(2.6em * var(--img-scale,1)); display:flex; align-items:center; justify-content:center; overflow:hidden; }
   .srt-oo-img{ width:100%; height:100%; object-fit:contain; display:block; }
   .srt-oo-emoji{ font-size:calc(2.2em * var(--img-scale,1)); line-height:1; }
-  .srt-oo-name{ font-weight:700; font-size:.42em; margin-top:5px; color:var(--srt-text); text-align:center; }
+  .srt-oo-name{ font-weight:700; font-size:.52em; margin-top:5px; color:var(--srt-text); text-align:center; }
 
   /* Yes/No Sort mode — vertical checklist, one row per item */
-  .srt-yn-question{ text-align:center; font-size:.55em; font-weight:800; color:var(--srt-text); margin-bottom:16px; }
+  .srt-yn-question{ text-align:center; font-size:.64em; font-weight:800; color:var(--srt-text); margin-bottom:16px; }
   .srt-yn-list{ display:flex; flex-direction:column; gap:12px; }
   .srt-yn-row{ background:#fff; border:3px solid #e2c98f; border-radius:16px; padding:10px 14px; display:flex; align-items:center; gap:14px; }
   .srt-stage.bs-dashed .srt-yn-row{ border-style:dashed; }
@@ -442,9 +442,9 @@ function initActivityTheme(){
   .srt-yn-media{ flex:none; width:calc(2.6em * var(--img-scale,1)); height:calc(2.6em * var(--img-scale,1)); display:flex; align-items:center; justify-content:center; overflow:hidden; }
   .srt-yn-img{ width:100%; height:100%; object-fit:contain; }
   .srt-yn-emoji{ font-size:calc(2.2em * var(--img-scale,1)); line-height:1; }
-  .srt-yn-name{ flex:1; min-width:0; font-weight:700; font-size:.44em; color:var(--srt-text); text-align:left; }
+  .srt-yn-name{ flex:1; min-width:0; font-weight:700; font-size:.56em; color:var(--srt-text); text-align:left; }
   .srt-yn-btns{ flex:none; display:flex; gap:8px; }
-  .srt-yn-btn{ cursor:pointer; border:3px solid #e2c98f; background:#fff; border-radius:12px; font-family:var(--font); font-weight:700; font-size:.4em; padding:.5em .9em; color:var(--srt-text); transition:transform .08s ease, border-color .12s ease; }
+  .srt-yn-btn{ cursor:pointer; border:3px solid #e2c98f; background:#fff; border-radius:12px; font-family:var(--font); font-weight:700; font-size:.5em; padding:.5em .9em; color:var(--srt-text); transition:transform .08s ease, border-color .12s ease; }
   .srt-yn-btn:hover{ transform:translateY(-2px); }
   .srt-yn-btn.sel{ border-color:var(--blue) !important; background:#eaf2ff; }
 
@@ -3174,6 +3174,55 @@ function initActivityTheme(){
         + '<span style="color:#78350f;font-size:14px;font-weight:800;text-align:left;line-height:1.4;">Kailangan ng gabay ng magulang o guardian sa pagsagot nito!</span>'
         + '</div>';
 
+      // Shown AFTER the student taps Start (not on the intro splash) — a
+      // real-photo demo overlaid on top of the freshly-rendered activity,
+      // so the child sees exactly what to do before touching it. Each
+      // Activity Type ("Sort into Bins", "Odd One Out", "Yes/No Sort") has
+      // its own mechanic, so the demo branches on the slide's saved mode
+      // instead of always showing the drag-into-bin animation.
+      function stuDemoForSort(mode) {
+        if (mode === 'oddoneout') {
+          return '<style>'
+            + '@keyframes stuOddPick{0%,35%{transform:scale(1);box-shadow:0 4px 0 rgba(0,0,0,.15);}45%,80%{transform:scale(1.12);box-shadow:0 0 0 4px #16a34a;}92%,100%{transform:scale(1);box-shadow:0 4px 0 rgba(0,0,0,.15);}}'
+            + '@keyframes stuOddHand{0%,25%{top:-10px;}38%{top:4px;}50%,92%{top:-10px;}100%{top:-10px;}}'
+            + '</style>'
+            + '<div style="position:relative;display:flex;align-items:center;justify-content:center;gap:10px;margin:2px 0;">'
+            + '<img src="MATCHING/Dog.jpg" style="width:54px;height:54px;object-fit:cover;border-radius:12px;border:3px solid #fff;box-shadow:0 4px 0 rgba(0,0,0,.15);">'
+            + '<img src="MATCHING/Dog.jpg" style="width:54px;height:54px;object-fit:cover;border-radius:12px;border:3px solid #fff;box-shadow:0 4px 0 rgba(0,0,0,.15);">'
+            + '<img src="MATCHING/Car.jpg" style="position:relative;width:54px;height:54px;object-fit:cover;border-radius:12px;border:3px solid #fff;animation:stuOddPick 2.6s ease-in-out infinite;">'
+            + '<div style="position:absolute;right:10px;top:-10px;font-size:26px;animation:stuOddHand 2.6s ease-in-out infinite;">👆</div>'
+            + '</div>'
+            + '<p style="color:#e2e8f0;font-size:14px;margin:0;font-weight:700;">👉 Piliin ang larawang naiiba sa lahat!</p>';
+        }
+        if (mode === 'yesno') {
+          return '<style>'
+            + '@keyframes stuYesBox{0%,40%{opacity:1;}45%,100%{opacity:0;}}'
+            + '@keyframes stuYesMark{0%,40%{opacity:0;transform:scale(.6);}50%{opacity:1;transform:scale(1.15);}60%,90%{opacity:1;transform:scale(1);}96%,100%{opacity:0;transform:scale(1);}}'
+            + '@keyframes stuYesHand{0%,25%{transform:translateY(0);}38%{transform:translateY(14px);}50%,90%{transform:translateY(0);}}'
+            + '</style>'
+            + '<div style="position:relative;display:flex;align-items:center;justify-content:center;gap:14px;margin:2px 0;">'
+            + '<img src="MATCHING/Fish.jpg" style="width:60px;height:60px;object-fit:cover;border-radius:14px;border:3px solid #fff;box-shadow:0 4px 0 rgba(0,0,0,.15);">'
+            + '<div style="position:relative;width:64px;height:64px;background:#fff;border-radius:14px;box-shadow:0 4px 0 rgba(0,0,0,.15);">'
+            + '<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px;animation:stuYesBox 2.4s ease-in-out infinite;">☐</span>'
+            + '<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px;animation:stuYesMark 2.4s ease-in-out infinite;">✅</span>'
+            + '</div>'
+            + '<div style="position:absolute;right:6px;top:2px;font-size:26px;animation:stuYesHand 2.4s ease-in-out infinite;">👆</div>'
+            + '</div>'
+            + '<p style="color:#e2e8f0;font-size:14px;margin:0;font-weight:700;">👉 Tingnan ang larawan, pumili ng Oo o Hindi!</p>';
+        }
+        return '<style>'
+          + '@keyframes stuSortMove{0%,15%{top:0px;opacity:1;}50%,65%{top:56px;opacity:1;}78%{top:56px;opacity:0;}79%{top:0px;opacity:0;}100%{top:0px;opacity:1;}}'
+          + '@keyframes stuSortHand{0%,15%{top:-6px;opacity:1;}50%,65%{top:50px;opacity:1;}78%,100%{top:50px;opacity:0;}}'
+          + '</style>'
+          + '<div style="position:relative;width:220px;height:100px;margin:2px 0;">'
+          + '<div style="position:absolute;left:40px;bottom:0;width:140px;height:40px;background:rgba(255,255,255,.18);border:3px dashed #93c5fd;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#dbeafe;font-weight:700;">🐾 Animals</div>'
+          + '<img src="MATCHING/Dog.jpg" style="position:absolute;left:75px;top:0;width:44px;height:44px;object-fit:cover;border-radius:10px;border:3px solid #fff;box-shadow:0 4px 0 rgba(0,0,0,.15);animation:stuSortMove 2.6s ease-in-out infinite;">'
+          + '<div style="position:absolute;left:96px;top:-6px;font-size:26px;animation:stuSortHand 2.6s ease-in-out infinite;">👆</div>'
+          + '</div>'
+          + '<p style="color:#e2e8f0;font-size:14px;margin:0;font-weight:700;">👉 I-drag ang bawat larawan sa tamang grupo!</p>';
+      }
+      var demoHTML = stuDemoForSort((state.activities[0] && state.activities[0].mode) || 'bins');
+
       var splash = document.createElement('div');
       splash.id = 'stuSplash';
       splash.style.cssText = 'position:fixed;inset:0;background:linear-gradient(145deg,#1e3a8a 0%,#1e40af 60%,#1d4ed8 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:99999;padding:32px;text-align:center;';
@@ -3207,6 +3256,16 @@ function initActivityTheme(){
         if (fs.requestFullscreen) fs.requestFullscreen().catch(function(){});
         else if (fs.webkitRequestFullscreen) fs.webkitRequestFullscreen();
         splash.remove();
+        var stuDemoOverlay = document.createElement('div');
+        stuDemoOverlay.id = 'stuDemoOverlay';
+        stuDemoOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.94);display:flex;align-items:center;justify-content:center;z-index:100000;padding:24px;text-align:center;';
+        stuDemoOverlay.innerHTML = '<div style="background:#1e293b;border:3px solid #fbbf24;border-radius:28px;padding:40px 64px;display:flex;flex-direction:column;align-items:center;gap:22px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.5);">'
+          + '<p style="color:#facc15;font-size:23px;font-weight:800;letter-spacing:.6px;margin:0;text-transform:uppercase;">📖 Paano Sagutan</p>'
+          + '<div style="transform:scale(1.3);margin:14px 0;">' + demoHTML + '</div>'
+          + '<button id="stuDemoOkBtn" style="margin-top:10px;background:#22c55e;color:#fff;border:none;padding:18px 60px;border-radius:18px;font-family:Fredoka,Poppins,sans-serif;font-size:24px;font-weight:700;cursor:pointer;box-shadow:0 5px 0 #15803d;">Nakuha ko! ▶</button>'
+          + '</div>';
+        document.body.appendChild(stuDemoOverlay);
+        document.getElementById('stuDemoOkBtn').addEventListener('click', function() { stuDemoOverlay.remove(); });
         if (window.finishStudentLaunch) window.finishStudentLaunch();
         initActivityTheme();
 

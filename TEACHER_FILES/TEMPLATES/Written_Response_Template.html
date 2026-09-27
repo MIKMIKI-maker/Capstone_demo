@@ -269,7 +269,7 @@ function initActivityTheme(){
   .wrt-scramble-head{ display:flex; align-items:center; gap:10px; }
   .wrt-tile-row{ display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
   .wrt-tile{ position:relative; cursor:pointer; background:var(--field); border:2.5px solid var(--field-border);
-    border-radius:12px; padding:.3em .55em; min-width:1.1em; text-align:center; font-weight:800; font-size:.55em;
+    border-radius:12px; padding:.4em .7em; min-width:1.1em; text-align:center; font-weight:800; font-size:1.3em;
     color:var(--wrt-text); -webkit-user-select:none; user-select:none; }
   .wrt-tile:hover{ border-color:var(--purple); }
   .wrt-tile.tapped{ border-color:var(--blue); background:#eaf2ff; }
@@ -363,8 +363,8 @@ function initActivityTheme(){
     border:3px dashed #e2c98f; border-radius:16px; padding:12px 16px; display:flex; align-items:center; gap:16px; }
   .wrt-example-tag{ position:absolute; top:-12px; left:14px; background:var(--gold); color:#5c4400; font-size:.32em;
     font-weight:800; padding:4px 10px; border-radius:8px; }
-  .wrt-example-img{ width:2.2em; height:2.2em; object-fit:contain; flex:none; }
-  .wrt-example-emoji{ font-size:2em; flex:none; }
+  .wrt-example-img{ width:4em; height:4em; object-fit:contain; flex:none; }
+  .wrt-example-emoji{ font-size:3.6em; flex:none; }
   .wrt-example-answer{ font-size:.7em; font-weight:800; color:var(--green-dark); border-bottom:3px solid var(--green); padding:2px 14px; }
 
   .wrt-grid{ position:relative; z-index:2; display:grid; grid-template-columns:1fr 1fr; gap:22px; }
@@ -375,8 +375,8 @@ function initActivityTheme(){
     box-shadow:0 3px 8px rgba(0,0,0,.25); }
   .wrt-scard-badge.correct{ background:var(--green); }
   .wrt-scard-badge.wrong{ background:var(--red); }
-  .wrt-scard-img{ width:calc(2.4em * var(--img-scale,1)); height:calc(2.4em * var(--img-scale,1)); object-fit:contain; flex:none; }
-  .wrt-scard-emoji{ font-size:calc(2.1em * var(--img-scale,1)); flex:none; }
+  .wrt-scard-img{ width:calc(4.2em * var(--img-scale,1)); height:calc(4.2em * var(--img-scale,1)); object-fit:contain; flex:none; }
+  .wrt-scard-emoji{ font-size:calc(3.8em * var(--img-scale,1)); flex:none; }
   .wrt-scard-num{ font-weight:700; font-size:.6em; color:var(--wrt-text); flex:none; }
   .wrt-scard-input{ flex:1; min-width:0; border:none; border-bottom:3px solid var(--ink-soft); background:transparent;
     font-family:var(--font); font-weight:700; font-size:.65em; color:var(--wrt-text); padding:4px 6px; outline:none; text-align:center; }
@@ -549,8 +549,8 @@ function initActivityTheme(){
        ~1/3-width cell still has room for a small, usable answer box. */
     .wrt-grid{ grid-template-columns:repeat(3, 1fr); gap:10px; }
     .wrt-scard{ flex-direction:column; padding:10px 8px; gap:6px; text-align:center; }
-    .wrt-scard-img{ width:40px; height:40px; }
-    .wrt-scard-emoji{ font-size:32px; }
+    .wrt-scard-img{ width:64px; height:64px; }
+    .wrt-scard-emoji{ font-size:54px; }
     .wrt-scard-num{ font-size:11px; }
     .wrt-scard-input{ width:100%; font-size:15px; padding:4px 2px; }
     .wrt-top{ padding:12px 14px; gap:10px; }
@@ -574,7 +574,7 @@ function initActivityTheme(){
     .wrt-type b{ font-size:14px; }
     .wrt-type-desc{ font-size:11.5px; margin-top:9px; }
     .wrt-mode-btn{ padding:9px 10px; font-size:12px; }
-    .wrt-tile{ font-size:15px; padding:5px 8px; }
+    .wrt-tile{ font-size:22px; padding:8px 12px; }
     .wrt-tile-row{ gap:6px; }
     .wrt-item-row{ padding:8px 0; }
     .wrt-item-media, .wrt-thumb, .wrt-link-input{ width:64px; }
@@ -2756,6 +2756,68 @@ function initActivityTheme(){
         + '<span style="color:#78350f;font-size:14px;font-weight:800;text-align:left;line-height:1.4;">Kailangan ng gabay ng magulang o guardian sa pagsagot nito!</span>'
         + '</div>';
 
+      // Shown AFTER the student taps Start (not on the intro splash) — a
+      // demo overlaid on top of the freshly-rendered activity, so the
+      // child sees exactly what to do before touching it. Each Activity
+      // Type ("Written Response", "Word Scramble", "Build the Sentence")
+      // has its own mechanic, so the demo branches on the slide's saved
+      // mode instead of always showing the typing animation.
+      function stuDemoForWritten(mode) {
+        if (mode === 'scramble') {
+          return '<style>'
+            + '@keyframes stuScrOut{0%,40%{opacity:1;transform:translateY(0);}48%,100%{opacity:0;transform:translateY(-10px);}}'
+            + '@keyframes stuScrIn{0%,40%{opacity:0;transform:translateY(10px);}48%,96%{opacity:1;transform:translateY(0);}100%{opacity:1;transform:translateY(0);}}'
+            + '</style>'
+            + '<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin:2px 0;">'
+            + '<div style="position:relative;width:54px;height:54px;">'
+            + '<div style="position:absolute;inset:0;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#1e3a8a;box-shadow:0 4px 0 rgba(0,0,0,.15);animation:stuScrOut 2.8s ease-in-out infinite;">O</div>'
+            + '<div style="position:absolute;inset:0;background:#16a34a;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;box-shadow:0 4px 0 rgba(0,0,0,.15);animation:stuScrIn 2.8s ease-in-out infinite;">D</div>'
+            + '</div>'
+            + '<div style="position:relative;width:54px;height:54px;">'
+            + '<div style="position:absolute;inset:0;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#1e3a8a;box-shadow:0 4px 0 rgba(0,0,0,.15);animation:stuScrOut 2.8s ease-in-out infinite;">G</div>'
+            + '<div style="position:absolute;inset:0;background:#16a34a;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;box-shadow:0 4px 0 rgba(0,0,0,.15);animation:stuScrIn 2.8s ease-in-out infinite;">O</div>'
+            + '</div>'
+            + '<div style="position:relative;width:54px;height:54px;">'
+            + '<div style="position:absolute;inset:0;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#1e3a8a;box-shadow:0 4px 0 rgba(0,0,0,.15);animation:stuScrOut 2.8s ease-in-out infinite;">D</div>'
+            + '<div style="position:absolute;inset:0;background:#16a34a;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;box-shadow:0 4px 0 rgba(0,0,0,.15);animation:stuScrIn 2.8s ease-in-out infinite;">G</div>'
+            + '</div>'
+            + '</div>'
+            + '<p style="color:#e2e8f0;font-size:14px;margin:14px 0 0;font-weight:700;">👉 Ayusin ang mga letra para mabuo ang tamang salita!</p>';
+        }
+        if (mode === 'sentence') {
+          return '<style>'
+            + '@keyframes stuSentBuild{0%,10%{width:0;}30%,40%{width:3ch;}55%,65%{width:7ch;}80%,100%{width:12ch;}}'
+            + '@keyframes stuSentPick1{0%,15%{box-shadow:0 4px 0 rgba(0,0,0,.15);}20%,35%{box-shadow:0 0 0 4px #16a34a;}45%,100%{box-shadow:0 4px 0 rgba(0,0,0,.15);}}'
+            + '@keyframes stuSentPick2{0%,40%{box-shadow:0 4px 0 rgba(0,0,0,.15);}45%,60%{box-shadow:0 0 0 4px #16a34a;}70%,100%{box-shadow:0 4px 0 rgba(0,0,0,.15);}}'
+            + '@keyframes stuSentPick3{0%,65%{box-shadow:0 4px 0 rgba(0,0,0,.15);}70%,85%{box-shadow:0 0 0 4px #16a34a;}95%,100%{box-shadow:0 4px 0 rgba(0,0,0,.15);}}'
+            + '</style>'
+            + '<div style="background:#fff;border-radius:10px;padding:8px 14px;margin-bottom:10px;min-height:20px;">'
+            + '<span style="font-family:monospace;font-size:16px;font-weight:700;color:#1e3a8a;overflow:hidden;white-space:nowrap;display:inline-block;width:0;animation:stuSentBuild 3.2s steps(1,end) infinite;">The dog runs.</span>'
+            + '</div>'
+            + '<div style="display:flex;gap:8px;justify-content:center;">'
+            + '<div style="background:#fff;border-radius:10px;padding:8px 12px;font-size:14px;font-weight:800;color:#1e3a8a;animation:stuSentPick1 3.2s ease-in-out infinite;">The</div>'
+            + '<div style="background:#fff;border-radius:10px;padding:8px 12px;font-size:14px;font-weight:800;color:#1e3a8a;animation:stuSentPick2 3.2s ease-in-out infinite;">dog</div>'
+            + '<div style="background:#fff;border-radius:10px;padding:8px 12px;font-size:14px;font-weight:800;color:#1e3a8a;animation:stuSentPick3 3.2s ease-in-out infinite;">runs</div>'
+            + '</div>'
+            + '<p style="color:#e2e8f0;font-size:14px;margin:14px 0 0;font-weight:700;">👉 I-ayos ang mga salita para mabuo ang tamang pangungusap!</p>';
+        }
+        return '<style>'
+          + '@keyframes stuTypeText{0%,8%{width:0;}35%,45%{width:1ch;}62%,72%{width:2ch;}88%,100%{width:3ch;}}'
+          + '@keyframes stuTypeCaret{0%,50%{opacity:1;}51%,100%{opacity:0;}}'
+          + '@keyframes stuTypeHand{0%,8%{transform:translateY(0);}20%{transform:translateY(6px);}35%{transform:translateY(0);}47%{transform:translateY(6px);}62%{transform:translateY(0);}74%{transform:translateY(6px);}88%,100%{transform:translateY(0);}}'
+          + '</style>'
+          + '<div style="position:relative;width:200px;margin:2px 0;display:flex;flex-direction:column;align-items:center;gap:8px;">'
+          + '<img src="MATCHING/Dog.jpg" style="width:56px;height:56px;object-fit:cover;border-radius:12px;border:3px solid #fff;box-shadow:0 4px 0 rgba(0,0,0,.15);">'
+          + '<div style="width:180px;height:38px;background:#fff;border-radius:10px;display:flex;align-items:center;padding:0 12px;box-shadow:0 4px 0 rgba(0,0,0,.15);">'
+          + '<span style="font-family:monospace;font-size:18px;font-weight:700;color:#1e3a8a;overflow:hidden;white-space:nowrap;display:inline-block;width:0;animation:stuTypeText 2.6s steps(1,end) infinite;">DOG</span>'
+          + '<span style="width:2px;height:20px;background:#1e3a8a;margin-left:2px;animation:stuTypeCaret 0.6s steps(1) infinite;"></span>'
+          + '</div>'
+          + '<div style="font-size:26px;animation:stuTypeHand 2.6s ease-in-out infinite;">👆</div>'
+          + '</div>'
+          + '<p style="color:#e2e8f0;font-size:14px;margin:0;font-weight:700;">👉 I-type ang sagot sa kahon!</p>';
+      }
+      var demoHTML = stuDemoForWritten((state.activities[0] && state.activities[0].mode) || 'written');
+
       var splash = document.createElement('div');
       splash.id = 'stuSplash';
       splash.style.cssText = 'position:fixed;inset:0;background:linear-gradient(145deg,#1e3a8a 0%,#1e40af 60%,#1d4ed8 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:99999;padding:32px;text-align:center;';
@@ -2789,6 +2851,16 @@ function initActivityTheme(){
         if (fs.requestFullscreen) fs.requestFullscreen().catch(function(){});
         else if (fs.webkitRequestFullscreen) fs.webkitRequestFullscreen();
         splash.remove();
+        var stuDemoOverlay = document.createElement('div');
+        stuDemoOverlay.id = 'stuDemoOverlay';
+        stuDemoOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.94);display:flex;align-items:center;justify-content:center;z-index:100000;padding:24px;text-align:center;';
+        stuDemoOverlay.innerHTML = '<div style="background:#1e293b;border:3px solid #fbbf24;border-radius:28px;padding:40px 64px;display:flex;flex-direction:column;align-items:center;gap:22px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.5);">'
+          + '<p style="color:#facc15;font-size:23px;font-weight:800;letter-spacing:.6px;margin:0;text-transform:uppercase;">📖 Paano Sagutan</p>'
+          + '<div style="transform:scale(1.3);margin:14px 0;">' + demoHTML + '</div>'
+          + '<button id="stuDemoOkBtn" style="margin-top:10px;background:#22c55e;color:#fff;border:none;padding:18px 60px;border-radius:18px;font-family:Fredoka,Poppins,sans-serif;font-size:24px;font-weight:700;cursor:pointer;box-shadow:0 5px 0 #15803d;">Nakuha ko! ▶</button>'
+          + '</div>';
+        document.body.appendChild(stuDemoOverlay);
+        document.getElementById('stuDemoOkBtn').addEventListener('click', function() { stuDemoOverlay.remove(); });
         if (window.finishStudentLaunch) window.finishStudentLaunch();
         initActivityTheme();
 

@@ -2325,6 +2325,25 @@ function initActivityTheme(){
         + '<span style="color:#78350f;font-size:14px;font-weight:800;text-align:left;line-height:1.4;">Kailangan ng gabay ng magulang o guardian sa pagsagot nito!</span>'
         + '</div>';
 
+      // Shown AFTER the student taps Start (not on the intro splash) — a
+      // real-photo hand-tap demo overlaid on top of the freshly-rendered
+      // activity, so the child sees exactly what to do before touching it.
+      var demoHTML = '<style>'
+        + '@keyframes stuIdPick{0%,35%{background:#fff;color:#1e3a8a;transform:scale(1);}45%,80%{background:#16a34a;color:#fff;transform:scale(1.08);}92%,100%{background:#fff;color:#1e3a8a;transform:scale(1);}}'
+        + '@keyframes stuIdHand{0%,25%{top:-6px;}38%{top:8px;}50%,92%{top:-6px;}100%{top:-6px;}}'
+        + '</style>'
+        + '<div style="display:flex;align-items:center;justify-content:center;gap:14px;margin:2px 0;">'
+        + '<img src="MATCHING/Dog.jpg" style="width:60px;height:60px;object-fit:cover;border-radius:14px;border:3px solid #fff;box-shadow:0 4px 0 rgba(0,0,0,.15);">'
+        + '<span style="color:#fff;font-size:22px;">→</span>'
+        + '<div style="position:relative;width:220px;height:80px;display:flex;align-items:center;justify-content:center;gap:10px;">'
+        + '<div style="width:54px;height:54px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;box-shadow:0 4px 0 rgba(0,0,0,.15);animation:stuIdPick 2.6s ease-in-out infinite;">D</div>'
+        + '<div style="width:54px;height:54px;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:#1e3a8a;box-shadow:0 4px 0 rgba(0,0,0,.15);">G</div>'
+        + '<div style="width:54px;height:54px;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:#1e3a8a;box-shadow:0 4px 0 rgba(0,0,0,.15);">T</div>'
+        + '<div style="position:absolute;left:26px;font-size:26px;animation:stuIdHand 2.6s ease-in-out infinite;">👆</div>'
+        + '</div>'
+        + '</div>'
+        + '<p style="color:#e2e8f0;font-size:14px;margin:0;font-weight:700;">👉 I-tap ang unang letra ng larawan!</p>';
+
       var splash = document.createElement('div');
       splash.id = 'stuSplash';
       splash.style.cssText = 'position:fixed;inset:0;background:linear-gradient(145deg,#1e3a8a 0%,#1e40af 60%,#1d4ed8 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:99999;padding:32px;text-align:center;';
@@ -2358,6 +2377,16 @@ function initActivityTheme(){
         if (fs.requestFullscreen) fs.requestFullscreen().catch(function(){});
         else if (fs.webkitRequestFullscreen) fs.webkitRequestFullscreen();
         splash.remove();
+        var stuDemoOverlay = document.createElement('div');
+        stuDemoOverlay.id = 'stuDemoOverlay';
+        stuDemoOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.94);display:flex;align-items:center;justify-content:center;z-index:100000;padding:24px;text-align:center;';
+        stuDemoOverlay.innerHTML = '<div style="background:#1e293b;border:3px solid #fbbf24;border-radius:28px;padding:40px 64px;display:flex;flex-direction:column;align-items:center;gap:22px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.5);">'
+          + '<p style="color:#facc15;font-size:23px;font-weight:800;letter-spacing:.6px;margin:0;text-transform:uppercase;">📖 Paano Sagutan</p>'
+          + '<div style="transform:scale(1.3);margin:14px 0;">' + demoHTML + '</div>'
+          + '<button id="stuDemoOkBtn" style="margin-top:10px;background:#22c55e;color:#fff;border:none;padding:18px 60px;border-radius:18px;font-family:Fredoka,Poppins,sans-serif;font-size:24px;font-weight:700;cursor:pointer;box-shadow:0 5px 0 #15803d;">Nakuha ko! ▶</button>'
+          + '</div>';
+        document.body.appendChild(stuDemoOverlay);
+        document.getElementById('stuDemoOkBtn').addEventListener('click', function() { stuDemoOverlay.remove(); });
         if (window.finishStudentLaunch) window.finishStudentLaunch();
         initActivityTheme();
 

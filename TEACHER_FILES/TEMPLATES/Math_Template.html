@@ -926,7 +926,7 @@ function initActivityTheme(){
       question:"What is 2 + 3?",
       img:null, imgType:"upload", emoji:"🔢",
       options:["4","5","6"], correct:1,
-      target:6,
+      target:5,
       items:["3","1","4","2"], direction:"asc",
       operand1:8, operator:"+", operand2:11
     };
@@ -939,7 +939,7 @@ function initActivityTheme(){
       question:"What is 1 + 1?",
       img:null, imgType:"upload", emoji:"🔢",
       options:["1","2","3"], correct:1,
-      target:5,
+      target:2,
       items:["2","1","3"], direction:"asc",
       operand1:4, operator:"+", operand2:3
     };
@@ -2367,6 +2367,78 @@ function initActivityTheme(){
         + '<span style="color:#78350f;font-size:14px;font-weight:800;text-align:left;line-height:1.4;">Kailangan ng gabay ng magulang o guardian sa pagsagot nito!</span>'
         + '</div>';
 
+      // Shown AFTER the student taps Start (not on the intro splash) — a
+      // demo overlaid on top of the freshly-rendered activity, so the
+      // child sees exactly what to do before touching it. Each Activity
+      // Type ("Multiple Choice", "Ten-Frame Count", "Put in Order",
+      // "Solve the Equation") has its own mechanic, so the demo branches
+      // on the slide's saved mode instead of always showing the counting
+      // animation.
+      function stuDemoForMath(mode) {
+        if (mode === 'tenframe') {
+          var cells = '';
+          for (var i = 0; i < 10; i++) {
+            cells += '<div style="width:20px;height:20px;border-radius:4px;background:' + (i < 3 ? '#3b82f6' : '#fff') + ';border:2px solid #93c5fd;"></div>';
+          }
+          return '<style>'
+            + '@keyframes stuTenPick{0%,35%{background:#fff;color:#1e3a8a;transform:scale(1);}45%,80%{background:#16a34a;color:#fff;transform:scale(1.08);}92%,100%{background:#fff;color:#1e3a8a;transform:scale(1);}}'
+            + '@keyframes stuTenHand{0%,25%{top:-6px;}38%{top:8px;}50%,92%{top:-6px;}100%{top:-6px;}}'
+            + '</style>'
+            + '<div style="display:grid;grid-template-columns:repeat(5,20px);gap:4px;justify-content:center;margin-bottom:8px;">' + cells + '</div>'
+            + '<div style="position:relative;width:220px;height:80px;margin:2px 0;display:flex;align-items:center;justify-content:center;gap:10px;">'
+            + '<div style="width:54px;height:54px;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#1e3a8a;box-shadow:0 4px 0 rgba(0,0,0,.15);">2</div>'
+            + '<div style="width:54px;height:54px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;box-shadow:0 4px 0 rgba(0,0,0,.15);animation:stuTenPick 2.6s ease-in-out infinite;">3</div>'
+            + '<div style="width:54px;height:54px;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#1e3a8a;box-shadow:0 4px 0 rgba(0,0,0,.15);">4</div>'
+            + '<div style="position:absolute;left:96px;font-size:26px;animation:stuTenHand 2.6s ease-in-out infinite;">👆</div>'
+            + '</div>'
+            + '<p style="color:#e2e8f0;font-size:14px;margin:0;font-weight:700;">👉 Bilangin ang mga puno sa ten-frame, i-tap ang sagot!</p>';
+        }
+        if (mode === 'order') {
+          return '<style>'
+            + '@keyframes stuOrderMove{0%,15%{left:5px;}55%,70%{left:215px;}100%{left:5px;}}'
+            + '@keyframes stuOrderHand{0%,15%{left:12px;}55%,70%{left:222px;}100%{left:12px;}}'
+            + '</style>'
+            + '<div style="position:relative;width:270px;height:66px;margin:2px 0;">'
+            + '<div style="position:absolute;left:90px;top:0;width:50px;height:50px;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#1e3a8a;box-shadow:0 4px 0 rgba(0,0,0,.15);">2</div>'
+            + '<div style="position:absolute;left:160px;top:0;width:50px;height:50px;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#1e3a8a;box-shadow:0 4px 0 rgba(0,0,0,.15);">5</div>'
+            + '<div style="position:absolute;top:0;width:50px;height:50px;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#1e3a8a;box-shadow:0 4px 0 rgba(0,0,0,.15);animation:stuOrderMove 2.8s ease-in-out infinite;">8</div>'
+            + '<div style="position:absolute;top:-8px;font-size:26px;animation:stuOrderHand 2.8s ease-in-out infinite;">👆</div>'
+            + '</div>'
+            + '<p style="color:#e2e8f0;font-size:14px;margin:0;font-weight:700;">👉 I-drag ang mga numero mula pinakamaliit hanggang pinakamalaki!</p>';
+        }
+        if (mode === 'equation') {
+          return '<style>'
+            + '@keyframes stuEqPick{0%,35%{background:#fff;color:#1e3a8a;transform:scale(1);}45%,80%{background:#16a34a;color:#fff;transform:scale(1.08);}92%,100%{background:#fff;color:#1e3a8a;transform:scale(1);}}'
+            + '@keyframes stuEqHand{0%,25%{top:-6px;}38%{top:8px;}50%,92%{top:-6px;}100%{top:-6px;}}'
+            + '</style>'
+            + '<p style="color:#fff;font-size:28px;font-weight:800;margin:0 0 6px;">2 + 1 = ?</p>'
+            + '<div style="position:relative;width:220px;height:80px;margin:2px 0;display:flex;align-items:center;justify-content:center;gap:10px;">'
+            + '<div style="width:54px;height:54px;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#1e3a8a;box-shadow:0 4px 0 rgba(0,0,0,.15);">2</div>'
+            + '<div style="width:54px;height:54px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;box-shadow:0 4px 0 rgba(0,0,0,.15);animation:stuEqPick 2.6s ease-in-out infinite;">3</div>'
+            + '<div style="width:54px;height:54px;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#1e3a8a;box-shadow:0 4px 0 rgba(0,0,0,.15);">4</div>'
+            + '<div style="position:absolute;left:96px;font-size:26px;animation:stuEqHand 2.6s ease-in-out infinite;">👆</div>'
+            + '</div>'
+            + '<p style="color:#e2e8f0;font-size:14px;margin:0;font-weight:700;">👉 Sagutan ang equation, i-tap ang tamang sagot!</p>';
+        }
+        return '<style>'
+          + '@keyframes stuMathPick{0%,35%{background:#fff;color:#1e3a8a;transform:scale(1);}45%,80%{background:#16a34a;color:#fff;transform:scale(1.08);}92%,100%{background:#fff;color:#1e3a8a;transform:scale(1);}}'
+          + '@keyframes stuMathHand{0%,25%{top:-6px;}38%{top:8px;}50%,92%{top:-6px;}100%{top:-6px;}}'
+          + '</style>'
+          + '<div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:4px;">'
+          + '<img src="MATCHING/Ball.jpg" style="width:34px;height:34px;object-fit:cover;border-radius:8px;border:2px solid #fff;">'
+          + '<img src="MATCHING/Ball.jpg" style="width:34px;height:34px;object-fit:cover;border-radius:8px;border:2px solid #fff;">'
+          + '<img src="MATCHING/Ball.jpg" style="width:34px;height:34px;object-fit:cover;border-radius:8px;border:2px solid #fff;">'
+          + '</div>'
+          + '<div style="position:relative;width:220px;height:80px;margin:2px 0;display:flex;align-items:center;justify-content:center;gap:10px;">'
+          + '<div style="width:54px;height:54px;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#1e3a8a;box-shadow:0 4px 0 rgba(0,0,0,.15);">2</div>'
+          + '<div style="width:54px;height:54px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;box-shadow:0 4px 0 rgba(0,0,0,.15);animation:stuMathPick 2.6s ease-in-out infinite;">3</div>'
+          + '<div style="width:54px;height:54px;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#1e3a8a;box-shadow:0 4px 0 rgba(0,0,0,.15);">4</div>'
+          + '<div style="position:absolute;left:96px;font-size:26px;animation:stuMathHand 2.6s ease-in-out infinite;">👆</div>'
+          + '</div>'
+          + '<p style="color:#e2e8f0;font-size:14px;margin:0;font-weight:700;">👉 Bilangin ang mga bola, i-tap ang tamang sagot!</p>';
+      }
+      var demoHTML = stuDemoForMath((state.activities[0] && state.activities[0].mode) || 'mc');
+
       var splash = document.createElement('div');
       splash.id = 'stuSplash';
       splash.style.cssText = 'position:fixed;inset:0;background:linear-gradient(145deg,#1e3a8a 0%,#1e40af 60%,#1d4ed8 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:99999;padding:32px;text-align:center;';
@@ -2400,6 +2472,16 @@ function initActivityTheme(){
         if (fs.requestFullscreen) fs.requestFullscreen().catch(function(){});
         else if (fs.webkitRequestFullscreen) fs.webkitRequestFullscreen();
         splash.remove();
+        var stuDemoOverlay = document.createElement('div');
+        stuDemoOverlay.id = 'stuDemoOverlay';
+        stuDemoOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.94);display:flex;align-items:center;justify-content:center;z-index:100000;padding:24px;text-align:center;';
+        stuDemoOverlay.innerHTML = '<div style="background:#1e293b;border:3px solid #fbbf24;border-radius:28px;padding:40px 64px;display:flex;flex-direction:column;align-items:center;gap:22px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.5);">'
+          + '<p style="color:#facc15;font-size:23px;font-weight:800;letter-spacing:.6px;margin:0;text-transform:uppercase;">📖 Paano Sagutan</p>'
+          + '<div style="transform:scale(1.3);margin:14px 0;">' + demoHTML + '</div>'
+          + '<button id="stuDemoOkBtn" style="margin-top:10px;background:#22c55e;color:#fff;border:none;padding:18px 60px;border-radius:18px;font-family:Fredoka,Poppins,sans-serif;font-size:24px;font-weight:700;cursor:pointer;box-shadow:0 5px 0 #15803d;">Nakuha ko! ▶</button>'
+          + '</div>';
+        document.body.appendChild(stuDemoOverlay);
+        document.getElementById('stuDemoOkBtn').addEventListener('click', function() { stuDemoOverlay.remove(); });
         if (window.finishStudentLaunch) window.finishStudentLaunch();
         initActivityTheme();
 
