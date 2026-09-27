@@ -96,6 +96,40 @@ body {
 .student-main { display: block; flex: 1; padding: 28px 34px; height: 100vh; overflow-y: auto; }
 
 /* ---- Page header ---- */
+.student-term-selector {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 18px;
+  padding: 0 12px;
+  flex-wrap: wrap;
+}
+.student-term-btn {
+  border: 1.5px solid rgba(59, 130, 246, 0.35);
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 9px 18px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(31, 41, 55, 0.06);
+}
+.student-term-btn:hover {
+  border-color: var(--blue);
+  background: #eff6ff;
+  color: var(--blue-dark);
+}
+.student-term-btn.active {
+  background: linear-gradient(135deg, var(--blue), var(--blue-dark));
+  border-color: var(--blue);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(47, 111, 237, 0.22);
+}
+
 .student-page-header {
   display: flex; align-items: flex-start; justify-content: space-between;
   gap: 16px; margin-bottom: 22px;
@@ -363,6 +397,12 @@ body {
   .student-sidebar-nav { flex-direction: row; flex-wrap: wrap; margin: 0; }
   .student-sidebar-footer { flex-direction: row; margin: 0 0 0 auto; }
   .student-content-grid { grid-template-columns: 1fr; }
+  /* .student-skills-card has no flex-grow (it's meant to hug its own
+     content on desktop), so it stays content-width even inside the
+     flex-wrap row on mobile unless the row itself stacks as a column —
+     switching to column makes every card, including this one, a full-width
+     block like its siblings instead of the odd narrow one out. */
+  .student-insights-row { flex-direction: column; }
   .student-skills-card { width: auto; }
   .student-skills-chart-wrap { width: 100%; height: 260px; max-width: 300px; margin: 0 auto; }
   /* Same left/right split as desktop — avatar+name hugging the left

@@ -310,6 +310,8 @@
                 loadLearnerProgress();
                 // auto-refresh every 5 s
                 refreshTimer = window.startAutoRefresh(loadLearnerProgress, 5000);
+            } else {
+                showLoadError('No student selected. Please go back and click View Progress.');
             }
 
             // PDF button uses the browser's print-to-PDF dialog.
@@ -489,13 +491,16 @@
         var _trendChart = null;
         function renderProgressTrend(activities, avgScore) {
             const statsEl = document.getElementById('trendStats');
-            const wrap = document.getElementById('trendLineChart').closest('.teacher-trend-chart-wrap');
+            let canvas = document.getElementById('trendLineChart');
+            const wrap = canvas ? canvas.closest('.teacher-trend-chart-wrap') : null;
+            if (!statsEl) return;
             const done = (activities || []).filter(a => a.date);
             if (done.length < 2) {
                 statsEl.innerHTML = '<div class="teacher-trend-stat"><div class="teacher-trend-stat-label">Current Average</div><div class="teacher-trend-stat-val">' + (done.length ? Math.round(avgScore) + '%' : '—') + '</div></div>';
-                wrap.innerHTML = '<div class="teacher-trend-empty">Not enough activity history yet to show a trend.</div>';
+                if (wrap) wrap.innerHTML = '<div class="teacher-trend-empty">Not enough activity history yet to show a trend.</div>';
                 return;
             }
+            if (!wrap) return;
             const chrono = done.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
             const scoreOf = a => (a.is_finalized && a.finalized_score !== null) ? a.finalized_score : (a.score || 0);
             const earlier = chrono.slice(0, chrono.length - 1);
@@ -511,7 +516,7 @@
                 '<div class="teacher-trend-stat"><div class="teacher-trend-stat-label">Change</div><div class="teacher-trend-stat-val ' + changeCls + '">' + changeStr + '</div></div>';
 
             if (!wrap.querySelector('canvas')) wrap.innerHTML = '<canvas id="trendLineChart"></canvas>';
-            const canvas = document.getElementById('trendLineChart');
+            canvas = document.getElementById('trendLineChart');
             const labels = chrono.map(a => fmtHistoryDate(a.date));
             const scores = chrono.map(scoreOf);
             if (_trendChart) { _trendChart.data.labels = labels; _trendChart.data.datasets[0].data = scores; _trendChart.update(); return; }

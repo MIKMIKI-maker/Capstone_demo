@@ -141,10 +141,12 @@ function getTeacherDatabaseConnection() {
         learning_materials TEXT,
         instructions TEXT,
         status VARCHAR(20) DEFAULT 'draft',
+        term_name VARCHAR(20) NOT NULL DEFAULT 'First',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (teacher_id) REFERENCES teacher_accounts(id) ON DELETE CASCADE,
-        INDEX (teacher_id)
+        INDEX (teacher_id),
+        INDEX idx_term_status (teacher_id, term_name, status)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
     $conn->query($createActivitiesTableSql);
     $act_col = $conn->query("SHOW COLUMNS FROM teacher_activities LIKE 'activity_type'");
@@ -167,6 +169,10 @@ function getTeacherDatabaseConnection() {
     $lock_col = $conn->query("SHOW COLUMNS FROM teacher_activities LIKE 'is_locked'");
     if ($lock_col && $lock_col->num_rows == 0) {
         $conn->query("ALTER TABLE teacher_activities ADD COLUMN is_locked TINYINT(1) DEFAULT 0");
+    }
+    $term_col = $conn->query("SHOW COLUMNS FROM teacher_activities LIKE 'term_name'");
+    if ($term_col && $term_col->num_rows == 0) {
+        $conn->query("ALTER TABLE teacher_activities ADD COLUMN term_name VARCHAR(20) NOT NULL DEFAULT 'First'");
     }
     // Compressed (~160px) preview image, auto-derived client-side from the
     // first uploaded picture in the activity — previously only ever saved
@@ -211,12 +217,14 @@ function getTeacherDatabaseConnection() {
         score INT,
         notes TEXT,
         assessment_date DATE,
+        term_name VARCHAR(20) NOT NULL DEFAULT 'First',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         FOREIGN KEY (teacher_id) REFERENCES teacher_accounts(id) ON DELETE CASCADE,
         FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
         FOREIGN KEY (activity_id) REFERENCES teacher_activities(id) ON DELETE SET NULL,
-        INDEX (teacher_id, student_id)
+        INDEX (teacher_id, student_id),
+        INDEX idx_term_student (teacher_id, student_id, term_name)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
     $conn->query($createProgressTableSql);
     // If the old database.sql schema is present, learner_progress has a FK on activity_id
@@ -228,6 +236,10 @@ function getTeacherDatabaseConnection() {
         $conn->query("DROP TABLE IF EXISTS learner_progress");
         $conn->query("SET FOREIGN_KEY_CHECKS = 1");
         $conn->query($createProgressTableSql);
+    }
+    $lp_term_col = $conn->query("SHOW COLUMNS FROM learner_progress LIKE 'term_name'");
+    if ($lp_term_col && $lp_term_col->num_rows == 0) {
+        $conn->query("ALTER TABLE learner_progress ADD COLUMN term_name VARCHAR(20) NOT NULL DEFAULT 'First'");
     }
 
     // Create teacher reports table
@@ -265,12 +277,18 @@ function getTeacherDatabaseConnection() {
         id INT AUTO_INCREMENT PRIMARY KEY,
         activity_id INT NOT NULL,
         student_id  INT NOT NULL,
+        term_name VARCHAR(20) NOT NULL DEFAULT 'First',
         assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (activity_id) REFERENCES teacher_activities(id) ON DELETE CASCADE,
         FOREIGN KEY (student_id)  REFERENCES students(id)           ON DELETE CASCADE,
         UNIQUE KEY unique_assignment (activity_id, student_id),
-        INDEX idx_student (student_id)
+        INDEX idx_student (student_id),
+        INDEX idx_student_term (student_id, term_name)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    $aa_term_col = $conn->query("SHOW COLUMNS FROM activity_assignments LIKE 'term_name'");
+    if ($aa_term_col && $aa_term_col->num_rows == 0) {
+        $conn->query("ALTER TABLE activity_assignments ADD COLUMN term_name VARCHAR(20) NOT NULL DEFAULT 'First' AFTER student_id");
+    }
 
     // Activity submissions — stores student item-by-item answers + teacher assessment
     $conn->query("CREATE TABLE IF NOT EXISTS activity_submissions (

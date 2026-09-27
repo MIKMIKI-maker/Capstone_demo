@@ -485,18 +485,21 @@ function openModal(s) {
     chipEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;background:#fff7ed;color:#c2410c;">🔁 ' + retakes + ' Retake' + (retakes === 1 ? '' : 's') + ' before this submission</span>';
   }
 
-  // System-suggested score based on how many attempts it took to pass —
-  // 1st=100%, 2nd=90%, 3rd=70%, 4th and beyond floors at 60%. Pre-filled
-  // straight into the Final Score field below (not just a hint) so the
-  // teacher's job is to review/edit it, not type one from scratch — but
-  // nothing is actually graded until they hit Save.
+  // Suggest a score based on the attempt number. retake_count excludes the
+  // first attempt; the teacher can change this suggestion before finalizing.
   var suggestBox = document.getElementById('modalScoreSuggestion');
   var suggestedScore = null;
-  if (retakes >= 1) {
-    suggestedScore = retakes === 1 ? 90 : (retakes === 2 ? 70 : 60);
-    var attemptNum = retakes + 1;
+  var attemptNum = retakes + 1;
+  if (attemptNum === 2) {
+    suggestedScore = 90;
+  } else if (attemptNum === 3) {
+    suggestedScore = 70;
+  } else if (attemptNum >= 4) {
+    suggestedScore = 60;
+  }
+  if (suggestedScore !== null) {
     document.getElementById('modalSuggestText').textContent =
-      'Pumasa sa attempt #' + attemptNum + ' — na-prefill ang Final Score sa ' + suggestedScore + '% base sa attempts.';
+      'Suggestion lang: attempt #' + attemptNum + ' — ' + suggestedScore + '%. Ikaw pa rin ang magdedesisyon at magse-save ng final grade.';
     suggestBox.style.display = 'flex';
   } else {
     suggestBox.style.display = 'none';

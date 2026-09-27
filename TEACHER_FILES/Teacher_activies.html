@@ -306,7 +306,7 @@
                         type:     a.activity_type || a.subject || '—',
                         learner:  a.learner || 'ALL',
                         savedAt:  a.created_at    || '',
-                        status:   (a.status || '').toLowerCase() === 'draft' ? 'draft' : 'published',
+                        status:   (a.status || '').toLowerCase(),
                         is_locked: !!a.is_locked,
                         thumbnail: a.thumbnail || null,
                         _isLocal: false
@@ -348,6 +348,12 @@
                     }
                 });
 
+                // Archived activities are retained in the database for reports,
+                // but must disappear from every activity-management tab.
+                localPublished = localPublished.filter(function(item) {
+                    return item.status !== 'archived';
+                });
+
                 // Exclude a backend row only when it's the exact same row as a
                 // local entry (exact db_activity_id match) — every other
                 // published row shows, even if its title happens to match
@@ -356,7 +362,7 @@
                 // paper over, so a title-based exclusion here would just
                 // hide a real published activity again.
                 var dedupedBackend = backend.filter(function(a) {
-                    return !coveredDbIds.has(String(a.id));
+                    return a.status !== 'archived' && !coveredDbIds.has(String(a.id));
                 });
 
                 // allActivities keeps ALL local drafts + ALL local published + filtered backend
@@ -764,7 +770,7 @@
                 })
                     .then(function(r) { return r.json(); })
                     .then(function(d) {
-                        if (d && d.success) window.showToast('Draft deleted.');
+                        if (d && d.success) window.showToast(d.unpublished ? 'Activity unpublished.' : 'Draft deleted.');
                         else window.showToast((d && d.message) || 'Could not delete draft.', 'error');
                         loadActivities();
                     })

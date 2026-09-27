@@ -21,7 +21,6 @@ if (!$rec) {
 }
 $student_record_id = (int)$rec['student_record_id'];
 $teacher_id         = (int)$rec['teacher_id'];
-
 // Overall stats — only from activities actually assigned to this student
 $stmt = $conn->prepare("
     SELECT COUNT(*) AS total_submitted,
@@ -41,7 +40,7 @@ $stmt2 = $conn->prepare("
     SELECT COUNT(*) AS total
     FROM activity_assignments aa
     INNER JOIN teacher_activities ta ON ta.id = aa.activity_id
-    WHERE aa.student_id = ? AND ta.teacher_id = ? AND ta.status = 'published'
+    WHERE aa.student_id = ? AND ta.teacher_id = ?
 ");
 $stmt2->bind_param("ii", $student_record_id, $teacher_id);
 $stmt2->execute();

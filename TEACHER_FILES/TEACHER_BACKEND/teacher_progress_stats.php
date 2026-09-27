@@ -15,7 +15,6 @@ session_start();
 $teacher_id = isset($_REQUEST['teacher_id']) ? intval($_REQUEST['teacher_id'])
             : (isset($_SESSION['admin_id']) ? intval($_SESSION['admin_id']) : 1);
 $student_id = isset($_GET['student_id']) ? intval($_GET['student_id']) : 0;
-
 if (!$student_id) {
     echo json_encode(['success' => false, 'message' => 'Student ID is required']);
     exit;
@@ -81,7 +80,7 @@ $stmt = safeQuery($conn,
     "SELECT COUNT(*) as cnt
      FROM activity_assignments aa
      INNER JOIN teacher_activities ta ON ta.id = aa.activity_id
-     WHERE aa.student_id = ? AND ta.teacher_id = ? AND ta.status = 'published'",
+    WHERE aa.student_id = ? AND ta.teacher_id = ?",
     "ii", $student_id, $teacher_id
 );
 if ($stmt) {
@@ -96,7 +95,7 @@ $stmt = safeQuery($conn,
      FROM learner_progress lp
      INNER JOIN activity_assignments aa ON aa.activity_id = lp.activity_id
                                        AND aa.student_id  = lp.student_id
-     WHERE lp.student_id = ? AND lp.teacher_id = ?",
+    WHERE lp.student_id = ? AND lp.teacher_id = ?",
     "ii", $student_id, $teacher_id
 );
 if ($stmt) {
@@ -113,7 +112,7 @@ $progress['overall_progress'] = $progress['total_activities'] > 0
 $stmt = safeQuery($conn,
     "SELECT WEEK(lp.assessment_date) as wk, AVG(lp.score) as avg_score
      FROM learner_progress lp
-     WHERE lp.student_id = ? AND lp.assessment_date >= DATE_SUB(NOW(), INTERVAL 6 WEEK)
+    WHERE lp.student_id = ? AND lp.assessment_date >= DATE_SUB(NOW(), INTERVAL 6 WEEK)
      GROUP BY WEEK(lp.assessment_date) ORDER BY wk DESC LIMIT 6",
     "i", $student_id
 );
@@ -134,9 +133,9 @@ $stmt = safeQuery($conn,
          sub.assistance_level, sub.finalized_score, sub.is_finalized, sub.scaffold_used, sub.struggled_items_json, sub.retake_count
      FROM activity_assignments aa
      INNER JOIN teacher_activities ta ON ta.id = aa.activity_id
-     LEFT  JOIN learner_progress lp   ON ta.id = lp.activity_id AND lp.student_id = ?
+    LEFT  JOIN learner_progress lp   ON ta.id = lp.activity_id AND lp.student_id = ?
      LEFT  JOIN activity_submissions sub ON sub.activity_id = ta.id AND sub.student_id = ? AND sub.teacher_id = ?
-     WHERE aa.student_id = ? AND ta.teacher_id = ?
+    WHERE aa.student_id = ? AND ta.teacher_id = ?
      ORDER BY COALESCE(lp.assessment_date, ta.created_at) DESC
      LIMIT 15",
     "iiiii", $student_id, $student_id, $teacher_id, $student_id, $teacher_id
@@ -173,7 +172,7 @@ $stmt = safeQuery($conn,
     "SELECT COALESCE(ta.subject,'Other') AS subject, AVG(lp.score) AS avg_score
      FROM learner_progress lp
      LEFT JOIN teacher_activities ta ON lp.activity_id = ta.id
-     WHERE lp.student_id = ?
+    WHERE lp.student_id = ?
      GROUP BY ta.subject",
     "i", $student_id
 );

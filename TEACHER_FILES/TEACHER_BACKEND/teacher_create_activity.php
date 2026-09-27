@@ -25,6 +25,10 @@ $subject = isset($_POST['subject']) ? trim($_POST['subject']) : '';
 $grade_level = isset($_POST['grade_level']) ? trim($_POST['grade_level']) : '';
 $difficulty = isset($_POST['difficulty']) ? trim($_POST['difficulty']) : '';
 $status = isset($_POST['status']) ? trim($_POST['status']) : 'draft';
+$term_name = isset($_POST['term_name']) ? trim($_POST['term_name']) : 'First';
+if (!in_array($term_name, ['First', 'Second', 'Third'], true)) {
+    $term_name = 'First';
+}
 // Full activity content (slides/items/answer keys/design settings) so any
 // device can load it later — not just the browser that published it.
 $content_json = isset($_POST['content_json']) ? $_POST['content_json'] : null;
@@ -60,8 +64,8 @@ if (!$teacher_conn) {
 }
 
 // Insert activity into teacher database
-$sql = "INSERT INTO teacher_activities (teacher_id, activity_title, activity_description, activity_type, subject, grade_level, difficulty, status, content_json, deadline, thumbnail)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+$sql = "INSERT INTO teacher_activities (teacher_id, activity_title, activity_description, activity_type, subject, grade_level, difficulty, status, term_name, content_json, deadline, thumbnail)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 $stmt = $teacher_conn->prepare($sql);
 
 if (!$stmt) {
@@ -69,7 +73,7 @@ if (!$stmt) {
     exit;
 }
 
-$stmt->bind_param("issssssssss", $teacher_id, $activity_title, $activity_description, $activity_type, $subject, $grade_level, $difficulty, $status, $content_json, $deadline, $thumbnail);
+$stmt->bind_param("isssssssssss", $teacher_id, $activity_title, $activity_description, $activity_type, $subject, $grade_level, $difficulty, $status, $term_name, $content_json, $deadline, $thumbnail);
 
 if ($stmt->execute()) {
     $activity_id = $stmt->insert_id;
@@ -126,12 +130,12 @@ if ($stmt->execute()) {
 
     // Insert activity_assignments for each selected student.
     if (!empty($assigned_student_ids)) {
-        $asStmt = $teacher_conn->prepare("INSERT IGNORE INTO activity_assignments (activity_id, student_id) VALUES (?, ?)");
+        $asStmt = $teacher_conn->prepare("INSERT IGNORE INTO activity_assignments (activity_id, student_id, term_name) VALUES (?, ?, ?)");
         if ($asStmt) {
             foreach ($assigned_student_ids as $sid) {
                 $sid = intval($sid);
                 if ($sid > 0) {
-                    $asStmt->bind_param("ii", $activity_id, $sid);
+                    $asStmt->bind_param("iis", $activity_id, $sid, $term_name);
                     $asStmt->execute();
                 }
             }

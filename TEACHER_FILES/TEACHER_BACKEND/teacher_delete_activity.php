@@ -27,19 +27,81 @@ if (!$teacher_id || !$activity_id) {
     exit;
 }
 
-// Look up title + status before deleting, so we know whether this was an
-// unpublish (was 'published') or a draft cleanup (was 'draft') for logging.
+// Look up status before deciding whether to archive or delete a true draft.
 $activity_title = '';
 $activity_status = '';
-$infoStmt = $teacher_conn->prepare("SELECT activity_title, status FROM teacher_activities WHERE id = ? AND teacher_id = ?");
+$activity_locked = 0;
+$infoStmt = $teacher_conn->prepare("SELECT activity_title, status, is_locked FROM teacher_activities WHERE id = ? AND teacher_id = ?");
 if ($infoStmt) {
     $infoStmt->bind_param("ii", $activity_id, $teacher_id);
     $infoStmt->execute();
     if ($inforow = $infoStmt->get_result()->fetch_assoc()) {
         $activity_title = $inforow['activity_title'];
         $activity_status = $inforow['status'];
+        $activity_locked = (int)$inforow['is_locked'];
     }
     $infoStmt->close();
+}
+
+// Unpublish archives the activity so it disappears from active lists and the
+// student portal, while keeping its assignments and score history intact.
+if ($activity_status === 'published' || $activity_locked) {
+    $unpublish = $teacher_conn->prepare("UPDATE teacher_activities SET status = 'archived', is_locked = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND teacher_id = ?");
+    if (!$unpublish) {
+        echo json_encode(['success' => false, 'message' => 'Prepare failed: ' . $teacher_conn->error]);
+        $teacher_conn->close();
+        exit;
+    }
+    $unpublish->bind_param("ii", $activity_id, $teacher_id);
+    $unpublish->execute();
+    $affected = $unpublish->affected_rows;
+    $unpublish->close();
+    $teacher_conn->close();
+
+    // Log the action so the admin dashboard still shows the teacher unpublished it.
+    if ($affected > 0 && $activity_title) {
+        $teacher_email_for_log = '';
+        $teq = getTeacherDatabaseConnection();
+        if ($teq) {
+            $tstmt = $teq->prepare("SELECT teacher_email FROM teacher_accounts WHERE id = ?");
+            if ($tstmt) {
+                $tstmt->bind_param("i", $teacher_id);
+                $tstmt->execute();
+                if ($terow = $tstmt->get_result()->fetch_assoc()) {
+                    $teacher_email_for_log = $terow['teacher_email'];
+                }
+                $tstmt->close();
+            }
+            $teq->close();
+        }
+        $teacher_name_for_log = 'Unknown Teacher';
+        if ($teacher_email_for_log) {
+            $adminConn = getDatabaseConnection();
+            if ($adminConn) {
+                $nq = $adminConn->prepare("SELECT first_name, last_name FROM admin_accounts WHERE admin_email = ?");
+                if ($nq) {
+                    $nq->bind_param("s", $teacher_email_for_log);
+                    $nq->execute();
+                    if ($nrow = $nq->get_result()->fetch_assoc()) {
+                        $teacher_name_for_log = trim($nrow['first_name'] . ' ' . $nrow['last_name']);
+                    }
+                    $nq->close();
+                }
+                $logType = 'Unpublish Activity';
+                $logStmt = $adminConn->prepare("INSERT INTO admin_activities (activity_type, user_type, user_name, user_email, action_detail) VALUES (?, 'teacher', ?, ?, ?)");
+                if ($logStmt) {
+                    $actionDetail = 'Activity: ' . substr($activity_title, 0, 50);
+                    $logStmt->bind_param("ssss", $logType, $teacher_name_for_log, $teacher_email_for_log, $actionDetail);
+                    $logStmt->execute();
+                    $logStmt->close();
+                }
+                $adminConn->close();
+            }
+        }
+    }
+
+    echo json_encode(['success' => $affected > 0, 'unpublished' => true]);
+    exit;
 }
 
 // Remove student assignments for this activity row first
