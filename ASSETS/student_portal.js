@@ -179,8 +179,13 @@
     var style = document.createElement('style');
     style.id = 'student-notifpop-style';
     style.textContent =
-      '.student-notifpop-stack{position:fixed;top:20px;right:20px;z-index:100000;display:flex;flex-direction:column;gap:12px;max-width:360px;width:calc(100vw - 40px)}' +
-      '.student-notifpop{position:relative;display:flex;align-items:flex-start;gap:13px;background:#fff;color:#243a5e;padding:16px 18px;border-radius:20px;font-family:"Fredoka","Poppins",sans-serif;box-shadow:0 16px 40px rgba(36,58,94,.28),0 0 0 1px rgba(47,111,237,.12);cursor:pointer;opacity:0;transform:translateX(60px) scale(.9);transition:opacity .35s ease,transform .45s cubic-bezier(.34,1.56,.64,1);overflow:hidden}' +
+      // Right-anchored, but each card shrinks to fit its own text (a
+      // one-word note like "dd" used to still stretch to nearly the full
+      // viewport width, since the stack forced every child that wide) —
+      // max-width only kicks in to WRAP a genuinely long message instead of
+      // stretching a short one.
+      '.student-notifpop-stack{position:fixed;top:20px;right:20px;z-index:100000;display:flex;flex-direction:column;align-items:flex-end;gap:12px;max-width:360px}' +
+      '.student-notifpop{position:relative;display:flex;align-items:flex-start;gap:13px;background:#fff;color:#243a5e;padding:16px 18px;border-radius:20px;font-family:"Fredoka","Poppins",sans-serif;box-shadow:0 16px 40px rgba(36,58,94,.28),0 0 0 1px rgba(47,111,237,.12);cursor:pointer;opacity:0;transform:translateX(60px) scale(.9);transition:opacity .35s ease,transform .45s cubic-bezier(.34,1.56,.64,1);overflow:hidden;width:fit-content;max-width:100%;min-width:180px}' +
       '.student-notifpop::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:linear-gradient(180deg,#60a5fa,#2f6fed)}' +
       '.student-notifpop.show{opacity:1;transform:translateX(0) scale(1);animation:studentNotifpopWiggle .5s ease .45s}' +
       '@keyframes studentNotifpopWiggle{0%,100%{transform:translateX(0) scale(1)}30%{transform:translateX(-4px) scale(1.015)}60%{transform:translateX(2px) scale(1)}}' +
@@ -192,7 +197,17 @@
       '.student-notifpop-title{display:block;font-weight:700;font-size:14px;margin-bottom:3px;line-height:1.3}' +
       '.student-notifpop-msg{display:block;font-size:12.5px;color:#5d7299;line-height:1.45}' +
       '.student-notifpop-close{position:absolute;top:10px;right:10px;flex:none;background:#eef3fb;border:none;border-radius:50%;width:20px;height:20px;color:#7d92b8;font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}' +
-      '.student-notifpop-close:hover{background:#dde8fb;color:#243a5e}';
+      '.student-notifpop-close:hover{background:#dde8fb;color:#243a5e}' +
+      '@media (max-width:480px){' +
+        '.student-notifpop-stack{top:10px;right:10px;gap:8px;max-width:calc(100vw - 20px)}' +
+        '.student-notifpop{padding:11px 13px;gap:9px;border-radius:15px}' +
+        '.student-notifpop-icon{width:32px;height:32px;font-size:15px}' +
+        '.student-notifpop-body{padding-right:10px}' +
+        '.student-notifpop-tag{font-size:8px;padding:1.5px 5px;margin-bottom:4px}' +
+        '.student-notifpop-title{font-size:12px;margin-bottom:2px}' +
+        '.student-notifpop-msg{font-size:10.5px}' +
+        '.student-notifpop-close{width:16px;height:16px;font-size:10.5px;top:7px;right:7px}' +
+      '}';
     document.head.appendChild(style);
   }
 

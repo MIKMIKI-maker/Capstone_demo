@@ -50,9 +50,9 @@ $stmt2->close();
 
 // Activity performance list (with finalized score + retake count)
 $stmt3 = $conn->prepare("
-    SELECT a.id AS activity_id, a.activity_title, a.activity_type, a.subject, lp.score, lp.assessment_date,
+    SELECT a.id AS activity_id, a.activity_title, a.activity_type, a.subject, a.content_json, lp.score, lp.assessment_date,
            CASE WHEN sub.is_finalized = 1 THEN 'Completed' WHEN lp.score >= 80 THEN 'Completed' ELSE 'In Progress' END AS status_label,
-           sub.retake_count, sub.finalized_score, sub.is_finalized, sub.assistance_level, sub.answers_json
+           sub.retake_count, sub.finalized_score, sub.is_finalized, sub.assistance_level, sub.answers_json, sub.struggled_items_json
     FROM learner_progress lp
     JOIN teacher_activities a ON a.id = lp.activity_id
     LEFT JOIN activity_submissions sub ON sub.student_id = lp.student_id AND sub.activity_id = lp.activity_id AND sub.teacher_id = lp.teacher_id
@@ -62,8 +62,36 @@ $stmt3 = $conn->prepare("
 $stmt3->bind_param("ii", $teacher_id, $student_record_id);
 $stmt3->execute();
 $perf_result = $stmt3->get_result();
+
+// Per-template "answer mode" labels (e.g. Matching's Pair Matching vs Memory
+// Match) — these live inside each activity's own content_json (the builder's
+// saved slide state), not as a DB column, since a teacher picks the mode per
+// slide inside the template itself.
+$modeLabelsByType = [
+    'Matching'        => ['pair' => 'Pair Matching', 'memory' => 'Memory Match', 'grid' => 'Grid Match'],
+    'Sorting'         => ['bins' => 'Sort into Bins', 'oddoneout' => 'Odd One Out', 'yesno' => 'Yes/No Sort'],
+    'MathMixed'       => ['mc' => 'Multiple Choice', 'tenframe' => 'Ten-Frame Count', 'order' => 'Put in Order', 'equation' => 'Solve the Equation'],
+    'WrittenResponse' => ['written' => 'Written Response', 'scramble' => 'Word Scramble', 'sentence' => 'Build the Sentence'],
+    'PictureLabeling' => ['grid' => 'Label Each Picture', 'diagram' => 'Label the Picture', 'type' => 'Type the Label'],
+    'Tracing'         => ['letters' => 'Letter & Number Tracing', 'shapes' => 'Shapes & Lines (print-only)'],
+];
+
 $activities = [];
-while ($r = $perf_result->fetch_assoc()) $activities[] = $r;
+while ($r = $perf_result->fetch_assoc()) {
+    $modeLabel = null;
+    if (!empty($r['content_json'])) {
+        $cj = json_decode($r['content_json'], true);
+        $firstMode = $cj['activities'][0]['mode'] ?? null;
+        if ($firstMode && isset($modeLabelsByType[$r['activity_type']][$firstMode])) {
+            $modeLabel = $modeLabelsByType[$r['activity_type']][$firstMode];
+        }
+    }
+    unset($r['content_json']); // never send the raw builder state (has base64 thumbnails) to the client
+    $r['mode_label'] = $modeLabel;
+    $r['struggled_items'] = $r['struggled_items_json'] ? json_decode($r['struggled_items_json'], true) : [];
+    unset($r['struggled_items_json']);
+    $activities[] = $r;
+}
 $stmt3->close();
 
 // General teacher notes (student_notes table) — note_type/note_id let the
@@ -104,12 +132,46 @@ $avg_score        = $stats['avg_score'] ? round(floatval($stats['avg_score'])) :
 $total_assigned   = intval($total_row['total']);      // activities assigned to this student
 $total_completed  = intval($stats['total_submitted']); // of those, how many the student submitted
 
+// Skills breakdown — average score per Learning Domain, keyed off each
+// activity's own `subject` (set by the teacher at publish time). Reuses
+// $activities (already fetched above) instead of a separate query, and
+// prefers the finalized score the same way the rest of this endpoint does.
+$skillMap = [
+    'cognitive'     => 'Cognitive',
+    'communication' => 'Communication',
+    'motor'         => 'Fine Motor',
+    'social'        => 'Social Skills',
+    'self'          => 'Self Help',
+    'language'      => 'Language Development',
+    'aesthetic'     => 'Aesthetic & Creative'
+];
+$skillTotals = [];
+$skillCounts = [];
+foreach ($activities as $act) {
+    $subj = strtolower($act['subject'] ?? '');
+    foreach ($skillMap as $key => $skillName) {
+        if (strpos($subj, $key) !== false) {
+            $sc = ($act['is_finalized'] && $act['finalized_score'] !== null) ? $act['finalized_score'] : $act['score'];
+            if ($sc !== null) {
+                $skillTotals[$skillName] = ($skillTotals[$skillName] ?? 0) + floatval($sc);
+                $skillCounts[$skillName] = ($skillCounts[$skillName] ?? 0) + 1;
+            }
+            break;
+        }
+    }
+}
+$skills = [];
+foreach ($skillMap as $skillName) {
+    $skills[$skillName] = isset($skillCounts[$skillName]) ? round($skillTotals[$skillName] / $skillCounts[$skillName]) : 0;
+}
+
 echo json_encode([
     'success'          => true,
     'avg_score'        => $avg_score,
     'completed'        => $total_completed,
     'total_activities' => $total_assigned,
     'activities'       => $activities,
-    'notes'            => $notes
+    'notes'            => $notes,
+    'skills'           => $skills
 ]);
 ?>

@@ -177,6 +177,50 @@ body {
 .student-ov-stat-sub { font-size: 12px; color: var(--ink-soft); font-weight: 500; }
 
 
+/* ---- Skills breakdown / Progress trend / Goals row ---- */
+.student-insights-row {
+  display: flex; align-items: flex-start; gap: 20px; margin-bottom: 20px; flex-wrap: wrap;
+}
+.student-skills-card, .student-trend-card, .student-goals-card {
+  padding: 22px 24px; border-radius: var(--r-lg); background: var(--card);
+  box-shadow: 0 10px 0 rgba(36, 58, 94, .08), 0 18px 30px rgba(36, 58, 94, .12);
+}
+.student-skills-card { width: fit-content; }
+.student-trend-card, .student-goals-card { flex: 1 1 260px; min-width: 260px; }
+.student-skills-title {
+  font-family: var(--font-head); font-weight: 700; font-size: 18px; color: var(--ink);
+  margin-bottom: 14px;
+}
+.student-skills-chart-wrap { position: relative; width: 300px; height: 300px; }
+
+/* ---- Progress trend ---- */
+.student-trend-stats { display: flex; gap: 14px; margin-bottom: 16px; flex-wrap: wrap; }
+.student-trend-stat { flex: 1 1 auto; min-width: 90px; }
+.student-trend-stat-label { font-size: 11px; color: var(--ink-soft); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+.student-trend-stat-val { font-size: 22px; font-weight: 800; color: var(--ink); }
+.student-trend-stat-val.is-up { color: #16a34a; }
+.student-trend-stat-val.is-down { color: #ef4444; }
+.student-trend-chart-wrap { position: relative; height: 200px; }
+.student-trend-empty { padding: 30px 10px; text-align: center; color: var(--ink-soft); font-size: 13px; }
+
+/* ---- Goals & targets ---- */
+.student-goal-row { margin-bottom: 16px; }
+.student-goal-row:last-child { margin-bottom: 0; }
+.student-goal-meta { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; margin-bottom: 6px; }
+.student-goal-name-wrap { display: flex; align-items: center; gap: 8px; }
+.student-goal-name { font-weight: 600; color: var(--ink); }
+.student-goal-vals { font-size: 12px; color: var(--ink-soft); font-weight: 600; }
+.student-goal-bar-bg { height: 9px; background: #e8edf4; border-radius: 20px; overflow: hidden; }
+.student-goal-bar-fill { height: 100%; border-radius: 20px; background: #2563eb; transition: width .5s ease; }
+.student-goal-bar-fill.is-met { background: #16a34a; }
+.student-goals-empty { padding: 30px 10px; text-align: center; color: var(--ink-soft); font-size: 13px; }
+.student-goal-row--focus { background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 12px 14px; margin: -2px -2px 16px; }
+.student-goal-focus-tag { font-size: 10.5px; font-weight: 700; color: #b91c1c; background: #fee2e2; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.student-goal-tips { margin: 10px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--ink); }
+.student-goal-tips li { margin-bottom: 4px; }
+.student-goal-tip-src { color: var(--ink-soft); font-size: 11px; }
+.student-goal-tip-generic { margin: 10px 0 0; font-size: 12.5px; color: var(--ink-soft); font-style: italic; }
+
 /* ---- Content grid ---- */
 .student-content-grid {
   display: grid; grid-template-columns: 3fr 2fr; gap: 20px; margin-bottom: 20px;
@@ -205,6 +249,17 @@ body {
 .student-perf-empty-desc, .student-notes-empty-desc {
   max-width: 320px; color: var(--ink-soft); font-weight: 500; font-size: 14px; line-height: 1.4;
 }
+
+/* ---- Assistance / Prompt History ---- */
+.student-assist-summary { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+.student-assist-stat {
+  flex: 1 1 auto; min-width: 130px; display: flex; align-items: center; gap: 8px;
+  background: #f8fafc; border-radius: 12px; padding: 10px 12px;
+}
+.student-assist-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.student-assist-stat-label { font-size: 12px; color: var(--ink); font-weight: 600; flex: 1; }
+.student-assist-stat-count { font-size: 15px; font-weight: 800; color: var(--ink); }
+.student-assist-chart-wrap { position: relative; height: 220px; }
 /* Caps each list's own height once it grows past a handful of rows,
    instead of letting the card keep stretching taller than its neighbor
    in the grid. */
@@ -308,6 +363,8 @@ body {
   .student-sidebar-nav { flex-direction: row; flex-wrap: wrap; margin: 0; }
   .student-sidebar-footer { flex-direction: row; margin: 0 0 0 auto; }
   .student-content-grid { grid-template-columns: 1fr; }
+  .student-skills-card { width: auto; }
+  .student-skills-chart-wrap { width: 100%; height: 260px; max-width: 300px; margin: 0 auto; }
   /* Same left/right split as desktop — avatar+name hugging the left
      edge, both circles hugging the right edge, with one gap between
      the two clusters (not one even gap between every single item) —

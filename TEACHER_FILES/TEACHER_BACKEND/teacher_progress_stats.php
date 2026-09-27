@@ -48,7 +48,9 @@ $progress = [
         'Communication' => 0,
         'Fine Motor'    => 0,
         'Social Skills' => 0,
-        'Self Help'     => 0
+        'Self Help'     => 0,
+        'Language Development' => 0,
+        'Aesthetic & Creative'  => 0
     ],
     'notes'     => [],
     'iep_goals' => []
@@ -181,7 +183,9 @@ if ($stmt) {
         'communication' => 'Communication',
         'motor'         => 'Fine Motor',
         'social'        => 'Social Skills',
-        'self'          => 'Self Help'
+        'self'          => 'Self Help',
+        'language'      => 'Language Development',
+        'aesthetic'     => 'Aesthetic & Creative'
     ];
     $r = $stmt->get_result();
     while ($row = $r->fetch_assoc()) {

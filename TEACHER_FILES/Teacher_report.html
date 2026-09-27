@@ -149,8 +149,20 @@
                         <div class="teacher-skill-bar-bg"><div class="teacher-skill-bar-fill f-orange" id="skill-bar-finemotor" style="width:0%;"></div></div>
                     </div>
                     <div class="teacher-skill-row">
-                        <div class="teacher-skill-meta"><span class="teacher-skill-name">Life Skills</span><span class="teacher-skill-pct c-pink" id="skill-pct-lifeskills">—</span></div>
-                        <div class="teacher-skill-bar-bg"><div class="teacher-skill-bar-fill f-pink" id="skill-bar-lifeskills" style="width:0%;"></div></div>
+                        <div class="teacher-skill-meta"><span class="teacher-skill-name">Social Skills</span><span class="teacher-skill-pct c-pink" id="skill-pct-socialskills">—</span></div>
+                        <div class="teacher-skill-bar-bg"><div class="teacher-skill-bar-fill f-pink" id="skill-bar-socialskills" style="width:0%;"></div></div>
+                    </div>
+                    <div class="teacher-skill-row">
+                        <div class="teacher-skill-meta"><span class="teacher-skill-name">Self Help</span><span class="teacher-skill-pct c-purple" id="skill-pct-selfhelp">—</span></div>
+                        <div class="teacher-skill-bar-bg"><div class="teacher-skill-bar-fill f-purple" id="skill-bar-selfhelp" style="width:0%;"></div></div>
+                    </div>
+                    <div class="teacher-skill-row">
+                        <div class="teacher-skill-meta"><span class="teacher-skill-name">Language Development</span><span class="teacher-skill-pct c-teal" id="skill-pct-languagedevelopment">—</span></div>
+                        <div class="teacher-skill-bar-bg"><div class="teacher-skill-bar-fill f-teal" id="skill-bar-languagedevelopment" style="width:0%;"></div></div>
+                    </div>
+                    <div class="teacher-skill-row">
+                        <div class="teacher-skill-meta"><span class="teacher-skill-name">Aesthetic &amp; Creative</span><span class="teacher-skill-pct c-rose" id="skill-pct-aestheticcreative">—</span></div>
+                        <div class="teacher-skill-bar-bg"><div class="teacher-skill-bar-fill f-rose" id="skill-bar-aestheticcreative" style="width:0%;"></div></div>
                     </div>
                 </div>
                 <!-- Activity performance panel -->
@@ -371,8 +383,8 @@
         }
 
         function renderSkillsRadar(skMap) {
-            var labels = ['Cognitive', 'Communication', 'Fine Motor', 'Life Skills'];
-            var data = [skMap.cognitive, skMap.communication, skMap.finemotor, skMap.lifeskills];
+            var labels = ['Cognitive', 'Communication', 'Fine Motor', 'Social Skills', 'Self Help', 'Language Development', 'Aesthetic & Creative'];
+            var data = [skMap.cognitive, skMap.communication, skMap.finemotor, skMap.socialskills, skMap.selfhelp, skMap.languagedevelopment, skMap.aestheticcreative];
             var hasData = data.some(function (v) { return v != null; });
             toggleChartEmpty('chart-skills-radar', !hasData);
             if (!hasData) return;
@@ -416,7 +428,10 @@
                         cognitive:    sk['Cognitive'],
                         communication: sk['Communication'],
                         finemotor:    sk['Fine Motor'],
-                        lifeskills:   sk['Social Skills'] != null ? sk['Social Skills'] : sk['Self Help']
+                        socialskills: sk['Social Skills'],
+                        selfhelp:     sk['Self Help'],
+                        languagedevelopment: sk['Language Development'],
+                        aestheticcreative:   sk['Aesthetic & Creative']
                     };
                     Object.keys(skMap).forEach(function(k) {
                         var v = skMap[k];

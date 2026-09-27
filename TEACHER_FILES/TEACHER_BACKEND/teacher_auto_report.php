@@ -155,6 +155,8 @@ $skills_breakdown = [
     'Fine Motor'    => null,
     'Social Skills' => null,
     'Self Help'     => null,
+    'Language Development' => null,
+    'Aesthetic & Creative'  => null,
 ];
 $skillStmt = $conn->prepare("
     SELECT COALESCE(ta.subject,'Other') AS subject,
@@ -179,6 +181,8 @@ if ($skillStmt) {
         'motor'         => 'Fine Motor',
         'social'        => 'Social Skills',
         'self'          => 'Self Help',
+        'language'      => 'Language Development',
+        'aesthetic'     => 'Aesthetic & Creative',
     ];
     while ($sk = $skillRows->fetch_assoc()) {
         $subj = strtolower($sk['subject']);

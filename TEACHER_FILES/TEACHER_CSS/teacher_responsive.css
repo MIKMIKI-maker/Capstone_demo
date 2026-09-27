@@ -186,8 +186,8 @@ img, video, canvas { max-width: 100%; height: auto; }
      within their own card instead. */
   .teacher-left-col, .teacher-right-col { min-width: 0; }
   .teacher-progress-body { padding: 16px; }
-  .teacher-chart-card { overflow-x: auto; }
-  .teacher-bar-chart { flex-shrink: 0; min-width: 260px; }
+  .teacher-skills-radar-card { width: auto; }
+  .teacher-skills-chart-wrap { width: 100%; height: 260px; max-width: 300px; margin: 0 auto; }
 
   .teacher-plan-grid,
   .teacher-ring-stats,

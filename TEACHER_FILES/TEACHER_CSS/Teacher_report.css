@@ -129,6 +129,9 @@ body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-s
 .c-green  { color: #10B981; } .f-green  { background: #10B981; }
 .c-orange { color: #F59E0B; } .f-orange { background: #F59E0B; }
 .c-pink   { color: #EC4899; } .f-pink   { background: #EC4899; }
+.c-purple { color: #7C3AED; } .f-purple { background: #7C3AED; }
+.c-teal   { color: #0D9488; } .f-teal   { background: #0D9488; }
+.c-rose   { color: #E11D48; } .f-rose   { background: #E11D48; }
 
 /* ── TABLE ── */
 .teacher-table-card { background: var(--white); border-radius: 18px; border: 1px solid #E8EDF4; overflow: hidden; box-shadow: var(--shadow-sm); }

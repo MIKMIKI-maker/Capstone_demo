@@ -120,23 +120,51 @@ body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-s
 /* ── TWO-COLUMN LAYOUT ── */
 .teacher-progress-grid { display: grid; grid-template-columns: 1fr 320px; gap: 18px; }
 
-/* ── CHART CARD ── */
-.teacher-chart-card { background: var(--white); border-radius: 18px; padding: 22px 24px; box-shadow: var(--shadow-sm); border: 1px solid #E8EDF4; margin-bottom: 18px; }
-.teacher-chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
-.teacher-chart-title { font-size: 15px; font-weight: 700; color: var(--text); }
-.teacher-chart-period { font-size: 12px; color: var(--muted); }
-.teacher-bar-chart { display: flex; align-items: flex-end; gap: 18px; height: 160px; padding: 0 8px; border-bottom: 1.5px solid #E8EDF4; position: relative; }
-/* .teacher-bar's JS-set height:NN% needs a parent with a DEFINITE height to
-   resolve against — .teacher-bar-col had none (height was auto/content-based),
-   so the percentage silently collapsed to nothing regardless of the value,
-   even with correct data coming from the backend. height:100% here (of the
-   160px .teacher-bar-chart) plus justify-content:flex-end keeps the bar+label
-   bottom-anchored, matching the original visual intent. */
-.teacher-bar-col { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; flex: 1; height: 100%; }
-.teacher-bar { background: #4A90E2; border-radius: 6px 6px 0 0; width: 100%; min-height: 2px; transition: height .4s ease; }
-.teacher-bar-label { font-size: 12px; color: var(--muted); margin-top: 8px; }
-.teacher-y-labels { position: absolute; left: 0; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 0 0 2px; }
-.teacher-y-label { font-size: 10px; color: #CBD5E1; }
+/* ── SKILLS BREAKDOWN / PROGRESS TREND / GOALS ROW ── */
+.teacher-insights-row { display: flex; align-items: flex-start; gap: 18px; margin-bottom: 18px; flex-wrap: wrap; }
+.teacher-skills-radar-card, .teacher-trend-card, .teacher-goals-card {
+  background: var(--white); border-radius: 18px; padding: 22px 24px; box-shadow: var(--shadow-sm); border: 1px solid #E8EDF4;
+}
+.teacher-skills-radar-card { width: fit-content; }
+.teacher-trend-card, .teacher-goals-card { flex: 1 1 260px; min-width: 260px; }
+.teacher-skills-chart-wrap { position: relative; width: 300px; height: 300px; }
+
+.teacher-trend-stats { display: flex; gap: 14px; margin-bottom: 16px; flex-wrap: wrap; }
+.teacher-trend-stat { flex: 1 1 auto; min-width: 90px; }
+.teacher-trend-stat-label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
+.teacher-trend-stat-val { font-size: 22px; font-weight: 800; color: var(--text); }
+.teacher-trend-stat-val.is-up { color: #10B981; }
+.teacher-trend-stat-val.is-down { color: #EF4444; }
+.teacher-trend-chart-wrap { position: relative; height: 200px; }
+.teacher-trend-empty { padding: 30px 10px; text-align: center; color: var(--muted); font-size: 13px; }
+
+.teacher-goal-row { margin-bottom: 16px; }
+.teacher-goal-row:last-child { margin-bottom: 0; }
+.teacher-goal-meta { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; margin-bottom: 6px; }
+.teacher-goal-name { font-weight: 600; color: var(--text); }
+.teacher-goal-vals { font-size: 12px; color: var(--muted); font-weight: 600; }
+.teacher-goal-bar-bg { height: 9px; background: #E8EDF4; border-radius: 20px; overflow: hidden; }
+.teacher-goal-bar-fill { height: 100%; border-radius: 20px; background: #2563EB; transition: width .5s ease; }
+.teacher-goal-bar-fill.is-met { background: #10B981; }
+.teacher-goals-empty { padding: 30px 10px; text-align: center; color: var(--muted); font-size: 13px; }
+
+/* ── ASSISTANCE / PROMPT HISTORY ── */
+.teacher-assist-summary { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+.teacher-assist-stat {
+  flex: 1 1 auto; min-width: 130px; display: flex; align-items: center; gap: 8px;
+  background: #F8FAFC; border-radius: 12px; padding: 10px 12px;
+}
+.teacher-assist-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.teacher-assist-stat-label { font-size: 12px; color: var(--text); font-weight: 600; flex: 1; }
+.teacher-assist-stat-count { font-size: 15px; font-weight: 800; color: var(--text); }
+.teacher-assist-chart-wrap { position: relative; height: 220px; }
+.teacher-goal-name-wrap { display: flex; align-items: center; gap: 8px; }
+.teacher-goal-row--focus { background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 12px 14px; margin: -2px -2px 16px; }
+.teacher-goal-focus-tag { font-size: 10.5px; font-weight: 700; color: #b91c1c; background: #fee2e2; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.teacher-goal-tips { margin: 10px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--text); }
+.teacher-goal-tips li { margin-bottom: 4px; }
+.teacher-goal-tip-src { color: var(--muted); font-size: 11px; }
+.teacher-goal-tip-generic { margin: 10px 0 0; font-size: 12.5px; color: var(--muted); font-style: italic; }
 
 /* ── ACTIVITY HISTORY ── */
 .teacher-history-card { background: var(--white); border-radius: 18px; padding: 22px 24px; box-shadow: var(--shadow-sm); border: 1px solid #E8EDF4; }
@@ -166,23 +194,10 @@ body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-s
 .badge-notstarted { background: #F1F5F9; color: #64748B; }
 
 /* ── RIGHT COLUMN ── */
-.teacher-right-col { display: flex; flex-direction: column; gap: 18px; }
+.teacher-left-col, .teacher-right-col { display: flex; flex-direction: column; gap: 18px; }
 
-/* ── SKILLS BREAKDOWN ── */
-.teacher-skills-card { background: var(--white); border-radius: 18px; padding: 22px 24px; box-shadow: var(--shadow-sm); border: 1px solid #E8EDF4; }
+/* ── SKILLS BREAKDOWN TITLE (shared by radar/trend/goals cards) ── */
 .teacher-skills-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 18px; }
-.teacher-skill-row { margin-bottom: 14px; }
-.teacher-skill-row:last-child { margin-bottom: 0; }
-.teacher-skill-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-.teacher-skill-name { font-size: 13px; font-weight: 500; color: var(--text); }
-.teacher-skill-pct { font-size: 13px; font-weight: 700; }
-.teacher-skill-bar-bg { height: 8px; background: #E8EDF4; border-radius: 20px; overflow: hidden; }
-.teacher-skill-bar-fill { height: 100%; border-radius: 20px; transition: width .5s ease; }
-.c-blue { color: #4A90E2; } .f-blue { background: #4A90E2; }
-.c-pink { color: #EC4899; } .f-pink { background: #EC4899; }
-.c-green { color: #10B981; } .f-green { background: #10B981; }
-.c-orange { color: #F59E0B; } .f-orange { background: #F59E0B; }
-.c-purple { color: #7C3AED; } .f-purple { background: #7C3AED; }
 
 /* ── NOTES CARD ── */
 .teacher-notes-card { background: var(--white); border-radius: 18px; padding: 22px 24px; box-shadow: var(--shadow-sm); border: 1px solid #E8EDF4; }

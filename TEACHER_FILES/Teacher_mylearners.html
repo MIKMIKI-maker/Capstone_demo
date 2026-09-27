@@ -11,8 +11,9 @@
     <title>Learner Progress – SPED ALM</title>
     <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
     <link href="../ASSETS/vendor/fontawesome/css/all.min.css" rel="stylesheet" />
-    <link href="TEACHER_CSS/Teacher_mylearners.css?v=2" rel="stylesheet" />
+    <link href="TEACHER_CSS/Teacher_mylearners.css?v=5" rel="stylesheet" />
     <link href="TEACHER_CSS/teacher_responsive.css?v=75" rel="stylesheet" />
+    <script src="../ASSETS/vendor/js/chart.umd.min.js"></script>
 </head>
 
 <body>
@@ -156,54 +157,38 @@
                         </div>
                     </div>
                 </div>
+                <!-- SKILLS BREAKDOWN + PROGRESS TREND + GOALS & TARGETS -->
+                <div class="teacher-insights-row">
+                    <div class="teacher-skills-radar-card">
+                        <div class="teacher-skills-title">Skills Breakdown</div>
+                        <div class="teacher-skills-chart-wrap">
+                            <canvas id="skillsRadarChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="teacher-trend-card">
+                        <div class="teacher-skills-title">📈 Progress Trend</div>
+                        <div class="teacher-trend-stats" id="trendStats"></div>
+                        <div class="teacher-trend-chart-wrap">
+                            <canvas id="trendLineChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="teacher-goals-card">
+                        <div class="teacher-skills-title">🎯 Goals &amp; Targets</div>
+                        <div id="goalsList"></div>
+                    </div>
+                </div>
                 <!-- TWO-COLUMN GRID -->
                 <div class="teacher-progress-grid">
                     <!-- LEFT -->
                     <div class="teacher-left-col">
-                        <!-- BAR CHART — backend: inject bar heights -->
-                        <div class="teacher-chart-card">
-                            <div class="teacher-chart-header">
-                                <span class="teacher-chart-title">Activity Scores Over Time</span>
-                                <span class="teacher-chart-period">Last 6 weeks</span>
+                        <!-- ASSISTANCE / PROMPT HISTORY -->
+                        <div class="teacher-history-card">
+                            <div class="teacher-history-title">📝 Assistance / Prompt History</div>
+                            <div id="assistSummary" class="teacher-assist-summary"></div>
+                            <div class="teacher-assist-chart-wrap">
+                                <canvas id="assistTrendChart"></canvas>
                             </div>
-                            <div style="display:flex; gap:10px;">
-                                <div
-                                    style="display:flex; flex-direction:column; justify-content:space-between; padding-bottom:28px; padding-right:6px;">
-                                    <span class="teacher-y-label">100</span>
-                                    <span class="teacher-y-label">75</span>
-                                    <span class="teacher-y-label">50</span>
-                                    <span class="teacher-y-label">25</span>
-                                    <span class="teacher-y-label">0</span>
-                                </div>
-                                <div style="flex:1;">
-                                    <div class="teacher-bar-chart">
-                                        <div class="teacher-bar-col">
-                                            <div class="teacher-bar" style="height:0%;"></div><span
-                                                class="teacher-bar-label">Wk 1</span>
-                                        </div>
-                                        <div class="teacher-bar-col">
-                                            <div class="teacher-bar" style="height:0%;"></div><span
-                                                class="teacher-bar-label">Wk 2</span>
-                                        </div>
-                                        <div class="teacher-bar-col">
-                                            <div class="teacher-bar" style="height:0%;"></div><span
-                                                class="teacher-bar-label">Wk 3</span>
-                                        </div>
-                                        <div class="teacher-bar-col">
-                                            <div class="teacher-bar" style="height:0%;"></div><span
-                                                class="teacher-bar-label">Wk 4</span>
-                                        </div>
-                                        <div class="teacher-bar-col">
-                                            <div class="teacher-bar" style="height:0%;"></div><span
-                                                class="teacher-bar-label">Wk 5</span>
-                                        </div>
-                                        <div class="teacher-bar-col">
-                                            <div class="teacher-bar" style="height:0%;"></div><span
-                                                class="teacher-bar-label">Wk 6</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <div id="assistEmpty" class="teacher-goals-empty" style="display:none;">No graded activities yet — assistance levels appear here once a submission is finalized.</div>
                         </div>
                         <!-- ACTIVITY HISTORY — backend: inject rows -->
                         <div class="teacher-history-card">
@@ -220,46 +205,6 @@
                     </div>
                     <!-- RIGHT -->
                     <div class="teacher-right-col">
-                        <!-- SKILLS BREAKDOWN — backend: inject values -->
-                        <div class="teacher-skills-card">
-                            <div class="teacher-skills-title">Skills Breakdown</div>
-                            <div class="teacher-skill-row">
-                                <div class="teacher-skill-meta"><span class="teacher-skill-name">Cognitive</span><span
-                                        class="teacher-skill-pct c-blue">—</span></div>
-                                <div class="teacher-skill-bar-bg">
-                                    <div class="teacher-skill-bar-fill f-blue" style="width:0%;"></div>
-                                </div>
-                            </div>
-                            <div class="teacher-skill-row">
-                                <div class="teacher-skill-meta"><span
-                                        class="teacher-skill-name">Communication</span><span
-                                        class="teacher-skill-pct c-pink">—</span></div>
-                                <div class="teacher-skill-bar-bg">
-                                    <div class="teacher-skill-bar-fill f-pink" style="width:0%;"></div>
-                                </div>
-                            </div>
-                            <div class="teacher-skill-row">
-                                <div class="teacher-skill-meta"><span class="teacher-skill-name">Fine Motor</span><span
-                                        class="teacher-skill-pct c-green">—</span></div>
-                                <div class="teacher-skill-bar-bg">
-                                    <div class="teacher-skill-bar-fill f-green" style="width:0%;"></div>
-                                </div>
-                            </div>
-                            <div class="teacher-skill-row">
-                                <div class="teacher-skill-meta"><span class="teacher-skill-name">Social
-                                        Skills</span><span class="teacher-skill-pct c-orange">—</span></div>
-                                <div class="teacher-skill-bar-bg">
-                                    <div class="teacher-skill-bar-fill f-orange" style="width:0%;"></div>
-                                </div>
-                            </div>
-                            <div class="teacher-skill-row">
-                                <div class="teacher-skill-meta"><span class="teacher-skill-name">Self Help</span><span
-                                        class="teacher-skill-pct c-purple">—</span></div>
-                                <div class="teacher-skill-bar-bg">
-                                    <div class="teacher-skill-bar-fill f-purple" style="width:0%;"></div>
-                                </div>
-                            </div>
-                        </div>
                         <!-- TEACHER NOTES — backend: inject notes -->
                         <div class="teacher-notes-card">
                             <div class="teacher-notes-title">Teacher's Notes /<br />Recommendations</div>
@@ -449,9 +394,11 @@
                         document.getElementById('student-name-display').textContent = data.student_name;
                     }
                     updateProgressCards(data);
-                    updateActivityChart(data.activity_scores);
                     renderActivityHistory(data.activities);
-                    updateSkillsBreakdown(data.skills);
+                    renderSkillsRadar(data.skills);
+                    renderProgressTrend(data.activities, data.average_score || 0);
+                    renderGoalsTargets(data.skills, data.activities);
+                    renderAssistanceHistory(data.activities);
                     renderTeacherNotes(data.notes);
                 })
                 .catch(err => showLoadError(err.message));
@@ -504,14 +451,198 @@
             document.querySelectorAll('.teacher-ring-sub')[2].textContent = total > 0 ? 'of ' + total + ' assigned' : 'none assigned yet';
         }
 
-        // ── Bar chart ─────────────────────────────────────────────
-        function updateActivityChart(scores) {
-            const bars = document.querySelectorAll('.teacher-bar');
-            for (let i = 0; i < 6; i++) {
-                const val = (scores && scores[i]) ? scores[i] : 0;
-                bars[i].style.height = val + '%';
-                bars[i].title = val ? val + '%' : 'No data';
+        // ── Skills breakdown radar ─────────────────────────────────
+        var _skillsChart = null;
+        function renderSkillsRadar(skills) {
+            const canvas = document.getElementById('skillsRadarChart');
+            if (!canvas || typeof Chart === 'undefined') return;
+            const labels = ['Cognitive', 'Communication', 'Fine Motor', 'Social Skills', 'Self Help', 'Language Development', 'Aesthetic & Creative'];
+            const data = labels.map(l => (skills && skills[l]) || 0);
+            if (_skillsChart) { _skillsChart.data.datasets[0].data = data; _skillsChart.update(); return; }
+            _skillsChart = new Chart(canvas.getContext('2d'), {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Average Score', data: data,
+                        backgroundColor: 'rgba(37,99,235,.35)', borderColor: '#2563eb', borderWidth: 3,
+                        pointRadius: 5, pointHoverRadius: 7, pointBackgroundColor: '#2563eb',
+                        pointBorderColor: '#fff', pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        r: {
+                            beginAtZero: true, max: 100,
+                            ticks: { stepSize: 25, backdropColor: 'transparent', font: { size: 10 } },
+                            pointLabels: { font: { size: 10, weight: '700' }, color: '#1e293b', callback: (l) => l.split(' ') },
+                            grid: { color: '#cbd5e1' }, angleLines: { color: '#cbd5e1' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ── Progress trend ──────────────────────────────────────────
+        var _trendChart = null;
+        function renderProgressTrend(activities, avgScore) {
+            const statsEl = document.getElementById('trendStats');
+            const wrap = document.getElementById('trendLineChart').closest('.teacher-trend-chart-wrap');
+            const done = (activities || []).filter(a => a.date);
+            if (done.length < 2) {
+                statsEl.innerHTML = '<div class="teacher-trend-stat"><div class="teacher-trend-stat-label">Current Average</div><div class="teacher-trend-stat-val">' + (done.length ? Math.round(avgScore) + '%' : '—') + '</div></div>';
+                wrap.innerHTML = '<div class="teacher-trend-empty">Not enough activity history yet to show a trend.</div>';
+                return;
             }
+            const chrono = done.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+            const scoreOf = a => (a.is_finalized && a.finalized_score !== null) ? a.finalized_score : (a.score || 0);
+            const earlier = chrono.slice(0, chrono.length - 1);
+            const previousAvg = Math.round(earlier.reduce((s, a) => s + scoreOf(a), 0) / earlier.length);
+            const currentAvg = Math.round(avgScore);
+            const change = currentAvg - previousAvg;
+            const changeCls = change > 0 ? 'is-up' : (change < 0 ? 'is-down' : '');
+            const changeStr = (change > 0 ? '+' : '') + change + ' pt' + (Math.abs(change) === 1 ? '' : 's');
+
+            statsEl.innerHTML =
+                '<div class="teacher-trend-stat"><div class="teacher-trend-stat-label">Previous Average</div><div class="teacher-trend-stat-val">' + previousAvg + '%</div></div>' +
+                '<div class="teacher-trend-stat"><div class="teacher-trend-stat-label">Current Average</div><div class="teacher-trend-stat-val">' + currentAvg + '%</div></div>' +
+                '<div class="teacher-trend-stat"><div class="teacher-trend-stat-label">Change</div><div class="teacher-trend-stat-val ' + changeCls + '">' + changeStr + '</div></div>';
+
+            if (!wrap.querySelector('canvas')) wrap.innerHTML = '<canvas id="trendLineChart"></canvas>';
+            const canvas = document.getElementById('trendLineChart');
+            const labels = chrono.map(a => fmtHistoryDate(a.date));
+            const scores = chrono.map(scoreOf);
+            if (_trendChart) { _trendChart.data.labels = labels; _trendChart.data.datasets[0].data = scores; _trendChart.update(); return; }
+            _trendChart = new Chart(canvas.getContext('2d'), {
+                type: 'line',
+                data: { labels: labels, datasets: [{ label: 'Score', data: scores, borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,.12)', tension: .3, fill: true, pointRadius: 4, pointBackgroundColor: '#2563eb' }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } } }
+            });
+        }
+        function fmtHistoryDate(iso) {
+            if (!iso) return '—';
+            return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        // ── Goals & targets ─────────────────────────────────────────
+        var GOAL_TARGET = 80; // matches the app-wide passing/mastery threshold used everywhere else
+        // Reverse of the PHP skillMap in teacher_progress_stats.php — lets us
+        // find which activities feed a given Skills Breakdown domain, so the
+        // weakest domain can show what the learner actually got wrong there
+        // instead of just a score bar.
+        var GOAL_DOMAIN_KEYWORDS = {
+            'Cognitive': 'cognitive', 'Communication': 'communication', 'Fine Motor': 'motor',
+            'Social Skills': 'social', 'Self Help': 'self', 'Language Development': 'language',
+            'Aesthetic & Creative': 'aesthetic'
+        };
+        function goalImprovementTips(domainName, activities) {
+            const kw = GOAL_DOMAIN_KEYWORDS[domainName];
+            const related = (activities || []).filter(a => kw && (a.subject || '').toLowerCase().indexOf(kw) !== -1);
+            const tips = [];
+            related.forEach(a => {
+                (a.struggled_items || []).forEach(it => {
+                    if (tips.some(t => t.label === it.label)) return;
+                    tips.push({ label: it.label, correct: it.correct, thought: it.thought, activity: a.name });
+                });
+            });
+            return tips.slice(0, 3);
+        }
+        function renderGoalsTargets(skills, activities) {
+            const list = document.getElementById('goalsList');
+            const assessed = Object.keys(skills || {}).filter(k => (skills[k] || 0) > 0);
+            if (!assessed.length) {
+                list.innerHTML = '<div class="teacher-goals-empty">Goals will appear here once this learner has scores in a skill area.</div>';
+                return;
+            }
+            // Only areas still below the target belong here — a domain
+            // already at or above 80% doesn't need a "goal to improve."
+            const entries = assessed.filter(k => skills[k] < GOAL_TARGET);
+            if (!entries.length) {
+                list.innerHTML = '<div class="teacher-goals-empty">🎉 Every assessed skill area is already at or above the ' + GOAL_TARGET + '% target.</div>';
+                return;
+            }
+            // Weakest first — that's the priority focus area to improve on.
+            entries.sort((a, b) => skills[a] - skills[b]);
+
+            list.innerHTML = entries.map(function(name, idx) {
+                const val = skills[name];
+                const pct = Math.min(100, Math.round((val / GOAL_TARGET) * 100));
+                const met = val >= GOAL_TARGET;
+                const isWeakest = idx === 0;
+                const focusTag = isWeakest ? '<span class="teacher-goal-focus-tag">🔻 Needs the most support</span>' : '';
+                let tipsHtml = '';
+                if (isWeakest) {
+                    const tips = goalImprovementTips(name, activities);
+                    if (tips.length) {
+                        tipsHtml = '<ul class="teacher-goal-tips">' + tips.map(function(t) {
+                            const detail = (t.thought && t.correct) ? (' — picked "' + escHtml(String(t.thought)) + '" instead of "' + escHtml(String(t.correct)) + '"') : '';
+                            return '<li>' + escHtml(t.label) + detail + ' <span class="teacher-goal-tip-src">(' + escHtml(t.activity) + ')</span></li>';
+                        }).join('') + '</ul>';
+                    } else {
+                        tipsHtml = '<p class="teacher-goal-tip-generic">Score is still below the ' + GOAL_TARGET + '% target — more practice in this area will help.</p>';
+                    }
+                }
+                return '<div class="teacher-goal-row' + (isWeakest ? ' teacher-goal-row--focus' : '') + '">'
+                    + '<div class="teacher-goal-meta"><span class="teacher-goal-name-wrap"><span class="teacher-goal-name">' + name + '</span>' + focusTag + '</span><span class="teacher-goal-vals">' + val + '% / ' + GOAL_TARGET + '% target</span></div>'
+                    + '<div class="teacher-goal-bar-bg"><div class="teacher-goal-bar-fill' + (met ? ' is-met' : '') + '" style="width:' + pct + '%;"></div></div>'
+                    + tipsHtml
+                    + '</div>';
+            }).join('');
+        }
+
+        // ── Assistance / Prompt History ──────────────────────────────
+        // Ranked least → most independent, matching the exact 4 options a
+        // teacher picks from when finalizing a submission (Teacher_reviewact.html).
+        var ASSIST_LEVELS = ['Full Physical Prompt', 'Verbal Cueing', 'Minimal Assistance', 'Independent'];
+        var ASSIST_RANK = { 'Full Physical Prompt': 0, 'Verbal Cueing': 1, 'Minimal Assistance': 2, 'Independent': 3 };
+        var ASSIST_COLOR = { 'Full Physical Prompt': '#EF4444', 'Verbal Cueing': '#F59E0B', 'Minimal Assistance': '#4A90E2', 'Independent': '#10B981' };
+        var _assistChart = null;
+        function renderAssistanceHistory(activities) {
+            const summaryEl = document.getElementById('assistSummary');
+            let canvas = document.getElementById('assistTrendChart');
+            const chartWrap = canvas ? canvas.closest('.teacher-assist-chart-wrap') : null;
+            const emptyEl = document.getElementById('assistEmpty');
+            const graded = (activities || []).filter(a => a.assistance_level && ASSIST_RANK.hasOwnProperty(a.assistance_level));
+
+            if (!graded.length) {
+                summaryEl.innerHTML = '';
+                if (chartWrap) chartWrap.style.display = 'none';
+                if (emptyEl) emptyEl.style.display = '';
+                return;
+            }
+            if (emptyEl) emptyEl.style.display = 'none';
+            if (chartWrap) chartWrap.style.display = '';
+
+            const counts = {};
+            ASSIST_LEVELS.forEach(l => counts[l] = 0);
+            graded.forEach(a => counts[a.assistance_level]++);
+
+            summaryEl.innerHTML = ASSIST_LEVELS.map(function(l) {
+                return '<div class="teacher-assist-stat"><span class="teacher-assist-dot" style="background:' + ASSIST_COLOR[l] + ';"></span><span class="teacher-assist-stat-label">' + l + '</span><span class="teacher-assist-stat-count">' + counts[l] + '</span></div>';
+            }).join('');
+
+            const dated = graded.filter(a => a.date).slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+            if (dated.length < 2) {
+                if (chartWrap) chartWrap.innerHTML = '<div class="teacher-trend-empty">Not enough graded activities yet to show a trend.</div>';
+                return;
+            }
+            if (chartWrap && !chartWrap.querySelector('canvas')) chartWrap.innerHTML = '<canvas id="assistTrendChart"></canvas>';
+            canvas = document.getElementById('assistTrendChart');
+            const labels = dated.map(a => fmtHistoryDate(a.date));
+            const data = dated.map(a => ASSIST_RANK[a.assistance_level]);
+            const pointColors = dated.map(a => ASSIST_COLOR[a.assistance_level]);
+            if (_assistChart) { _assistChart.data.labels = labels; _assistChart.data.datasets[0].data = data; _assistChart.data.datasets[0].pointBackgroundColor = pointColors; _assistChart.update(); return; }
+            _assistChart = new Chart(canvas.getContext('2d'), {
+                type: 'line',
+                data: { labels: labels, datasets: [{ data: data, borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,.12)', tension: .3, fill: true, pointRadius: 6, pointBackgroundColor: pointColors }] },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => ASSIST_LEVELS[ctx.parsed.y] } } },
+                    scales: { y: { min: 0, max: 3, ticks: { stepSize: 1, callback: (v) => ASSIST_LEVELS[v] || '', font: { size: 10 } } } }
+                }
+            });
         }
 
         // ── Activity history ──────────────────────────────────────
@@ -613,18 +744,6 @@
         document.getElementById('smOverlay').addEventListener('click', function(e) {
             if (e.target === this) closeStruggleModal();
         });
-
-        // ── Skills breakdown ──────────────────────────────────────
-        function updateSkillsBreakdown(skills) {
-            const names = ['Cognitive', 'Communication', 'Fine Motor', 'Social Skills', 'Self Help'];
-            document.querySelectorAll('.teacher-skill-row').forEach((row, i) => {
-                const val = (skills && skills[names[i]]) ? skills[names[i]] : 0;
-                const pctEl  = row.querySelector('.teacher-skill-pct');
-                const fillEl = row.querySelector('.teacher-skill-bar-fill');
-                if (pctEl)  pctEl.textContent  = val + '%';
-                if (fillEl) fillEl.style.width = val + '%';
-            });
-        }
 
         // ── Notes ─────────────────────────────────────────────────
         // Wired once — the button itself is static now (only #teacherNotesList

@@ -200,7 +200,12 @@ body {
 }
 .student-mat-empty {
   grid-column: 1 / -1;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
+  /* column, not row: the message can be one line ("No activities yet") or
+     two ("You're all caught up!" + a description below it, joined by a
+     <br>) — a <br> is meaningless between flex ROW items (they just sit
+     side by side regardless), so this must stack vertically for that
+     second line to actually land under the title instead of beside it. */
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center;
   padding: 40px 18px; border-radius: var(--r-lg);
   background: #fff; color: var(--ink-soft); font-weight: 600; font-size: 15px;
   box-shadow: 0 6px 16px rgba(36, 58, 94, .07);

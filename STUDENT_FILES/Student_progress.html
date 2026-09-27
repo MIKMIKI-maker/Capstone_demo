@@ -15,11 +15,12 @@
     <meta http-equiv="Expires" content="0" />
     <title>SPED ALM - My Progress</title>
     <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
-    <link href="STUDENT_CSS/Student_progress.css?v=21" rel="stylesheet" />
+    <link href="STUDENT_CSS/Student_progress.css?v=30" rel="stylesheet" />
     <link href="STUDENT_CSS/student_responsive.css?v=8" rel="stylesheet" />
     <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
     <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
     <link href="../ASSETS/vendor/fontawesome/css/all.min.css" rel="stylesheet" />
+    <script src="../ASSETS/vendor/js/chart.umd.min.js"></script>
     <script src="../ASSETS/student_portal.js?v=18" defer></script>
 </head>
 
@@ -167,20 +168,41 @@
                 </div>
             </div>
         </div>
+        <!-- SKILLS BREAKDOWN + PROGRESS TREND + GOALS & TARGETS -->
+        <div class="student-insights-row">
+            <div class="student-skills-card">
+                <div class="student-skills-title">Skills Breakdown</div>
+                <div class="student-skills-chart-wrap">
+                    <canvas id="skillsRadarChart"></canvas>
+                </div>
+            </div>
+            <div class="student-trend-card">
+                <div class="student-skills-title">📈 Progress Trend</div>
+                <div class="student-trend-stats" id="trendStats"></div>
+                <div class="student-trend-chart-wrap">
+                    <canvas id="trendLineChart"></canvas>
+                </div>
+            </div>
+            <div class="student-goals-card">
+                <div class="student-skills-title">🎯 Goals &amp; Targets</div>
+                <div id="goalsList"></div>
+            </div>
+        </div>
         <!-- CONTENT GRID -->
         <div class="student-content-grid">
-            <!-- Performance by Activity -->
+            <!-- Assistance / Prompt History -->
             <div class="student-perf-card">
                 <div class="student-perf-header">
-                    <span class="student-perf-title">Performance by Activity</span>
-                    <span class="student-perf-tag" id="perfCount">— Activities</span>
+                    <span class="student-perf-title">📝 Assistance / Prompt History</span>
                 </div>
-                <div id="perfList">
-                    <div class="student-perf-empty">
-                        <div class="student-perf-empty-icon">📊</div>
-                        <p class="student-perf-empty-title">No performance data yet</p>
-                        <p class="student-perf-empty-desc">Scores will appear here after you submit activities.</p>
-                    </div>
+                <div id="assistSummary" class="student-assist-summary"></div>
+                <div class="student-assist-chart-wrap">
+                    <canvas id="assistTrendChart"></canvas>
+                </div>
+                <div id="assistEmpty" class="student-perf-empty" style="display:none;">
+                    <div class="student-perf-empty-icon">📝</div>
+                    <p class="student-perf-empty-title">No graded activities yet</p>
+                    <p class="student-perf-empty-desc">Assistance levels appear here once your teacher finalizes a submission's grade.</p>
                 </div>
             </div>
             <!-- Teacher's Notes -->
@@ -212,7 +234,7 @@
                         <tr>
                             <th style="width:130px;">Date Submitted</th>
                             <th style="width:220px;">Activity</th>
-                            <th style="width:130px;">Type · Grading</th>
+                            <th style="width:130px;">Activity Type</th>
                             <th style="width:100px;">Score</th>
                             <th style="width:100px;">Retakes</th>
                             <th style="width:160px;">Assistance Level</th>
@@ -302,13 +324,232 @@
         fetch('STUDENT_BACKEND/student_get_progress.php?student_record_id=' + encodeURIComponent(srid) + '&teacher_id=' + encodeURIComponent(tid) + '&_t=' + Date.now(), { cache: 'no-store' })
             .then(function(r){ return r.json(); })
             .then(function(d) {
-                if (!d.success) { renderProgressUI([], 0, 0, []); return; }
-                renderProgressUI(d.activities || [], d.avg_score || 0, d.total_activities || 0, d.notes || []);
+                if (!d.success) { renderProgressUI([], 0, 0, [], {}); return; }
+                renderProgressUI(d.activities || [], d.avg_score || 0, d.total_activities || 0, d.notes || [], d.skills || {});
             })
-            .catch(function(){ renderProgressUI([], 0, 0, []); });
+            .catch(function(){ renderProgressUI([], 0, 0, [], {}); });
     }
 
-    function renderProgressUI(activities, avgScore, totalActivities, notes) {
+    var _skillsChart = null;
+    function renderSkillsChart(skills) {
+        var canvas = document.getElementById('skillsRadarChart');
+        if (!canvas || typeof Chart === 'undefined') return;
+        var labels = ['Cognitive', 'Communication', 'Fine Motor', 'Social Skills', 'Self Help', 'Language Development', 'Aesthetic & Creative'];
+        var data = labels.map(function(l) { return skills[l] || 0; });
+        if (_skillsChart) {
+            _skillsChart.data.datasets[0].data = data;
+            _skillsChart.update();
+            return;
+        }
+        _skillsChart = new Chart(canvas.getContext('2d'), {
+            type: 'radar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Average Score',
+                    data: data,
+                    backgroundColor: 'rgba(37,99,235,.35)',
+                    borderColor: '#2563eb',
+                    borderWidth: 3,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: '#2563eb',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    r: {
+                        beginAtZero: true, max: 100,
+                        ticks: { stepSize: 25, backdropColor: 'transparent', font: { size: 10 } },
+                        pointLabels: { font: { size: 10, weight: '700' }, color: '#1e293b', callback: function(label) { return label.split(' '); } },
+                        grid: { color: '#cbd5e1' },
+                        angleLines: { color: '#cbd5e1' }
+                    }
+                }
+            }
+        });
+    }
+
+    var _trendChart = null;
+    function renderProgressTrend(activities, avgScore) {
+        var statsEl = document.getElementById('trendStats');
+        var wrap = document.getElementById('trendLineChart').closest('.student-trend-chart-wrap');
+        var done = (activities || []).filter(function(a) { return a.assessment_date; });
+        if (done.length < 2) {
+            statsEl.innerHTML = '<div class="student-trend-stat"><div class="student-trend-stat-label">Current Average</div><div class="student-trend-stat-val">' + (done.length ? Math.round(avgScore) + '%' : '—') + '</div></div>';
+            wrap.innerHTML = '<div class="student-trend-empty">Not enough activity history yet to show a trend — this fills in once a couple more activities are completed.</div>';
+            return;
+        }
+        // Chronological (oldest first) so the line reads left-to-right as "over time"
+        var chrono = done.slice().sort(function(a, b) { return new Date(a.assessment_date) - new Date(b.assessment_date); });
+        var scoreOf = function(a) { return (a.is_finalized && a.finalized_score !== null) ? a.finalized_score : (a.score || 0); };
+        var latest = chrono[chrono.length - 1];
+        var earlier = chrono.slice(0, chrono.length - 1);
+        var previousAvg = Math.round(earlier.reduce(function(s, a) { return s + scoreOf(a); }, 0) / earlier.length);
+        var currentAvg = Math.round(avgScore);
+        var change = currentAvg - previousAvg;
+        var changeCls = change > 0 ? 'is-up' : (change < 0 ? 'is-down' : '');
+        var changeStr = (change > 0 ? '+' : '') + change + ' pt' + (Math.abs(change) === 1 ? '' : 's');
+
+        statsEl.innerHTML =
+            '<div class="student-trend-stat"><div class="student-trend-stat-label">Previous Average</div><div class="student-trend-stat-val">' + previousAvg + '%</div></div>' +
+            '<div class="student-trend-stat"><div class="student-trend-stat-label">Current Average</div><div class="student-trend-stat-val">' + currentAvg + '%</div></div>' +
+            '<div class="student-trend-stat"><div class="student-trend-stat-label">Change</div><div class="student-trend-stat-val ' + changeCls + '">' + changeStr + '</div></div>';
+
+        if (!wrap.querySelector('canvas')) wrap.innerHTML = '<canvas id="trendLineChart"></canvas>';
+        var canvas = document.getElementById('trendLineChart');
+        var labels = chrono.map(function(a) { return fmtDate(a.assessment_date); });
+        var scores = chrono.map(scoreOf);
+        if (_trendChart) {
+            _trendChart.data.labels = labels;
+            _trendChart.data.datasets[0].data = scores;
+            _trendChart.update();
+            return;
+        }
+        _trendChart = new Chart(canvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Score', data: scores,
+                    borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,.12)',
+                    tension: .3, fill: true, pointRadius: 4, pointBackgroundColor: '#2563eb'
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, max: 100, ticks: { callback: function(v) { return v + '%'; } } } }
+            }
+        });
+    }
+
+    var GOAL_TARGET = 80; // matches the app-wide passing/mastery threshold used everywhere else
+    // Maps each Skills Breakdown domain name back to the keyword an activity's
+    // own `subject` field is matched against (the exact reverse of the PHP
+    // skillMap in student_get_progress.php / teacher_progress_stats.php) so we
+    // can pull the actual activities behind a weak domain and surface what the
+    // learner got wrong in them, instead of just showing a score bar.
+    var GOAL_DOMAIN_KEYWORDS = {
+        'Cognitive': 'cognitive', 'Communication': 'communication', 'Fine Motor': 'motor',
+        'Social Skills': 'social', 'Self Help': 'self', 'Language Development': 'language',
+        'Aesthetic & Creative': 'aesthetic'
+    };
+    function goalImprovementTips(domainName, activities) {
+        var kw = GOAL_DOMAIN_KEYWORDS[domainName];
+        var related = (activities || []).filter(function(a) { return kw && (a.subject || '').toLowerCase().indexOf(kw) !== -1; });
+        var tips = [];
+        related.forEach(function(a) {
+            (a.struggled_items || []).forEach(function(it) {
+                if (tips.some(function(t) { return t.label === it.label; })) return;
+                tips.push({ label: it.label, correct: it.correct, thought: it.thought, activity: a.activity_title });
+            });
+        });
+        return tips.slice(0, 3);
+    }
+    function renderGoalsTargets(skills, activities) {
+        var list = document.getElementById('goalsList');
+        var assessed = Object.keys(skills || {}).filter(function(k) { return (skills[k] || 0) > 0; });
+        if (!assessed.length) {
+            list.innerHTML = '<div class="student-goals-empty">Goals will appear here once you have scores in a skill area.</div>';
+            return;
+        }
+        // Only areas still below the target belong here — a domain already at
+        // or above 80% doesn't need a "goal to improve," so it's left out.
+        var entries = assessed.filter(function(k) { return skills[k] < GOAL_TARGET; });
+        if (!entries.length) {
+            list.innerHTML = '<div class="student-goals-empty">🎉 Great job! Every assessed skill area is already at or above the ' + GOAL_TARGET + '% target.</div>';
+            return;
+        }
+        // Weakest first — that's the priority focus area to improve on.
+        entries.sort(function(a, b) { return skills[a] - skills[b]; });
+
+        list.innerHTML = entries.map(function(name, idx) {
+            var val = skills[name];
+            var pct = Math.min(100, Math.round((val / GOAL_TARGET) * 100));
+            var met = val >= GOAL_TARGET;
+            var isWeakest = idx === 0;
+            var focusTag = isWeakest ? '<span class="student-goal-focus-tag">🔻 Needs the most support</span>' : '';
+            var tipsHtml = '';
+            if (isWeakest) {
+                var tips = goalImprovementTips(name, activities);
+                if (tips.length) {
+                    tipsHtml = '<ul class="student-goal-tips">' + tips.map(function(t) {
+                        var detail = (t.thought && t.correct) ? (' — picked "' + escStr(String(t.thought)) + '" instead of "' + escStr(String(t.correct)) + '"') : '';
+                        return '<li>' + escStr(t.label) + detail + ' <span class="student-goal-tip-src">(' + escStr(t.activity) + ')</span></li>';
+                    }).join('') + '</ul>';
+                } else {
+                    tipsHtml = '<p class="student-goal-tip-generic">Score is still below the ' + GOAL_TARGET + '% target — more practice in this area will help.</p>';
+                }
+            }
+            return '<div class="student-goal-row' + (isWeakest ? ' student-goal-row--focus' : '') + '">'
+                + '<div class="student-goal-meta"><span class="student-goal-name-wrap"><span class="student-goal-name">' + name + '</span>' + focusTag + '</span><span class="student-goal-vals">' + val + '% / ' + GOAL_TARGET + '% target</span></div>'
+                + '<div class="student-goal-bar-bg"><div class="student-goal-bar-fill' + (met ? ' is-met' : '') + '" style="width:' + pct + '%;"></div></div>'
+                + tipsHtml
+                + '</div>';
+        }).join('');
+    }
+
+    // ── Assistance / Prompt History ──────────────────────────────
+    // Ranked least → most independent, matching the exact 4 options a
+    // teacher picks from when finalizing a submission (Teacher_reviewact.html).
+    var ASSIST_LEVELS = ['Full Physical Prompt', 'Verbal Cueing', 'Minimal Assistance', 'Independent'];
+    var ASSIST_RANK = { 'Full Physical Prompt': 0, 'Verbal Cueing': 1, 'Minimal Assistance': 2, 'Independent': 3 };
+    var ASSIST_COLOR = { 'Full Physical Prompt': '#ef4444', 'Verbal Cueing': '#f59e0b', 'Minimal Assistance': '#3b82f6', 'Independent': '#16a34a' };
+    var _assistChart = null;
+    function renderAssistanceHistory(activities) {
+        var summaryEl = document.getElementById('assistSummary');
+        var canvas = document.getElementById('assistTrendChart');
+        var chartWrap = canvas ? canvas.closest('.student-assist-chart-wrap') : null;
+        var emptyEl = document.getElementById('assistEmpty');
+        var graded = (activities || []).filter(function(a) { return a.assistance_level && ASSIST_RANK.hasOwnProperty(a.assistance_level); });
+
+        if (!graded.length) {
+            summaryEl.innerHTML = '';
+            if (chartWrap) chartWrap.style.display = 'none';
+            if (emptyEl) emptyEl.style.display = '';
+            return;
+        }
+        if (emptyEl) emptyEl.style.display = 'none';
+        if (chartWrap) chartWrap.style.display = '';
+
+        var counts = {};
+        ASSIST_LEVELS.forEach(function(l) { counts[l] = 0; });
+        graded.forEach(function(a) { counts[a.assistance_level]++; });
+
+        summaryEl.innerHTML = ASSIST_LEVELS.map(function(l) {
+            return '<div class="student-assist-stat"><span class="student-assist-dot" style="background:' + ASSIST_COLOR[l] + ';"></span><span class="student-assist-stat-label">' + l + '</span><span class="student-assist-stat-count">' + counts[l] + '</span></div>';
+        }).join('');
+
+        var dated = graded.filter(function(a) { return a.assessment_date; })
+            .slice().sort(function(a, b) { return new Date(a.assessment_date) - new Date(b.assessment_date); });
+        if (dated.length < 2) {
+            if (chartWrap) chartWrap.innerHTML = '<div class="student-trend-empty">Not enough graded activities yet to show a trend.</div>';
+            return;
+        }
+        if (chartWrap && !chartWrap.querySelector('canvas')) chartWrap.innerHTML = '<canvas id="assistTrendChart"></canvas>';
+        canvas = document.getElementById('assistTrendChart');
+        var labels = dated.map(function(a) { return fmtDate(a.assessment_date); });
+        var data = dated.map(function(a) { return ASSIST_RANK[a.assistance_level]; });
+        var pointColors = dated.map(function(a) { return ASSIST_COLOR[a.assistance_level]; });
+        if (_assistChart) { _assistChart.data.labels = labels; _assistChart.data.datasets[0].data = data; _assistChart.data.datasets[0].pointBackgroundColor = pointColors; _assistChart.update(); return; }
+        _assistChart = new Chart(canvas.getContext('2d'), {
+            type: 'line',
+            data: { labels: labels, datasets: [{ data: data, borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,.12)', tension: .3, fill: true, pointRadius: 6, pointBackgroundColor: pointColors }] },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(ctx) { return ASSIST_LEVELS[ctx.parsed.y]; } } } },
+                scales: { y: { min: 0, max: 3, ticks: { stepSize: 1, callback: function(v) { return ASSIST_LEVELS[v] || ''; }, font: { size: 10 } } } }
+            }
+        });
+    }
+
+    function renderProgressUI(activities, avgScore, totalActivities, notes, skills) {
         var CIRC = 201;
         var completed = activities.length;
 
@@ -328,33 +569,8 @@
             fillGreen.closest('.student-ov-stat').querySelector('.student-circle-denom').textContent = '/' + totalActivities;
         }
 
-        // Performance cards
-        var perfList = document.getElementById('perfList');
-        document.getElementById('perfCount').textContent = completed + ' Activit' + (completed === 1 ? 'y' : 'ies');
-        if (completed === 0) {
-            perfList.innerHTML = '<div class="student-perf-empty"><div class="student-perf-empty-icon">📊</div><p class="student-perf-empty-title">No performance data yet</p><p class="student-perf-empty-desc">Scores will appear here after you submit activities.</p></div>';
-        } else {
-            perfList.innerHTML = activities.map(function(r) {
-                var sc = r.score || 0;
-                var col = scoreColor(sc);
-                var scoreLabel = sc + '%';
-                if (r.is_finalized && r.finalized_score !== null) {
-                    scoreLabel = r.finalized_score + '%';
-                    col = scoreColor(r.finalized_score);
-                    sc = r.finalized_score;
-                }
-                return '<div style="padding:10px 0;border-bottom:1px solid #f1f5f9;">'
-                    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
-                    + '<span style="font-weight:700;font-size:14px;color:#1e293b;">' + r.activity_title + (r.is_finalized ? ' <span style="font-size:10px;background:#dbeafe;color:#1d4ed8;padding:1px 6px;border-radius:8px;font-weight:600;">Finalized</span>' : '') + '</span>'
-                    + '<span style="font-weight:800;font-size:15px;color:' + col + ';">' + scoreLabel + '</span>'
-                    + '</div>'
-                    + '<div style="background:#e2e8f0;border-radius:6px;height:8px;overflow:hidden;">'
-                    + '<div style="width:' + sc + '%;height:100%;background:' + col + ';border-radius:6px;transition:width .5s;"></div>'
-                    + '</div>'
-                    + '<div style="font-size:11px;color:#94a3b8;margin-top:4px;">' + (r.subject || 'Activity') + ' · ' + (r.status_label || '') + '</div>'
-                    + '</div>';
-            }).join('');
-        }
+        // Assistance / Prompt History
+        renderAssistanceHistory(activities);
 
         // History table
         document.getElementById('historyCount').textContent = completed + ' record' + (completed === 1 ? '' : 's');
@@ -391,7 +607,7 @@
                 return '<tr>'
                     + '<td>' + fmtDate(r.assessment_date) + '</td>'
                     + '<td style="font-weight:600;">' + r.activity_title + '</td>'
-                    + '<td>' + (r.subject || '—') + '</td>'
+                    + '<td>' + (r.mode_label || r.activity_type || '—') + '</td>'
                     + '<td style="font-weight:800;color:' + col + ';">' + scoreDisplay + '</td>'
                     + '<td style="text-align:center;">' + retakeCell + '</td>'
                     + '<td>' + assistCell + '</td>'
@@ -445,6 +661,11 @@
             }
             notesCard.innerHTML = notesHtml;
         }
+
+        // Skills breakdown radar chart
+        renderSkillsChart(skills || {});
+        renderProgressTrend(activities, avgScore);
+        renderGoalsTargets(skills || {}, activities);
 
         // Date
         document.querySelector('.student-page-sub').textContent =
