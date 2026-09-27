@@ -51,6 +51,8 @@ if ($stmt) {
             'passed_count'       => 0,
             'last_activity_date' => null,
             'status'             => 'No Activity',
+            'latest_assistance_level' => null,
+            'high_support_count' => 0,
         ];
     }
     $stmt->close();
@@ -140,6 +142,37 @@ if ($progStmt) {
         unset($a);
     }
     $progStmt->close();
+}
+
+// Assistance-level history — per-student, so "Needs Attention" can factor in
+// how much support a learner has needed lately, not just their score.
+$assistStmt = $conn->prepare("
+    SELECT student_id, assistance_level, finalized_at
+    FROM activity_submissions
+    WHERE teacher_id = ? AND is_finalized = 1 AND assistance_level IS NOT NULL
+    ORDER BY finalized_at ASC
+");
+if ($assistStmt) {
+    $assistStmt->bind_param("i", $teacher_id);
+    $assistStmt->execute();
+    $assistRows = $assistStmt->get_result();
+    $latestAssistByStudent = [];
+    $highSupportCountByStudent = [];
+    $highSupportLevels = ['Full Physical Prompt', 'Verbal Cueing'];
+    while ($ar = $assistRows->fetch_assoc()) {
+        $sid = (int)$ar['student_id'];
+        $latestAssistByStudent[$sid] = $ar['assistance_level']; // ORDER BY ASC — last write is the most recent
+        if (in_array($ar['assistance_level'], $highSupportLevels, true)) {
+            $highSupportCountByStudent[$sid] = ($highSupportCountByStudent[$sid] ?? 0) + 1;
+        }
+    }
+    foreach ($students as &$s) {
+        $sid = $s['student_id'];
+        $s['latest_assistance_level'] = $latestAssistByStudent[$sid] ?? null;
+        $s['high_support_count']      = $highSupportCountByStudent[$sid] ?? 0;
+    }
+    unset($s);
+    $assistStmt->close();
 }
 
 // Class overview

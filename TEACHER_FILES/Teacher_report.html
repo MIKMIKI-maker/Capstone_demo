@@ -165,10 +165,10 @@
                         <div class="teacher-skill-bar-bg"><div class="teacher-skill-bar-fill f-rose" id="skill-bar-aestheticcreative" style="width:0%;"></div></div>
                     </div>
                 </div>
-                <!-- Activity performance panel -->
+                <!-- Needs Attention panel -->
                 <div class="teacher-panel">
-                    <div class="teacher-panel-title">Activity Performance</div>
-                    <div id="report-activity-list" style="font-size:13px;color:#64748b;font-family:'Poppins',sans-serif;">
+                    <div class="teacher-panel-title">⚠️ Needs Attention</div>
+                    <div id="report-attention-list" style="font-size:13px;color:#64748b;font-family:'Poppins',sans-serif;">
                         <div style="text-align:center;padding:20px;color:#cbd5e1;">Loading...</div>
                     </div>
                 </div>
@@ -468,29 +468,9 @@
                         }).join('');
                     }
 
-                    // Activity performance panel
-                    var actEl = document.getElementById('report-activity-list');
-                    if (actEl) {
-                        if (!d.activities || !d.activities.length) {
-                            actEl.innerHTML = '<div style="text-align:center;padding:20px;color:#cbd5e1;">No activities published yet</div>';
-                        } else {
-                            _reportActivities = d.activities;
-                            actEl.innerHTML = d.activities.map(function(a, idx) {
-                                var pct = a.avg_score ? a.avg_score + '%' : '—';
-                                var barW = a.avg_score ? a.avg_score : 0;
-                                return '<div class="tr-act-row" onclick="openActivitySubmissions(' + idx + ')" title="Click to see who submitted">'
-                                    + '<div style="display:flex;justify-content:space-between;margin-bottom:4px;">'
-                                    + '<span style="font-weight:600;color:#334155;font-size:12px;">' + escHtml(a.activity_title) + '</span>'
-                                    + '<span style="color:#1e3a8a;font-weight:700;font-size:12px;">' + pct + '</span>'
-                                    + '</div>'
-                                    + '<div style="height:6px;background:#e2e8f0;border-radius:3px;">'
-                                    + '<div style="height:6px;background:#1e3a8a;border-radius:3px;width:' + barW + '%;transition:width .4s;"></div>'
-                                    + '</div>'
-                                    + '<div style="font-size:11px;color:#94a3b8;margin-top:5px;">' + a.submissions + ' submission(s) · <span class="tr-act-view-details">view details <i class="fa-solid fa-arrow-right" style="font-size:9px;"></i></span></div>'
-                                    + '</div>';
-                            }).join('');
-                        }
-                    }
+                    // Needs Attention panel — who's falling behind, ranked by
+                    // score first and how much support they've needed lately.
+                    renderNeedsAttention(d.students || []);
                 }).catch(function() {
                     document.getElementById('report-learner-tbody').innerHTML =
                         '<tr><td colspan="5" style="text-align:center;padding:20px;color:#ef4444;">Failed to load data</td></tr>';
@@ -499,6 +479,41 @@
 
         function escHtml(str) {
             return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        // Ranks learners who aren't Passing by lowest average score first,
+        // then by how much hands-on support they've needed lately, so the
+        // teacher sees who to check on first instead of a flat activity list.
+        function renderNeedsAttention(students) {
+            var el = document.getElementById('report-attention-list');
+            if (!el) return;
+            var flagged = students.filter(function(s) { return s.status === 'At Risk' || s.status === 'Needs Support'; });
+            flagged.sort(function(a, b) {
+                if (a.avg_score !== b.avg_score) return a.avg_score - b.avg_score;
+                return (b.high_support_count || 0) - (a.high_support_count || 0);
+            });
+            if (!flagged.length) {
+                el.innerHTML = '<div style="text-align:center;padding:20px;color:#16a34a;">🎉 No learners currently need extra attention.</div>';
+                return;
+            }
+            var statusCls = { 'At Risk': 'sb-red', 'Needs Support': 'sb-orange' };
+            el.innerHTML = flagged.slice(0, 6).map(function(s) {
+                var cls = statusCls[s.status] || 'sb-gray';
+                var assistTag = s.latest_assistance_level
+                    ? '<span style="font-size:10.5px;font-weight:600;color:#7c3aed;background:#f3e8ff;padding:2px 7px;border-radius:8px;white-space:nowrap;">' + escHtml(s.latest_assistance_level) + '</span>'
+                    : '';
+                return '<div class="tr-act-row" onclick="location.href=\'Teacher_mylearners.html?student_id=' + s.student_id + '\'" title="View this learner\'s progress">'
+                    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'
+                    + '<span style="font-weight:600;color:#334155;font-size:12.5px;">' + escHtml(s.student_name) + '</span>'
+                    + '<span class="teacher-status-badge ' + cls + '" style="font-size:10.5px;">' + s.status + '</span>'
+                    + '</div>'
+                    + '<div style="display:flex;justify-content:space-between;align-items:center;">'
+                    + '<span style="font-size:12px;color:#64748b;">Average: <b style="color:#1e293b;">' + (s.avg_score > 0 ? s.avg_score + '%' : '—') + '</b></span>'
+                    + assistTag
+                    + '</div>'
+                    + '<div style="font-size:11px;color:#94a3b8;margin-top:5px;"><span class="tr-act-view-details">View progress <i class="fa-solid fa-arrow-right" style="font-size:9px;"></i></span></div>'
+                    + '</div>';
+            }).join('');
         }
 
         function printClassReport() {
