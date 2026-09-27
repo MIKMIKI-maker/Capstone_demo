@@ -255,6 +255,33 @@ function initActivityTheme(){
   .trc-type b{ font-weight:700; font-size:15px; }
   .trc-type-desc{ color:var(--ink-soft); font-size:12.5px; font-weight:500; line-height:1.5; margin-top:12px; }
 
+  /* Activity Type mode picker (Letters & Numbers / Shapes & Lines) */
+  .trc-mode-picker{ display:flex; flex-direction:column; gap:8px; }
+  .trc-mode-btn{ display:flex; align-items:center; gap:10px; cursor:pointer; border:2px solid var(--field-border);
+    background:#fff; border-radius:13px; padding:11px 13px; font-family:var(--font); font-weight:700; font-size:13.5px; color:var(--ink); text-align:left; }
+  .trc-mode-btn .trc-mode-ic{ font-size:18px; width:26px; text-align:center; flex:none; }
+  .trc-mode-btn:hover{ border-color:#cbb8f3; }
+  .trc-mode-btn.sel{ border-color:var(--purple); background:#f3f1fe; color:var(--purple); }
+
+  /* "For Printing Only" badge (shapes mode — no digital Publish) */
+  .trc-print-only-badge{ display:none; align-items:center; gap:6px; background:#fff7e6; border:1.5px solid #f5c563;
+    color:#92620a; font-family:var(--font); font-weight:700; font-size:12.5px; padding:9px 14px; border-radius:12px; white-space:nowrap; }
+  .trc-print-only-note{ display:none; background:#fff7e6; border:1.5px solid #f5c563; color:#92620a; font-weight:700;
+    font-size:.42em; padding:.6em 1em; border-radius:12px; text-align:center; max-width:520px; }
+
+  /* Live builder stage now renders the same flowing print/PDF markup for
+     both modes (see buildLiveFlowMarkup) instead of a bordered card grid —
+     .trc-print-flow-grid/.trc-print-flow-row (defined further down) cover
+     the actual layout; .trc-live-flow only adds stage-specific spacing. */
+  .trc-live-flow{ width:100%; }
+
+  /* Guide (behind) + ink (front, transparent) canvas pair per item — see
+     setupDrawCanvas/drawGuideChar. Guide never receives pointer events so
+     the ink canvas on top of it handles all drawing/erasing. */
+  .trc-canvas-guide{ pointer-events:none; }
+  .trc-mini--tool{ background:#f3f1fe; color:var(--purple); border:1.5px solid var(--purple); }
+  .trc-mini--tool.on-eraser{ background:#fdeef1; color:#c43a55; border-color:#f0a8b4; }
+
   /* Items list */
   .trc-item-row{ padding:10px 0; border-bottom:1px solid var(--line); position:relative; }
   .trc-item-row:last-of-type{ border-bottom:none; }
@@ -356,7 +383,6 @@ function initActivityTheme(){
   .trc-stage.bs-solid .trc-scard{ border-radius:8px; }
   .trc-stage.bs-dashed .trc-canvas-wrap{ border-style:dashed; }
   .trc-stage.bs-solid .trc-canvas-wrap{ border-radius:4px; }
-
   .trc-stage-controls{ display:flex; flex-direction:column; align-items:center; gap:10px; margin-top:22px; position:relative; z-index:2; }
   .trc-stage-btnrow{ display:flex; justify-content:center; gap:10px; }
   .trc-mini{ cursor:pointer; border:none; font-family:var(--font); font-weight:700; font-size:.5em; padding:.55em 1.2em; border-radius:12px; }
@@ -597,6 +623,10 @@ function initActivityTheme(){
   .trc-print-area{ display:none; }
   .trc-print-area.trc-pdf-capture{ display:block; position:fixed; left:-99999px; top:0; background:#fff; }
   .trc-print-area.trc-pdf-capture .trc-print-page{ width:794px; height:1123px; padding:32px; box-sizing:border-box; background:#fff; display:flex; flex-direction:column; }
+  /* Landscape orientation (Design & Settings toggle) — swaps the captured
+     page's pixel dimensions so html2canvas/jsPDF produce a wide page
+     instead of a tall one squeezed sideways. */
+  .trc-print-area.trc-pdf-capture.trc-landscape .trc-print-page{ width:1123px; height:794px; }
   .trc-print-page{ font-family:'Poppins',sans-serif; color:#243a5e; }
   .trc-print-head{ text-align:center; margin-bottom:10px; }
   .trc-print-head h2{ font-size:21px; font-weight:700; margin:0 0 4px; }
@@ -616,6 +646,15 @@ function initActivityTheme(){
   .trc-print-item-label{ font-size:15px; font-weight:700; color:#243a5e; }
   .trc-print-trace-row svg{ width:100%; height:auto; display:block; }
   .trc-print-blank-line{ border-top:2px solid #cbd5e1; margin-top:4px; }
+  /* Name/Date header + continuous no-border flowing lines — classic
+     "trace the whole alphabet" worksheet style: every item shares the same
+     page-wide ruled lines instead of sitting in its own bordered card. */
+  .trc-print-namedate{ display:flex; justify-content:space-between; gap:24px; font-size:14px; font-weight:600; color:#243a5e; margin-bottom:14px; }
+  .trc-print-namedate span{ display:flex; align-items:center; gap:8px; flex:1; }
+  .trc-print-namedate .trc-print-nd-line{ flex:1; border-bottom:1.5px solid #64748b; height:1px; margin-top:10px; }
+  .trc-print-flow-grid{ display:flex; flex-direction:column; gap:10px; }
+  .trc-print-flow-row{ break-inside:avoid; page-break-inside:avoid; }
+  .trc-print-flow-row svg{ width:100%; height:auto; display:block; }
 
   @media print{
     html, body{ height:auto !important; overflow:visible !important; }
@@ -665,6 +704,7 @@ function initActivityTheme(){
       <button class="trc-btn trc-btn--ghost" id="trcPdfBtn" type="button">⬇️ Download PDF</button>
       <button class="trc-btn trc-btn--ghost" id="trcPreviewBtn" type="button">👁 Preview</button>
       <button class="trc-btn trc-btn--ghost" id="trcDraftBtn" type="button">💾 Save Draft</button>
+      <span class="trc-print-only-badge" id="trcPrintOnlyBadge">🖨️ For Printing Only</span>
       <button class="trc-btn trc-btn--pub" id="trcPubBtn" type="button">🌐 Publish</button>
     </div>
   </div>
@@ -689,16 +729,16 @@ function initActivityTheme(){
       </div>
 
       <div class="trc-card">
-        <div class="trc-step">1. Activity Type</div>
-        <div class="trc-type">
-          <div class="trc-type-ic">✍️</div>
-          <b>Tracing</b>
+        <div class="trc-step">1. Activity Type <span class="trc-edit-link">(per slide)</span></div>
+        <div class="trc-mode-picker" id="trcModePicker">
+          <button class="trc-mode-btn" data-mode="letters" type="button"><span class="trc-mode-ic">✍️</span>Letters &amp; Numbers</button>
+          <button class="trc-mode-btn" data-mode="shapes" type="button"><span class="trc-mode-ic">🔷</span>Shapes &amp; Lines</button>
         </div>
-        <p class="trc-type-desc">Learners trace over each dotted letter or number with their finger or mouse to build handwriting and fine motor skills.</p>
+        <p class="trc-type-desc" id="trcModeDesc"></p>
       </div>
 
       <div class="trc-card">
-        <div class="trc-step">2. Characters to Trace <span class="trc-edit-link">(letters &amp; numbers)</span></div>
+        <div class="trc-step" id="trcItemsStepLabel">2. Characters to Trace <span class="trc-edit-link">(letters &amp; numbers)</span></div>
         <div id="trcItems"></div>
         <button class="trc-add" id="trcAddItem" type="button">+ Add Item</button>
       </div>
@@ -718,8 +758,10 @@ function initActivityTheme(){
           <div class="trc-instr" id="trcInstr"></div>
           <div class="trc-grid" id="trcGrid"></div>
           <div class="trc-stage-controls">
+            <div class="trc-print-only-note" id="trcStagePrintOnly">🖨️ For Printing Only — use "Generate Printable" or "Download PDF" above. This content isn't assigned digitally.</div>
             <div class="trc-hint" id="trcHint"></div>
-            <div class="trc-stage-btnrow">
+            <div class="trc-stage-btnrow" id="trcStageBtnRow">
+              <button class="trc-mini trc-mini--tool" id="trcToolToggle" type="button">✏️ Pen</button>
               <button class="trc-mini trc-mini--reset" id="trcReset" type="button">↺ Try Again</button>
               <button class="trc-mini trc-mini--check" id="trcCheck" type="button">✓ Check answers</button>
             </div>
@@ -792,6 +834,18 @@ function initActivityTheme(){
 
         <div class="trc-set-group">
           <div class="trc-size-head">
+            <div class="trc-set-label" style="margin:0">Trace Size (letters, numbers, shapes &amp; lines)</div>
+            <input class="trc-size-num" id="trcTraceSizeNum" type="number" min="60" max="160" />
+          </div>
+          <div class="trc-size-row">
+            <span class="a-sm">A</span>
+            <input type="range" id="trcTraceSize" min="60" max="160" step="5" />
+            <span class="a-lg">A</span>
+          </div>
+        </div>
+
+        <div class="trc-set-group">
+          <div class="trc-size-head">
             <div class="trc-set-label" style="margin:0">Guide Line Thickness</div>
             <input class="trc-size-num" id="trcThickNum" type="number" min="4" max="20" />
           </div>
@@ -841,6 +895,40 @@ function initActivityTheme(){
             <button id="trcSpaceMinus" type="button">−</button>
             <span id="trcSpaceVal">Medium</span>
             <button id="trcSpacePlus" type="button">+</button>
+          </div>
+        </div>
+
+        <div class="trc-set-group">
+          <div class="trc-size-head">
+            <div class="trc-set-label" style="margin:0">Columns (per row)</div>
+            <input class="trc-size-num" id="trcRepsPerRowNum" type="number" min="1" max="10" />
+          </div>
+          <div class="trc-size-row">
+            <span class="a-sm">1</span>
+            <input type="range" id="trcRepsPerRow" min="1" max="10" step="1" />
+            <span class="a-lg">10</span>
+          </div>
+          <div class="trc-hint-text" style="font-size:11px;color:var(--ink-soft);margin-top:5px;">How many traces sit side-by-side before wrapping.</div>
+        </div>
+
+        <div class="trc-set-group">
+          <div class="trc-size-head">
+            <div class="trc-set-label" style="margin:0">Rows (per item)</div>
+            <input class="trc-size-num" id="trcRepsRowsNum" type="number" min="1" max="6" />
+          </div>
+          <div class="trc-size-row">
+            <span class="a-sm">1</span>
+            <input type="range" id="trcRepsRows" min="1" max="6" step="1" />
+            <span class="a-lg">6</span>
+          </div>
+          <div class="trc-hint-text" style="font-size:11px;color:var(--ink-soft);margin-top:5px;" id="trcRepsTotalHint">How many practice rows per item — like a normal tracing worksheet (columns × rows = 6 total per item).</div>
+        </div>
+
+        <div class="trc-set-group">
+          <div class="trc-set-label">Page Orientation (Print/PDF)</div>
+          <div class="trc-seg" id="trcOrientation">
+            <button data-o="portrait" class="sel" type="button">📄 Portrait</button>
+            <button data-o="landscape" type="button">📃 Landscape</button>
           </div>
         </div>
 
@@ -1029,29 +1117,108 @@ function initActivityTheme(){
   const DEFAULT_DESIGN = {
     bg:"#fdf6d8", font:"'Andika',sans-serif", fontSize:40, strokeWidth:10,
     textColor:"#243a5e", guideColor:"#94a3b8", penColor:"#1b4fb8", border:"rounded", spacing:"Medium",
-    showTitle:true, showInstr:true, showDeco:true
+    showTitle:true, showInstr:true, showDeco:true,
+    repsPerRow:3, repsRows:2, orientation:"portrait", traceSize:100
   };
   const BG_SWATCHES = ["#fdf6d8","#eaf2ff","#e8faf0","#f0eefc","#fdebf2","#ffffff"];
   const SPACINGS = ["Small","Medium","Large"];
   const SPACE_GAP = { Small:14, Medium:22, Large:32 };
 
-  // One "activity" = one set of trace-able characters shown together.
+  // ---- Shapes & Lines library (print-only content type, see mode picker) ----
+  // Fixed, pre-authored SVG markup per shape (viewBox 0 0 100 100) — no
+  // Zhang-Suen thinning needed here since these are already single-path
+  // outlines, unlike a filled glyph. cat groups the <select> into two
+  // optgroups matching the standard OT pre-writing progression.
+  const SHAPE_LIB = [
+    { id:"circle",   cat:"Shapes", label:"Circle",   svg:'<circle cx="50" cy="50" r="38"/>' },
+    { id:"square",   cat:"Shapes", label:"Square",   svg:'<rect x="14" y="14" width="72" height="72" rx="4"/>' },
+    { id:"triangle", cat:"Shapes", label:"Triangle", svg:'<polygon points="50,10 90,88 10,88"/>' },
+    { id:"star",     cat:"Shapes", label:"Star",     svg:'<polygon points="50,6 61,38 95,38 68,59 78,92 50,72 22,92 32,59 5,38 39,38"/>' },
+    { id:"straight", cat:"Lines",  label:"Straight Line", svg:'<line x1="8" y1="50" x2="92" y2="50"/>' },
+    { id:"wavy",     cat:"Lines",  label:"Wavy Line",     svg:'<path d="M5,50 Q 27,20 50,50 T 95,50"/>' },
+    { id:"zigzag",   cat:"Lines",  label:"Zigzag Line",   svg:'<polyline points="5,72 25,30 45,72 65,30 85,72"/>' },
+    { id:"curve",    cat:"Lines",  label:"Curve Line",    svg:'<path d="M8,80 Q50,10 92,80"/>' }
+  ];
+  function shapeById(id){ return SHAPE_LIB.find(function(s){ return s.id === id; }) || SHAPE_LIB[0]; }
+  function shapeLabel(id){ return shapeById(id).label; }
+  // Dash spacing per difficulty (Easy/Medium/Hard = index 0/1/2) — denser
+  // (smaller gap) for Easy, sparser for Hard, mirroring the letter guide's
+  // dash-density behavior in _trcComputeSkeleton below.
+  // Gaps must clearly exceed the shape's stroke width (~3.5) or the rounded
+  // caps on each dash segment visually overlap into what looks like one
+  // solid line — this happened with the original "4 2"/"4 3.5" values.
+  // The "on" length is kept near-zero (0.1) so each dash, with a round
+  // linecap, renders as a small round DOT rather than a short dash —
+  // matching the same dotted-outline look used for letters/numbers.
+  const SHAPE_DASH_PARAMS = ["0.1 6", "0.1 8", "0.1 11"];
+  function shapeSvgMarkup(shapeId, opts){
+    opts = opts || {};
+    var shape = shapeById(shapeId);
+    // escAttr is declared further down (print-helpers section) but, being a
+    // function declaration, is hoisted to the top of this script's scope —
+    // safe to call here since shapeSvgMarkup itself is only ever invoked
+    // later, during rendering, well after the whole script has parsed.
+    var color = escAttr(opts.color || state.guideColor || "#94a3b8");
+    var strokeW = opts.strokeWidth || 4;
+    var dash = opts.dash || SHAPE_DASH_PARAMS[1];
+    // A baseline under the shape, matching the letter guide's ruled line,
+    // so a shape visibly "sits on the line" instead of floating with no
+    // reference — every shape in SHAPE_LIB already fits within roughly
+    // y 5-92 of its own 0-100 viewBox, so a fixed y=92 line works for all.
+    return '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;">'
+      + '<line x1="2" y1="92" x2="98" y2="92" stroke="#94a3b8" stroke-width="2"/>'
+      + '<g fill="none" stroke="'+color+'" stroke-width="'+strokeW+'" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="'+dash+'">'
+      + shape.svg + '</g></svg>';
+  }
+  function shapeSelect(selected, cls){
+    const sel = document.createElement("select");
+    if (cls) sel.className = cls;
+    function addGroup(label, arr){
+      const og = document.createElement("optgroup"); og.label = label;
+      arr.forEach(function(s){
+        const opt = document.createElement("option");
+        opt.value = s.id; opt.textContent = s.label;
+        if (s.id === selected) opt.selected = true;
+        og.appendChild(opt);
+      });
+      sel.appendChild(og);
+    }
+    addGroup("Shapes", SHAPE_LIB.filter(function(s){ return s.cat === "Shapes"; }));
+    addGroup("Lines", SHAPE_LIB.filter(function(s){ return s.cat === "Lines"; }));
+    return sel;
+  }
+
+  // One "activity" = one slide's worth of trace-able content (letters/
+  // numbers OR shapes/lines, per activity.mode — missing/undefined mode
+  // is always treated as "letters").
+  function makeDefaultLetterItems(){
+    return [
+      { char:"A", label:"Apple" },
+      { char:"B", label:"Ball" },
+      { char:"C", label:"Cat" },
+      { char:"1", label:"" }
+    ];
+  }
+  function makeDefaultShapeItems(){
+    return [
+      { kind:"shape", shapeId:"circle", label:"Circle" },
+      { kind:"shape", shapeId:"square", label:"Square" },
+      { kind:"shape", shapeId:"straight", label:"Straight Line" }
+    ];
+  }
   function makeDefaultActivity(){
     return {
       title:"Trace the Letters",
       instruction:"Trace over each dotted letter with your finger or mouse.",
-      items:[
-        { char:"A", label:"Apple" },
-        { char:"B", label:"Ball" },
-        { char:"C", label:"Cat" },
-        { char:"1", label:"" }
-      ]
+      mode:"letters",
+      items: makeDefaultLetterItems()
     };
   }
   function makeBlankActivity(slideNumber){
     return {
       title:"New Activity "+slideNumber,
       instruction:"Trace over each dotted letter with your finger or mouse.",
+      mode:"letters",
       items:[
         { char:"A", label:"" },
         { char:"B", label:"" }
@@ -1096,12 +1263,18 @@ function initActivityTheme(){
     $("trcStageSlideLabel").textContent = `Slide ${state.currentIndex+1} of ${total}${diffTag}`;
     $("trcStagePrev").disabled = state.currentIndex === 0;
     var _curScore = _stuSlideScores[state.currentIndex];
-    var _curPassed = !!(_curScore && (_curScore.correct / _curScore.total) >= PASS_THRESHOLD);
+    // A shapes/lines slide is print-only — there's no Check answers button
+    // to ever produce a score for it, so it can't gate forward navigation
+    // the way a letters slide's pass/fail does (only matters for a mixed
+    // multi-slide activity published while a different slide was active).
+    var _isShapesSlide = (currentActivity().mode || "letters") === "shapes";
+    var _curPassed = _isShapesSlide || !!(_curScore && (_curScore.correct / _curScore.total) >= PASS_THRESHOLD);
     $("trcStageNext").disabled = state.currentIndex === total-1 || (_stuMode && !_curPassed);
     $("trcStageNav").style.display = total > 1 ? "flex" : "none";
   }
 
   function refreshSlideUI(){
+    renderModePicker();
     renderItems();
     $("trcTitleInput").value = currentActivity().title;
     $("trcInstrInput").value = currentActivity().instruction;
@@ -1113,6 +1286,47 @@ function initActivityTheme(){
     state.currentIndex = Math.max(0, Math.min(state.activities.length-1, index));
     refreshSlideUI();
   }
+
+  /* ------------------------------------------------------------- *
+   * 2b. ACTIVITY TYPE PICKER (per slide — Letters &amp; Numbers / Shapes &amp; Lines)
+   * ------------------------------------------------------------- */
+  const TRC_MODE_META = {
+    letters: { desc:"Learners trace over each dotted letter or number with their finger or mouse to build handwriting and fine motor skills." },
+    shapes:  { desc:"A print-only pre-writing worksheet: learners trace basic shapes and lines (circle, square, straight, wavy, zigzag, curve…) with a pencil — the standard progression before letters. There's no digital play for this mode, so Publish is hidden; use Generate Printable or Download PDF instead." }
+  };
+  function updateItemsSectionLabel(){
+    var mode = currentActivity().mode || "letters";
+    var el = $("trcItemsStepLabel");
+    if (!el) return;
+    el.innerHTML = mode === "shapes"
+      ? '2. Shapes &amp; Lines to Trace <span class="trc-edit-link">(print-only)</span>'
+      : '2. Characters to Trace <span class="trc-edit-link">(letters &amp; numbers)</span>';
+  }
+  function renderModePicker(){
+    var mode = currentActivity().mode || "letters";
+    document.querySelectorAll("#trcModePicker .trc-mode-btn").forEach(function(btn){
+      btn.classList.toggle("sel", btn.dataset.mode === mode);
+    });
+    $("trcModeDesc").textContent = (TRC_MODE_META[mode] || TRC_MODE_META.letters).desc;
+    updateItemsSectionLabel();
+  }
+  document.querySelectorAll("#trcModePicker .trc-mode-btn").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var activity = currentActivity();
+      var oldMode = activity.mode || "letters";
+      var newMode = btn.dataset.mode;
+      if (newMode !== oldMode){
+        activity.mode = newMode;
+        // Item schema is fundamentally different between modes ({char,label}
+        // vs {kind:"shape",shapeId,label}) — swap in fresh defaults rather
+        // than trying to coerce one shape into the other.
+        activity.items = newMode === "shapes" ? makeDefaultShapeItems() : makeDefaultLetterItems();
+      }
+      renderModePicker();
+      renderItems();
+      renderActivity();
+    });
+  });
 
   $("trcPrevSlide").addEventListener("click", ()=> goToSlide(state.currentIndex-1));
   $("trcNextSlide").addEventListener("click", ()=> goToSlide(state.currentIndex+1));
@@ -1159,28 +1373,43 @@ function initActivityTheme(){
   function itemRow(itemIndex){
     const items = currentActivity().items;
     const it = items[itemIndex];
+    const mode = currentActivity().mode || "letters";
     const row = document.createElement("div"); row.className = "trc-item-row";
 
     const top = document.createElement("div"); top.className = "trc-item-top";
 
-    /* ---- preview column: shows the currently-picked character ---- */
+    /* ---- preview column: shows the currently-picked character/shape ---- */
     const preview = document.createElement("div"); preview.className = "trc-item-preview";
-    preview.textContent = charDisplay(it.char);
+    if (mode === "shapes") preview.innerHTML = shapeSvgMarkup(it.shapeId, { strokeWidth:8, dash:"none" });
+    else preview.textContent = charDisplay(it.char);
     top.appendChild(preview);
 
-    /* ---- character + label fields ---- */
+    /* ---- character/shape + label fields ---- */
     const fields = document.createElement("div"); fields.className = "trc-item-fields";
 
-    const l1 = document.createElement("label"); l1.textContent = "Character";
-    const charRow = document.createElement("div"); charRow.className = "trc-char-row";
-    const charSel = charSelect(it.char, "trc-char-select");
-    charSel.addEventListener("change", e=>{ it.char = e.target.value; preview.textContent = charDisplay(it.char); renderActivity(); });
-    charRow.appendChild(charSel);
-    fields.appendChild(l1); fields.appendChild(charRow);
+    if (mode === "shapes"){
+      const l1s = document.createElement("label"); l1s.textContent = "Shape / Line";
+      const shapeRow = document.createElement("div"); shapeRow.className = "trc-char-row";
+      const shapeSel = shapeSelect(it.shapeId, "trc-char-select");
+      shapeSel.addEventListener("change", e=>{
+        it.shapeId = e.target.value;
+        preview.innerHTML = shapeSvgMarkup(it.shapeId, { strokeWidth:8, dash:"none" });
+        renderActivity();
+      });
+      shapeRow.appendChild(shapeSel);
+      fields.appendChild(l1s); fields.appendChild(shapeRow);
+    } else {
+      const l1 = document.createElement("label"); l1.textContent = "Character";
+      const charRow = document.createElement("div"); charRow.className = "trc-char-row";
+      const charSel = charSelect(it.char, "trc-char-select");
+      charSel.addEventListener("change", e=>{ it.char = e.target.value; preview.textContent = charDisplay(it.char); renderActivity(); });
+      charRow.appendChild(charSel);
+      fields.appendChild(l1); fields.appendChild(charRow);
+    }
 
     const l0 = document.createElement("label"); l0.textContent = "Label / Word (optional)";
     const nameInput = document.createElement("input");
-    nameInput.type = "text"; nameInput.className = "trc-name-input"; nameInput.placeholder = "e.g. Apple";
+    nameInput.type = "text"; nameInput.className = "trc-name-input"; nameInput.placeholder = mode === "shapes" ? "e.g. Circle" : "e.g. Apple";
     nameInput.value = it.label || "";
     nameInput.addEventListener("input", e=>{ it.label = e.target.value; renderActivity(); });
     fields.appendChild(l0); fields.appendChild(nameInput);
@@ -1216,7 +1445,8 @@ function initActivityTheme(){
   var TRC_MAX_ITEMS = 30;
   $("trcAddItem").addEventListener("click", ()=>{
     if (currentActivity().items.length >= TRC_MAX_ITEMS) { alert("Limit reached: up to " + TRC_MAX_ITEMS + " items per slide (keeps the printable worksheet readable)."); return; }
-    currentActivity().items.push({ char:"A", label:"" });
+    var mode = currentActivity().mode || "letters";
+    currentActivity().items.push(mode === "shapes" ? { kind:"shape", shapeId:"circle", label:"Circle" } : { char:"A", label:"" });
     renderItems(); renderActivity();
   });
 
@@ -1234,6 +1464,16 @@ function initActivityTheme(){
   // Cached per (char, font, size) since it's the same fairly expensive
   // computation every time that exact glyph/size is drawn.
   var _trcSkelCache = {};
+  // Dash on/off length (as a fraction of glyph size) per difficulty slide
+  // (Easy/Medium/Hard = index 0/1/2). Medium matches the original fixed
+  // 0.16/0.11 values exactly, so a plain single-slide activity (which is
+  // slide index 0 = "Easy") gets the intentionally more-lenient/denser
+  // look while Medium/Hard slides layer on top of the same baseline.
+  var TRC_DASH_PARAMS = [ { on:0.16, off:0.06 }, { on:0.16, off:0.11 }, { on:0.12, off:0.20 } ];
+  function trcDashParamsFor(diffIdx){
+    var i = (diffIdx == null) ? 1 : Math.max(0, Math.min(2, diffIdx));
+    return TRC_DASH_PARAMS[i];
+  }
   function _trcThinBinary(bin, w, h){
     function at(x, y){ return (x < 0 || x >= w || y < 0 || y >= h) ? 0 : bin[y * w + x]; }
     var changed = true;
@@ -1267,8 +1507,9 @@ function initActivityTheme(){
     }
     return bin;
   }
-  function _trcComputeSkeleton(ch, fontStr, size){
-    var key = ch + '|' + fontStr + '|' + Math.round(size);
+  function _trcComputeSkeleton(ch, fontStr, size, diffIdx){
+    var dp0 = trcDashParamsFor(diffIdx);
+    var key = ch + '|' + fontStr + '|' + Math.round(size) + '|' + dp0.on + '|' + dp0.off;
     if (_trcSkelCache[key]) return _trcSkelCache[key];
 
     var pad = Math.ceil(size * 0.4);
@@ -1308,7 +1549,7 @@ function initActivityTheme(){
       // dash pattern travels along the actual pen path rather than in
       // a fixed direction.
       var visited = new Uint8Array(offW * offH);
-      var dashOn = size * 0.16, dashOff = size * 0.11, period = dashOn + dashOff;
+      var dashOn = size * dp0.on, dashOff = size * dp0.off, period = dashOn + dashOff;
       var segments = [];
       function skel(x, y){ return (x >= 0 && x < offW && y >= 0 && y < offH) ? bin[y * offW + x] : 0; }
       var dirs = [[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]];
@@ -1339,8 +1580,8 @@ function initActivityTheme(){
   // Draws one already-skeletonized glyph onto the real guide canvas,
   // positioned so its left/right/center edge (per `align`, matching
   // ctx.textAlign semantics) lands at `anchorX`, baseline at `baselineY`.
-  function strokeSkeletonGlyph(ctx, ch, fontStr, size, anchorX, baselineY, align){
-    var sk = _trcComputeSkeleton(ch, fontStr, size);
+  function strokeSkeletonGlyph(ctx, ch, fontStr, size, anchorX, baselineY, align, diffIdx){
+    var sk = _trcComputeSkeleton(ch, fontStr, size, diffIdx);
     if (!sk.segments.length) return;
     var anchorOffX = align === 'right' ? sk.right : align === 'center' ? (sk.left + sk.right) / 2 : sk.left;
     var offX = anchorX - anchorOffX;
@@ -1352,6 +1593,25 @@ function initActivityTheme(){
       ctx.lineTo(s[2] + offX, s[3] + offY);
     }
     ctx.stroke();
+  }
+  // SVG-vector twin of strokeSkeletonGlyph above, used by the print/PDF
+  // path (buildFlowLineSvg) instead of drawing to a canvas — reuses the
+  // exact same _trcComputeSkeleton() dots/segments so the printed glyph is
+  // pixel-for-pixel the same dotted skeleton shape the student sees and
+  // traces on-screen, not a separate font-outline approximation.
+  function skeletonSvgGlyph(ch, fontStr, size, anchorX, baselineY, align, diffIdx, color, strokeWidth){
+    var sk = _trcComputeSkeleton(ch, fontStr, size, diffIdx);
+    if (!sk.segments.length) return "";
+    var anchorOffX = align === "right" ? sk.right : align === "center" ? (sk.left + sk.right) / 2 : sk.left;
+    var offX = anchorX - anchorOffX;
+    var offY = baselineY - sk.baselineOffY;
+    var out = '<g stroke="'+color+'" stroke-width="'+strokeWidth+'" stroke-linecap="round" stroke-linejoin="round">';
+    for (var i = 0; i < sk.segments.length; i++){
+      var s = sk.segments[i];
+      out += '<line x1="'+(s[0]+offX).toFixed(2)+'" y1="'+(s[1]+offY).toFixed(2)+'" x2="'+(s[2]+offX).toFixed(2)+'" y2="'+(s[3]+offY).toFixed(2)+'"/>';
+    }
+    out += '</g>';
+    return out;
   }
 
   // Draws the guide onto the tracing canvas (clearing it first), styled
@@ -1367,9 +1627,10 @@ function initActivityTheme(){
     ctx.clearRect(0, 0, w, h);
     if (!w || !h) return;
     var isDigit = isDigitChar(ch);
+    var traceScale = Math.max(0.6, Math.min(1.6, (state.traceSize || 100) / 100));
     var baselineY = h * 0.72;
-    var upperSize = Math.round(h * 0.62);
-    var lowerSize = Math.round(h * 0.42);
+    var upperSize = Math.round(h * 0.62 * traceScale);
+    var lowerSize = Math.round(h * 0.42 * traceScale);
     var midlineY = baselineY - lowerSize * 0.55;
     // Read the teacher's chosen font (Fonts dropdown) rather than a fixed
     // typeface, so the guide letterforms match what's selected — Andika is
@@ -1413,30 +1674,64 @@ function initActivityTheme(){
     ctx.lineJoin = "round";
     ctx.setLineDash([]);
 
+    // Guide dash density varies by difficulty slide (Easy denser/easier to
+    // follow, Hard sparser) — see TRC_DASH_PARAMS / trcDashParamsFor above.
+    var diffIdx = state.currentIndex;
     if (isDigit){
-      strokeSkeletonGlyph(ctx, ch, fontName, upperSize, w / 2, baselineY, "center");
+      strokeSkeletonGlyph(ctx, ch, fontName, upperSize, w / 2, baselineY, "center", diffIdx);
     } else {
-      strokeSkeletonGlyph(ctx, ch, fontName, upperSize, w / 2 - gap / 2, baselineY, "right");
-      strokeSkeletonGlyph(ctx, ch.toLowerCase(), fontName, lowerSize, w / 2 + gap / 2, baselineY, "left");
+      strokeSkeletonGlyph(ctx, ch, fontName, upperSize, w / 2 - gap / 2, baselineY, "right", diffIdx);
+      strokeSkeletonGlyph(ctx, ch.toLowerCase(), fontName, lowerSize, w / 2 + gap / 2, baselineY, "left", diffIdx);
     }
     ctx.restore();
   }
 
+  // Global Pen/Eraser tool mode — one toggle for the whole stage (only one
+  // item is ever being actively traced at a time), consulted by every
+  // ink canvas's own pointer handlers below.
+  var _trcToolMode = "pen";
+  function setToolMode(mode){
+    _trcToolMode = mode === "eraser" ? "eraser" : "pen";
+    var btn = $("trcToolToggle");
+    if (btn){
+      btn.textContent = _trcToolMode === "eraser" ? "🧹 Eraser" : "✏️ Pen";
+      btn.classList.toggle("on-eraser", _trcToolMode === "eraser");
+    }
+    document.querySelectorAll(".trc-canvas-ink").forEach(function(cv){
+      cv.style.cursor = _trcToolMode === "eraser" ? "cell" : "crosshair";
+    });
+  }
+
   // Pointer Events (not separate mouse/touch handlers) so finger and mouse
-  // both work. Tracks cumulative drawn distance for the completion check.
+  // both work. Tracks cumulative drawn distance for the completion check
+  // (only while actually drawing ink, not while erasing). This runs on the
+  // ink canvas — a separate transparent layer stacked on top of the guide
+  // canvas (see traceCard/initCanvases) — so erasing (globalCompositeOperation
+  // "destination-out") only clears the student's own strokes and never
+  // touches the dashed guide underneath.
   function setupDrawCanvas(canvas, itemIndex){
     var ctx = canvas.getContext("2d");
     ctx.lineCap = "round"; ctx.lineJoin = "round";
-    ctx.strokeStyle = state.penColor;
-    ctx.lineWidth = Math.max(4, state.strokeWidth || 10);
     var drawing = false, lastX = 0, lastY = 0;
     function pos(e){
       var rect = canvas.getBoundingClientRect();
       var sx = canvas.width / rect.width, sy = canvas.height / rect.height;
       return { x: (e.clientX - rect.left) * sx, y: (e.clientY - rect.top) * sy };
     }
+    function applyToolStyle(){
+      if (_trcToolMode === "eraser"){
+        ctx.globalCompositeOperation = "destination-out";
+        ctx.strokeStyle = "rgba(0,0,0,1)";
+        ctx.lineWidth = Math.max(16, (state.strokeWidth || 10) * 1.8);
+      } else {
+        ctx.globalCompositeOperation = "source-over";
+        ctx.strokeStyle = state.penColor;
+        ctx.lineWidth = Math.max(4, state.strokeWidth || 10);
+      }
+    }
     canvas.addEventListener("pointerdown", function(e){
       drawing = true;
+      applyToolStyle();
       try { canvas.setPointerCapture(e.pointerId); } catch(err){}
       var p = pos(e); lastX = p.x; lastY = p.y;
       ctx.beginPath(); ctx.moveTo(p.x, p.y);
@@ -1444,9 +1739,14 @@ function initActivityTheme(){
     });
     canvas.addEventListener("pointermove", function(e){
       if (!drawing) return;
+      // Re-applied every segment (cheap: 3 property writes), not just on
+      // pointerdown — guards against anything else touching this context
+      // (e.g. a Design & Settings sync) silently reverting eraser mode
+      // mid-stroke, which is exactly the bug that slipped through before.
+      applyToolStyle();
       var p = pos(e);
       var d = Math.hypot(p.x - lastX, p.y - lastY);
-      traceDist[itemIndex] = (traceDist[itemIndex] || 0) + d;
+      if (_trcToolMode !== "eraser") traceDist[itemIndex] = (traceDist[itemIndex] || 0) + d;
       ctx.lineTo(p.x, p.y); ctx.stroke();
       lastX = p.x; lastY = p.y;
       e.preventDefault();
@@ -1459,6 +1759,10 @@ function initActivityTheme(){
     canvas.addEventListener("pointerup", endStroke);
     canvas.addEventListener("pointercancel", endStroke);
   }
+  (function(){
+    var btn = document.getElementById("trcToolToggle");
+    if (btn) btn.addEventListener("click", function(){ setToolMode(_trcToolMode === "pen" ? "eraser" : "pen"); });
+  })();
 
   function traceCard(itemIndex){
     const it = currentActivity().items[itemIndex];
@@ -1469,8 +1773,13 @@ function initActivityTheme(){
     el.appendChild(label);
 
     const wrap = document.createElement("div"); wrap.className = "trc-canvas-wrap";
-    const canvas = document.createElement("canvas"); canvas.className = "trc-canvas";
-    wrap.appendChild(canvas);
+    // Two stacked canvases: the dashed guide (behind, static) and the
+    // student's ink (in front, transparent background) — kept separate so
+    // the eraser tool can clear ink without ever touching the guide.
+    const guideCanvas = document.createElement("canvas"); guideCanvas.className = "trc-canvas trc-canvas-guide";
+    const inkCanvas = document.createElement("canvas"); inkCanvas.className = "trc-canvas trc-canvas-ink";
+    wrap.appendChild(guideCanvas);
+    wrap.appendChild(inkCanvas);
     el.appendChild(wrap);
 
     // Mobile-only tap target — the card itself stays a small preview on a
@@ -1500,12 +1809,15 @@ function initActivityTheme(){
       var it = currentActivity().items[i];
       if (!it) return;
       var wrap = card.querySelector(".trc-canvas-wrap");
-      var cv = card.querySelector(".trc-canvas");
+      var guideCv = card.querySelector(".trc-canvas-guide");
+      var inkCv = card.querySelector(".trc-canvas-ink");
+      if (!wrap || !guideCv || !inkCv) return;
       var w = Math.round(wrap.clientWidth) || 200, h = Math.round(wrap.clientHeight) || 200;
-      cv.width = w; cv.height = h;
+      guideCv.width = w; guideCv.height = h;
+      inkCv.width = w; inkCv.height = h;
       traceCanvasSize[i] = w;
-      drawGuideChar(cv, it.char);
-      setupDrawCanvas(cv, i);
+      drawGuideChar(guideCv, it.char);
+      setupDrawCanvas(inkCv, i);
     });
   }
 
@@ -1519,21 +1831,26 @@ function initActivityTheme(){
   function resizeCardCanvas(card, itemIndex){
     var it = currentActivity().items[itemIndex];
     var wrap = card.querySelector(".trc-canvas-wrap");
-    var cv = card.querySelector(".trc-canvas");
-    if (!it || !wrap || !cv) return;
+    var guideCv = card.querySelector(".trc-canvas-guide");
+    var inkCv = card.querySelector(".trc-canvas-ink");
+    if (!it || !wrap || !guideCv || !inkCv) return;
     var newW = Math.round(wrap.clientWidth) || 200, newH = Math.round(wrap.clientHeight) || 200;
     if (!newW || !newH) return;
-    var hadContent = cv.width > 0 && cv.height > 0;
+    // The guide is fully deterministic from it.char/state — always safe to
+    // redraw fresh at the new size. Only the student's ink actually needs
+    // its pixels preserved (snapshotted then rescaled back in), since
+    // resizing a <canvas> element clears its contents.
+    var hadInk = inkCv.width > 0 && inkCv.height > 0;
     var snapshot = null;
-    if (hadContent){ try { snapshot = cv.toDataURL(); } catch(e){} }
-    cv.width = newW; cv.height = newH;
+    if (hadInk){ try { snapshot = inkCv.toDataURL(); } catch(e){} }
+    guideCv.width = newW; guideCv.height = newH;
+    inkCv.width = newW; inkCv.height = newH;
     traceCanvasSize[itemIndex] = newW;
+    drawGuideChar(guideCv, it.char);
     if (snapshot){
       var img = new Image();
-      img.onload = function(){ cv.getContext("2d").drawImage(img, 0, 0, newW, newH); };
+      img.onload = function(){ inkCv.getContext("2d").drawImage(img, 0, 0, newW, newH); };
       img.src = snapshot;
-    } else {
-      drawGuideChar(cv, it.char);
     }
   }
 
@@ -1573,6 +1890,8 @@ function initActivityTheme(){
 
   function renderActivity(){
     const activity = currentActivity();
+    const mode = activity.mode || "letters";
+    const isShapes = mode === "shapes";
     $("trcTitle").textContent = activity.title;
     $("trcInstr").textContent = activity.instruction;
     $("trcTitle").style.display = state.showTitle ? "block" : "none";
@@ -1582,32 +1901,59 @@ function initActivityTheme(){
     traceCanvasSize = {};
     suggestedMarks = {};
     grid.innerHTML = "";
-    activity.items.forEach((_, i)=> grid.appendChild(traceCard(i)));
+
+    // This whole template is answered on printed hardcopy, never on-screen
+    // — so the builder's own stage (and the Preview button) show the exact
+    // print/PDF worksheet look (shared ruled lines, one dedicated line per
+    // item) for BOTH modes. The old per-item interactive ink canvas only
+    // still runs for `_stuMode` (a previously published Letters activity
+    // opened directly by a student), so that legacy path keeps working
+    // exactly as before.
+    var showLegacyCanvas = _stuMode && !isShapes;
+    if (showLegacyCanvas){
+      activity.items.forEach((_, i)=> grid.appendChild(traceCard(i)));
+    } else {
+      grid.appendChild(buildLiveFlowMarkup(activity));
+    }
     $("trcHint").textContent = "";
-    requestAnimationFrame(initCanvases);
+
+    // No digital Try Again/Check-answers when showing the print-style
+    // static view (nothing to draw ink on or score) — shown only for the
+    // legacy interactive canvas path.
+    var btnRow = $("trcStageBtnRow"), printNote = $("trcStagePrintOnly");
+    if (btnRow) btnRow.style.display = showLegacyCanvas ? "flex" : "none";
+    if (printNote) printNote.style.display = showLegacyCanvas ? "none" : "block";
+
+    if (showLegacyCanvas) requestAnimationFrame(initCanvases);
+    updatePublishGating();
     if (document.body.classList.contains("trc-preview-only")) setTimeout(fitStageToScreen, 30);
   }
 
   function resetAnswers(){
     traceDist = {};
     suggestedMarks = {};
-    // The guide and the student's ink now share one canvas, so clearing it
-    // must immediately redraw the dashed guide — otherwise "Try Again" would
-    // hand the student a blank canvas instead of a fresh guide to trace.
-    document.querySelectorAll(".trc-scard").forEach(function(card){
-      var i = +card.dataset.i;
-      var it = currentActivity().items[i];
-      var cv = card.querySelector(".trc-canvas");
-      if (!it || !cv) return;
-      drawGuideChar(cv, it.char);
+    // The ink canvas is a separate transparent layer stacked on top of the
+    // (untouched) guide canvas now — "Try Again" only needs to clear that
+    // top layer's pixels, the guide underneath was never touched.
+    document.querySelectorAll(".trc-canvas-ink").forEach(function(cv){
+      var ctx = cv.getContext("2d");
+      ctx.clearRect(0, 0, cv.width, cv.height);
     });
     document.querySelectorAll(".trc-scard").forEach(function(card){ card.style.borderColor = ""; });
     document.querySelectorAll(".trc-scard-status").forEach(function(s){ s.textContent = ""; s.className = "trc-scard-status"; });
     $("trcHint").textContent = "";
+    setToolMode("pen");
   }
   $("trcReset").addEventListener("click", resetAnswers);
 
+  // Divides the ink-quantity completion threshold — bigger value = less ink
+  // required = more lenient. Medium (index 1) = 1.0 is the original,
+  // unchanged baseline; Easy is more forgiving, Hard is stricter. Combines
+  // multiplicatively with the existing retry-scaffold easing below, it
+  // doesn't replace it.
+  const DIFFICULTY_COMPLETION_MULT = [1.3, 1.0, 0.75];
   $("trcCheck").addEventListener("click", ()=>{
+    if ((currentActivity().mode || "letters") === "shapes") return; // print-only — nothing to score
     const items = currentActivity().items;
     const totalItems = items.length;
     var untraced = items.some((_, idx)=> !(traceDist[idx] > 0));
@@ -1618,9 +1964,11 @@ function initActivityTheme(){
     let correctCount = 0;
     suggestedMarks = {};
     const _scLevel = _stuScaffoldLevel[state.currentIndex] || 0;
+    var _diffMult = DIFFICULTY_COMPLETION_MULT[state.currentIndex];
+    if (_diffMult == null) _diffMult = DIFFICULTY_COMPLETION_MULT[DIFFICULTY_COMPLETION_MULT.length-1];
     items.forEach((it, idx)=>{
       var size = traceCanvasSize[idx] || 200;
-      var threshold = TRACE_COMPLETION_MULT * size;
+      var threshold = (TRACE_COMPLETION_MULT * size) / _diffMult;
       if (_scLevel >= 1) threshold *= 0.7; // Level 1 scaffold: an easier completion bar
       const isCorrect = (traceDist[idx] || 0) >= threshold;
       suggestedMarks[idx] = isCorrect;
@@ -1799,26 +2147,47 @@ function initActivityTheme(){
    * ------------------------------------------------------------- */
 
   // Redraws the guide letter(s) — used whenever guide color/thickness
-  // settings change. The guide and the student's ink share one canvas now,
-  // so this necessarily also clears any ink drawn so far (drawGuideChar()
-  // clears the canvas before redrawing); acceptable since this only runs
-  // from the teacher's own Design & Settings panel, not mid-trace.
+  // settings change. The guide now lives on its own canvas layer, separate
+  // from the student's ink, so this no longer disturbs anything they've
+  // already traced (a nice side effect of the two-canvas eraser refactor).
   function refreshGuides(){
-    document.querySelectorAll(".trc-scard").forEach(function(card){
-      var i = +card.dataset.i, it = currentActivity().items[i];
-      var cv = card.querySelector(".trc-canvas");
-      if (!it || !cv || !cv.width) return;
-      drawGuideChar(cv, it.char);
-    });
+    var legacyCards = document.querySelectorAll(".trc-scard");
+    if (legacyCards.length){
+      // Legacy interactive canvas path (_stuMode) — redraw the guide layer
+      // in place so a settings change never wipes the student's own ink,
+      // which a full renderActivity() rebuild would.
+      legacyCards.forEach(function(card){
+        var i = +card.dataset.i, it = currentActivity().items[i];
+        var cv = card.querySelector(".trc-canvas-guide");
+        if (!it || !cv || !cv.width) return;
+        drawGuideChar(cv, it.char);
+      });
+    } else {
+      // Builder's flowing print-style view has no ink state to preserve —
+      // a full re-render is the only way to pick up a new color/font/size,
+      // since the guide is baked directly into the generated SVG markup.
+      renderActivity();
+    }
   }
-  // Applies the current pen color/width to already-created canvases so a
-  // mid-activity settings change affects the next stroke immediately —
+  // Applies the current pen color/width to already-created ink canvases so
+  // a mid-activity settings change affects the next stroke immediately —
   // this does NOT clear anything, just updates the context's stroke style.
+  // Must respect the CURRENT tool mode rather than hardcoding pen — this used
+  // to force globalCompositeOperation back to "source-over" unconditionally,
+  // which silently cancelled Eraser mode the moment any settings sync ran
+  // (e.g. on load, or after any Design & Settings change).
   function refreshPenStyle(){
-    document.querySelectorAll(".trc-canvas").forEach(function(cv){
+    document.querySelectorAll(".trc-canvas-ink").forEach(function(cv){
       var ctx = cv.getContext("2d");
-      ctx.strokeStyle = state.penColor;
-      ctx.lineWidth = Math.max(4, state.strokeWidth || 10);
+      if (_trcToolMode === "eraser"){
+        ctx.globalCompositeOperation = "destination-out";
+        ctx.strokeStyle = "rgba(0,0,0,1)";
+        ctx.lineWidth = Math.max(16, (state.strokeWidth || 10) * 1.8);
+      } else {
+        ctx.globalCompositeOperation = "source-over";
+        ctx.strokeStyle = state.penColor;
+        ctx.lineWidth = Math.max(4, state.strokeWidth || 10);
+      }
     });
   }
 
@@ -1857,6 +2226,18 @@ function initActivityTheme(){
   $("trcSize").addEventListener("input", e=> setFontSize(+e.target.value));
   $("trcSizeNum").addEventListener("input", e=> setFontSize(+e.target.value || 40));
 
+  // How big the traced letter/number/shape/line itself is — a real, visible
+  // scale on the actual guide (drawGuideChar / buildFlowLineSvg), unlike
+  // "Font Size" above which only affects the title/instruction text.
+  function setTraceSize(value){
+    value = Math.max(60, Math.min(160, value));
+    state.traceSize = value;
+    $("trcTraceSize").value = value; $("trcTraceSizeNum").value = value;
+    renderActivity();
+  }
+  $("trcTraceSize").addEventListener("input", e=> setTraceSize(+e.target.value));
+  $("trcTraceSizeNum").addEventListener("input", e=> setTraceSize(+e.target.value || 100));
+
   function setStrokeWidth(value){
     value = Math.max(4, Math.min(20, value));
     state.strokeWidth = value;
@@ -1889,6 +2270,57 @@ function initActivityTheme(){
   $("trcSpaceMinus").addEventListener("click", ()=> setSpacing(-1));
   $("trcSpacePlus").addEventListener("click", ()=> setSpacing(1));
 
+  // Worksheet grid — Columns (how many traces sit side-by-side per row) ×
+  // Rows (how many practice rows per item), like a normal tracing-worksheet
+  // generator. Total repetitions per item = columns × rows (no separate
+  // "total" field — it's just the grid's own area). Drives both the
+  // printed worksheet and the builder's own live stage, which IS the
+  // worksheet preview for both modes (see buildLiveFlowMarkup).
+  function refreshRepsTotalHint(){
+    var total = (state.repsPerRow || 3) * (state.repsRows || 2);
+    var hint = $("trcRepsTotalHint");
+    if (hint) hint.textContent = "How many practice rows per item — like a normal tracing worksheet (columns × rows = " + total + " total per item).";
+  }
+  function setRepsPerRow(value){
+    value = Math.max(1, Math.min(10, Math.round(value) || 3));
+    state.repsPerRow = value;
+    $("trcRepsPerRow").value = value; $("trcRepsPerRowNum").value = value;
+    refreshRepsTotalHint();
+    renderActivity();
+  }
+  function setRepsRows(value){
+    value = Math.max(1, Math.min(6, Math.round(value) || 2));
+    state.repsRows = value;
+    $("trcRepsRows").value = value; $("trcRepsRowsNum").value = value;
+    refreshRepsTotalHint();
+    renderActivity();
+  }
+  $("trcRepsPerRow").addEventListener("input", e=> setRepsPerRow(+e.target.value));
+  $("trcRepsPerRowNum").addEventListener("input", e=> setRepsPerRow(+e.target.value || 3));
+  $("trcRepsRows").addEventListener("input", e=> setRepsRows(+e.target.value));
+  $("trcRepsRowsNum").addEventListener("input", e=> setRepsRows(+e.target.value || 2));
+
+  // Page orientation — Portrait/Landscape, applies to Generate Printable
+  // (browser print @page rule, injected dynamically since @page can't be
+  // scoped by a CSS class selector) and Download PDF (jsPDF orientation +
+  // capture pixel dimensions, see downloadAsPdf).
+  function applyOrientationStyle(){
+    var css = state.orientation === "landscape"
+      ? "@media print{ @page{ margin:8mm; size:landscape; } }"
+      : "@media print{ @page{ margin:8mm; size:auto; } }";
+    var el = document.getElementById("trcOrientStyle");
+    if (!el){ el = document.createElement("style"); el.id = "trcOrientStyle"; document.head.appendChild(el); }
+    el.textContent = css;
+  }
+  document.querySelectorAll("#trcOrientation button").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      state.orientation = btn.dataset.o;
+      document.querySelectorAll("#trcOrientation button").forEach(function(b){ b.classList.remove("sel"); });
+      btn.classList.add("sel");
+      applyOrientationStyle();
+    });
+  });
+
   $("trcInstrInput").addEventListener("input", e=>{
     currentActivity().instruction = e.target.value;
     $("trcInstr").textContent = e.target.value;
@@ -1912,6 +2344,7 @@ function initActivityTheme(){
   function syncDesignControls(){
     $("trcFont").value = state.font;
     $("trcSize").value = state.fontSize; $("trcSizeNum").value = state.fontSize;
+    $("trcTraceSize").value = state.traceSize || 100; $("trcTraceSizeNum").value = state.traceSize || 100;
     $("trcThick").value = state.strokeWidth || 10; $("trcThickNum").value = state.strokeWidth || 10;
     $("trcTextColor").value = state.textColor;
     $("trcGuideColor").value = state.guideColor;
@@ -1920,6 +2353,11 @@ function initActivityTheme(){
     $("trcShowTitle").checked = state.showTitle; $("trcShowInstr").checked = state.showInstr;
     $("trcShowDeco").checked = state.showDeco;
     document.querySelectorAll("#trcBorder button").forEach(b=> b.classList.toggle("sel", b.dataset.b === state.border));
+    $("trcRepsPerRow").value = state.repsPerRow || 3; $("trcRepsPerRowNum").value = state.repsPerRow || 3;
+    $("trcRepsRows").value = state.repsRows || 2; $("trcRepsRowsNum").value = state.repsRows || 2;
+    refreshRepsTotalHint();
+    document.querySelectorAll("#trcOrientation button").forEach(b=> b.classList.toggle("sel", b.dataset.o === (state.orientation || "portrait")));
+    applyOrientationStyle();
     renderSwatches();
   }
 
@@ -1987,85 +2425,149 @@ function initActivityTheme(){
       + '<label><span class="trc-print-box"></span> Independent</label>'
       + '</div></div>';
   }
-  // Builds one handwriting-practice row: the character repeated several
-  // times as a large DOTTED SVG glyph over a ruled baseline (+ midline for
-  // letters), matching the on-screen canvas guide. Letters repeat as an
-  // uppercase+lowercase "Aa" pair; digits repeat alone. Inline SVG <text>
-  // with stroke-dasharray is the safer cross-browser bet for a crisp printed
-  // dotted outline than a strokeText()'d <canvas> would be via window.print().
-  function buildTraceSvgRow(ch, reps){
-    reps = reps || 6;
-    var isDigit = isDigitChar(ch);
+  // Builds ONE shared printed line: up to `perRow` DIFFERENT items sitting
+  // side-by-side on the SAME ruled baseline (+ midline, unless every item on
+  // this particular line is a digit) — a classic "trace the whole alphabet"
+  // worksheet look, instead of one item repeated inside its own bordered box.
+  // Letters render as an uppercase+lowercase "Aa" pair; digits render alone.
+  // Inline SVG <text>/<path> with stroke-dasharray is the safer cross-browser
+  // bet for a crisp printed dotted outline than canvas strokeText() would be
+  // via window.print().
+  function buildFlowLineSvg(lineItems, activity, diffIdx){
+    var isShapes = (activity.mode || "letters") === "shapes";
     var w = 900, h = 150;
-    var baselineY = h * 0.72;
-    var upperSize = h * 0.58;
-    var lowerSize = h * 0.4;
-    var midlineY = baselineY - lowerSize * 0.55;
-    var cellW = w / reps;
+    var n = lineItems.length || 1;
+    var cellW = w / n;
     var guideColor = escAttr(state.guideColor || "#94a3b8");
-    // Same font the teacher picked in the Fonts dropdown (Andika by default)
-    // so the printed worksheet's guide letters match the on-screen canvas.
-    var svgFont = escAttr(state.font || "'Andika',sans-serif");
-
-    var lines = '<line x1="8" y1="'+baselineY+'" x2="'+(w-8)+'" y2="'+baselineY+'" stroke="#94a3b8" stroke-width="2" stroke-dasharray="8 5"/>';
-    if (!isDigit){
-      lines += '<line x1="8" y1="'+midlineY+'" x2="'+(w-8)+'" y2="'+midlineY+'" stroke="#94a3b8" stroke-width="2" stroke-dasharray="8 5"/>';
+    // Same classic 3-line handwriting guide for BOTH letters and shapes: a
+    // SOLID top line (cap-height ceiling), a DASHED middle line (x-height),
+    // and a SOLID baseline — shapes/lines use the identical ruled lines and
+    // sit resting on the same baseline as letters, instead of a separate,
+    // shorter single-line treatment.
+    // Trace Size (Design & Settings) scales how big the traced glyph/shape
+    // itself is within its cell — clamped so it can never grow past the
+    // ceiling line or shrink to nothing.
+    var traceScale = Math.max(0.6, Math.min(1.6, (state.traceSize || 100) / 100));
+    var baselineY = h * 0.72, upperSize = h * 0.58 * traceScale, lowerSize = h * 0.4 * traceScale;
+    var midlineY = baselineY - lowerSize * 0.55;
+    var topY = Math.max(6, baselineY - upperSize);
+    if (isShapes){
+      var dash = SHAPE_DASH_PARAMS[Math.max(0, Math.min(2, diffIdx == null ? 1 : diffIdx))];
+      var shapeLines = '<line x1="8" y1="'+topY+'" x2="'+(w-8)+'" y2="'+topY+'" stroke="#94a3b8" stroke-width="2"/>'
+        + '<line x1="8" y1="'+midlineY+'" x2="'+(w-8)+'" y2="'+midlineY+'" stroke="#94a3b8" stroke-width="2" stroke-dasharray="8 5"/>'
+        + '<line x1="8" y1="'+baselineY+'" x2="'+(w-8)+'" y2="'+baselineY+'" stroke="#94a3b8" stroke-width="2"/>';
+      // Bottom-aligned to the shared baseline (rather than vertically
+      // centered), sized to the same cap-height band letters occupy, so a
+      // shape visually "sits on the writing line" exactly like a letter.
+      var shapeGlyphs = lineItems.map(function(it, i){
+        var cellSize = Math.min(cellW * 0.82, upperSize);
+        var cx = cellW * (i + 0.5) - cellSize / 2;
+        var cy = baselineY - cellSize;
+        var shape = shapeById(it.shapeId);
+        return '<svg x="'+cx+'" y="'+cy+'" width="'+cellSize+'" height="'+cellSize+'" viewBox="0 0 100 100">'
+          + '<g fill="none" stroke="'+guideColor+'" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="'+dash+'">'
+          + shape.svg + '</g></svg>';
+      }).join("");
+      return '<svg viewBox="0 0 '+w+' '+h+'" xmlns="http://www.w3.org/2000/svg">'+shapeLines+shapeGlyphs+'</svg>';
     }
-
-    var glyphs = "";
-    for (var i = 0; i < reps; i++){
+    var allDigits = lineItems.every(function(it){ return isDigitChar(it.char); });
+    // Raw (unescaped) CSS font string for canvas font measurement inside
+    // _trcComputeSkeleton — NOT the HTML-attribute-escaped copy, since this
+    // is never placed in an SVG attribute (skeletonSvgGlyph draws plain
+    // <line> dots, no <text>/font-family involved at all).
+    var fontRaw = state.font || "'Andika',sans-serif";
+    var lines = '<line x1="8" y1="'+topY+'" x2="'+(w-8)+'" y2="'+topY+'" stroke="#94a3b8" stroke-width="2"/>';
+    if (!allDigits) lines += '<line x1="8" y1="'+midlineY+'" x2="'+(w-8)+'" y2="'+midlineY+'" stroke="#94a3b8" stroke-width="2" stroke-dasharray="8 5"/>';
+    lines += '<line x1="8" y1="'+baselineY+'" x2="'+(w-8)+'" y2="'+baselineY+'" stroke="#94a3b8" stroke-width="2"/>';
+    // Same true dotted-skeleton rendering the live canvas uses (see
+    // strokeSkeletonGlyph/drawGuideChar) — not a font-outline approximation
+    // — so the printed glyph looks exactly like the one the student traces
+    // on screen, dashes-per-difficulty included (via diffIdx below).
+    var glyphs = lineItems.map(function(it, i){
       var cx = cellW * (i + 0.5);
-      if (isDigit){
-        glyphs += '<text x="'+cx+'" y="'+baselineY+'" text-anchor="middle" font-family="'+svgFont+'" font-weight="700" '
-          + 'font-size="'+upperSize+'" fill="none" stroke="'+guideColor+'" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 9">'+printEscape(ch)+'</text>';
-      } else {
-        var gap = cellW * 0.06;
-        glyphs += '<text x="'+(cx - gap/2)+'" y="'+baselineY+'" text-anchor="end" font-family="'+svgFont+'" font-weight="700" '
-          + 'font-size="'+upperSize+'" fill="none" stroke="'+guideColor+'" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 9">'+printEscape(ch)+'</text>';
-        glyphs += '<text x="'+(cx + gap/2)+'" y="'+baselineY+'" text-anchor="start" font-family="'+svgFont+'" font-weight="700" '
-          + 'font-size="'+lowerSize+'" fill="none" stroke="'+guideColor+'" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 9">'+printEscape(ch.toLowerCase())+'</text>';
+      var ch = it.char;
+      var upperStroke = Math.max(2, upperSize * 0.045);
+      if (isDigitChar(ch)){
+        return skeletonSvgGlyph(ch, fontRaw, upperSize, cx, baselineY, "center", diffIdx, guideColor, upperStroke);
       }
-    }
+      var gap = cellW * 0.06;
+      var lowerStroke = Math.max(2, lowerSize * 0.045);
+      return skeletonSvgGlyph(ch, fontRaw, upperSize, cx - gap/2, baselineY, "right", diffIdx, guideColor, upperStroke)
+        + skeletonSvgGlyph(ch.toLowerCase(), fontRaw, lowerSize, cx + gap/2, baselineY, "left", diffIdx, guideColor, lowerStroke);
+    }).join("");
     return '<svg viewBox="0 0 '+w+' '+h+'" xmlns="http://www.w3.org/2000/svg">'+lines+glyphs+'</svg>';
   }
-  // Each item is a tall handwriting row (two SVG trace lines + a blank
-  // line), so only a couple fit per physical page. Chunk explicitly so
-  // every page is labeled and the "Pupils Performance Checklist" footer
-  // (previously emitted once per SLIDE, landing wherever that slide's
-  // flex box happened to overflow) lands on the true last page only.
   function chunkArray(arr, size){ var out=[]; for (var i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size)); return out; }
-  var TRC_ITEMS_PER_PAGE = 2;
+  // Each item gets its own dedicated line(s) — `_rows` lines, each holding
+  // `_perRow` repetitions of THAT SAME item — never mixed with a different
+  // item's repetitions and never split mid-item across two lines. Columns =
+  // reps per line, Rows = how many such lines this item gets, matching a
+  // standard "one line of tracing per letter" worksheet. Shared by the
+  // print/PDF path AND the builder's own live stage, so both lay out
+  // identically.
+  function buildActivityLineChunks(activity){
+    var _perRow = Math.max(1, Math.min(10, state.repsPerRow || 3));
+    var _rows = Math.max(1, Math.min(6, state.repsRows || 2));
+    var lineChunks = [];
+    activity.items.forEach(function(it){
+      for (var r = 0; r < _rows; r++){
+        var reps = [];
+        for (var c = 0; c < _perRow; c++) reps.push(it);
+        lineChunks.push(reps);
+      }
+    });
+    return lineChunks;
+  }
+  // The builder's own live stage (and the Preview button) render using this
+  // same shared-baseline flowing markup as the print/PDF output — this
+  // whole template is meant to be printed and answered on hardcopy, never
+  // answered on-screen, so what the teacher edits here should already look
+  // exactly like the worksheet that will print.
+  function buildLiveFlowMarkup(activity){
+    var lineChunks = buildActivityLineChunks(activity);
+    var diffIdx = state.currentIndex;
+    var wrap = document.createElement("div");
+    wrap.className = "trc-print-flow-grid trc-live-flow";
+    lineChunks.forEach(function(lineItems){
+      var row = document.createElement("div");
+      row.className = "trc-print-flow-row";
+      row.innerHTML = buildFlowLineSvg(lineItems, activity, diffIdx);
+      wrap.appendChild(row);
+    });
+    return wrap;
+  }
+  // How many shared ruled lines fit comfortably on one printed page (with
+  // the Name/Date header, title, and checklist footer already taking up
+  // some of the page) — chunked explicitly so every page is labeled and the
+  // "Pupils Performance Checklist" footer lands on the true last page only.
+  var TRC_LINES_PER_PAGE = 6;
   function buildPrintPages(){
     var slidePlans = state.activities.map(function(activity){
-      return { activity: activity, chunks: chunkArray(activity.items, TRC_ITEMS_PER_PAGE) };
+      var lineChunks = buildActivityLineChunks(activity);
+      return { activity: activity, pageChunks: chunkArray(lineChunks, TRC_LINES_PER_PAGE) };
     });
-    var totalPages = slidePlans.reduce(function(sum, p){ return sum + p.chunks.length; }, 0);
+    var totalPages = slidePlans.reduce(function(sum, p){ return sum + Math.max(1, p.pageChunks.length); }, 0);
 
     var pages = "";
     var pageNum = 0;
     slidePlans.forEach(function(plan, slideIdx){
       var activity = plan.activity;
-      plan.chunks.forEach(function(chunkItems, chunkIdx){
+      var pageChunks = plan.pageChunks.length ? plan.pageChunks : [[]];
+      pageChunks.forEach(function(lineChunks, chunkIdx){
         pageNum++;
-        var isLastPageOverall = (slideIdx === slidePlans.length - 1) && (chunkIdx === plan.chunks.length - 1);
-        var itemsHtml = chunkItems.map(function(it){
-          var kind = isDigitChar(it.char) ? "Number" : "Letter";
-          var labelHtml = kind + ' "' + printEscape(charDisplay(it.char)) + '"' + (it.label ? ' — ' + printEscape(it.label) : '');
-          return '<div class="trc-print-item">'
-            + '<div class="trc-print-item-label">'+labelHtml+'</div>'
-            + '<div class="trc-print-trace-row">'+buildTraceSvgRow(it.char)+'</div>'
-            + '<div class="trc-print-trace-row">'+buildTraceSvgRow(it.char)+'</div>'
-            + '<div class="trc-print-blank-line"></div>'
-            + '</div>';
+        var isLastPageOverall = (slideIdx === slidePlans.length - 1) && (chunkIdx === pageChunks.length - 1);
+        var flowHtml = lineChunks.map(function(lineItems){
+          return '<div class="trc-print-flow-row">'+buildFlowLineSvg(lineItems, activity, slideIdx)+'</div>';
         }).join("");
         pages += '<div class="trc-print-page"'+(isLastPageOverall ? ' style="page-break-after:auto; display:flex; flex-direction:column; min-height:100vh;"' : '')+'>'
+          + '<div class="trc-print-namedate"><span>Name: <span class="trc-print-nd-line"></span></span><span>Date: <span class="trc-print-nd-line"></span></span></div>'
           + '<div class="trc-print-head"><h2>'+printEscape(activity.title)+'</h2>'
           + '<div class="trc-print-objective">('+printEscape(toPrintInstruction(activity.instruction))+')</div>'
           + (state.activities.length > 1 ? '<div class="trc-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+' — '+(DIFFICULTY_LABELS[slideIdx]||"")+'</div>' : '')
           + (totalPages > 1 ? '<div class="trc-print-pagenum">Page '+pageNum+' of '+totalPages+'</div>' : '')
           + '</div>'
           + (chunkIdx === 0 ? '<div class="trc-print-divider"><div class="trc-print-rule"></div><div class="trc-print-rule-dash"></div><div class="trc-print-rule"></div></div>' : '')
-          + '<div class="trc-print-grid">'+itemsHtml+'</div>'
+          + '<div class="trc-print-flow-grid">'+flowHtml+'</div>'
           + (isLastPageOverall ? printChecklistHtml() : '')
           + '</div>';
       });
@@ -2074,11 +2576,14 @@ function initActivityTheme(){
   }
   function generatePrintable(){
     $("trcPrintArea").innerHTML = buildPrintPages();
+    $("trcPrintArea").classList.toggle("trc-landscape", state.orientation === "landscape");
+    applyOrientationStyle();
     setTimeout(function(){ window.print(); }, 60);
   }
   function downloadAsPdf(){
     var area = $("trcPrintArea");
     area.innerHTML = buildPrintPages();
+    area.classList.toggle("trc-landscape", state.orientation === "landscape");
     area.classList.add("trc-pdf-capture");
     var pageEls = Array.prototype.slice.call(area.querySelectorAll(".trc-print-page"));
     if (!pageEls.length) { area.classList.remove("trc-pdf-capture"); area.innerHTML = ""; return; }
@@ -2091,21 +2596,22 @@ function initActivityTheme(){
         return html2canvas(pageEl, { scale:2, useCORS:true, backgroundColor:"#ffffff" });
       }).then(function(canvas){
         var imgData = canvas.toDataURL("image/jpeg", 0.92);
-        var pageWmm = 210, pageHmm = 297;
+        var pageWmm = state.orientation === "landscape" ? 297 : 210;
+        var pageHmm = state.orientation === "landscape" ? 210 : 297;
         var imgWmm = pageWmm, imgHmm = canvas.height * imgWmm / canvas.width;
         if (imgHmm > pageHmm) { imgHmm = pageHmm; imgWmm = canvas.width * imgHmm / canvas.height; }
-        if (!pdf) pdf = new JsPdfCtor({ orientation:"portrait", unit:"mm", format:"a4" });
+        if (!pdf) pdf = new JsPdfCtor({ orientation: state.orientation === "landscape" ? "landscape" : "portrait", unit:"mm", format:"a4" });
         else pdf.addPage();
         pdf.addImage(imgData, "JPEG", (pageWmm - imgWmm) / 2, 0, imgWmm, imgHmm);
       });
     });
     chain.then(function(){
-      area.classList.remove("trc-pdf-capture");
+      area.classList.remove("trc-pdf-capture", "trc-landscape");
       area.innerHTML = "";
       var name = ((state.activities[0] && state.activities[0].title) || "activity").replace(/[^\w\-]+/g, "_");
       pdf.save(name + ".pdf");
     }).catch(function(err){
-      area.classList.remove("trc-pdf-capture");
+      area.classList.remove("trc-pdf-capture", "trc-landscape");
       area.innerHTML = "";
       window.showToast("Could not generate the PDF. Please try again.", "error", 4500);
       console.error(err);
@@ -2347,7 +2853,21 @@ function initActivityTheme(){
   $("trcCollapseBtn").addEventListener("click", ()=> document.body.classList.add("trc-right-collapsed"));
   $("trcShowSettingsBtn").addEventListener("click", ()=> document.body.classList.remove("trc-right-collapsed"));
 
+  // Shapes/Lines is print-only content — no digital assignment. Gated on
+  // the CURRENTLY ACTIVE slide only (simplest/safest approach: a teacher
+  // mixing modes across slides sees Publish come and go as they switch
+  // slides, rather than a whole-activity lock that's harder to reason
+  // about) — re-evaluated on every slide switch via renderActivity().
+  function updatePublishGating(){
+    var isShapes = (currentActivity().mode || "letters") === "shapes";
+    var pubBtn = $("trcPubBtn");
+    var badge = $("trcPrintOnlyBadge");
+    if (pubBtn) pubBtn.style.display = isShapes ? "none" : "";
+    if (badge) badge.style.display = isShapes ? "inline-flex" : "none";
+  }
+
   function openPublishModal(){
+    if ((currentActivity().mode || "letters") === "shapes") return; // print-only — Publish is hidden, but guard anyway
     if (_editingPub) {
       $("trcPublishTitle").textContent = '💾 Save Changes';
       $("trcPublishConfirmBtn").textContent = '💾 Save Changes';
@@ -2629,6 +3149,7 @@ function initActivityTheme(){
    * ------------------------------------------------------------- */
 
   restoreAutoSaveIfAny();
+  renderModePicker();
   renderItems();
   renderSwatches();
   syncDesignControls();
@@ -2760,7 +3281,10 @@ function initActivityTheme(){
         $('trcStudentSubmitBtn').addEventListener('click', function() {
           if (_stuSubmitDone) { _stuGoBack(); return; }
           var _slideCount = state.activities.length;
-          var _missing = []; for (var _si=0;_si<_slideCount;_si++){if(!_stuSlideScores[_si])_missing.push(_si+1);}
+          // Shapes/lines slides have no Check answers button (print-only,
+          // nothing digital to score) so they can never produce an entry in
+          // _stuSlideScores — don't count that against "missing" slides.
+          var _missing = []; for (var _si=0;_si<_slideCount;_si++){var _actSi=state.activities[_si];var _isShapesSi=!!(_actSi&&_actSi.mode==='shapes');if(!_isShapesSi&&!_stuSlideScores[_si])_missing.push(_si+1);}
           if (_missing.length>0){alert(_slideCount>1?'Please check all slides first. Missing: Slide '+_missing.join(', Slide '):'Please check your answers first before submitting.');return;}
           var _totCorrect=_stuSlideScores.reduce(function(s,x){return s+x.correct;},0);
           var _totItems=_stuSlideScores.reduce(function(s,x){return s+x.total;},0);

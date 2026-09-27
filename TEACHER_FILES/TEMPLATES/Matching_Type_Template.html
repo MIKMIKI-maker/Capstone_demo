@@ -247,6 +247,15 @@ function initActivityTheme(){
   .mtg-type b{ font-weight:700; font-size:15px; }
   .mtg-type-desc{ color:var(--ink-soft); font-size:12.5px; font-weight:500; line-height:1.5; margin-top:12px; }
 
+  /* Per-slide answer-mode picker (Pair / Label / Memory / Grid) */
+  .mtg-mode-picker{ display:flex; flex-direction:column; gap:8px; }
+  .mtg-mode-btn{ display:flex; align-items:center; gap:10px; cursor:pointer; border:2px solid var(--field-border);
+    background:#fff; border-radius:13px; padding:11px 13px; font-family:var(--font); font-weight:700; font-size:13.5px; color:var(--ink); text-align:left; }
+  .mtg-mode-btn .mtg-mode-ic{ font-size:18px; width:26px; text-align:center; flex:none; }
+  .mtg-mode-btn:hover{ border-color:#cbb8f3; }
+  .mtg-mode-btn.sel{ border-color:var(--purple); background:#f3f1fe; color:var(--purple); }
+  .mtg-hint-text{ font-size:11px; color:var(--ink-soft); font-weight:500; margin-top:5px; line-height:1.4; }
+
   /* Items list */
   .mtg-item-row{ display:flex; align-items:flex-start; gap:8px; padding:9px 0; border-bottom:1px solid var(--line); position:relative; }
   .mtg-item-row:last-of-type{ border-bottom:none; }
@@ -340,6 +349,30 @@ function initActivityTheme(){
   .mtg-col-left .mtg-dot{ right:-22px; }
   .mtg-col-right .mtg-dot{ left:-22px; }
   .mtg-lines{ position:absolute; inset:0; pointer-events:none; overflow:visible; z-index:1; }
+
+  /* ===== MEMORY MATCH mode ===== */
+  .mtg-memory-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(90px, 1fr)); gap:14px; width:100%;
+    max-width:640px; margin:0 auto; position:relative; z-index:2; }
+  .mtg-memory-tile{ aspect-ratio:1; perspective:600px; cursor:pointer; }
+  .mtg-memory-tile-inner{ position:relative; width:100%; height:100%; transition:transform .35s; transform-style:preserve-3d; }
+  .mtg-memory-tile.flipped .mtg-memory-tile-inner, .mtg-memory-tile.matched .mtg-memory-tile-inner{ transform:rotateY(180deg); }
+  .mtg-memory-face{ position:absolute; inset:0; backface-visibility:hidden; border-radius:14px; display:flex;
+    align-items:center; justify-content:center; border:3px solid #e2c98f; background:#fff; }
+  .mtg-memory-back{ font-size:28px; background:linear-gradient(135deg,#7b6ef0,#2f6fed); color:#fff; }
+  .mtg-memory-front{ transform:rotateY(180deg); font-size:36px; }
+  .mtg-memory-front img{ width:calc(60% * var(--img-scale,1)); height:calc(60% * var(--img-scale,1)); object-fit:contain; }
+  .mtg-memory-tile.matched .mtg-memory-face{ border-color:var(--green); box-shadow:0 0 0 2px rgba(31,159,68,.3); }
+
+  /* ===== GRID MATCH mode ===== */
+  .mtg-grid-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(90px, 1fr)); gap:14px; width:100%;
+    max-width:640px; margin:0 auto; position:relative; z-index:2; }
+  .mtg-grid-card{ aspect-ratio:1; border:3px solid #e2c98f; border-radius:14px; background:#fff; display:flex;
+    align-items:center; justify-content:center; cursor:pointer; font-size:36px; transition:border-color .15s, transform .1s; }
+  .mtg-grid-card:hover{ transform:translateY(-2px); }
+  .mtg-grid-card img{ width:calc(60% * var(--img-scale,1)); height:calc(60% * var(--img-scale,1)); object-fit:contain; }
+  .mtg-grid-card.sel{ border-color:var(--blue); box-shadow:0 0 0 2px rgba(47,111,237,.3); }
+  .mtg-grid-card.wrong{ border-color:var(--red); background:#fdecee; }
+  .mtg-grid-card.matched{ border-color:var(--green); box-shadow:0 0 0 2px rgba(31,159,68,.3); cursor:default; opacity:.85; }
 
   /* border style variants */
   .mtg-stage.bs-dashed .mtg-pitem{ border-style:dashed; }
@@ -522,6 +555,7 @@ function initActivityTheme(){
     .mtg-type-ic{ width:34px; height:34px; font-size:17px; }
     .mtg-type b{ font-size:14px; }
     .mtg-type-desc{ font-size:11.5px; margin-top:9px; }
+    .mtg-mode-btn{ padding:9px 10px; font-size:12px; }
     .mtg-item-row{ padding:7px 0; gap:6px; }
     .mtg-thumb{ height:40px; font-size:20px; }
     .mtg-side-name{ font-size:10px; padding:4px 5px; }
@@ -721,16 +755,17 @@ function initActivityTheme(){
       </div>
 
       <div class="mtg-card">
-        <div class="mtg-step">1. Activity Type</div>
-        <div class="mtg-type">
-          <div class="mtg-type-ic">🧩</div>
-          <b>Matching Type</b>
+        <div class="mtg-step">1. Activity Type <span class="mtg-edit-link">(per slide)</span></div>
+        <div class="mtg-mode-picker" id="mtgModePicker">
+          <button class="mtg-mode-btn" data-mode="pair" type="button"><span class="mtg-mode-ic">🧩</span>Pair Matching</button>
+          <button class="mtg-mode-btn" data-mode="memory" type="button"><span class="mtg-mode-ic">🃏</span>Memory Match</button>
+          <button class="mtg-mode-btn" data-mode="grid" type="button"><span class="mtg-mode-ic">🔲</span>Grid Match</button>
         </div>
-        <p class="mtg-type-desc">Learners match pictures from the left column to the correct items on the right.</p>
+        <p class="mtg-type-desc" id="mtgModeDesc"></p>
       </div>
 
       <div class="mtg-card">
-        <div class="mtg-step">2. Items <span class="mtg-edit-link">(left ↔ right = correct pair)</span></div>
+        <div class="mtg-step" id="mtgItemsStepLabel">2. Items <span class="mtg-edit-link">(left ↔ right = correct pair)</span></div>
         <div id="mtgItems"></div>
         <button class="mtg-add" id="mtgAddItem" type="button">+ Add Item</button>
       </div>
@@ -753,6 +788,13 @@ function initActivityTheme(){
             <div class="mtg-col mtg-col-left" id="mtgLeft"></div>
             <div class="mtg-col mtg-col-right" id="mtgRight"></div>
           </div>
+
+          <!-- MEMORY MATCH mode -->
+          <div class="mtg-memory-grid" id="mtgMemoryGrid" style="display:none;"></div>
+
+          <!-- GRID MATCH mode -->
+          <div class="mtg-grid-grid" id="mtgGridGrid" style="display:none;"></div>
+
           <div class="mtg-stage-controls">
             <div class="mtg-hint" id="mtgHint"></div>
             <div class="mtg-stage-btnrow">
@@ -1063,8 +1105,12 @@ function initActivityTheme(){
   const SPACE_GAP = { Small:10, Medium:16, Large:24 };
 
   // One "activity" = one matching task (its own title, instruction, pairs).
+  // Per-slide answer mode. Undefined/missing (any Matching activity published
+  // before this feature existed) is always treated as "pair" wherever mode is
+  // read — see every `activity.mode || 'pair'` / `case 'pair': default:` below.
   function makeDefaultActivity(){
     return {
+      mode:"pair",
       title:"Match the Pictures",
       instruction:"Draw a line to match the same pictures.",
       items:[
@@ -1078,6 +1124,7 @@ function initActivityTheme(){
   }
   function makeBlankActivity(slideNumber){
     return {
+      mode:"pair",
       title:"New Activity "+slideNumber,
       instruction:"Draw a line to match the same pictures.",
       items:[
@@ -1086,6 +1133,11 @@ function initActivityTheme(){
       ]
     };
   }
+  const MTG_MODE_META = {
+    pair:   { label:"Pair Matching",     desc:"Learners draw a line connecting each picture on the left to its correct match on the right." },
+    memory: { label:"Memory Match",      desc:"Face-down tiles — learners flip two at a time to find matching pairs (classic concentration)." },
+    grid:   { label:"Grid Match",        desc:"All cards are visible face-up at once — learners tap two cards that match." }
+  };
 
   const state = {
     ...structuredClone(DEFAULT_DESIGN),
@@ -1102,6 +1154,11 @@ function initActivityTheme(){
   // How much the stage is currently scaled down to fit the screen in
   // preview mode (1 = no scaling). Used to keep the SVG lines aligned.
   let stageScale = 1;
+
+  // ----- Memory Match mode: ephemeral play state -----
+  let _memoryTiles = [], _memoryFlipped = [], _memoryMatchedIdxs = [], _memoryBusy = false;
+  // ----- Grid Match mode: ephemeral play state -----
+  let _gridCards = [], _gridSelected = [], _gridMatchedIdxs = [], _gridBusy = false;
 
   const stage = $("mtgStage"), stageInner = $("mtgStageInner"), leftCol = $("mtgLeft"), rightCol = $("mtgRight"),
         linesSvg = $("mtgLines"), matchBox = $("mtgMatch");
@@ -1133,12 +1190,34 @@ function initActivityTheme(){
 
   // Re-draws everything that depends on which slide is active.
   function refreshSlideUI(){
-    renderItems();
+    renderModePicker();
+    renderFieldsForMode();
     $("mtgTitleInput").value = currentActivity().title;
     $("mtgInstrInput").value = currentActivity().instruction;
     renderActivity();
     renderSlideNav();
   }
+
+  /* ------------------------------------------------------------- *
+   * 2b. ANSWER-MODE PICKER (per slide — Pair / Label / Memory / Grid)
+   * ------------------------------------------------------------- */
+
+  function renderModePicker(){
+    const mode = currentActivity().mode || "pair";
+    document.querySelectorAll("#mtgModePicker .mtg-mode-btn").forEach(function(btn){
+      btn.classList.toggle("sel", btn.dataset.mode === mode);
+    });
+    $("mtgModeDesc").textContent = (MTG_MODE_META[mode] || MTG_MODE_META.pair).desc;
+  }
+  document.querySelectorAll("#mtgModePicker .mtg-mode-btn").forEach(function(btn){
+    btn.addEventListener("click", ()=>{
+      const activity = currentActivity();
+      activity.mode = btn.dataset.mode;
+      renderModePicker();
+      renderFieldsForMode();
+      renderActivity();
+    });
+  });
 
   function goToSlide(index){
     state.currentIndex = Math.max(0, Math.min(state.activities.length-1, index));
@@ -1259,6 +1338,18 @@ function initActivityTheme(){
     renderItems(); renderActivity();
   });
 
+  // Routes the "2. …" left-column card to the right editor for the current
+  // slide's mode. Pair/Memory/Grid all share the same items editor verbatim
+  // (only one mode exists per card today, kept as a router for parity with
+  // the sibling templates' per-mode field-editor pattern).
+  function renderFieldsForMode(){
+    const stepLabel = $("mtgItemsStepLabel");
+    const addBtn = $("mtgAddItem");
+    stepLabel.innerHTML = "2. Items <span class=\"mtg-edit-link\">(left ↔ right = correct pair)</span>";
+    addBtn.style.display = "";
+    renderItems();
+  }
+
   /* ------------------------------------------------------------- *
    * 4. ACTIVITY PREVIEW (left ↔ right matching interaction)
    * ------------------------------------------------------------- */
@@ -1301,14 +1392,33 @@ function initActivityTheme(){
     return el;
   }
 
-  // Renders the whole matching board for the slide that is currently active.
+  // Renders the whole preview stage for the slide that is currently active —
+  // shared header (title/instruction) plus one branch per answer mode. Pair
+  // mode's own board-building logic is unchanged, just moved into
+  // renderPairStage() so it can sit behind "case 'pair': default:" here.
   function renderActivity(){
     const activity = currentActivity();
+    const mode = activity.mode || "pair";
     $("mtgTitle").textContent = activity.title;
     $("mtgInstr").textContent = activity.instruction;
     $("mtgTitle").style.display = state.showTitle ? "block" : "none";
     $("mtgInstr").style.display = state.showInstr ? "block" : "none";
+    $("mtgHint").textContent = "";
 
+    matchBox.style.display = mode === "pair" ? "" : "none";
+    $("mtgMemoryGrid").style.display = mode === "memory" ? "" : "none";
+    $("mtgGridGrid").style.display = mode === "grid" ? "" : "none";
+
+    switch(mode){
+      case "memory": renderMemoryStage(activity); break;
+      case "grid": renderGridStage(activity); break;
+      case "pair": default: renderPairStage(activity); break;
+    }
+    if (document.body.classList.contains("mtg-preview-only")) setTimeout(fitStageToScreen, 30);
+  }
+
+  // ----- Pair Matching (existing, unchanged behavior) -----
+  function renderPairStage(activity){
     selectedLeft = null; matches = {};
     const locked = _stuLockedItems[state.currentIndex];
     if (locked && locked.length) locked.forEach(function(idx){ matches[idx] = idx; });
@@ -1316,9 +1426,7 @@ function initActivityTheme(){
     leftCol.innerHTML = ""; rightCol.innerHTML = "";
     activity.items.forEach((_, i)=> leftCol.appendChild(pitem(i, "left")));
     shuffled.forEach(i=> rightCol.appendChild(pitem(i, "right")));
-    $("mtgHint").textContent = "";
     drawLines();
-    if (document.body.classList.contains("mtg-preview-only")) setTimeout(fitStageToScreen, 30);
   }
 
   // ----- Tap-to-connect (select a left item, then tap its right pair) -----
@@ -1413,9 +1521,127 @@ function initActivityTheme(){
     $("mtgHint").textContent = "";
     drawLines();
   }
-  $("mtgReset").addEventListener("click", resetMatches);
 
-  $("mtgCheck").addEventListener("click", ()=>{
+  /* ------------------------------------------------------------- *
+   * 4c. MEMORY MATCH mode (face-down tiles, flip two, find the pair)
+   * ------------------------------------------------------------- */
+
+  function buildMemoryFaceContent(itemSide, faceEl){
+    if (itemSide.img) { const im = document.createElement("img"); im.src = itemSide.img; faceEl.appendChild(im); }
+    else { const sp = document.createElement("span"); sp.textContent = itemSide.emoji || "?"; faceEl.appendChild(sp); }
+  }
+  function renderMemoryStage(activity){
+    const tiles = [];
+    activity.items.forEach(function(it, i){ tiles.push({ itemIdx:i, side:"left" }); tiles.push({ itemIdx:i, side:"right" }); });
+    _memoryTiles = shuffle(tiles);
+    _memoryFlipped = []; _memoryMatchedIdxs = []; _memoryBusy = false;
+
+    const grid = $("mtgMemoryGrid"); grid.innerHTML = "";
+    _memoryTiles.forEach(function(t, pos){
+      const tile = document.createElement("div"); tile.className = "mtg-memory-tile"; tile.dataset.pos = pos;
+      const inner = document.createElement("div"); inner.className = "mtg-memory-tile-inner";
+      const back = document.createElement("div"); back.className = "mtg-memory-face mtg-memory-back"; back.textContent = "❓";
+      const front = document.createElement("div"); front.className = "mtg-memory-face mtg-memory-front";
+      buildMemoryFaceContent(activity.items[t.itemIdx][t.side], front);
+      inner.appendChild(back); inner.appendChild(front);
+      tile.appendChild(inner);
+      tile.addEventListener("click", function(){ onMemoryTileTap(pos, tile); });
+      grid.appendChild(tile);
+    });
+  }
+  function onMemoryTileTap(pos, tileEl){
+    if (_memoryBusy) return;
+    if (tileEl.classList.contains("flipped") || tileEl.classList.contains("matched")) return;
+    if (_memoryFlipped.length >= 2) return;
+    tileEl.classList.add("flipped");
+    playPickupSound();
+    $("mtgHint").textContent = "";
+    _memoryFlipped.push({ pos:pos, el:tileEl });
+    if (_memoryFlipped.length === 2) {
+      _memoryBusy = true;
+      const a = _memoryFlipped[0], b = _memoryFlipped[1];
+      const aTile = _memoryTiles[a.pos], bTile = _memoryTiles[b.pos];
+      if (aTile.itemIdx === bTile.itemIdx) {
+        playDropSound(true);
+        setTimeout(function(){
+          a.el.classList.add("matched"); b.el.classList.add("matched");
+          _memoryMatchedIdxs.push(aTile.itemIdx);
+          _memoryFlipped = []; _memoryBusy = false;
+        }, 350);
+      } else {
+        playDropSound(false);
+        setTimeout(function(){
+          a.el.classList.remove("flipped"); b.el.classList.remove("flipped");
+          _memoryFlipped = []; _memoryBusy = false;
+        }, 700);
+      }
+    }
+  }
+  function resetMemoryMode(){ renderMemoryStage(currentActivity()); $("mtgHint").textContent = ""; }
+
+  /* ------------------------------------------------------------- *
+   * 4d. GRID MATCH mode (all cards face-up, tap two that match)
+   * ------------------------------------------------------------- */
+
+  function renderGridStage(activity){
+    const cards = [];
+    activity.items.forEach(function(it, i){ cards.push({ itemIdx:i, side:"left" }); cards.push({ itemIdx:i, side:"right" }); });
+    _gridCards = shuffle(cards);
+    _gridSelected = []; _gridMatchedIdxs = []; _gridBusy = false;
+
+    const grid = $("mtgGridGrid"); grid.innerHTML = "";
+    _gridCards.forEach(function(c, pos){
+      const card = document.createElement("div"); card.className = "mtg-grid-card"; card.dataset.pos = pos;
+      const itemSide = activity.items[c.itemIdx][c.side];
+      if (itemSide.img) { const im = document.createElement("img"); im.src = itemSide.img; card.appendChild(im); }
+      else { const sp = document.createElement("span"); sp.textContent = itemSide.emoji || "?"; card.appendChild(sp); }
+      card.addEventListener("click", function(){ onGridCardTap(pos, card); });
+      grid.appendChild(card);
+    });
+  }
+  function onGridCardTap(pos, cardEl){
+    if (_gridBusy) return;
+    if (cardEl.classList.contains("matched") || cardEl.classList.contains("sel")) return;
+    if (_gridSelected.length >= 2) return;
+    cardEl.classList.add("sel");
+    playPickupSound();
+    $("mtgHint").textContent = "";
+    _gridSelected.push({ pos:pos, el:cardEl });
+    if (_gridSelected.length === 2) {
+      _gridBusy = true;
+      const a = _gridSelected[0], b = _gridSelected[1];
+      const aC = _gridCards[a.pos], bC = _gridCards[b.pos];
+      if (aC.itemIdx === bC.itemIdx) {
+        playDropSound(true);
+        a.el.classList.remove("sel"); b.el.classList.remove("sel");
+        a.el.classList.add("matched"); b.el.classList.add("matched");
+        _gridMatchedIdxs.push(aC.itemIdx);
+        _gridSelected = []; _gridBusy = false;
+      } else {
+        playDropSound(false);
+        a.el.classList.add("wrong"); b.el.classList.add("wrong");
+        setTimeout(function(){
+          a.el.classList.remove("sel", "wrong"); b.el.classList.remove("sel", "wrong");
+          _gridSelected = []; _gridBusy = false;
+        }, 500);
+      }
+    }
+  }
+  function resetGridMode(){ renderGridStage(currentActivity()); $("mtgHint").textContent = ""; }
+
+  // Routes the "Try Again" button to whichever mode is active on this
+  // slide. Pair mode's own resetMatches() is untouched.
+  function resetCurrentMode(){
+    switch(currentActivity().mode || "pair"){
+      case "memory": resetMemoryMode(); break;
+      case "grid": resetGridMode(); break;
+      case "pair": default: resetMatches(); break;
+    }
+  }
+  $("mtgReset").addEventListener("click", resetCurrentMode);
+
+  // ----- Pair Matching (existing, unchanged behavior) -----
+  function checkPairMode(){
     const totalItems = currentActivity().items.length;
     if (Object.keys(matches).length < totalItems){
       $("mtgHint").textContent = "Match all the items first before checking.";
@@ -1452,10 +1678,65 @@ function initActivityTheme(){
       });
     }
     openScoreModal(correctCount, totalItems);
+  }
+
+  // Struggled-item reporting shared by the 2 new modes — mirrors the shape
+  // Math_Template.html's non-MC modes use (a flat reviewResults-style list),
+  // NOT pair mode's scaffold-tracking (_stuMissCountByIdx/_stuLockedItems)
+  // — the anchor/teaching-modal scaffold stays scoped to pair mode only.
+  function recordGenericMissedDetail(results){
+    if (!_stuMode) return;
+    var _msi = state.currentIndex;
+    _stuMissedDetail[_msi] = _stuMissedDetail[_msi] || {};
+    results.forEach(function(r){
+      if (r.correct) return;
+      var label = r.label || "Item";
+      var chosen = r.studentAnswer != null ? String(r.studentAnswer) : "Unknown";
+      var d = _stuMissedDetail[_msi][label] = _stuMissedDetail[_msi][label] || { correct: r.correctAnswer != null ? String(r.correctAnswer) : "?", img: r.img || "", choices:{} };
+      d.choices[chosen] = (d.choices[chosen] || 0) + 1;
+    });
+  }
+
+  // ----- Memory Match — "Check" reports current match progress; the real
+  // win condition is matching all tiles through play. -----
+  function checkMemoryMode(){
+    const activity = currentActivity();
+    const totalItems = activity.items.length;
+    const correctCount = _memoryMatchedIdxs.length;
+    _mtgResults = activity.items.map(function(it, i){
+      const isCorrect = _memoryMatchedIdxs.indexOf(i) !== -1;
+      const label = it.left.name || it.right.name || ("Pair " + (i+1));
+      return { idx:i, label:label, studentAnswer: isCorrect ? "Matched" : "Not yet matched", correctAnswer:"Matched", correct:isCorrect };
+    });
+    recordGenericMissedDetail(_mtgResults);
+    openScoreModal(correctCount, totalItems);
+  }
+
+  // ----- Grid Match — same scoring shape as Memory Match. -----
+  function checkGridMode(){
+    const activity = currentActivity();
+    const totalItems = activity.items.length;
+    const correctCount = _gridMatchedIdxs.length;
+    _mtgResults = activity.items.map(function(it, i){
+      const isCorrect = _gridMatchedIdxs.indexOf(i) !== -1;
+      const label = it.left.name || it.right.name || ("Pair " + (i+1));
+      return { idx:i, label:label, studentAnswer: isCorrect ? "Matched" : "Not yet matched", correctAnswer:"Matched", correct:isCorrect };
+    });
+    recordGenericMissedDetail(_mtgResults);
+    openScoreModal(correctCount, totalItems);
+  }
+
+  $("mtgCheck").addEventListener("click", ()=>{
+    switch(currentActivity().mode || "pair"){
+      case "memory": checkMemoryMode(); break;
+      case "grid": checkGridMode(); break;
+      case "pair": default: checkPairMode(); break;
+    }
   });
   window.addEventListener("resize", ()=>{
-    if (document.body.classList.contains("mtg-preview-only")) fitStageToScreen();
-    else drawLines();
+    if (document.body.classList.contains("mtg-preview-only")) { fitStageToScreen(); return; }
+    const mode = currentActivity().mode || "pair";
+    if (mode === "pair") drawLines();
   });
 
   /* ------------------------------------------------------------- *
@@ -1487,7 +1768,13 @@ function initActivityTheme(){
 
     if (_stuMode) {
       _stuLastScore = correctCount; _stuLastTotal = totalItems;
-      _stuSlideScores[state.currentIndex] = { correct: correctCount, total: totalItems, ansItems: _mtgResults.map(function(r){return{label:r.item.left.img?'':(r.item.left.emoji||'?'),img:r.item.left.img||'',studentAnswer:r.matchedItem?(r.matchedItem.right.img||r.matchedItem.right.emoji||'—'):'—',correctAnswer:r.item.right.img||r.item.right.emoji||'—',correct:r.correct};}) };
+      _stuSlideScores[state.currentIndex] = { correct: correctCount, total: totalItems, ansItems: _mtgResults.map(function(r){
+        // Pair mode's results carry the original {left,right} item objects;
+        // Memory/Grid push a simpler {label,studentAnswer,correctAnswer}
+        // shape directly (see checkMemoryMode/checkGridMode).
+        if (r.item) return {label:r.item.left.img?'':(r.item.left.emoji||'?'),img:r.item.left.img||'',studentAnswer:r.matchedItem?(r.matchedItem.right.img||r.matchedItem.right.emoji||'—'):'—',correctAnswer:r.item.right.img||r.item.right.emoji||'—',correct:r.correct};
+        return { label:r.label||'Item', img:r.img||'', studentAnswer: r.studentAnswer!=null?String(r.studentAnswer):'—', correctAnswer: r.correctAnswer!=null?String(r.correctAnswer):'—', correct:r.correct };
+      }) };
       var _ts = state.activities.length, _isLast = state.currentIndex >= _ts - 1;
       var _allDone = _stuSlideScores.filter(Boolean).length === _ts && _stuSlideScores.every(function(s){ return s && (s.correct / s.total) >= PASS_THRESHOLD; });
       if (_ts > 1 && !_isLast && percent >= PASS_THRESHOLD) {
@@ -1506,6 +1793,28 @@ function initActivityTheme(){
   function renderReviewRows(stuMode) {
     var rows = $("mtgReviewRows"); rows.innerHTML = "";
     _mtgResults.forEach(function(r) {
+      // Pair mode's results carry the original {left,right} item objects and
+      // get the existing image-based row below; the 2 new modes push a
+      // simpler {label,studentAnswer,correctAnswer} shape and get a generic
+      // text-based row (mirrors Math_Template.html's renderReviewRows).
+      if (!r.item) {
+        var grow = document.createElement("div");
+        grow.style.cssText = "display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #f1f5f9;";
+        var ginfo = document.createElement("div"); ginfo.style.cssText = "flex:1;font-size:12px;font-weight:600;";
+        var glabel = document.createElement("b"); glabel.textContent = r.label || "Item"; glabel.style.marginRight = "6px";
+        ginfo.appendChild(glabel);
+        var gspan = document.createElement("span");
+        if (r.correct) { gspan.style.color = "#1f9d44"; gspan.textContent = "✅ Tama!"; }
+        else if (stuMode) { gspan.style.cssText = "color:#7c3aed;font-size:11px;"; gspan.textContent = "💡 Clue: Tingnan muli."; }
+        else { gspan.style.color = "#e23b54"; gspan.textContent = "✗ Sagot: " + (r.studentAnswer || "—"); }
+        ginfo.appendChild(gspan);
+        grow.appendChild(ginfo);
+        var gbadge = document.createElement("span");
+        gbadge.textContent = r.correct ? "✓" : "✗";
+        gbadge.style.cssText = "width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex:none;background:"+(r.correct?"#dcfce7":"#fee2e2")+";color:"+(r.correct?"#1f9d44":"#e23b54")+";";
+        grow.appendChild(gbadge); rows.appendChild(grow);
+        return;
+      }
       var row = document.createElement("div");
       row.style.cssText = "display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #f1f5f9;";
       var leftEl = document.createElement("div");
@@ -1561,11 +1870,15 @@ function initActivityTheme(){
   $("mtgModalTryBtn").addEventListener("click", ()=>{
     var showTeach = false, justAnchored = false;
     var si = state.currentIndex;
+    // The repeated-failure anchor/teaching-modal scaffold below is a pair-mode-
+    // only pedagogy layer (it "connects one for you" on the left↔right board) —
+    // the 2 new modes get straightforward retake behavior without it.
+    var isPairSlide = (state.activities[si].mode || "pair") === "pair";
     if (_stuMode) {
       var lastPct = _stuSlideScores[si] ? (_stuSlideScores[si].correct / _stuSlideScores[si].total) : 1;
       _stuRetake++; _stuSlideRetakes[si] = (_stuSlideRetakes[si]||0)+1; _stuSlideScores[si] = undefined;
       if (_stuSlideRetakes[si] === 3) notifyTeacherRetake(si);
-      if (lastPct < PASS_THRESHOLD) {
+      if (isPairSlide && lastPct < PASS_THRESHOLD) {
         var curLevel = _stuScaffoldLevel[si] || 0;
         if (curLevel >= 2 || _stuSlideRetakes[si] >= 4) { _stuScaffoldLevel[si] = 2; showTeach = true; }
         else if (_stuSlideRetakes[si] >= 3) { _stuScaffoldLevel[si] = 1; justAnchored = true; }
@@ -1577,7 +1890,7 @@ function initActivityTheme(){
       return;
     }
     if (justAnchored) applyAnchor(si);
-    resetMatches(); renderActivity();
+    resetCurrentMode(); renderActivity();
     if (justAnchored) $("mtgHint").textContent = "💡 We connected one for you. You can do the rest!";
   });
 
@@ -1778,17 +2091,22 @@ function initActivityTheme(){
   function chunkArray(arr, size){ var out=[]; for (var i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size)); return out; }
   var MTG_PAIRS_PER_PAGE = 5;
   function buildPrintPages(){
+    // Pair / Memory / Grid all share the same {left,right} items model, and
+    // on paper they're all just a "draw a line to match" two-column
+    // worksheet — Memory/Grid reuse Pair's existing print layout verbatim.
     var slidePlans = state.activities.map(function(activity){
+      var mode = activity.mode || "pair";
       var order = shuffle(activity.items.map(function(_, i){ return i; }));
       var rowChunks = chunkArray(activity.items.map(function(_, i){ return i; }), MTG_PAIRS_PER_PAGE);
-      return { activity: activity, order: order, rowChunks: rowChunks };
+      return { activity: activity, mode:mode, order: order, rowChunks: rowChunks, pageCount: rowChunks.length };
     });
-    var totalPages = slidePlans.reduce(function(sum, p){ return sum + p.rowChunks.length; }, 0);
+    var totalPages = slidePlans.reduce(function(sum, p){ return sum + p.pageCount; }, 0);
 
     var pages = "";
     var pageNum = 0;
     slidePlans.forEach(function(plan, slideIdx){
-      var activity = plan.activity, order = plan.order;
+      var activity = plan.activity;
+      var order = plan.order;
       plan.rowChunks.forEach(function(rowIdxs, chunkIdx){
         pageNum++;
         var isLastPageOverall = (slideIdx === slidePlans.length - 1) && (chunkIdx === plan.rowChunks.length - 1);
@@ -2096,7 +2414,8 @@ function initActivityTheme(){
       stageInner.style.marginBottom = `-${naturalH * (1 - stageScale)}px`;
     }
     stageInner.style.opacity = "1";
-    drawLines();
+    const _fitMode = currentActivity().mode || "pair";
+    if (_fitMode === "pair") drawLines();
   }
 
   // If the student/teacher exits fullscreen another way (ESC key on desktop,
@@ -2422,7 +2741,8 @@ function initActivityTheme(){
    * ------------------------------------------------------------- */
 
   restoreAutoSaveIfAny();
-  renderItems();
+  renderModePicker();
+  renderFieldsForMode();
   renderSwatches();
   syncDesignControls();
   applyAppearance();
@@ -2541,7 +2861,7 @@ function initActivityTheme(){
         initActivityTheme();
 
         document.body.classList.add('mtg-preview-only');
-        renderItems(); renderSwatches(); syncDesignControls(); applyAppearance(); renderActivity(); renderSlideNav();
+        renderFieldsForMode(); renderSwatches(); syncDesignControls(); applyAppearance(); renderActivity(); renderSlideNav();
         stageInner.style.opacity = "0";
         setTimeout(fitStageToScreen, 50);
 
@@ -2754,7 +3074,7 @@ function initActivityTheme(){
   (function(){
     var STEPS=[
       {get:function(){return document.querySelector('.mtg-left-col');},title:'📋 Step 1 of 10 — Activity Slides',desc:'Each slide is a separate matching task. Click the arrows to switch slides and "+ Add Slide" to create more.',side:'right'},
-      {get:function(){return document.querySelector('.mtg-type');},title:'🧩 Step 2 of 10 — Activity Type',desc:'This is a Matching Type activity. Learners draw a line connecting each picture on the left to its correct match on the right.',side:'right'},
+      {get:function(){return $('mtgModePicker');},title:'🧩 Step 2 of 10 — Activity Type',desc:'Every slide picks its own answer style: Pair Matching, Memory Match, or Grid Match. Mix them across slides to fit the learner.',side:'right'},
       {get:function(){return $('mtgItems');},title:'🖼️ Step 3 of 10 — Items List',desc:'Each item is a left–right pair. Add a picture or emoji to both sides. The right column shuffles automatically for the learner.',side:'right'},
       {get:function(){return document.querySelector('.mtg-item-row');},title:'↔ Step 4 of 10 — Matching Pair',desc:'Each row is one pair: left picture → right picture. Upload images or use emojis. The learner connects them by drawing a line.',side:'right'},
       {get:function(){return $('mtgAddItem');},title:'➕ Step 5 of 10 — Add Item',desc:'Click to add more pairs to the current slide. Right-side items shuffle automatically so the learner cannot guess by position alone.',side:'right'},

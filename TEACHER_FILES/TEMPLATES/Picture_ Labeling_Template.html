@@ -245,6 +245,14 @@ body{font-family:var(--font);color:var(--ink);background:#eef2f9;display:flex;fl
 .lbl-type b{font-weight:700;font-size:15px;}
 .lbl-type-desc{color:var(--ink-soft);font-size:12.5px;font-weight:500;line-height:1.5;margin-top:12px;}
 
+/* Per-slide answer-mode picker (Label Each Picture / Label the Diagram / Type the Label) */
+.lbl-mode-picker{display:flex;flex-direction:column;gap:8px;}
+.lbl-mode-btn{display:flex;align-items:center;gap:10px;cursor:pointer;border:2px solid var(--field-border);
+  background:#fff;border-radius:13px;padding:11px 13px;font-family:var(--font);font-weight:700;font-size:13.5px;color:var(--ink);text-align:left;}
+.lbl-mode-btn .lbl-mode-ic{font-size:18px;width:26px;text-align:center;flex:none;}
+.lbl-mode-btn:hover{border-color:#cbb8f3;}
+.lbl-mode-btn.sel{border-color:var(--purple);background:#f3f1fe;color:var(--purple);}
+
 /* Item cards in left panel */
 .lbl-item-card{border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--field);position:relative;margin-bottom:10px;}
 .lbl-item-num{font-size:11px;font-weight:800;letter-spacing:.04em;color:var(--purple);text-transform:uppercase;margin-bottom:8px;}
@@ -364,6 +372,40 @@ body{font-family:var(--font);color:var(--ink);background:#eef2f9;display:flex;fl
 .lbl-pic-slot.correct{border-style:solid;border-color:#2fbf57;background:#d6f5e0;color:#1a6e34;}
 .lbl-pic-slot.wrong{border-style:solid;border-color:var(--red);background:#fde8ec;color:var(--red-dark);}
 .lbl-pic-slot.hint{color:#7c3aed;font-style:italic;letter-spacing:.05em;}
+
+/* Type the Label mode: plain text input under each picture instead of a drag slot */
+.lbl-type-input{width:130px;padding:.26em .6em;border:2.5px solid #c5b6f8;border-radius:24px;
+  font-size:.44em;font-weight:700;color:var(--ink);text-align:center;font-family:inherit;background:#fff;outline:none;}
+.lbl-type-input:focus{border-color:var(--purple);}
+.lbl-type-input.correct{border-style:solid;border-color:#2fbf57;background:#d6f5e0;color:#1a6e34;}
+.lbl-type-input.wrong{border-style:solid;border-color:var(--red);background:#fde8ec;color:var(--red-dark);}
+.lbl-type-input:disabled{opacity:.92;cursor:default;}
+
+/* ===== Label the Diagram mode (one big picture, hotspot pins, drag-chip-onto-blank) ===== */
+.lbl-diagram-wrap{display:flex;flex-direction:column;align-items:center;gap:18px;width:100%;position:relative;z-index:2;}
+.lbl-diagram-board{display:flex;align-items:flex-start;justify-content:center;gap:20px;width:100%;position:relative;flex-wrap:wrap;}
+.lbl-diagram-col{display:flex;flex-direction:column;gap:12px;flex:1;min-width:110px;max-width:200px;}
+.lbl-diagram-imgbox{position:relative;flex:2;min-width:220px;max-width:420px;cursor:crosshair;}
+.lbl-diagram-imgbox img{width:100%;display:block;border-radius:14px;border:3px solid #e2c98f;pointer-events:none;}
+.lbl-diagram-empty{display:none;align-items:center;justify-content:center;min-height:220px;border:3px dashed #cbb8f3;
+  border-radius:14px;background:#faf7ff;color:var(--ink-soft);font-size:16px;font-weight:700;text-align:center;padding:20px;}
+.lbl-diagram-pins{position:absolute;inset:0;}
+.lbl-diagram-pin{position:absolute;width:26px;height:26px;margin-left:-13px;margin-top:-13px;border-radius:50%;
+  background:var(--purple);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;
+  cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3);border:2px solid #fff;z-index:2;pointer-events:auto;}
+.lbl-diagram-pin-editor{position:absolute;margin-left:16px;margin-top:-20px;background:#fff;border-radius:10px;
+  box-shadow:0 8px 24px rgba(36,58,94,.25);padding:6px;display:flex;gap:6px;z-index:10;}
+.lbl-diagram-pin-editor input{width:110px;padding:6px 8px;border-radius:7px;border:1.5px solid var(--field-border);font-family:var(--font);font-size:12px;}
+.lbl-diagram-pin-editor button{cursor:pointer;border:none;background:#fee2e2;color:#d6336c;border-radius:7px;font-size:13px;width:28px;}
+.lbl-diagram-blank{min-height:.9em;border:2.5px dashed #c5b6f8;border-radius:24px;background:#fff;display:flex;
+  align-items:center;justify-content:center;padding:.26em .6em;font-size:.44em;font-weight:700;color:#aab4c5;}
+.lbl-diagram-blank.filled{border-style:solid;border-color:#c5b6f8;background:#ede9ff;color:#3d2d9b;}
+.lbl-diagram-chip{background:#fff;border:2.5px solid #c5b6f8;border-radius:30px;padding:.18em .7em;font-weight:700;
+  font-size:.46em;color:#3d2d9b;cursor:grab;user-select:none;touch-action:none;font-family:inherit;}
+.lbl-diagram-chip-ghost{position:fixed;pointer-events:none;z-index:9999;}
+.lbl-diagram-bank{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;min-height:44px;padding:12px 14px;
+  border-radius:16px;background:rgba(255,255,255,.55);border:2px solid rgba(200,190,240,.6);max-width:560px;margin:0 auto;position:relative;z-index:2;}
+.lbl-lines{position:absolute;inset:0;pointer-events:none;overflow:visible;z-index:1;}
 
 /* Stage controls */
 .lbl-stage-controls{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:22px;position:relative;z-index:2;}
@@ -530,6 +572,7 @@ body.lbl-preview-only .lbl-exit-float{display:flex;}
   .lbl-type-ic{width:34px;height:34px;font-size:17px;}
   .lbl-type b{font-size:14px;}
   .lbl-type-desc{font-size:11.5px;margin-top:9px;}
+  .lbl-mode-btn{padding:9px 10px;font-size:12px;}
   .lbl-item-card{padding:10px;}
   .lbl-img-upload{height:70px;font-size:11px;}
   .lbl-media-tabs button{font-size:8.5px;padding:3px 2px;}
@@ -546,6 +589,7 @@ body.lbl-preview-only .lbl-exit-float{display:flex;}
   .lbl-grid{gap:14px 10px;}
   .lbl-pic-frame{width:calc(78px * var(--img-scale,1));height:calc(68px * var(--img-scale,1));}
   .lbl-pic-slot{width:78px;}
+  .lbl-type-input{width:78px;}
 }
 
 /* Real student/preview mode centers the stage's content vertically in a
@@ -688,20 +732,22 @@ body.lbl-preview-only .lbl-exit-float{display:flex;}
 
     <div class="lbl-card">
       <div class="lbl-step">1. Activity Type</div>
-      <div class="lbl-type">
-        <div class="lbl-type-ic">🏷️</div>
-        <b>Picture Labeling</b>
+      <div class="lbl-mode-picker" id="lblModePicker">
+        <button class="lbl-mode-btn" data-mode="grid" type="button"><span class="lbl-mode-ic">🏷️</span>Label Each Picture</button>
+        <button class="lbl-mode-btn" data-mode="diagram" type="button"><span class="lbl-mode-ic">📍</span>Label the Picture</button>
+        <button class="lbl-mode-btn" data-mode="type" type="button"><span class="lbl-mode-ic">⌨️</span>Type the Label</button>
       </div>
-      <p class="lbl-type-desc">Learners drag (or tap) the correct word from the word bank onto its picture. Matching the picture to its name.</p>
+      <p class="lbl-type-desc" id="lblModeDesc"></p>
     </div>
 
     <div class="lbl-card">
-      <div class="lbl-step">2. Picture Items <span style="color:var(--purple);font-weight:700;text-transform:none;letter-spacing:0;">(image + correct label)</span></div>
+      <div class="lbl-step" id="lblItemsStepLabel">2. Picture Items <span style="color:var(--purple);font-weight:700;text-transform:none;letter-spacing:0;">(image + correct label)</span></div>
       <div id="lblItemsList"></div>
       <button class="lbl-add" id="lblAddItemBtn" type="button">+ Add Picture</button>
+      <div id="lblDiagramFields" style="display:none;"></div>
     </div>
 
-    <div class="lbl-card">
+    <div class="lbl-card" id="lblDistractorCard">
       <div class="lbl-step">3. Extra Word Bank Choices <span style="color:var(--purple);font-weight:700;text-transform:none;letter-spacing:0;">(optional distractors)</span></div>
       <p style="font-size:12px;color:var(--ink-soft);font-weight:500;margin-bottom:10px;line-height:1.5;">Labels ng pictures ay auto-included sa word bank. Magdagdag ng extra words para mas challenging.</p>
       <div class="lbl-distractor-row">
@@ -726,9 +772,22 @@ body.lbl-preview-only .lbl-exit-float{display:flex;}
       <div class="lbl-stage-inner" id="lblStageInner">
         <div class="lbl-title" id="lblTitle">Picture Labeling</div>
         <div class="lbl-instr" id="lblInstr">Write the correct name of each picture.</div>
-        <div class="lbl-bank-label">📋 Word Bank</div>
+        <div class="lbl-bank-label" id="lblBankLabel">📋 Word Bank</div>
         <div class="lbl-bank" id="lblBank"></div>
         <div class="lbl-grid" id="lblGrid"></div>
+        <div class="lbl-diagram-wrap" id="lblDiagramWrap" style="display:none;">
+          <div class="lbl-diagram-board" id="lblDiagramBoard">
+            <svg class="lbl-lines" id="lblDiagramLines"></svg>
+            <div class="lbl-diagram-col" id="lblDiagramLeftBlanks"></div>
+            <div class="lbl-diagram-imgbox" id="lblDiagramImgBox">
+              <img id="lblDiagramImg" src="" alt="" />
+              <div class="lbl-diagram-empty" id="lblDiagramEmpty">Upload a picture in the Picture &amp; Hotspots panel on the left, then click anywhere on it to add a hotspot.</div>
+              <div class="lbl-diagram-pins" id="lblDiagramPins"></div>
+            </div>
+            <div class="lbl-diagram-col" id="lblDiagramRightBlanks"></div>
+          </div>
+          <div class="lbl-diagram-bank" id="lblDiagramBank"></div>
+        </div>
         <div class="lbl-stage-controls">
           <div class="lbl-hint" id="lblHint"></div>
           <div class="lbl-stage-btnrow">
@@ -1014,19 +1073,36 @@ function makeItem(){
 }
 function makeDefaultActivity(){
   return {
+    mode:"grid",
     title:"Picture Labeling",
     instruction:"Write the correct name of each picture.",
     items:[ makeItem(), makeItem(), makeItem() ],
-    distractors:[]
+    distractors:[],
+    diagramImg:null, diagramImgType:"upload", hotspots:[]
   };
 }
 function makeBlankActivity(slideNumber){
   return {
+    mode:"grid",
     title:"New Activity "+slideNumber,
     instruction:"Write the correct name of each picture.",
     items:[ makeItem(), makeItem() ],
-    distractors:[]
+    distractors:[],
+    diagramImg:null, diagramImgType:"upload", hotspots:[]
   };
+}
+
+/* ── Per-slide answer-mode metadata (Label Each Picture / Label the Diagram / Type the Label) ── */
+const LBL_MODE_META = {
+  grid:    { desc:"Learners drag (or tap) the correct word from the word bank onto its picture. Matching the picture to its name." },
+  diagram: { desc:"One big picture with hotspots — learners drag the correct word chip onto each blank to label the parts." },
+  type:    { desc:"Learners type the correct word for each picture instead of dragging a chip — good for more independent spellers." }
+};
+
+function lbl_shuffle(arr){
+  var copy = arr.slice();
+  for (var i=copy.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=copy[i]; copy[i]=copy[j]; copy[j]=t; }
+  return copy;
 }
 
 const state = {
@@ -1043,6 +1119,22 @@ let suggestedMarks = {}; // { itemId: bool }
 let checked  = false;
 let fsWords  = [];
 let stageScale = 1;
+
+// ----- Type the Label mode: ephemeral play state -----
+let typeAnswers = {}, typeChecked = false, typeMarks = {}; // { itemId: typed string / bool }
+
+// ----- Label the Diagram mode: ephemeral play state (rebuilt each render) -----
+// diagramChips: one chip per hotspot ({id, word, placedAt}); placedAt is the
+// hotspot index of the blank it's sitting in, or null while still in the bank.
+let diagramChips = [], diagramResultColors = null, diagramChecked = false;
+
+// Clears the OTHER two modes' ephemeral play state whenever a slide/mode
+// switches or preview mode is entered/exited — keeps a stale answer from one
+// mode bleeding into another when the teacher flips activity.mode around.
+function resetOtherModeState(){
+  typeAnswers = {}; typeChecked = false; typeMarks = {};
+  diagramChips = []; diagramResultColors = null; diagramChecked = false;
+}
 
 const PLACEHOLDER = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23f0eefc'/%3E%3Ctext x='50' y='54' text-anchor='middle' fill='%239b8fe0' font-size='11' font-family='sans-serif'%3ENo Image%3C/text%3E%3C/svg%3E`;
 const REWARDS = {
@@ -1076,7 +1168,9 @@ function renderSlideNav(){
 
 function refreshSlideUI(){
   answers={}; suggestedMarks={}; checked=false; selectedWord=null;
-  renderItemsList();
+  resetOtherModeState();
+  renderModePicker();
+  renderFieldsForMode();
   renderDistractorTags();
   $('lblTitleInput').value = currentActivity().title;
   $('lblInstrInput').value = currentActivity().instruction;
@@ -1084,6 +1178,141 @@ function refreshSlideUI(){
   $('lblInstr').textContent = currentActivity().instruction;
   renderActivity();
   renderSlideNav();
+}
+
+/* ─────────────────────────────────────────────
+   2b. ANSWER-MODE PICKER (per slide — Label Each
+       Picture / Label the Diagram / Type the Label)
+───────────────────────────────────────────── */
+function renderModePicker(){
+  const mode = currentActivity().mode || 'grid';
+  document.querySelectorAll('#lblModePicker .lbl-mode-btn').forEach(function(btn){
+    btn.classList.toggle('sel', btn.dataset.mode === mode);
+  });
+  $('lblModeDesc').textContent = (LBL_MODE_META[mode] || LBL_MODE_META.grid).desc;
+}
+document.querySelectorAll('#lblModePicker .lbl-mode-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    const activity = currentActivity();
+    activity.mode = btn.dataset.mode;
+    answers={}; suggestedMarks={}; checked=false; selectedWord=null;
+    resetOtherModeState();
+    renderModePicker();
+    renderFieldsForMode();
+    renderActivity();
+  });
+});
+
+// Routes the "2. …" left-column card to the right editor for the current
+// slide's mode: Label Each Picture / Type the Label share the existing
+// picture+label item editor verbatim; Label the Diagram gets its own
+// big-picture + hotspots editor. The distractor card (3.) only makes sense
+// alongside a real word bank, so it's hidden outside Label Each Picture.
+function renderFieldsForMode(){
+  const activity = currentActivity();
+  const mode = activity.mode || 'grid';
+  const stepLabel = $('lblItemsStepLabel');
+  if (mode === 'diagram') {
+    stepLabel.innerHTML = '2. Picture &amp; Hotspots';
+    $('lblItemsList').style.display = 'none';
+    $('lblAddItemBtn').style.display = 'none';
+    $('lblDiagramFields').style.display = '';
+    renderDiagramFields();
+    $('lblDistractorCard').style.display = 'none';
+  } else {
+    stepLabel.innerHTML = '2. Picture Items <span style="color:var(--purple);font-weight:700;text-transform:none;letter-spacing:0;">(image + correct label)</span>';
+    $('lblItemsList').style.display = '';
+    $('lblAddItemBtn').style.display = '';
+    $('lblDiagramFields').style.display = 'none';
+    renderItemsList();
+    $('lblDistractorCard').style.display = (mode === 'grid') ? '' : 'none';
+  }
+}
+
+/* ── Label the Diagram — field editor (big picture + hotspot list) ── */
+// Big-picture upload/link block, same Upload/Link tab pattern as the
+// per-item editor in renderItemsList(), just targeting activity.diagramImg
+// instead of a per-item field. Reuses the .lbl-thumbbox/.lbl-media-tabs/
+// .lbl-link-input classes already defined for this file's item editor.
+function buildDiagramMediaBlock(activity, wrap){
+  const box = document.createElement('div'); box.className = 'lbl-thumbbox';
+  if (activity.diagramImg) {
+    const im = document.createElement('img'); im.src = activity.diagramImg;
+    im.onerror = function(){ this.onerror = null; };
+    box.appendChild(im);
+  } else {
+    const empty = document.createElement('div'); empty.className = 'lbl-thumb-empty'; empty.textContent = '🖼️ No picture yet';
+    box.appendChild(empty);
+  }
+  wrap.appendChild(box);
+
+  const fileInput = document.createElement('input'); fileInput.type = 'file'; fileInput.accept = 'image/*'; fileInput.hidden = true;
+  fileInput.addEventListener('change', function(e){
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = function(ev){ activity.diagramImg = ev.target.result; activity.diagramImgType = 'upload'; renderDiagramFields(); renderActivity(); };
+    r.readAsDataURL(f);
+  });
+
+  const tabs = document.createElement('div'); tabs.className = 'lbl-media-tabs'; tabs.style.marginTop = '8px';
+  const tabUpload = document.createElement('button'); tabUpload.type = 'button'; tabUpload.textContent = 'Upload';
+  const tabLink = document.createElement('button'); tabLink.type = 'button'; tabLink.textContent = 'Link';
+  (activity.diagramImgType === 'link' ? tabLink : tabUpload).classList.add('sel');
+  const linkInput = document.createElement('input');
+  linkInput.type = 'url'; linkInput.className = 'lbl-link-input'; linkInput.placeholder = 'Image URL';
+  if (activity.diagramImgType === 'link'){ linkInput.classList.add('show'); linkInput.value = activity.diagramImg || ''; }
+  tabUpload.addEventListener('click', function(){
+    tabUpload.classList.add('sel'); tabLink.classList.remove('sel'); linkInput.classList.remove('show');
+    fileInput.click();
+  });
+  tabLink.addEventListener('click', function(){
+    tabLink.classList.add('sel'); tabUpload.classList.remove('sel'); linkInput.classList.add('show');
+    linkInput.focus();
+  });
+  linkInput.addEventListener('input', function(e){
+    const url = e.target.value.trim();
+    activity.diagramImg = url || null; activity.diagramImgType = 'link';
+    renderDiagramFields(); renderActivity();
+  });
+  tabs.appendChild(tabUpload); tabs.appendChild(tabLink);
+  wrap.appendChild(fileInput); wrap.appendChild(tabs); wrap.appendChild(linkInput);
+}
+
+// Read-only-ish list of the hotspots already placed on the picture (they are
+// actually CREATED by clicking the picture itself in the preview — see
+// openDiagramPinEditor()/addDiagramHotspotAt() below) — lets the teacher fix
+// a typo or delete one without having to find the exact pin again.
+function buildDiagramHotspotList(activity, wrap){
+  const label = document.createElement('div'); label.className = 'lbl-step'; label.style.cssText = 'margin-top:16px;font-size:11px;';
+  label.textContent = 'Hotspots (click the picture in the preview to add one)';
+  wrap.appendChild(label);
+  const hotspots = activity.hotspots || [];
+  if (!hotspots.length) {
+    const hint = document.createElement('div');
+    hint.style.cssText = 'font-size:12px;color:var(--ink-soft);font-weight:500;margin-bottom:10px;line-height:1.5;';
+    hint.textContent = 'No hotspots yet — upload a picture above, then click on it in the Activity Preview.';
+    wrap.appendChild(hint);
+    return;
+  }
+  hotspots.forEach(function(h, i){
+    const row = document.createElement('div'); row.className = 'lbl-distractor-row';
+    const num = document.createElement('span'); num.textContent = (i+1) + '.'; num.style.cssText = 'font-weight:800;color:var(--purple);flex:none;align-self:center;padding-right:2px;';
+    row.appendChild(num);
+    const input = document.createElement('input'); input.type = 'text'; input.placeholder = 'Word for this hotspot'; input.value = h.word || '';
+    input.addEventListener('input', function(e){ h.word = e.target.value; renderActivity(); });
+    row.appendChild(input);
+    const del = document.createElement('button'); del.type = 'button'; del.textContent = '🗑'; del.title = 'Delete hotspot';
+    del.addEventListener('click', function(){ hotspots.splice(i, 1); renderDiagramFields(); renderActivity(); });
+    row.appendChild(del);
+    wrap.appendChild(row);
+  });
+}
+
+function renderDiagramFields(){
+  const activity = currentActivity();
+  const wrap = $('lblDiagramFields'); wrap.innerHTML = '';
+  buildDiagramMediaBlock(activity, wrap);
+  buildDiagramHotspotList(activity, wrap);
 }
 
 function goToSlide(index){
@@ -1210,8 +1439,32 @@ function buildWordBank(){
   return all;
 }
 
+// Renders the whole preview stage for the slide that is currently active —
+// shared title/instruction visibility plus one branch per answer mode.
+// Label Each Picture's own word-bank + picture-grid logic is unchanged,
+// just moved into renderGridStage() so it can sit behind "case 'grid':
+// default:" here (exactly the pattern used in the Math/Matching/Sorting
+// templates' own per-slide mode pickers this session).
 function renderActivity(){
   const activity = currentActivity();
+  const mode = activity.mode || 'grid';
+  $('lblTitle').style.display = state.showTitle ? '' : 'none';
+  $('lblInstr').style.display = state.showInstr ? '' : 'none';
+
+  $('lblBankLabel').style.display = mode === 'grid' ? '' : 'none';
+  $('lblBank').style.display = mode === 'grid' ? '' : 'none';
+  $('lblGrid').style.display = (mode === 'grid' || mode === 'type') ? '' : 'none';
+  $('lblDiagramWrap').style.display = mode === 'diagram' ? '' : 'none';
+
+  switch(mode){
+    case 'diagram': renderDiagramStage(activity); break;
+    case 'type': renderTypeStage(activity); break;
+    case 'grid': default: renderGridStage(activity); break;
+  }
+}
+
+// ----- Label Each Picture (existing, unchanged behavior) -----
+function renderGridStage(activity){
   $('lblTitle').style.display = state.showTitle ? '' : 'none';
   $('lblInstr').style.display = state.showInstr ? '' : 'none';
 
@@ -1299,6 +1552,243 @@ function placeWord(itemId){
 }
 
 /* ─────────────────────────────────────────────
+   4b. TYPE THE LABEL mode (same picture grid,
+       plain text input instead of a drag slot)
+───────────────────────────────────────────── */
+function renderTypeStage(activity){
+  const grid = $('lblGrid'); grid.innerHTML = '';
+  if (activity.items.length === 0) {
+    grid.innerHTML = `<div style="color:var(--ink-soft);font-size:.42em;font-weight:600;grid-column:1/-1;text-align:center;padding:20px;">Magdagdag ng picture items sa panel.</div>`;
+    return;
+  }
+  activity.items.forEach(function(item){
+    const div = document.createElement('div'); div.className = 'lbl-pic-item';
+    const frame = document.createElement('div'); frame.className = 'lbl-pic-frame';
+    const img = document.createElement('img'); img.src = item.imageData || PLACEHOLDER; img.alt = item.label || '';
+    img.onerror = function(){ this.onerror = null; this.src = PLACEHOLDER; };
+    frame.appendChild(img); div.appendChild(frame);
+
+    const input = document.createElement('input');
+    input.type = 'text'; input.className = 'lbl-type-input'; input.placeholder = 'Type the word…';
+    input.autocomplete = 'off'; input.spellcheck = false;
+    input.value = typeAnswers[item.id] || '';
+    input.disabled = typeChecked;
+    if (typeChecked && typeMarks[item.id] !== undefined) input.classList.add(typeMarks[item.id] ? 'correct' : 'wrong');
+    input.addEventListener('input', function(e){ typeAnswers[item.id] = e.target.value; });
+    input.addEventListener('keydown', function(e){ if (e.key === 'Enter') { e.preventDefault(); checkTypeMode(); } });
+    div.appendChild(input);
+
+    grid.appendChild(div);
+  });
+  if (document.body.classList.contains('lbl-preview-only')) setTimeout(fitStageToScreen, 30);
+}
+function resetTypeMode(){
+  typeAnswers = {}; typeChecked = false; typeMarks = {};
+  $('lblHint').textContent = '';
+  renderActivity();
+}
+
+/* ─────────────────────────────────────────────
+   4c. LABEL THE DIAGRAM mode (big picture +
+       drag-word-onto-blank, ported from
+       Matching_Type_Template.html's "label" mode)
+───────────────────────────────────────────── */
+function ctrDiagram(el, boardEl){
+  const r = el.getBoundingClientRect(), b = boardEl.getBoundingClientRect();
+  return { x:(r.left + r.width/2 - b.left)/stageScale, y:(r.top + r.height/2 - b.top)/stageScale };
+}
+function lineOnDiagramSvg(svg, x1, y1, x2, y2, color){
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  const ln = document.createElementNS(SVG_NS, 'line');
+  ln.setAttribute('x1', x1); ln.setAttribute('y1', y1); ln.setAttribute('x2', x2); ln.setAttribute('y2', y2);
+  ln.setAttribute('stroke', color); ln.setAttribute('stroke-width', '3'); ln.setAttribute('stroke-linecap', 'round');
+  ln.setAttribute('stroke-dasharray', '6,6');
+  svg.appendChild(ln);
+}
+function drawDiagramLines(){
+  const svg = $('lblDiagramLines'), board = $('lblDiagramBoard');
+  if (!svg || !board) return;
+  svg.innerHTML = '';
+  const activity = currentActivity();
+  (activity.hotspots || []).forEach(function(h, i){
+    const blankEl = board.querySelector('.lbl-diagram-blank[data-hidx="'+i+'"]');
+    const pinEl = board.querySelector('.lbl-diagram-pin[data-i="'+i+'"]');
+    if (!blankEl || !pinEl) return;
+    const a = ctrDiagram(pinEl, board), c = ctrDiagram(blankEl, board);
+    const color = (diagramResultColors && diagramResultColors[i]) || '#94a3b8';
+    lineOnDiagramSvg(svg, a.x, a.y, c.x, c.y, color);
+  });
+}
+
+// One chip per hotspot, shuffled once when the mode/slide (re)loads — NOT
+// reshuffled on every render, so dragging a chip doesn't jumble the rest.
+function setupDiagramChips(activity){
+  const hotspots = activity.hotspots || [];
+  diagramChips = lbl_shuffle(hotspots.map(function(h, i){ return { id:'chip'+i, word:h.word || '', placedAt:null }; }));
+  diagramResultColors = null;
+}
+function buildDiagramChipEl(chip){
+  const el = document.createElement('div'); el.className = 'lbl-diagram-chip'; el.textContent = chip.word || '?';
+  el.dataset.chipId = chip.id;
+  el.addEventListener('pointerdown', function(e){ startDiagramChipDrag(chip, el, e); });
+  return el;
+}
+function renderDiagramBlanksAndBank(activity){
+  const hotspots = activity.hotspots || [];
+  const half = Math.ceil(hotspots.length / 2);
+  const leftEl = $('lblDiagramLeftBlanks'), rightEl = $('lblDiagramRightBlanks'), bankEl = $('lblDiagramBank');
+  leftEl.innerHTML = ''; rightEl.innerHTML = '';
+  function makeBlank(hIdx){
+    const b = document.createElement('div'); b.className = 'lbl-diagram-blank'; b.dataset.hidx = hIdx;
+    const chip = diagramChips.find(function(c){ return c.placedAt === hIdx; });
+    if (chip) { b.classList.add('filled'); b.appendChild(buildDiagramChipEl(chip)); }
+    if (diagramResultColors && diagramResultColors[hIdx]) b.style.borderColor = diagramResultColors[hIdx];
+    return b;
+  }
+  hotspots.forEach(function(_, i){ (i < half ? leftEl : rightEl).appendChild(makeBlank(i)); });
+  bankEl.innerHTML = '';
+  diagramChips.filter(function(c){ return c.placedAt === null; }).forEach(function(c){ bankEl.appendChild(buildDiagramChipEl(c)); });
+}
+function startDiagramChipDrag(chip, chipEl, e){
+  e.preventDefault();
+  playPickupSound();
+  const ghost = chipEl.cloneNode(true);
+  ghost.classList.add('lbl-diagram-chip-ghost');
+  ghost.style.left = (e.clientX - chipEl.offsetWidth/2) + 'px'; ghost.style.top = (e.clientY - chipEl.offsetHeight/2) + 'px';
+  document.body.appendChild(ghost);
+  chipEl.style.visibility = 'hidden';
+  function move(ev){
+    ghost.style.left = (ev.clientX - ghost.offsetWidth/2) + 'px';
+    ghost.style.top = (ev.clientY - ghost.offsetHeight/2) + 'px';
+  }
+  function up(ev){
+    document.removeEventListener('pointermove', move);
+    ghost.remove();
+    const dropTarget = document.elementFromPoint(ev.clientX, ev.clientY);
+    const blankEl = dropTarget ? dropTarget.closest('.lbl-diagram-blank') : null;
+    const targetIdx = blankEl ? +blankEl.dataset.hidx : null;
+    dropDiagramChip(chip, targetIdx);
+  }
+  document.addEventListener('pointermove', move);
+  document.addEventListener('pointerup', up, { once:true });
+}
+function dropDiagramChip(chip, targetIdx){
+  const activity = currentActivity();
+  if (targetIdx === null) { playDropSound(false); renderDiagramBlanksAndBank(activity); return; }
+  // Dropping a new chip onto an already-filled blank swaps the previous chip
+  // back to wherever the dragged chip came from (the bank, or another blank).
+  const displaced = diagramChips.find(function(c){ return c.placedAt === targetIdx && c.id !== chip.id; });
+  if (displaced) displaced.placedAt = chip.placedAt;
+  chip.placedAt = targetIdx;
+  playDropSound(true);
+  $('lblHint').textContent = '';
+  renderDiagramBlanksAndBank(activity);
+  drawDiagramLines();
+}
+
+// Builder/edit mode only: click an existing pin to edit its word or delete
+// it; click a brand-new pin immediately after creating it to type its word
+// for the first time. Not shown in student/preview mode.
+function openDiagramPinEditor(idx, pinEl){
+  document.querySelectorAll('.lbl-diagram-pin-editor').forEach(function(e){ e.remove(); });
+  const activity = currentActivity();
+  const hotspot = activity.hotspots[idx];
+  if (!hotspot) return;
+  const box = document.createElement('div'); box.className = 'lbl-diagram-pin-editor';
+  box.style.left = hotspot.x + '%'; box.style.top = hotspot.y + '%';
+  const input = document.createElement('input'); input.type = 'text'; input.placeholder = 'Word'; input.value = hotspot.word || '';
+  box.appendChild(input);
+  const delBtn = document.createElement('button'); delBtn.type = 'button'; delBtn.textContent = '🗑'; delBtn.title = 'Delete hotspot';
+  box.appendChild(delBtn);
+  $('lblDiagramPins').appendChild(box);
+  input.focus(); input.select();
+  let done = false;
+  function commit(){
+    if (done) return; done = true;
+    hotspot.word = input.value.trim();
+    box.remove();
+    renderDiagramFields();
+  }
+  input.addEventListener('keydown', function(e){ if (e.key === 'Enter') input.blur(); });
+  input.addEventListener('blur', commit);
+  delBtn.addEventListener('mousedown', function(e){ e.preventDefault(); }); // keep input focus so blur doesn't race the click
+  delBtn.addEventListener('click', function(e){
+    e.stopPropagation(); done = true;
+    activity.hotspots.splice(idx, 1);
+    box.remove();
+    renderActivity(); renderDiagramFields();
+  });
+}
+function addDiagramHotspotAt(x, y){
+  const activity = currentActivity();
+  activity.hotspots = activity.hotspots || [];
+  if (activity.hotspots.length >= 20) { alert('Limit reached: up to 20 hotspots per picture.'); return; }
+  activity.hotspots.push({ x:x, y:y, word:'' });
+  const idx = activity.hotspots.length - 1;
+  renderActivity();
+  renderDiagramFields();
+  const pinEl = document.querySelector('.lbl-diagram-pin[data-i="'+idx+'"]');
+  if (pinEl) openDiagramPinEditor(idx, pinEl);
+}
+// Clicking the picture itself (builder/edit mode only) drops a new pin at
+// that click's (x%,y%) position. Bound once — guarded inside by mode and
+// preview-only checks — rather than re-bound on every render.
+$('lblDiagramImgBox').addEventListener('click', function(e){
+  if (document.body.classList.contains('lbl-preview-only')) return;
+  const activity = currentActivity();
+  if ((activity.mode || 'grid') !== 'diagram') return;
+  if (!activity.diagramImg) return;
+  if (e.target.closest('.lbl-diagram-pin') || e.target.closest('.lbl-diagram-pin-editor')) return; // handled by the pin's own click
+  const img = $('lblDiagramImg');
+  const rect = img.getBoundingClientRect();
+  let x = ((e.clientX - rect.left) / rect.width) * 100;
+  let y = ((e.clientY - rect.top) / rect.height) * 100;
+  x = Math.max(0, Math.min(100, x)); y = Math.max(0, Math.min(100, y));
+  addDiagramHotspotAt(x, y);
+});
+
+// Renders the picture + pin dots always; blanks/lines/word-bank only in
+// student/preview mode (builder/edit mode just shows the picture so the
+// teacher can click it to place hotspots).
+function renderDiagramStage(activity){
+  const isPreview = document.body.classList.contains('lbl-preview-only');
+  const img = $('lblDiagramImg'), empty = $('lblDiagramEmpty'), pinsWrap = $('lblDiagramPins');
+  document.querySelectorAll('.lbl-diagram-pin-editor').forEach(function(e){ e.remove(); });
+  const hasImg = !!activity.diagramImg;
+  img.style.display = hasImg ? 'block' : 'none';
+  empty.style.display = hasImg ? 'none' : 'flex';
+  if (hasImg) img.src = activity.diagramImg;
+  pinsWrap.innerHTML = '';
+  (activity.hotspots || []).forEach(function(h, i){
+    const pin = document.createElement('div'); pin.className = 'lbl-diagram-pin'; pin.dataset.i = i;
+    pin.style.left = h.x + '%'; pin.style.top = h.y + '%';
+    const num = document.createElement('span'); num.textContent = i+1;
+    pin.appendChild(num);
+    if (!isPreview) pin.addEventListener('click', function(e){ e.stopPropagation(); openDiagramPinEditor(i, pin); });
+    pinsWrap.appendChild(pin);
+  });
+  $('lblDiagramLeftBlanks').style.display = isPreview ? '' : 'none';
+  $('lblDiagramRightBlanks').style.display = isPreview ? '' : 'none';
+  $('lblDiagramBank').style.display = isPreview ? '' : 'none';
+  if (isPreview) {
+    setupDiagramChips(activity);
+    renderDiagramBlanksAndBank(activity);
+    setTimeout(drawDiagramLines, 30);
+    setTimeout(fitStageToScreen, 30);
+  } else {
+    const svg = $('lblDiagramLines'); if (svg) svg.innerHTML = '';
+  }
+}
+function resetDiagramMode(){
+  diagramChips.forEach(function(c){ c.placedAt = null; });
+  diagramResultColors = null;
+  diagramChecked = false;
+  renderDiagramBlanksAndBank(currentActivity());
+  drawDiagramLines();
+  $('lblHint').textContent = '';
+}
+
+/* ─────────────────────────────────────────────
    5. CHECK + SCORE MODAL (auto-suggested,
       read-only item-by-item results)
 ───────────────────────────────────────────── */
@@ -1335,7 +1825,18 @@ function renderReviewRows(stuMode){
   });
 }
 
+// Dispatches "Check Answers" to the current slide's answer mode. Label Each
+// Picture's own checking logic is unchanged, just moved into
+// checkGridMode() below.
 function checkAnswers(){
+  switch(currentActivity().mode || 'grid'){
+    case 'diagram': checkDiagramMode(); break;
+    case 'type': checkTypeMode(); break;
+    case 'grid': default: checkGridMode(); break;
+  }
+}
+// ----- Label Each Picture (existing, unchanged behavior) -----
+function checkGridMode(){
   const activity = currentActivity();
   if(activity.items.length===0) return;
 
@@ -1437,12 +1938,155 @@ function notifyTeacherRetake(si){
   });
 }
 
+// Dispatches "Try Again" to the current slide's answer mode. Label Each
+// Picture's own reset logic is unchanged, just moved into resetGridMode().
 function retryActivity(){
+  $('lblModalOverlay').classList.remove('show');
+  switch(currentActivity().mode || 'grid'){
+    case 'diagram': resetDiagramMode(); break;
+    case 'type': resetTypeMode(); break;
+    case 'grid': default: resetGridMode(); break;
+  }
+}
+// ----- Label Each Picture (existing, unchanged behavior) -----
+function resetGridMode(){
   answers={}; suggestedMarks={}; checked=false; selectedWord=null;
   fsWords=buildWordBank();
   $('lblHint').textContent='';
   $('lblModalOverlay').classList.remove('show');
   renderActivity();
+}
+
+// ----- Type the Label / Label the Diagram: shared "finish a Check Answers
+// pass" logic (score modal, sounds/confetti, review list, student-mode
+// slide-score bookkeeping) — mirrors checkGridMode()'s own modal-population
+// code above, generalized to a {label,img,studentAnswer,correctAnswer,
+// correct}[] results shape instead of items/answers/suggestedMarks. -----
+function finishCheck(correct, total, resultsArr){
+  const pct = Math.round((correct/total)*100);
+  let imgSrc, msg;
+  if(pct===100){ imgSrc=REWARDS.perfect; msg='Perfect! You got them all correct! 🎊'; playActivitySound('perfect'); fireConfetti(); }
+  else if(pct>=Math.round(PASS_THRESHOLD*100)){ imgSrc=REWARDS.good; msg='Good job! You passed! ⭐'; playActivitySound('good'); }
+  else { imgSrc=REWARDS.tryagain; msg='Let\'s try again! You need ' + Math.round(PASS_THRESHOLD*100) + '% to pass. 💪'; playActivitySound('tryagain'); }
+
+  if (_stuMode) {
+    var _msi = state.currentIndex;
+    _stuMissedLabels[_msi] = _stuMissedLabels[_msi] || {};
+    _stuMissedDetail[_msi] = _stuMissedDetail[_msi] || {};
+    resultsArr.forEach(function(r){
+      if (r.correct) return;
+      var label = r.label || 'Item';
+      _stuMissedLabels[_msi][label] = true;
+      var chosen = r.studentAnswer != null ? String(r.studentAnswer) : 'Unknown';
+      var d = _stuMissedDetail[_msi][label] = _stuMissedDetail[_msi][label] || { correct: r.correctAnswer != null ? String(r.correctAnswer) : '?', img: r.img || '', choices: {} };
+      d.choices[chosen] = (d.choices[chosen] || 0) + 1;
+    });
+  }
+
+  $('lblModalScore').textContent=`${correct} / ${total} correct`;
+  $('lblModalMsg').textContent=msg;
+  const img=$('lblModalEmoji'); img.style.display='block'; img.src=imgSrc;
+  img.onerror=function(){this.onerror=null;this.src='images/placeholder.png';};
+
+  $('lblReviewList').style.display='block';
+  renderGenericReviewRows(resultsArr, _stuMode);
+
+  $('lblModalOverlay').classList.add('show');
+
+  if(_stuMode){
+    _stuLastScore = correct; _stuLastTotal = total;
+    _stuSlideScores[state.currentIndex] = { correct: correct, total: total, ansItems: resultsArr.map(function(r){ return { label:r.label||'Item', img:r.img||'', studentAnswer:r.studentAnswer!=null?String(r.studentAnswer):'—', correctAnswer:r.correctAnswer!=null?String(r.correctAnswer):'—', correct:!!r.correct }; }) };
+    var _ts = state.activities.length, _isLast = state.currentIndex >= _ts - 1;
+    var _allDone = _stuSlideScores.filter(Boolean).length === _ts && _stuSlideScores.every(function(s){ return s && (s.correct / s.total) >= PASS_THRESHOLD; });
+    if (_ts > 1 && !_isLast && pct >= Math.round(PASS_THRESHOLD*100)) {
+      $('lblModalCloseBtn').style.display=''; $('lblModalCloseBtn').textContent='Next Slide →'; $('lblModalCloseBtn').dataset.nextSlide='1';
+    } else {
+      $('lblModalCloseBtn').style.display='none'; $('lblModalCloseBtn').dataset.nextSlide='';
+    }
+    $('lblModalTryBtn').textContent='🔁 Retake';
+    $('lblStudentSubmitBtn').style.display=(_allDone && !_stuAlreadyPassed) ? '' : 'none';
+    var ri = $('lblRetakeInfo');
+    var _csr = _stuSlideRetakes[state.currentIndex] || 0;
+    ri.style.display = _stuRetake>0 ? '' : 'none';
+    if(_stuRetake>0) ri.textContent = (_ts>1?'Slide '+(state.currentIndex+1)+': ':'')+(_csr>0?_csr+' retake(s). ':'')+'Total retakes: '+_stuRetake;
+  }
+}
+// Generic version of renderReviewRows() for Type the Label / Label the
+// Diagram, driven by the {label,img,studentAnswer,correctAnswer,correct}[]
+// shape those two modes' check functions build (grid mode keeps using its
+// own renderReviewRows(), unchanged, since it reads items/answers directly).
+function renderGenericReviewRows(resultsArr, stuMode){
+  const wrap = $('lblReviewRows'); wrap.innerHTML='';
+  resultsArr.forEach(function(r, idx){
+    const row = document.createElement('div'); row.className='lbl-review-row';
+
+    const thumb = document.createElement('img'); thumb.className='lbl-review-thumb';
+    thumb.src = r.img || PLACEHOLDER;
+    thumb.onerror = function(){ this.onerror=null; this.src=PLACEHOLDER; };
+    row.appendChild(thumb);
+
+    const text = document.createElement('div'); text.className='lbl-review-text';
+    const b = document.createElement('b'); b.textContent = `#${idx+1}: "${r.studentAnswer || '(walang sagot)'}"`;
+    const span = document.createElement('span');
+    if (stuMode) {
+      span.textContent = r.correct ? '✅ Tama!' : '💡 Clue: Tingnan nang mabuti ang bahagi ng larawan at subukang mag-isip ng tamang salita.';
+    } else {
+      span.textContent = 'Correct answer: ' + (r.correctAnswer || '—');
+    }
+    text.appendChild(b); text.appendChild(span);
+    row.appendChild(text);
+
+    const status = document.createElement('div');
+    status.className = 'lbl-review-status ' + (r.correct ? 'correct' : 'wrong');
+    status.textContent = r.correct ? '✓' : '✗';
+    row.appendChild(status);
+
+    wrap.appendChild(row);
+  });
+}
+// ----- Type the Label -----
+function checkTypeMode(){
+  const activity = currentActivity();
+  if (activity.items.length===0) return;
+  const allFilled = activity.items.every(function(item){ return (typeAnswers[item.id]||'').trim() !== ''; });
+  if (!allFilled) { $('lblHint').textContent = 'Sagutan muna lahat ng blanko bago mag-check.'; return; }
+  typeChecked = true;
+  let correct = 0; typeMarks = {};
+  const resultsArr = [];
+  const inputs = $('lblGrid').querySelectorAll('.lbl-type-input');
+  activity.items.forEach(function(item, idx){
+    const typed = (typeAnswers[item.id]||'').trim();
+    const ok = typed !== '' && typed.toLowerCase() === (item.label||'').trim().toLowerCase();
+    typeMarks[item.id] = ok;
+    if (ok) correct++;
+    const inp = inputs[idx];
+    if (inp) { inp.disabled = true; inp.classList.remove('correct','wrong'); inp.classList.add(ok?'correct':'wrong'); }
+    resultsArr.push({ label:item.label||'Item', img:item.imageData||'', studentAnswer: typed || '—', correctAnswer:item.label||'—', correct: ok });
+  });
+  finishCheck(correct, activity.items.length, resultsArr);
+}
+// ----- Label the Diagram -----
+function checkDiagramMode(){
+  const activity = currentActivity();
+  const hotspots = activity.hotspots || [];
+  const total = hotspots.length;
+  if (!total) { $('lblHint').textContent = 'Magdagdag ng kahit isang hotspot sa larawan.'; return; }
+  const filledCount = diagramChips.filter(function(c){ return c.placedAt !== null; }).length;
+  if (filledCount < total) { $('lblHint').textContent = 'Sagutan muna lahat ng blanko bago mag-check.'; return; }
+  diagramChecked = true;
+  let correct = 0; diagramResultColors = {};
+  const resultsArr = [];
+  hotspots.forEach(function(h, i){
+    const chip = diagramChips.find(function(c){ return c.placedAt === i; });
+    const studentWord = chip ? chip.word : '';
+    const ok = studentWord !== '' && studentWord === (h.word || '');
+    if (ok) correct++;
+    diagramResultColors[i] = ok ? '#2fbf57' : '#e23b54';
+    resultsArr.push({ label: h.word || ('Hotspot ' + (i+1)), img: activity.diagramImg || '', studentAnswer: studentWord || '—', correctAnswer: h.word || '—', correct: ok });
+  });
+  renderDiagramBlanksAndBank(activity);
+  drawDiagramLines();
+  finishCheck(correct, total, resultsArr);
 }
 
 $('lblModalCloseBtn').onclick=function(){
@@ -1453,11 +2097,17 @@ $('lblModalCloseBtn').onclick=function(){
 $('lblModalTryBtn').onclick=()=>{
   var showTeach = false;
   var si = state.currentIndex;
+  // The first-letter-hint / teaching-modal scaffold is only meaningful for
+  // Label Each Picture's chip-and-slot model (it hints at chips that don't
+  // exist in the other 2 modes) — retake bookkeeping still runs for every
+  // mode (teacher retake notifications, next-slide gating, etc.), but the
+  // scaffold escalation itself stays scoped to 'grid' mode only.
+  var slideMode = (state.activities[si] && state.activities[si].mode) || 'grid';
   if (_stuMode) {
     var lastPct = _stuSlideScores[si] ? (_stuSlideScores[si].correct / _stuSlideScores[si].total) : 1;
     _stuRetake++; _stuSlideRetakes[si] = (_stuSlideRetakes[si]||0)+1; _stuSlideScores[si] = undefined;
     if (_stuSlideRetakes[si] === 3) notifyTeacherRetake(si);
-    if (lastPct < PASS_THRESHOLD) {
+    if (slideMode === 'grid' && lastPct < PASS_THRESHOLD) {
       var curLevel = _stuScaffoldLevel[si] || 0;
       if (curLevel >= 2 || _stuSlideRetakes[si] >= 4) { _stuScaffoldLevel[si] = 2; showTeach = true; }
       else if (_stuSlideRetakes[si] >= 3) { _stuScaffoldLevel[si] = 1; }
@@ -1465,7 +2115,7 @@ $('lblModalTryBtn').onclick=()=>{
   }
   if (showTeach) { $('lblModalOverlay').classList.remove('show'); showTeachingModal(si); return; }
   retryActivity();
-  if (_stuMode && (_stuScaffoldLevel[si]||0) >= 1) $('lblHint').textContent = '💡 Here\'s a hint: the first letter of each answer is shown!';
+  if (_stuMode && slideMode === 'grid' && (_stuScaffoldLevel[si]||0) >= 1) $('lblHint').textContent = '💡 Here\'s a hint: the first letter of each answer is shown!';
 };
 $('lblCheck').onclick=checkAnswers;
 $('lblReset').onclick=retryActivity;
@@ -1615,6 +2265,11 @@ function fitStageToScreen(){
     stageInner.style.marginBottom = `-${naturalH * (1 - stageScale)}px`;
   }
   stageInner.style.opacity = '1';
+  // Label the Diagram's connector lines are plotted from getBoundingClientRect()
+  // math that divides out stageScale (see ctrDiagram()) — redraw them here,
+  // after the scale above is finalized, so a resize/orientation-change keeps
+  // them pinned to their pins/blanks instead of drifting out of alignment.
+  if ((currentActivity().mode || 'grid') === 'diagram') drawDiagramLines();
 }
 
 function requestFullscreen(el){
@@ -1629,11 +2284,15 @@ function exitFullscreen(){
 }
 
 function enterPreview(){
-  if(currentActivity().items.length===0){ alert('Magdagdag muna ng picture items bago mag-preview.'); return; }
+  var activity = currentActivity();
+  var mode = activity.mode || 'grid';
+  if ((mode === 'grid' || mode === 'type') && activity.items.length===0) { alert('Magdagdag muna ng picture items bago mag-preview.'); return; }
+  if (mode === 'diagram' && (!activity.hotspots || activity.hotspots.length===0)) { alert('Magdagdag muna ng hotspots bago mag-preview.'); return; }
   answers={}; suggestedMarks={}; checked=false; selectedWord=null;
+  resetOtherModeState();
   fsWords=buildWordBank();
-  renderActivity();
   document.body.classList.add('lbl-preview-only');
+  renderActivity();
   stageInner.style.opacity = '0';
   requestFullscreen(document.documentElement);
   setTimeout(fitStageToScreen, 120);
@@ -1646,6 +2305,7 @@ function exitPreview(){
   stageInner.style.marginBottom = '';
   stageInner.style.opacity = '1';
   answers={}; suggestedMarks={}; checked=false; selectedWord=null;
+  resetOtherModeState();
   renderActivity();
 }
 $('lblPreviewBtn').onclick = enterPreview;
@@ -1907,16 +2567,71 @@ function printChecklistHtml(){
 // lands on the true last page only.
 function chunkArray(arr, size){ var out=[]; for (var i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size)); return out; }
 var LBL_ITEMS_PER_PAGE = 6;
+// Label the Diagram prints as one page: the picture with numbered pins plus
+// a word-bank list to write answers next to (mirrors Matching_Type_
+// Template.html's printLabelBody() for its own "Label the Picture" mode).
+function printDiagramBody(activity){
+  var hotspots = activity.hotspots || [];
+  var pinDot = function(h, i){
+    return '<span style="position:absolute;left:'+h.x+'%;top:'+h.y+'%;transform:translate(-50%,-50%);width:22px;height:22px;'
+      + 'border-radius:50%;background:#7b6ef0;color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;'
+      + 'justify-content:center;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);">'+(i+1)+'</span>';
+  };
+  var imgHtml = activity.diagramImg
+    ? '<div style="position:relative;display:inline-block;max-width:100%;">'
+      + '<img src="'+escAttr(activity.diagramImg)+'" style="max-width:100%;max-height:380px;display:block;border-radius:10px;border:2px solid #cbd5e1;" alt="">'
+      + hotspots.map(pinDot).join("")
+      + '</div>'
+    : '<div style="font-style:italic;color:#5d7299;">(No picture set for this slide.)</div>';
+  var bankHtml = "";
+  if (hotspots.length) {
+    var bankWords = lbl_shuffle(hotspots.map(function(h){ return h.word || "?"; }));
+    bankHtml = '<div style="margin-top:16px;"><div style="font-weight:700;font-size:13px;margin-bottom:8px;">Word Bank:</div>'
+      + '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;">'
+      + bankWords.map(function(w){ return '<span style="border:1.5px solid #94a3b8;border-radius:8px;padding:4px 12px;font-weight:700;font-size:13px;">'+printEscape(w)+'</span>'; }).join("")
+      + '</div>'
+      + '<div style="display:flex;flex-direction:column;gap:8px;max-width:360px;">'
+      + hotspots.map(function(h, i){
+          return '<div style="display:flex;align-items:center;gap:8px;font-size:13px;">'
+            + '<span style="width:22px;height:22px;border-radius:50%;background:#7b6ef0;color:#fff;font-weight:800;font-size:12px;'
+            + 'display:flex;align-items:center;justify-content:center;flex:none;">'+(i+1)+'</span>'
+            + '<span style="flex:1;border-bottom:1.5px dashed #94a3b8;min-height:20px;">&nbsp;</span></div>';
+        }).join("")
+      + '</div></div>';
+  }
+  return '<div style="text-align:center;">'+imgHtml+'</div>' + bankHtml;
+}
 function buildPrintPages(){
+  // Label Each Picture / Type the Label share the same items[] shape and,
+  // on paper, the identical layout (picture + a blank line to write the
+  // word) — Type the Label reuses this chunked grid as-is. Label the
+  // Diagram is the only mode that prints differently (one page: the
+  // picture with numbered pins + a word bank list).
   var slidePlans = state.activities.map(function(activity){
-    return { activity: activity, chunks: chunkArray(activity.items, LBL_ITEMS_PER_PAGE) };
+    var mode = activity.mode || 'grid';
+    if (mode === 'diagram') return { activity: activity, mode: mode, chunks: null };
+    return { activity: activity, mode: mode, chunks: chunkArray(activity.items, LBL_ITEMS_PER_PAGE) };
   });
-  var totalPages = slidePlans.reduce(function(sum, p){ return sum + p.chunks.length; }, 0);
+  var totalPages = slidePlans.reduce(function(sum, p){ return sum + (p.mode === 'diagram' ? 1 : p.chunks.length); }, 0);
 
   var pages = "";
   var pageNum = 0;
   slidePlans.forEach(function(plan, slideIdx){
     var activity = plan.activity;
+    if (plan.mode === 'diagram') {
+      pageNum++;
+      var isLastDiagramPage = (slideIdx === slidePlans.length - 1);
+      pages += '<div class="lbl-print-page"'+(isLastDiagramPage ? ' style="page-break-after:auto; display:flex; flex-direction:column; min-height:100vh;"' : '')+'>'
+        + '<div class="lbl-print-head"><h2>'+printEscape(activity.title)+'</h2>'
+        + '<div class="lbl-print-objective">('+printEscape(toPrintInstruction(activity.instruction))+')</div>'
+        + (state.activities.length > 1 ? '<div class="lbl-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+' — '+(DIFFICULTY_LABELS[slideIdx]||"")+'</div>' : '')
+        + (totalPages > 1 ? '<div class="lbl-print-pagenum">Page '+pageNum+' of '+totalPages+'</div>' : '')
+        + '</div>'
+        + printDiagramBody(activity)
+        + (isLastDiagramPage ? printChecklistHtml() : '')
+        + '</div>';
+      return;
+    }
     plan.chunks.forEach(function(chunkItems, chunkIdx){
       pageNum++;
       var isLastPageOverall = (slideIdx === slidePlans.length - 1) && (chunkIdx === plan.chunks.length - 1);
@@ -2291,7 +3006,8 @@ restoreAutoSaveIfAny();
 renderSwatches();
 syncDesignControls();
 applyAppearance();
-renderItemsList();
+renderModePicker();
+renderFieldsForMode();
 renderDistractorTags();
 renderActivity();
 renderSlideNav();
@@ -2399,8 +3115,9 @@ loadPublishedForEditIfAny();
       document.body.classList.add('lbl-preview-only');
 
       renderSwatches(); syncDesignControls(); applyAppearance();
-      renderItemsList(); renderDistractorTags();
+      renderModePicker(); renderFieldsForMode(); renderDistractorTags();
       answers={}; suggestedMarks={}; checked=false; selectedWord=null;
+      resetOtherModeState();
       fsWords=buildWordBank();
       renderActivity(); renderSlideNav();
       stageInner.style.opacity = '0';
@@ -2598,7 +3315,7 @@ loadPublishedForEditIfAny();
 (function(){
   var STEPS=[
     {get:function(){return document.querySelector('.lbl-left-col');},title:'📋 Step 1 of 10 — Activity Slides',desc:'Each slide is a separate Picture Labeling task. Click the arrows to switch slides and "+ Add Slide" to create more.',side:'right'},
-    {get:function(){return document.querySelector('.lbl-type');},title:'🏷️ Step 2 of 10 — Activity Type',desc:'This is a Picture Labeling activity. Learners look at a picture and type or select the correct label or word that names it.',side:'right'},
+    {get:function(){return $('lblModePicker');},title:'🏷️ Step 2 of 10 — Activity Type',desc:'Every slide picks its own answer style: Label Each Picture (drag a word onto its own separate picture), Label the Picture (drag words onto parts of one big picture the teacher uploads), or Type the Label (type the word instead of dragging).',side:'right'},
     {get:function(){return $('lblItemsList');},title:'🖼️ Step 3 of 10 — Items List',desc:'Each item is a picture that needs a label. Upload a photo or use an emoji, then set the correct answer text.',side:'right'},
     {get:function(){return document.querySelector('.lbl-item-card');},title:'📝 Step 4 of 10 — Picture Item Card',desc:'Each card has a picture to upload, the correct label, and optional hints. Set the answer exactly how the learner should type it.',side:'right'},
     {get:function(){return $('lblAddItemBtn');},title:'➕ Step 5 of 10 — Add Picture',desc:'Click to add more pictures to the current slide. 3–5 items per slide works well for SPED learners.',side:'right'},

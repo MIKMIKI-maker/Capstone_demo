@@ -249,6 +249,40 @@ function initActivityTheme(){
     font-family:var(--font); font-weight:700; font-size:12px; color:var(--ink-soft); }
   .wrt-mode-seg button.sel{ border-color:var(--purple); background:#f3f1fe; color:var(--purple); }
 
+  /* Top-level answer-mode picker (Written Response / Word Scramble / Build the
+     Sentence) — sits above the letter/word sub-toggle, same list-of-rows
+     pattern as Sorting_Type_Template.html's per-slide mode picker. */
+  .wrt-mode-picker{ display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+  .wrt-mode-btn{ display:flex; align-items:center; gap:10px; cursor:pointer; border:2px solid var(--field-border);
+    background:#fff; border-radius:14px; padding:10px 12px; font-family:var(--font); font-weight:700; font-size:13px;
+    color:var(--ink); text-align:left; width:100%; }
+  .wrt-mode-btn .wrt-mode-ic{ font-size:18px; width:26px; text-align:center; flex:none; }
+  .wrt-mode-btn:hover{ border-color:#cbb8f3; }
+  .wrt-mode-btn.sel{ border-color:var(--purple); background:#f3f1fe; color:var(--purple); }
+
+  /* Word Scramble / Build the Sentence tap-to-order tiles (ported from
+     Sequencing_Type_Template.html's tapOrder/badge mechanic, at the
+     letter or word-token granularity instead of the step granularity). */
+  .wrt-grid.wrt-grid-puzzle{ grid-template-columns:1fr; }
+  .wrt-scramble-item{ position:relative; background:#fff; border:3px solid #e2c98f; border-radius:18px;
+    padding:14px 16px; display:flex; flex-direction:column; gap:12px; box-shadow:0 4px 12px rgba(36,58,94,.08); }
+  .wrt-scramble-head{ display:flex; align-items:center; gap:10px; }
+  .wrt-tile-row{ display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
+  .wrt-tile{ position:relative; cursor:pointer; background:var(--field); border:2.5px solid var(--field-border);
+    border-radius:12px; padding:.3em .55em; min-width:1.1em; text-align:center; font-weight:800; font-size:.55em;
+    color:var(--wrt-text); -webkit-user-select:none; user-select:none; }
+  .wrt-tile:hover{ border-color:var(--purple); }
+  .wrt-tile.tapped{ border-color:var(--blue); background:#eaf2ff; }
+  .wrt-tile.locked{ cursor:default; border-color:var(--purple); background:#f3f1fe; color:#5546c4; }
+  .wrt-tile.correct{ border-color:var(--green); background:#f0fbf2; color:var(--green-dark); }
+  .wrt-tile.wrong{ border-color:var(--red); background:#fdeef1; color:var(--red-dark); }
+  .wrt-tile-badge{ display:none; position:absolute; top:-10px; right:-9px; width:1.15em; height:1.15em; border-radius:50%;
+    background:var(--blue); color:#fff; font-size:.42em; align-items:center; justify-content:center; font-weight:800;
+    box-shadow:0 3px 8px rgba(0,0,0,.25); }
+  .wrt-tile.tapped .wrt-tile-badge{ display:flex; }
+  .wrt-tile.locked .wrt-tile-badge{ background:var(--purple); }
+  .wrt-tile-lock{ font-size:.4em; font-weight:800; color:#7c3aed; margin-top:2px; text-align:center; }
+
   /* Example item editor */
   .wrt-example-box{ border:1.5px dashed #cbb8f3; background:#faf7ff; border-radius:14px; padding:12px; }
   .wrt-example-label{ font-size:11px; font-weight:800; color:var(--purple); text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px; }
@@ -539,6 +573,9 @@ function initActivityTheme(){
     .wrt-type-ic{ width:34px; height:34px; font-size:17px; }
     .wrt-type b{ font-size:14px; }
     .wrt-type-desc{ font-size:11.5px; margin-top:9px; }
+    .wrt-mode-btn{ padding:9px 10px; font-size:12px; }
+    .wrt-tile{ font-size:15px; padding:5px 8px; }
+    .wrt-tile-row{ gap:6px; }
     .wrt-item-row{ padding:8px 0; }
     .wrt-item-media, .wrt-thumb, .wrt-link-input{ width:64px; }
     .wrt-thumb{ height:46px; font-size:18px; }
@@ -614,6 +651,9 @@ function initActivityTheme(){
   .wrt-print-item img{ max-width:100%; max-height:150px; object-fit:contain; }
   .wrt-print-item .wrt-print-emoji{ font-size:84px; line-height:1; }
   .wrt-print-blank{ width:75%; border-bottom:2px solid #94a3b8; height:30px; }
+  .wrt-print-token-row{ display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
+  .wrt-print-token-box{ border:2px solid #cbd5e1; border-radius:8px; padding:6px 10px; font-weight:700; font-size:15px; min-width:24px; text-align:center; }
+  .wrt-print-token-box.given{ border-color:#7b6ef0; background:#f3f1fe; color:#5546c4; }
 
   @media print{
     html, body{ height:auto !important; overflow:visible !important; }
@@ -686,10 +726,15 @@ function initActivityTheme(){
       <div class="wrt-card">
         <div class="wrt-step">1. Activity Type</div>
         <div class="wrt-type">
-          <div class="wrt-type-ic">✏️</div>
-          <b>Written Response</b>
+          <div class="wrt-type-ic" id="wrtTypeIc">✏️</div>
+          <b id="wrtTypeLabel">Written Response</b>
         </div>
-        <p class="wrt-type-desc">Learners write/type the correct answer for each picture shown. Works for beginning letters, counting, vocabulary, and more.</p>
+        <p class="wrt-type-desc" id="wrtTypeDesc">Learners write/type the correct answer for each picture shown. Works for beginning letters, counting, vocabulary, and more.</p>
+        <div class="wrt-mode-picker" id="wrtTopModeSeg">
+          <button class="wrt-mode-btn sel" data-tm="written" type="button"><span class="wrt-mode-ic">✏️</span>Written Response</button>
+          <button class="wrt-mode-btn" data-tm="scramble" type="button"><span class="wrt-mode-ic">🔤</span>Word Scramble</button>
+          <button class="wrt-mode-btn" data-tm="sentence" type="button"><span class="wrt-mode-ic">📝</span>Build the Sentence</button>
+        </div>
         <div class="wrt-mode-seg" id="wrtModeSeg">
           <button data-m="letter" class="sel" type="button">🔤 Letter/Sound Mode</button>
           <button data-m="word" type="button">✏️ Custom Word/Answer Mode</button>
@@ -1023,7 +1068,8 @@ function initActivityTheme(){
     return {
       title:"Write the Correct Beginning Letter",
       instruction:"Write the correct beginning letter of each picture.",
-      answerMode:"letter", // 'letter' | 'word'
+      mode:"written", // 'written' | 'scramble' | 'sentence' (top-level answer-mode picker)
+      answerMode:"letter", // 'letter' | 'word' (sub-mode, only used when mode === 'written')
       example: makeExampleItem(),
       items:[
         { img:null, imgType:"upload", emoji:"🐜", correct:"a", variations:"" },
@@ -1037,6 +1083,7 @@ function initActivityTheme(){
     return {
       title:"New Activity "+slideNumber,
       instruction:"Write the correct answer for each picture.",
+      mode:"written",
       answerMode:"letter",
       example: makeExampleItem(),
       items:[
@@ -1060,6 +1107,10 @@ function initActivityTheme(){
   let suggestedMarks = {}; // itemIndex -> bool (auto-suggested correct?)
   let confirmedMarks = {}; // itemIndex -> bool (teacher-confirmed, only set when reviewing)
   let stageScale = 1;
+  // scramble/sentence mode only: itemIndex -> { tokens, order, tapOrder, lockedOrig }
+  // (ported from Sequencing_Type_Template.html's tapOrder mechanic, kept once per item
+  // instead of once per slide since Written Response supports multiple items/slide).
+  let _wrtPuzzle = {};
 
   const stage = $("wrtStage"), stageInner = $("wrtStageInner"), grid = $("wrtGrid");
 
@@ -1088,6 +1139,7 @@ function initActivityTheme(){
   }
 
   function refreshSlideUI(){
+    syncTopModeSeg();
     syncModeSeg();
     renderExampleEditor();
     renderItems();
@@ -1130,6 +1182,35 @@ function initActivityTheme(){
     btn.addEventListener("click", ()=>{
       currentActivity().answerMode = btn.dataset.m;
       syncModeSeg(); renderExampleEditor(); renderItems(); renderActivity();
+    });
+  });
+
+  /* Top-level answer-mode picker: Written Response (existing free-text typing,
+     unchanged) vs Word Scramble / Build the Sentence (new tap-to-order modes,
+     mechanically ported from Sequencing_Type_Template.html). Missing/undefined
+     activity.mode is treated as "written" everywhere for backward compatibility
+     with drafts/published activities saved before this feature existed. */
+  const WRT_MODE_META = {
+    written: { icon:"✏️", label:"Written Response", desc:"Learners write/type the correct answer for each picture shown. Works for beginning letters, counting, vocabulary, and more." },
+    scramble: { icon:"🔤", label:"Word Scramble", desc:"Learners tap scrambled letter tiles in the correct order to spell each item's word. The Easy slide gives the first letter as a hint; Medium/Hard are fully scrambled." },
+    sentence: { icon:"📝", label:"Build the Sentence", desc:"Learners tap scrambled word tiles in the correct order to build each item's sentence. The Easy slide gives the first word as a hint; Medium/Hard are fully scrambled." }
+  };
+  function syncTopModeSeg(){
+    const mode = currentActivity().mode || "written";
+    document.querySelectorAll("#wrtTopModeSeg button").forEach(b=> b.classList.toggle("sel", b.dataset.tm === mode));
+    const meta = WRT_MODE_META[mode] || WRT_MODE_META.written;
+    $("wrtTypeIc").textContent = meta.icon;
+    $("wrtTypeLabel").textContent = meta.label;
+    $("wrtTypeDesc").textContent = meta.desc;
+    // The letter/word sub-toggle (and its "Accepted Variations" field, handled
+    // inside answerFields()) is only relevant to the "written" top-level mode.
+    $("wrtModeSeg").style.display = mode === "written" ? "flex" : "none";
+  }
+  document.querySelectorAll("#wrtTopModeSeg button").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      currentActivity().mode = btn.dataset.tm;
+      syncTopModeSeg();
+      renderExampleEditor(); renderItems(); renderActivity();
     });
   });
 
@@ -1190,6 +1271,22 @@ function initActivityTheme(){
   // Builds the correct-answer field(s), switching UI based on the activity's answerMode.
   function answerFields(dataObj, onChange, isExample){
     const fields = document.createElement("div"); fields.className = "wrt-item-fields";
+    const topMode = currentActivity().mode || "written";
+
+    // Word Scramble / Build the Sentence reuse the exact same items array and
+    // "correct answer" field as Written Response — item.correct just holds a
+    // word to spell, or a sentence to build, instead of a word to type. No
+    // letter/word sub-toggle and no "Accepted Variations" field apply here.
+    if (topMode === "scramble" || topMode === "sentence"){
+      const l1 = document.createElement("label");
+      l1.textContent = topMode === "scramble" ? "Word to Spell" : "Correct Sentence";
+      const txt = document.createElement("input"); txt.type = "text"; txt.className = "wrt-correct-input";
+      txt.value = dataObj.correct || ""; txt.placeholder = topMode === "scramble" ? "e.g. elephant" : "e.g. The cat is sleeping.";
+      txt.addEventListener("input", e=>{ dataObj.correct = e.target.value; onChange(); });
+      fields.appendChild(l1); fields.appendChild(txt);
+      return fields;
+    }
+
     const mode = currentActivity().answerMode;
 
     if (mode === "letter"){
@@ -1264,7 +1361,9 @@ function initActivityTheme(){
   var WRT_MAX_ITEMS = 30;
   $("wrtAddItem").addEventListener("click", ()=>{
     if (currentActivity().items.length >= WRT_MAX_ITEMS) { alert("Limit reached: up to " + WRT_MAX_ITEMS + " items per slide (keeps the printable worksheet readable)."); return; }
-    currentActivity().items.push({ img:null, imgType:"upload", emoji:"⭐", correct: currentActivity().answerMode==="letter" ? "a" : "", variations:"" });
+    var topMode = currentActivity().mode || "written";
+    var defaultCorrect = (topMode === "written" && currentActivity().answerMode === "letter") ? "a" : "";
+    currentActivity().items.push({ img:null, imgType:"upload", emoji:"⭐", correct: defaultCorrect, variations:"" });
     renderItems(); renderActivity();
   });
 
@@ -1300,6 +1399,167 @@ function initActivityTheme(){
     }
     const ans = document.createElement("div"); ans.className = "wrt-example-answer"; ans.textContent = ex.correct || "";
     card.appendChild(ans);
+  }
+
+  /* ---- Word Scramble / Build the Sentence: tap-to-order puzzle helpers ----
+     Ported from Sequencing_Type_Template.html's shuffle()/tapOrder/badge
+     mechanic, applied per-item (one puzzle per item on the slide, instead of
+     one puzzle for the whole slide) at two granularities: individual letters
+     (scramble) or whole word tokens (sentence). Correctness is index-based
+     (tapOrder.indexOf(originalIndex) === originalIndex), exactly like
+     Sequencing — no string comparison is needed since the check is purely
+     about tap ORDER, so original letter casing/punctuation is preserved as
+     typed by the teacher without needing to normalize it for scoring. */
+  function shuffle(array){
+    const copy = array.slice();
+    for (let i = copy.length-1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i+1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+  function wrtSplitTokens(mode, str){
+    str = str || "";
+    if (mode === "sentence") return str.trim().split(/\s+/).filter(Boolean);
+    return Array.from(str.trim()); // per-character, preserves original casing
+  }
+  // Builds one item's fresh puzzle state: a shuffled display order plus,
+  // on the Easy slide (state.currentIndex === 0), the first original token
+  // pre-placed/locked into position 0 as a visible hint. Medium/Hard slides
+  // get no hint — fully scrambled, nothing locked.
+  function wrtBuildPuzzle(mode, it){
+    const tokens = wrtSplitTokens(mode, it.correct);
+    const order = shuffle(tokens.map((_, i)=> i));
+    const isEasy = state.currentIndex === 0;
+    const lockedOrig = (isEasy && tokens.length > 0) ? 0 : -1;
+    const tapOrder = lockedOrig !== -1 ? [lockedOrig] : [];
+    return { tokens, order, tapOrder, lockedOrig };
+  }
+  function puzzleItemCard(itemIndex){
+    const activity = currentActivity();
+    const it = activity.items[itemIndex];
+    const puz = _wrtPuzzle[itemIndex];
+    const wrap = document.createElement("div"); wrap.className = "wrt-scramble-item"; wrap.dataset.i = itemIndex;
+
+    const head = document.createElement("div"); head.className = "wrt-scramble-head";
+    const num = document.createElement("div"); num.className = "wrt-scard-num"; num.textContent = (itemIndex+1) + ".";
+    head.appendChild(num);
+    if (it.img){
+      const im = document.createElement("img"); im.className = "wrt-scard-img"; im.src = it.img;
+      im.onerror = function(){ this.onerror=null; this.src = "images/placeholder.png"; };
+      head.appendChild(im);
+    } else {
+      const sp = document.createElement("div"); sp.className = "wrt-scard-emoji"; sp.textContent = it.emoji || "?";
+      head.appendChild(sp);
+    }
+    wrap.appendChild(head);
+
+    const tiles = document.createElement("div"); tiles.className = "wrt-tile-row";
+    puz.order.forEach(origIdx=>{
+      const tile = document.createElement("div"); tile.className = "wrt-tile"; tile.dataset.orig = origIdx;
+      const txt = document.createElement("span"); txt.className = "wrt-tile-text"; txt.textContent = puz.tokens[origIdx];
+      tile.appendChild(txt);
+      const badge = document.createElement("span"); badge.className = "wrt-tile-badge";
+      tile.appendChild(badge);
+      if (puz.lockedOrig === origIdx){
+        tile.classList.add("locked");
+        const lock = document.createElement("div"); lock.className = "wrt-tile-lock"; lock.textContent = "🔒 Given";
+        tile.appendChild(lock);
+      } else {
+        tile.addEventListener("click", ()=> onPuzzleTileTap(itemIndex, origIdx));
+      }
+      tiles.appendChild(tile);
+    });
+    wrap.appendChild(tiles);
+    return wrap;
+  }
+  // Tapping a tile appends it to that item's OWN tapOrder array; tapping an
+  // already-tapped tile again removes it — same toggle/undo behavior as
+  // Sequencing's onCardTap, just scoped per item instead of per slide.
+  function onPuzzleTileTap(itemIndex, origIdx){
+    const puz = _wrtPuzzle[itemIndex];
+    if (!puz || puz.lockedOrig === origIdx) return; // anchored hint tile — not tappable
+    const pos = puz.tapOrder.indexOf(origIdx);
+    if (pos === -1) { puz.tapOrder.push(origIdx); playDropSound(true); }
+    else { puz.tapOrder.splice(pos, 1); playPickupSound(); }
+    $("wrtHint").textContent = "";
+    refreshPuzzleBadges(itemIndex);
+  }
+  function refreshPuzzleBadges(itemIndex){
+    const puz = _wrtPuzzle[itemIndex];
+    if (!puz) return;
+    const card = grid.querySelector('.wrt-scramble-item[data-i="'+itemIndex+'"]');
+    if (!card) return;
+    card.querySelectorAll(".wrt-tile").forEach(tile=>{
+      const origIdx = +tile.dataset.orig;
+      const pos = puz.tapOrder.indexOf(origIdx);
+      const badge = tile.querySelector(".wrt-tile-badge");
+      if (pos === -1){ tile.classList.remove("tapped", "correct", "wrong"); badge.textContent = ""; }
+      else { tile.classList.add("tapped"); badge.textContent = pos+1; }
+    });
+  }
+  // Rebuilds every item's puzzle from scratch (fresh shuffle + cleared
+  // tapOrder, Easy-slide hint re-applied) — used both for the initial render
+  // of a scramble/sentence slide and for "Try Again".
+  function renderPuzzleGrid(){
+    const activity = currentActivity();
+    const mode = activity.mode;
+    grid.classList.add("wrt-grid-puzzle");
+    _wrtPuzzle = {};
+    grid.innerHTML = "";
+    activity.items.forEach((it, i)=>{
+      _wrtPuzzle[i] = wrtBuildPuzzle(mode, it);
+      grid.appendChild(puzzleItemCard(i));
+    });
+    document.querySelectorAll(".wrt-scramble-item").forEach(card=> refreshPuzzleBadges(+card.dataset.i));
+  }
+  function checkPuzzleAnswers(mode){
+    const items = currentActivity().items;
+    const incomplete = items.some((_, i)=>{
+      const puz = _wrtPuzzle[i];
+      return !puz || puz.tapOrder.length < puz.tokens.length;
+    });
+    if (incomplete){
+      $("wrtHint").textContent = mode === "scramble" ? "Tap all the letters first before checking." : "Tap all the words first before checking.";
+      return;
+    }
+    studentAnswers = {}; suggestedMarks = {}; confirmedMarks = {};
+    let correctItemCount = 0;
+    items.forEach((it, i)=>{
+      const puz = _wrtPuzzle[i];
+      const card = grid.querySelector('.wrt-scramble-item[data-i="'+i+'"]');
+      let itemAllCorrect = true;
+      puz.tokens.forEach((_, origIdx)=>{
+        const pos = puz.tapOrder.indexOf(origIdx);
+        const ok = pos === origIdx;
+        if (!ok) itemAllCorrect = false;
+        if (card){
+          const tile = card.querySelector('.wrt-tile[data-orig="'+origIdx+'"]');
+          if (tile){ tile.classList.toggle("correct", ok); tile.classList.toggle("wrong", !ok); }
+        }
+      });
+      const assembled = puz.tapOrder.map(oi=> puz.tokens[oi]).join(mode === "sentence" ? " " : "");
+      studentAnswers[i] = assembled;
+      suggestedMarks[i] = itemAllCorrect;
+      confirmedMarks[i] = itemAllCorrect;
+      if (itemAllCorrect) correctItemCount++;
+    });
+    if (_stuMode) {
+      var _msi = state.currentIndex;
+      _stuMissedLabels[_msi] = _stuMissedLabels[_msi] || {};
+      _stuMissedDetail[_msi] = _stuMissedDetail[_msi] || {};
+      _stuMissCountByIdx[_msi] = _stuMissCountByIdx[_msi] || {};
+      items.forEach(function(it, idx){
+        if (suggestedMarks[idx]) return;
+        var label = (it.img ? '' : it.emoji) || ('Item ' + (idx+1));
+        _stuMissedLabels[_msi][label] = true;
+        var chosen = studentAnswers[idx] || 'Unknown';
+        var d = _stuMissedDetail[_msi][label] = _stuMissedDetail[_msi][label] || { correct: it.correct || '', img: it.img || '', choices: {} };
+        d.choices[chosen] = (d.choices[chosen] || 0) + 1;
+        _stuMissCountByIdx[_msi][idx] = (_stuMissCountByIdx[_msi][idx] || 0) + 1;
+      });
+    }
+    openScoreModal(correctItemCount, items.length);
   }
 
   function scard(itemIndex){
@@ -1354,18 +1614,35 @@ function initActivityTheme(){
     $("wrtInstr").textContent = activity.instruction;
     $("wrtTitle").style.display = state.showTitle ? "block" : "none";
     $("wrtInstr").style.display = state.showInstr ? "block" : "none";
-
-    studentAnswers = {}; suggestedMarks = {}; confirmedMarks = {};
-    const locked = _stuLockedItems[state.currentIndex];
-    if (locked && locked.length) locked.forEach(function(idx){ if (activity.items[idx]) studentAnswers[idx] = activity.items[idx].correct || ""; });
     renderExampleCard();
-    grid.innerHTML = "";
-    activity.items.forEach((_, i)=> grid.appendChild(scard(i)));
+
+    const mode = activity.mode || "written";
+    switch(mode){
+      case "scramble":
+      case "sentence":
+        renderPuzzleGrid();
+        break;
+      case "written":
+      default:
+        grid.classList.remove("wrt-grid-puzzle");
+        studentAnswers = {}; suggestedMarks = {}; confirmedMarks = {};
+        var locked = _stuLockedItems[state.currentIndex];
+        if (locked && locked.length) locked.forEach(function(idx){ if (activity.items[idx]) studentAnswers[idx] = activity.items[idx].correct || ""; });
+        grid.innerHTML = "";
+        activity.items.forEach((_, i)=> grid.appendChild(scard(i)));
+        break;
+    }
     $("wrtHint").textContent = "";
     if (document.body.classList.contains("wrt-preview-only")) setTimeout(fitStageToScreen, 30);
   }
 
   function resetAnswers(){
+    const mode = currentActivity().mode || "written";
+    if (mode === "scramble" || mode === "sentence"){
+      renderPuzzleGrid();
+      $("wrtHint").textContent = "";
+      return;
+    }
     studentAnswers = {}; suggestedMarks = {}; confirmedMarks = {};
     grid.querySelectorAll(".wrt-scard-input").forEach(i=>{ i.value = ""; i.classList.remove("correct","wrong"); });
     grid.querySelectorAll(".wrt-scard-badge").forEach(b=>{ b.style.display = "none"; b.className = "wrt-scard-badge"; b.textContent = ""; });
@@ -1373,7 +1650,7 @@ function initActivityTheme(){
   }
   $("wrtReset").addEventListener("click", resetAnswers);
 
-  $("wrtCheck").addEventListener("click", ()=>{
+  function checkWrittenAnswers(){
     const items = currentActivity().items;
     const inputs = grid.querySelectorAll(".wrt-scard-input");
     const filled = Array.from(inputs).every(i=> i.value.trim().length > 0);
@@ -1420,6 +1697,20 @@ function initActivityTheme(){
       });
     }
     openScoreModal(suggestedCount, items.length);
+  }
+
+  $("wrtCheck").addEventListener("click", ()=>{
+    const mode = currentActivity().mode || "written";
+    switch(mode){
+      case "scramble":
+      case "sentence":
+        checkPuzzleAnswers(mode);
+        break;
+      case "written":
+      default:
+        checkWrittenAnswers();
+        break;
+    }
   });
   window.addEventListener("resize", ()=>{
     if (document.body.classList.contains("wrt-preview-only")) fitStageToScreen();
@@ -1546,11 +1837,16 @@ function initActivityTheme(){
   $("wrtModalTryBtn").addEventListener("click", ()=>{
     var showTeach = false, justAnchored = false;
     var si = state.currentIndex;
+    // The anchor/teaching-modal scaffold is specific to the "written" mode's
+    // free-text items/answers model (it prefills/locks a text input with the
+    // correct answer) — it must never trigger for the tap-to-order Word
+    // Scramble / Build the Sentence modes, so it stays gated behind this check.
+    var scaffoldMode = currentActivity().mode || "written";
     if (_stuMode) {
       var lastPct = _stuSlideScores[si] ? (_stuSlideScores[si].correct / _stuSlideScores[si].total) : 1;
       _stuRetake++; _stuSlideRetakes[si] = (_stuSlideRetakes[si]||0)+1; _stuSlideScores[si] = undefined;
       if (_stuSlideRetakes[si] === 3) notifyTeacherRetake(si);
-      if (lastPct < PASS_THRESHOLD) {
+      if (scaffoldMode === "written" && lastPct < PASS_THRESHOLD) {
         var curLevel = _stuScaffoldLevel[si] || 0;
         if (curLevel >= 2 || _stuSlideRetakes[si] >= 4) { _stuScaffoldLevel[si] = 2; showTeach = true; }
         else if (_stuSlideRetakes[si] >= 3) { _stuScaffoldLevel[si] = 1; justAnchored = true; }
@@ -1740,6 +2036,20 @@ function initActivityTheme(){
   // repeats on the first page of a slide.
   function chunkArray(arr, size){ var out=[]; for (var i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size)); return out; }
   var WRT_ITEMS_PER_PAGE = 4;
+  // Word Scramble / Build the Sentence print worksheet: independent shuffle
+  // (print-time only, doesn't touch the live-stage puzzle state), with the
+  // same Easy-slide (slideIdx === 0) first-token hint convention as the
+  // on-screen version — shown as a highlighted "given" box.
+  function buildPrintTokensForItem(mode, it, slideIdx){
+    var tokens = wrtSplitTokens(mode, it.correct);
+    if (!tokens.length) return [];
+    var indices = tokens.map(function(_, i){ return i; });
+    var isEasy = slideIdx === 0;
+    var rest = isEasy ? indices.slice(1) : indices.slice();
+    var shuffledRest = shuffle(rest);
+    var order = isEasy ? [0].concat(shuffledRest) : shuffledRest;
+    return order.map(function(origIdx){ return { text: tokens[origIdx], given: isEasy && origIdx === 0 }; });
+  }
   function buildPrintPages(){
     var slidePlans = state.activities.map(function(activity){
       return { activity: activity, chunks: chunkArray(activity.items, WRT_ITEMS_PER_PAGE) };
@@ -1750,6 +2060,7 @@ function initActivityTheme(){
     var pageNum = 0;
     slidePlans.forEach(function(plan, slideIdx){
       var activity = plan.activity;
+      var topMode = activity.mode || "written";
       var exampleHtml = "";
       if (activity.example) {
         var ex = activity.example;
@@ -1766,6 +2077,16 @@ function initActivityTheme(){
           var visual = it.img
             ? '<img src="'+escAttr(it.img)+'" alt="">'
             : '<span class="wrt-print-emoji">'+printEscape(it.emoji || "?")+'</span>';
+          if (topMode === "scramble" || topMode === "sentence"){
+            var toks = buildPrintTokensForItem(topMode, it, slideIdx);
+            var boxesHtml = toks.map(function(t){
+              return '<span class="wrt-print-token-box'+(t.given ? ' given' : '')+'">'+printEscape(t.text)+'</span>';
+            }).join("");
+            return '<div class="wrt-print-item">'+visual
+              + '<div class="wrt-print-token-row">'+boxesHtml+'</div>'
+              + '<div class="wrt-print-blank"></div>'
+              + '</div>';
+          }
           return '<div class="wrt-print-item">'+visual+'<div class="wrt-print-blank"></div></div>';
         }).join("");
         pages += '<div class="wrt-print-page"'+(isLastPageOverall ? ' style="page-break-after:auto; display:flex; flex-direction:column; min-height:100vh;"' : '')+'>'
@@ -2360,6 +2681,7 @@ function initActivityTheme(){
    * ------------------------------------------------------------- */
 
   restoreAutoSaveIfAny();
+  syncTopModeSeg();
   syncModeSeg();
   renderExampleEditor();
   renderItems();
@@ -2471,7 +2793,7 @@ function initActivityTheme(){
         initActivityTheme();
 
         document.body.classList.add('wrt-preview-only');
-        syncModeSeg(); renderExampleEditor(); renderItems(); renderSwatches(); syncDesignControls(); applyAppearance(); renderActivity(); renderSlideNav();
+        syncTopModeSeg(); syncModeSeg(); renderExampleEditor(); renderItems(); renderSwatches(); syncDesignControls(); applyAppearance(); renderActivity(); renderSlideNav();
         stageInner.style.opacity = "0";
         setTimeout(fitStageToScreen, 50);
 

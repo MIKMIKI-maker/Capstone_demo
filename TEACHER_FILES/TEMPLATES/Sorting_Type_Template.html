@@ -247,6 +247,15 @@ function initActivityTheme(){
   .srt-type b{ font-weight:700; font-size:15px; }
   .srt-type-desc{ color:var(--ink-soft); font-size:12.5px; font-weight:500; line-height:1.5; margin-top:12px; }
 
+  /* Mode picker card (per-slide answer style: Sort into Bins / Odd One Out / Yes-No Sort) */
+  .srt-mode-picker{ display:flex; flex-direction:column; gap:8px; }
+  .srt-mode-btn{ display:flex; align-items:center; gap:10px; cursor:pointer; border:2px solid var(--field-border);
+    background:#fff; border-radius:14px; padding:10px 12px; font-family:var(--font); font-weight:700; font-size:13px;
+    color:var(--ink); text-align:left; width:100%; }
+  .srt-mode-btn .srt-mode-ic{ font-size:18px; width:26px; text-align:center; flex:none; }
+  .srt-mode-btn:hover{ border-color:#9fc4fb; }
+  .srt-mode-btn.sel{ border-color:var(--blue); background:#eaf2ff; color:var(--blue); }
+
   /* Categories editor */
   .srt-cat-row{ display:flex; align-items:flex-start; gap:10px; padding:11px 0; border-bottom:1px solid var(--line); }
   .srt-cat-row:last-of-type{ border-bottom:none; }
@@ -403,6 +412,42 @@ function initActivityTheme(){
   .srt-chip-emoji{ font-size:calc(2.2em * var(--img-scale,1)); line-height:1; }
   .srt-chip-name{ font-weight:700; font-size:.42em; margin-top:5px; color:var(--srt-text); text-align:center; }
 
+  /* Odd One Out mode — stacked "which one doesn't belong" round cards */
+  .srt-mode-content{ width:100%; box-sizing:border-box; }
+  .srt-oo-empty, .srt-yn-empty{ text-align:center; font-size:.5em; font-weight:700; color:var(--srt-text); opacity:.75; padding:20px 0; }
+  .srt-oo-round{ background:#fff; border:3px solid #e2c98f; border-radius:18px; padding:14px; margin-bottom:18px; }
+  .srt-stage.bs-dashed .srt-oo-round{ border-style:dashed; }
+  .srt-stage.bs-solid .srt-oo-round{ border-radius:8px; }
+  .srt-oo-round-label{ text-align:center; font-size:.42em; font-weight:800; color:var(--srt-text); opacity:.85; margin-bottom:10px; }
+  .srt-oo-items{ display:flex; flex-wrap:wrap; gap:14px; justify-content:center; }
+  .srt-oo-tile{
+    background:#fff; border:3px solid #e2c98f; border-radius:14px; padding:8px; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    width:calc(5.5em * var(--img-scale,1)); max-width:100%; box-sizing:border-box;
+    font-family:var(--font); transition:transform .08s ease, border-color .12s ease;
+  }
+  .srt-oo-tile:hover{ transform:translateY(-2px); }
+  .srt-oo-tile.sel{ border-color:var(--blue) !important; box-shadow:0 0 0 2px rgba(47,111,237,.25); }
+  .srt-oo-imgwrap{ width:100%; height:calc(2.6em * var(--img-scale,1)); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .srt-oo-img{ width:100%; height:100%; object-fit:contain; display:block; }
+  .srt-oo-emoji{ font-size:calc(2.2em * var(--img-scale,1)); line-height:1; }
+  .srt-oo-name{ font-weight:700; font-size:.42em; margin-top:5px; color:var(--srt-text); text-align:center; }
+
+  /* Yes/No Sort mode — vertical checklist, one row per item */
+  .srt-yn-question{ text-align:center; font-size:.55em; font-weight:800; color:var(--srt-text); margin-bottom:16px; }
+  .srt-yn-list{ display:flex; flex-direction:column; gap:12px; }
+  .srt-yn-row{ background:#fff; border:3px solid #e2c98f; border-radius:16px; padding:10px 14px; display:flex; align-items:center; gap:14px; }
+  .srt-stage.bs-dashed .srt-yn-row{ border-style:dashed; }
+  .srt-stage.bs-solid .srt-yn-row{ border-radius:8px; }
+  .srt-yn-media{ flex:none; width:calc(2.6em * var(--img-scale,1)); height:calc(2.6em * var(--img-scale,1)); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .srt-yn-img{ width:100%; height:100%; object-fit:contain; }
+  .srt-yn-emoji{ font-size:calc(2.2em * var(--img-scale,1)); line-height:1; }
+  .srt-yn-name{ flex:1; min-width:0; font-weight:700; font-size:.44em; color:var(--srt-text); text-align:left; }
+  .srt-yn-btns{ flex:none; display:flex; gap:8px; }
+  .srt-yn-btn{ cursor:pointer; border:3px solid #e2c98f; background:#fff; border-radius:12px; font-family:var(--font); font-weight:700; font-size:.4em; padding:.5em .9em; color:var(--srt-text); transition:transform .08s ease, border-color .12s ease; }
+  .srt-yn-btn:hover{ transform:translateY(-2px); }
+  .srt-yn-btn.sel{ border-color:var(--blue) !important; background:#eaf2ff; }
+
   .srt-stage-controls{ display:flex; flex-direction:column; align-items:center; gap:10px; margin-top:8px; }
   .srt-stage-btnrow{ display:flex; justify-content:center; gap:10px; }
   .srt-mini{ cursor:pointer; border:none; font-family:var(--font); font-weight:700; font-size:.5em; padding:.55em 1.2em; border-radius:12px; }
@@ -557,6 +602,22 @@ function initActivityTheme(){
   .srt-print-item img{ max-width:100%; max-height:78px; object-fit:contain; }
   .srt-print-item .srt-print-emoji{ font-size:50px; line-height:1; }
 
+  /* Odd One Out / Yes-No Sort printable worksheets */
+  .srt-print-question{ font-size:15px; font-weight:700; color:#243a5e; margin-bottom:14px; text-align:center; }
+  .srt-print-oo-round{ border:2px dashed #cbb8f3; border-radius:16px; padding:14px 16px; margin-bottom:18px; break-inside:avoid; page-break-inside:avoid; }
+  .srt-print-oo-round-label{ font-weight:700; font-size:13.5px; color:#243a5e; margin-bottom:10px; }
+  .srt-print-oo-items{ display:flex; gap:16px; flex-wrap:wrap; justify-content:center; }
+  .srt-print-oo-item{ border:1.5px dashed #94a3b8; border-radius:12px; padding:10px; width:110px; height:96px; display:flex; align-items:center; justify-content:center; }
+  .srt-print-oo-item img{ max-width:100%; max-height:76px; object-fit:contain; }
+  .srt-print-oo-item .srt-print-emoji{ font-size:44px; line-height:1; }
+  .srt-print-yn-list{ display:flex; flex-direction:column; gap:2px; }
+  .srt-print-yn-row{ display:flex; align-items:center; gap:14px; padding:10px 4px; border-bottom:1.5px dashed #cbd5e1; break-inside:avoid; page-break-inside:avoid; }
+  .srt-print-yn-media{ width:60px; height:60px; flex:none; display:flex; align-items:center; justify-content:center; }
+  .srt-print-yn-media img{ max-width:100%; max-height:100%; object-fit:contain; }
+  .srt-print-yn-name{ flex:1; font-weight:700; font-size:14.5px; color:#243a5e; }
+  .srt-print-yn-boxes{ display:flex; gap:18px; flex:none; }
+  .srt-print-yn-boxes label{ display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700; color:#243a5e; }
+
   @media print{
     html, body{ height:auto !important; overflow:visible !important; }
     body *{ visibility:hidden; }
@@ -618,6 +679,11 @@ function initActivityTheme(){
     .srt-bin-items .srt-chip{ width:min(calc(4.4em * var(--img-scale,1)), 62px); max-width:100%; padding:4px; }
     .srt-bin-items .srt-chip-imgwrap{ height:min(calc(2.6em * var(--img-scale,1)), 40px); }
     .srt-bin{ padding:10px; }
+    .srt-oo-tile{ width:min(calc(4.4em * var(--img-scale,1)), 84px); padding:5px; }
+    .srt-oo-imgwrap{ height:min(calc(2.6em * var(--img-scale,1)), 52px); }
+    .srt-yn-row{ padding:8px 10px; gap:8px; }
+    .srt-yn-media{ width:min(calc(2.6em * var(--img-scale,1)), 52px); height:min(calc(2.6em * var(--img-scale,1)), 52px); }
+    .srt-yn-btn{ padding:.45em .6em; }
   }
 
   @media (max-width:640px){
@@ -641,6 +707,7 @@ function initActivityTheme(){
     .srt-type-ic{ width:34px; height:34px; font-size:17px; }
     .srt-type b{ font-size:14px; }
     .srt-type-desc{ font-size:11.5px; margin-top:9px; }
+    .srt-mode-btn{ padding:9px 10px; font-size:12px; }
     .srt-cat-row, .srt-item-row{ padding:8px 0; gap:6px; }
     .srt-media-tabs button{ font-size:8.5px; padding:2.5px 0; }
   }
@@ -774,12 +841,13 @@ function initActivityTheme(){
       </div>
 
       <div class="srt-card">
-        <div class="srt-step">1. Activity Type</div>
-        <div class="srt-type">
-          <div class="srt-type-ic">🗂️</div>
-          <b>Sorting Type</b>
+        <div class="srt-step">1. Activity Type <span class="srt-edit-link">(per slide)</span></div>
+        <div class="srt-mode-picker" id="srtModePicker">
+          <button class="srt-mode-btn" data-mode="bins" type="button"><span class="srt-mode-ic">🗂️</span>Sort into Bins</button>
+          <button class="srt-mode-btn" data-mode="oddoneout" type="button"><span class="srt-mode-ic">🔍</span>Odd One Out</button>
+          <button class="srt-mode-btn" data-mode="yesno" type="button"><span class="srt-mode-ic">✅</span>Yes/No Sort</button>
         </div>
-        <p class="srt-type-desc">Learners drag each picture into the correct group/category (e.g. Animals vs Fruits, Big vs Small).</p>
+        <p class="srt-type-desc" id="srtModeDesc"></p>
       </div>
 
       <div class="srt-card">
@@ -808,8 +876,9 @@ function initActivityTheme(){
           <div class="srt-title" id="srtTitle"></div>
           <div class="srt-instr" id="srtInstr"></div>
           <div class="srt-bins" id="srtBins"></div>
-          <div class="srt-pool-label">Drag each picture into the correct group ↑</div>
+          <div class="srt-pool-label" id="srtPoolLabel">Drag each picture into the correct group ↑</div>
           <div class="srt-pool" id="srtPool"></div>
+          <div class="srt-mode-content" id="srtModeContent"></div>
           <div class="srt-stage-controls">
             <div class="srt-hint" id="srtHint"></div>
             <div class="srt-stage-btnrow">
@@ -1112,8 +1181,12 @@ function initActivityTheme(){
   const SPACE_GAP = { Small:12, Medium:18, Large:26 };
 
   // One "activity" = one sorting task (its own title, instruction, categories, items).
+  // Per-slide answer mode. Undefined/missing (any Sorting activity published
+  // before this feature existed) is always treated as "bins" wherever mode is
+  // read — see every `activity.mode || 'bins'` / `case 'bins': default:` below.
   function makeDefaultActivity(){
     return {
+      mode:"bins",
       title:"Sort the Pictures",
       instruction:"Drag each picture into the correct group.",
       categories:[
@@ -1132,6 +1205,7 @@ function initActivityTheme(){
   }
   function makeBlankActivity(slideNumber){
     return {
+      mode:"bins",
       title:"New Activity "+slideNumber,
       instruction:"Drag each picture into the correct group.",
       categories:[ { icon:"", img:null, name:"Group A" }, { icon:"", img:null, name:"Group B" } ],
@@ -1141,6 +1215,11 @@ function initActivityTheme(){
       ]
     };
   }
+  const SRT_MODE_META = {
+    bins:      { label:"Sort into Bins", desc:"Learners drag (or tap) each picture into the correct category bin." },
+    oddoneout: { label:"Odd One Out",    desc:"Learners look at a small group of pictures from the categories above and tap the one that doesn't belong." },
+    yesno:     { label:"Yes/No Sort",    desc:"Learners answer Yes or No for each picture against one target category rule (the first category listed below)." }
+  };
 
   const state = {
     ...structuredClone(DEFAULT_DESIGN),
@@ -1187,6 +1266,7 @@ function initActivityTheme(){
   }
 
   function refreshSlideUI(){
+    renderModePicker();
     renderCategories();
     renderItems();
     $("srtTitleInput").value = currentActivity().title;
@@ -1199,6 +1279,25 @@ function initActivityTheme(){
     state.currentIndex = Math.max(0, Math.min(state.activities.length-1, index));
     refreshSlideUI();
   }
+
+  /* ------------------------------------------------------------- *
+   * 2b. ANSWER-MODE PICKER (per slide — Bins / Odd One Out / Yes-No)
+   * ------------------------------------------------------------- */
+
+  function renderModePicker(){
+    const mode = currentActivity().mode || "bins";
+    document.querySelectorAll("#srtModePicker .srt-mode-btn").forEach(function(btn){
+      btn.classList.toggle("sel", btn.dataset.mode === mode);
+    });
+    $("srtModeDesc").textContent = (SRT_MODE_META[mode] || SRT_MODE_META.bins).desc;
+  }
+  document.querySelectorAll("#srtModePicker .srt-mode-btn").forEach(function(btn){
+    btn.addEventListener("click", ()=>{
+      currentActivity().mode = btn.dataset.mode;
+      renderModePicker();
+      renderActivity();
+    });
+  });
 
   $("srtPrevSlide").addEventListener("click", ()=> goToSlide(state.currentIndex-1));
   $("srtNextSlide").addEventListener("click", ()=> goToSlide(state.currentIndex+1));
@@ -1461,15 +1560,8 @@ function initActivityTheme(){
     return el;
   }
 
-  // Renders the whole sorting board for the slide that is currently active.
-  function renderActivity(){
-    const activity = currentActivity();
-    $("srtTitle").textContent = activity.title;
-    $("srtInstr").textContent = activity.instruction;
-    $("srtTitle").style.display = state.showTitle ? "block" : "none";
-    $("srtInstr").style.display = state.showInstr ? "block" : "none";
-    updateImgScale();
-
+  // ----- Sort into Bins (existing, unchanged behavior) -----
+  function renderStageBins(activity){
     assignments = {}; selectedItem = null;
     const locked = _stuLockedItems[state.currentIndex];
     if (locked && locked.length) locked.forEach(idx=>{ if (activity.items[idx]) assignments[idx] = activity.items[idx].category; });
@@ -1482,8 +1574,177 @@ function initActivityTheme(){
     const shuffledOrder = shuffle(activity.items.map((_, i)=> i));
     shuffledOrder.forEach(i=> poolWrap.appendChild(chip(i)));
     if (locked && locked.length) rerenderBoard(); // move the anchored item into its correct bin
+  }
 
+  /* ----- Odd One Out — synthesize small "which one doesn't belong" rounds
+     from the existing items/categories. Each round is 3 items from one
+     category + 1 "odd" item from a different category (falls back to a
+     2-same-plus-1-odd group of 3 when a category has fewer than 3 usable
+     items). Capped at SRT_ODD_MAX_ROUNDS so the stage doesn't get
+     overwhelming; a signature-dedup guards against repeating the exact same
+     group when the data can't support that many unique rounds. ----- */
+  var SRT_ODD_MAX_ROUNDS = 6;
+  var _srtOddRounds = []; // [{ groupIdxs:[itemIdx,...], oddIdx:itemIdx, selected:itemIdx|null }]
+
+  function synthesizeOddOneOutRounds(activity){
+    const categories = activity.categories || [];
+    const items = activity.items || [];
+    const byCat = categories.map(function(_, ci){
+      return items.map(function(_, i){ return i; }).filter(function(i){ return items[i].category === ci; });
+    });
+    const catsWithItems = byCat.map(function(list, ci){ return { ci:ci, list:list }; }).filter(function(c){ return c.list.length > 0; });
+    if (catsWithItems.length < 2) return []; // need at least 2 non-empty categories to have an "odd" item at all
+
+    const rounds = [];
+    const usedSignatures = {};
+    const maxAttempts = SRT_ODD_MAX_ROUNDS * 5;
+    let attempts = 0;
+    while (rounds.length < SRT_ODD_MAX_ROUNDS && attempts < maxAttempts){
+      attempts++;
+      const mainCandidates = catsWithItems.filter(function(c){ return c.list.length >= 2; });
+      if (!mainCandidates.length) break; // no category has enough items to be the "same" group at all
+      const main = mainCandidates[Math.floor(Math.random()*mainCandidates.length)];
+      const groupSize = main.list.length >= 3 ? 3 : 2; // fallback: 2-same-plus-1-odd (group of 3) when <3 available
+      const sameItems = shuffle(main.list).slice(0, groupSize);
+      const oddCandidates = catsWithItems.filter(function(c){ return c.ci !== main.ci && c.list.length > 0; });
+      if (!oddCandidates.length) continue; // try a different main category on the next attempt
+      const oddCat = oddCandidates[Math.floor(Math.random()*oddCandidates.length)];
+      const oddIdx = oddCat.list[Math.floor(Math.random()*oddCat.list.length)];
+
+      const groupIdxs = shuffle(sameItems.concat([oddIdx]));
+      const signature = groupIdxs.slice().sort(function(a,b){ return a-b; }).join(",");
+      if (usedSignatures[signature]) continue; // don't repeat the exact same group
+      usedSignatures[signature] = true;
+      rounds.push({ groupIdxs:groupIdxs, oddIdx:oddIdx, selected:null });
+    }
+    return rounds;
+  }
+
+  function onOddOneOutTap(roundIndex, itemIdx, tileEl){
+    const round = _srtOddRounds[roundIndex];
+    if (!round) return;
+    round.selected = itemIdx;
+    playPickupSound();
+    const card = tileEl.closest(".srt-oo-round");
+    if (card) card.querySelectorAll(".srt-oo-tile").forEach(function(t){ t.classList.toggle("sel", +t.dataset.item === itemIdx); t.style.borderColor = ""; });
     $("srtHint").textContent = "";
+  }
+
+  function renderStageOddOneOut(container, activity){
+    container.innerHTML = "";
+    _srtOddRounds = synthesizeOddOneOutRounds(activity);
+    if (!_srtOddRounds.length){
+      const msg = document.createElement("div"); msg.className = "srt-oo-empty";
+      msg.textContent = "Add at least 2 categories with a few items each to generate Odd One Out rounds.";
+      container.appendChild(msg);
+      return;
+    }
+    _srtOddRounds.forEach(function(round, ri){
+      const card = document.createElement("div"); card.className = "srt-oo-round"; card.dataset.round = ri;
+      const label = document.createElement("div"); label.className = "srt-oo-round-label";
+      label.textContent = "Round " + (ri+1) + " — which one doesn't belong?";
+      card.appendChild(label);
+      const row = document.createElement("div"); row.className = "srt-oo-items";
+      round.groupIdxs.forEach(function(itemIdx){
+        const item = activity.items[itemIdx];
+        const tile = document.createElement("button"); tile.type = "button"; tile.className = "srt-oo-tile"; tile.dataset.item = itemIdx;
+        if (item.img){ const wrap = document.createElement("div"); wrap.className = "srt-oo-imgwrap"; const im = document.createElement("img"); im.className = "srt-oo-img"; im.src = item.img; wrap.appendChild(im); tile.appendChild(wrap); }
+        else { const sp = document.createElement("div"); sp.className = "srt-oo-emoji"; sp.textContent = item.emoji || "?"; tile.appendChild(sp); }
+        if (item.name){ const nm = document.createElement("div"); nm.className = "srt-oo-name"; nm.textContent = item.name; tile.appendChild(nm); }
+        tile.addEventListener("click", ()=> onOddOneOutTap(ri, itemIdx, tile));
+        row.appendChild(tile);
+      });
+      card.appendChild(row);
+      container.appendChild(card);
+    });
+  }
+
+  /* ----- Yes/No Sort — categories[0] is "the target category"; every item
+     renders as one checklist row with big Yes/No buttons. No dragging. ----- */
+  var _srtYesNoAnswers = {}; // { itemIndex: true(Yes) | false(No) }
+
+  function srtYesNoQuestion(activity){
+    const targetName = (((activity.categories||[])[0]||{}).name || "").trim();
+    return targetName ? ("Is this a " + targetName + "?") : "Does this belong to the target group?";
+  }
+
+  function onYesNoTap(itemIndex, isYes, rowEl){
+    _srtYesNoAnswers[itemIndex] = isYes;
+    playDropSound(true);
+    rowEl.querySelectorAll(".srt-yn-btn").forEach(function(b){ b.classList.remove("sel"); b.style.borderColor = ""; });
+    const sel = rowEl.querySelector(isYes ? ".srt-yn-btn.yes" : ".srt-yn-btn.no");
+    if (sel) sel.classList.add("sel");
+    $("srtHint").textContent = "";
+  }
+
+  function renderStageYesNo(container, activity){
+    container.innerHTML = "";
+    _srtYesNoAnswers = {};
+    const items = activity.items || [];
+
+    const qEl = document.createElement("div"); qEl.className = "srt-yn-question";
+    qEl.textContent = srtYesNoQuestion(activity);
+    container.appendChild(qEl);
+
+    if (!items.length){
+      const msg = document.createElement("div"); msg.className = "srt-yn-empty";
+      msg.textContent = "Add at least one item to build the Yes/No checklist.";
+      container.appendChild(msg);
+      return;
+    }
+
+    const list = document.createElement("div"); list.className = "srt-yn-list";
+    const order = shuffle(items.map(function(_, i){ return i; }));
+    order.forEach(function(itemIdx){
+      const item = items[itemIdx];
+      const row = document.createElement("div"); row.className = "srt-yn-row"; row.dataset.item = itemIdx;
+
+      const media = document.createElement("div"); media.className = "srt-yn-media";
+      if (item.img){ const im = document.createElement("img"); im.className = "srt-yn-img"; im.src = item.img; media.appendChild(im); }
+      else { const sp = document.createElement("div"); sp.className = "srt-yn-emoji"; sp.textContent = item.emoji || "?"; media.appendChild(sp); }
+      row.appendChild(media);
+
+      const nameEl = document.createElement("div"); nameEl.className = "srt-yn-name"; nameEl.textContent = item.name || "";
+      row.appendChild(nameEl);
+
+      const btns = document.createElement("div"); btns.className = "srt-yn-btns";
+      const yesBtn = document.createElement("button"); yesBtn.type = "button"; yesBtn.className = "srt-yn-btn yes"; yesBtn.textContent = "✅ Yes";
+      const noBtn = document.createElement("button"); noBtn.type = "button"; noBtn.className = "srt-yn-btn no"; noBtn.textContent = "❌ No";
+      yesBtn.addEventListener("click", ()=> onYesNoTap(itemIdx, true, row));
+      noBtn.addEventListener("click", ()=> onYesNoTap(itemIdx, false, row));
+      btns.appendChild(yesBtn); btns.appendChild(noBtn);
+      row.appendChild(btns);
+
+      list.appendChild(row);
+    });
+    container.appendChild(list);
+  }
+
+  // Renders the whole preview stage for the slide that is currently active —
+  // dispatches to whichever answer mode this slide is set to.
+  function renderActivity(){
+    const activity = currentActivity();
+    const mode = activity.mode || "bins";
+    $("srtTitle").textContent = activity.title;
+    $("srtInstr").textContent = activity.instruction;
+    $("srtTitle").style.display = state.showTitle ? "block" : "none";
+    $("srtInstr").style.display = state.showInstr ? "block" : "none";
+    updateImgScale();
+    $("srtHint").textContent = "";
+
+    const isBins = mode === "bins";
+    binsWrap.style.display = isBins ? "" : "none";
+    $("srtPoolLabel").style.display = isBins ? "" : "none";
+    poolWrap.style.display = isBins ? "" : "none";
+    $("srtModeContent").style.display = isBins ? "none" : "";
+
+    switch(mode){
+      case "oddoneout": renderStageOddOneOut($("srtModeContent"), activity); break;
+      case "yesno": renderStageYesNo($("srtModeContent"), activity); break;
+      case "bins":
+      default: renderStageBins(activity); break;
+    }
+
     if (document.body.classList.contains("srt-preview-only")) setTimeout(fitStageToScreen, 30);
   }
 
@@ -1573,16 +1834,54 @@ function initActivityTheme(){
     rerenderBoard();
   }
 
+  // "Try Again" — clears the current answer state for whichever mode this
+  // slide is set to. Bins mode keeps its existing behavior exactly (clears
+  // assignments without re-shuffling the pool); the 2 new modes get their
+  // own equivalent "clear the board" reset.
   function resetSorting(){
-    assignments = {}; selectedItem = null;
-    document.querySelectorAll(".srt-chip").forEach(x=> x.classList.remove("sel"));
-    document.querySelectorAll(".srt-bin").forEach(x=> x.style.borderColor = "");
+    const activity = currentActivity();
+    const mode = activity.mode || "bins";
     $("srtHint").textContent = "";
-    rerenderBoard();
+    switch(mode){
+      case "oddoneout":
+        renderStageOddOneOut($("srtModeContent"), activity); // re-synthesizes fresh rounds and clears selections
+        break;
+      case "yesno":
+        _srtYesNoAnswers = {};
+        document.querySelectorAll(".srt-yn-row").forEach(function(row){
+          row.querySelectorAll(".srt-yn-btn").forEach(function(b){ b.classList.remove("sel"); b.style.borderColor = ""; });
+        });
+        break;
+      case "bins":
+      default:
+        assignments = {}; selectedItem = null;
+        document.querySelectorAll(".srt-chip").forEach(x=> x.classList.remove("sel"));
+        document.querySelectorAll(".srt-bin").forEach(x=> x.style.borderColor = "");
+        rerenderBoard();
+        break;
+    }
   }
   $("srtReset").addEventListener("click", resetSorting);
 
-  $("srtCheck").addEventListener("click", ()=>{
+  // Struggled-item reporting shared by the 2 new modes — mirrors the generic
+  // reviewResults-style shape Math_Template.html's non-MC modes use, NOT bins
+  // mode's scaffold-tracking (_stuMissCountByIdx/_stuLockedItems) — the
+  // anchor/teaching-modal scaffold stays scoped to bins mode only.
+  function recordGenericMissedDetail(results){
+    if (!_stuMode) return;
+    var _msi = state.currentIndex;
+    _stuMissedDetail[_msi] = _stuMissedDetail[_msi] || {};
+    results.forEach(function(r){
+      if (r.correct) return;
+      var label = r.label || "Item";
+      var chosen = r.studentAnswer != null ? String(r.studentAnswer) : "Unknown";
+      var d = _stuMissedDetail[_msi][label] = _stuMissedDetail[_msi][label] || { correct: r.correctAnswer != null ? String(r.correctAnswer) : "?", img: r.img || "", choices:{} };
+      d.choices[chosen] = (d.choices[chosen] || 0) + 1;
+    });
+  }
+
+  // ----- Sort into Bins (existing, unchanged behavior) -----
+  function checkBinsMode(){
     const activity = currentActivity();
     const totalItems = activity.items.length;
     if (Object.keys(assignments).length < totalItems){
@@ -1613,6 +1912,79 @@ function initActivityTheme(){
       });
     }
     openScoreModal(correctCount, totalItems);
+  }
+
+  // ----- Odd One Out -----
+  function checkOddOneOut(){
+    const activity = currentActivity();
+    const totalItems = _srtOddRounds.length;
+    if (!totalItems){ $("srtHint").textContent = "Add at least 2 categories with a few items each to generate Odd One Out rounds."; return; }
+    const unanswered = _srtOddRounds.some(function(r){ return r.selected === null; });
+    if (unanswered){ $("srtHint").textContent = "Tap the odd one out in every round before checking."; return; }
+    let correctCount = 0; _srtResults = [];
+    _srtOddRounds.forEach(function(round, ri){
+      const isCorrect = round.selected === round.oddIdx;
+      if (isCorrect) correctCount++;
+      const card = document.querySelector('.srt-oo-round[data-round="'+ri+'"]');
+      if (card) card.querySelectorAll(".srt-oo-tile").forEach(function(t){
+        const ti = +t.dataset.item;
+        if (ti === round.oddIdx) t.style.borderColor = "#1f9d44";
+        else if (ti === round.selected) t.style.borderColor = "#e23b54";
+      });
+      const oddItem = activity.items[round.oddIdx];
+      const pickedItem = activity.items[round.selected];
+      _srtResults.push({
+        label: "Round " + (ri+1),
+        img: oddItem.img || '',
+        studentAnswer: pickedItem.name || pickedItem.emoji || 'Item',
+        correctAnswer: oddItem.name || oddItem.emoji || 'Item',
+        correct: isCorrect
+      });
+    });
+    recordGenericMissedDetail(_srtResults);
+    openScoreModal(correctCount, totalItems);
+  }
+
+  // ----- Yes/No Sort -----
+  function checkYesNo(){
+    const activity = currentActivity();
+    const items = activity.items || [];
+    const totalItems = items.length;
+    if (!totalItems){ $("srtHint").textContent = "Add at least one item first."; return; }
+    if (Object.keys(_srtYesNoAnswers).length < totalItems){
+      $("srtHint").textContent = "Answer Yes or No for every picture before checking.";
+      return;
+    }
+    let correctCount = 0; _srtResults = [];
+    items.forEach(function(item, i){
+      const studentYes = _srtYesNoAnswers[i];
+      const correctYes = item.category === 0;
+      const isCorrect = studentYes === correctYes;
+      if (isCorrect) correctCount++;
+      const row = document.querySelector('.srt-yn-row[data-item="'+i+'"]');
+      if (row) row.querySelectorAll(".srt-yn-btn").forEach(function(b){
+        const isYesBtn = b.classList.contains("yes");
+        if (isYesBtn === correctYes) b.style.borderColor = "#1f9d44";
+        else if (isYesBtn === studentYes) b.style.borderColor = "#e23b54";
+      });
+      _srtResults.push({
+        label: item.name || item.emoji || ('Item ' + (i+1)),
+        img: item.img || '',
+        studentAnswer: studentYes ? "Yes" : "No",
+        correctAnswer: correctYes ? "Yes" : "No",
+        correct: isCorrect
+      });
+    });
+    recordGenericMissedDetail(_srtResults);
+    openScoreModal(correctCount, totalItems);
+  }
+
+  $("srtCheck").addEventListener("click", ()=>{
+    switch(currentActivity().mode || "bins"){
+      case "oddoneout": checkOddOneOut(); break;
+      case "yesno": checkYesNo(); break;
+      case "bins": default: checkBinsMode(); break;
+    }
   });
 
   /* ------------------------------------------------------------- *
@@ -1644,7 +2016,13 @@ function initActivityTheme(){
 
     if (_stuMode) {
       _stuLastScore = correctCount; _stuLastTotal = totalItems;
-      _stuSlideScores[state.currentIndex] = { correct: correctCount, total: totalItems, ansItems: _srtResults.map(function(r){var cc=(currentActivity().categories[r.item.category]||{}).name||'Group '+(+r.item.category+1);return{label:r.item.name||(r.item.img?'':r.item.emoji)||('Item '+(r.idx+1)),img:r.item.img||'',studentAnswer:r.chosenCatName||'—',correctAnswer:cc,correct:r.correct};}) };
+      _stuSlideScores[state.currentIndex] = { correct: correctCount, total: totalItems, ansItems: _srtResults.map(function(r){
+        // Bins mode's results carry the original item object; the 2 new
+        // modes push a simpler {label,studentAnswer,correctAnswer} shape
+        // directly (see checkOddOneOut/checkYesNo above).
+        if (r.item) { var cc=(currentActivity().categories[r.item.category]||{}).name||'Group '+(+r.item.category+1); return {label:r.item.name||(r.item.img?'':r.item.emoji)||('Item '+(r.idx+1)),img:r.item.img||'',studentAnswer:r.chosenCatName||'—',correctAnswer:cc,correct:r.correct}; }
+        return { label:r.label||'Item', img:r.img||'', studentAnswer:r.studentAnswer!=null?String(r.studentAnswer):'—', correctAnswer:r.correctAnswer!=null?String(r.correctAnswer):'—', correct:r.correct };
+      }) };
       var _ts = state.activities.length, _isLast = state.currentIndex >= _ts - 1;
       var _allDone = _stuSlideScores.filter(Boolean).length === _ts && _stuSlideScores.every(function(s){ return s && (s.correct / s.total) >= PASS_THRESHOLD; });
       if (_ts > 1 && !_isLast && percent >= PASS_THRESHOLD) {
@@ -1663,6 +2041,31 @@ function initActivityTheme(){
   function renderReviewRows(stuMode) {
     var rows = $("srtReviewRows"); rows.innerHTML = "";
     _srtResults.forEach(function(r) {
+      // Bins mode's results carry the original item object and get the
+      // existing image-based row below; the 2 new modes push a simpler
+      // {label,studentAnswer,correctAnswer} shape and get a generic
+      // text-based row (mirrors Math/Matching_Type_Template's renderReviewRows).
+      if (!r.item) {
+        var grow = document.createElement("div");
+        grow.style.cssText = "display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #f1f5f9;";
+        var gmedia = document.createElement("div"); gmedia.style.cssText = "min-width:36px;text-align:center;";
+        if (r.img) { gmedia.innerHTML = '<img src="'+r.img+'" style="width:32px;height:32px;object-fit:cover;border-radius:6px;">'; }
+        grow.appendChild(gmedia);
+        var ginfo = document.createElement("div"); ginfo.style.cssText = "flex:1;font-size:12px;font-weight:600;";
+        var glabel = document.createElement("b"); glabel.textContent = r.label || "Item"; glabel.style.marginRight = "6px";
+        ginfo.appendChild(glabel);
+        var gspan = document.createElement("span");
+        if (r.correct) { gspan.style.color = "#1f9d44"; gspan.textContent = "✅ Tama!"; }
+        else if (stuMode) { gspan.style.cssText = "color:#7c3aed;font-size:11px;"; gspan.textContent = "💡 Clue: Tingnan muli."; }
+        else { gspan.style.color = "#e23b54"; gspan.textContent = "✗ Sagot: " + (r.studentAnswer || "—"); }
+        ginfo.appendChild(gspan);
+        grow.appendChild(ginfo);
+        var gbadge = document.createElement("span");
+        gbadge.textContent = r.correct ? "✓" : "✗";
+        gbadge.style.cssText = "width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex:none;background:"+(r.correct?"#dcfce7":"#fee2e2")+";color:"+(r.correct?"#1f9d44":"#e23b54")+";";
+        grow.appendChild(gbadge); rows.appendChild(grow);
+        return;
+      }
       var row = document.createElement("div");
       row.style.cssText = "display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #f1f5f9;";
       var itemEl = document.createElement("div");
@@ -1714,11 +2117,16 @@ function initActivityTheme(){
   $("srtModalTryBtn").addEventListener("click", ()=>{
     var showTeach = false, justAnchored = false;
     var si = state.currentIndex;
+    // The repeated-failure anchor/teaching-modal scaffold below is a
+    // bins-mode-only pedagogy layer (it locks one item into its correct bin) —
+    // the 2 new modes get straightforward retake behavior without it, since
+    // they have no bins/assignments for the scaffold to anchor into.
+    var isBinsSlide = (state.activities[si].mode || "bins") === "bins";
     if (_stuMode) {
       var lastPct = _stuSlideScores[si] ? (_stuSlideScores[si].correct / _stuSlideScores[si].total) : 1;
       _stuRetake++; _stuSlideRetakes[si] = (_stuSlideRetakes[si]||0)+1; _stuSlideScores[si] = undefined;
       if (_stuSlideRetakes[si] === 3) notifyTeacherRetake(si);
-      if (lastPct < PASS_THRESHOLD) {
+      if (isBinsSlide && lastPct < PASS_THRESHOLD) {
         var curLevel = _stuScaffoldLevel[si] || 0;
         if (curLevel >= 2 || _stuSlideRetakes[si] >= 4) { _stuScaffoldLevel[si] = 2; showTeach = true; }
         else if (_stuSlideRetakes[si] >= 3) { _stuScaffoldLevel[si] = 1; justAnchored = true; }
@@ -1955,12 +2363,56 @@ function initActivityTheme(){
   // would make a lopsided page's box absurdly tall. 8 keeps every box a
   // sane, printable height even in the worst case (all 8 in one category).
   var SRT_ITEMS_PER_PAGE = 8;
+
+  // ----- Odd One Out / Yes-No Sort printable worksheets — a single page per
+  // slide (no chunking; a plain browser page-break handles overflow), unlike
+  // bins mode's per-category cut-and-paste pagination above. -----
+  function printOddOneOut(activity){
+    var rounds = synthesizeOddOneOutRounds(activity);
+    if (!rounds.length){
+      return '<div class="srt-print-question">Add at least 2 categories with a few items each to generate Odd One Out rounds.</div>';
+    }
+    var roundsHtml = rounds.map(function(round, ri){
+      var itemsHtml = round.groupIdxs.map(function(i){
+        var it = activity.items[i];
+        var visual = it.img
+          ? '<img src="'+escAttr(it.img)+'" alt="">'
+          : '<span class="srt-print-emoji">'+printEscape(it.emoji || "?")+'</span>';
+        return '<div class="srt-print-oo-item">'+visual+'</div>';
+      }).join("");
+      return '<div class="srt-print-oo-round"><div class="srt-print-oo-round-label">Round '+(ri+1)+' — circle the picture that doesn\'t belong</div>'
+        + '<div class="srt-print-oo-items">'+itemsHtml+'</div></div>';
+    }).join("");
+    return '<div class="srt-print-question">Look at each group of pictures below. Circle the one that does not belong.</div>' + roundsHtml;
+  }
+  function printYesNo(activity){
+    var question = srtYesNoQuestion(activity) + " Circle Yes or No for each picture.";
+    var rowsHtml = (activity.items||[]).map(function(it){
+      var visual = it.img
+        ? '<img src="'+escAttr(it.img)+'" alt="">'
+        : '<span class="srt-print-emoji" style="font-size:40px;">'+printEscape(it.emoji || "?")+'</span>';
+      return '<div class="srt-print-yn-row"><div class="srt-print-yn-media">'+visual+'</div>'
+        + '<div class="srt-print-yn-name">'+printEscape(it.name||'')+'</div>'
+        + '<div class="srt-print-yn-boxes"><label><span class="srt-print-box"></span> Yes</label><label><span class="srt-print-box"></span> No</label></div></div>';
+    }).join("");
+    return '<div class="srt-print-question">'+printEscape(question)+'</div><div class="srt-print-yn-list">'+rowsHtml+'</div>';
+  }
+  function buildPrintBodyForSlide(activity){
+    switch(activity.mode){
+      case "oddoneout": return printOddOneOut(activity);
+      case "yesno": return printYesNo(activity);
+      default: return null; // bins mode uses the per-category/per-chunk builder below
+    }
+  }
+
   function buildPrintPages(){
     var slidePlans = state.activities.map(function(activity){
+      var mode = activity.mode || "bins";
+      if (mode !== "bins") return { activity: activity, mode: mode, chunks: null };
       var order = shuffle(activity.items.map(function(_, i){ return i; }));
-      return { activity: activity, chunks: chunkArray(order, SRT_ITEMS_PER_PAGE) };
+      return { activity: activity, mode: mode, chunks: chunkArray(order, SRT_ITEMS_PER_PAGE) };
     });
-    var totalPages = slidePlans.reduce(function(sum, p){ return sum + p.chunks.length; }, 0);
+    var totalPages = slidePlans.reduce(function(sum, p){ return sum + (p.chunks ? p.chunks.length : 1); }, 0);
 
     var pages = "";
     var pageNum = 0;
@@ -1992,6 +2444,21 @@ function initActivityTheme(){
     }
     slidePlans.forEach(function(plan, slideIdx){
       var activity = plan.activity;
+      if (plan.mode !== "bins"){
+        pageNum++;
+        var isLastPageOverallNB = slideIdx === slidePlans.length - 1;
+        pages += '<div class="srt-print-page"'+(isLastPageOverallNB ? ' style="page-break-after:auto; display:flex; flex-direction:column; min-height:100vh;"' : '')+'>'
+          + '<div class="srt-print-head"><h2>'+printEscape(activity.title)+'</h2>'
+          + '<div class="srt-print-objective">('+printEscape(toPrintInstruction(activity.instruction))+')</div>'
+          + (state.activities.length > 1 ? '<div class="srt-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+' — '+(DIFFICULTY_LABELS[slideIdx]||"")+'</div>' : '')
+          + (totalPages > 1 ? '<div class="srt-print-pagenum">Page '+pageNum+' of '+totalPages+'</div>' : '')
+          + '</div>'
+          + '<div class="srt-print-divider"><div class="srt-print-rule"></div><div class="srt-print-rule-dash"></div><div class="srt-print-rule"></div></div>'
+          + buildPrintBodyForSlide(activity)
+          + (isLastPageOverallNB ? printChecklistHtml() : '')
+          + '</div>';
+        return;
+      }
       plan.chunks.forEach(function(orderIdxs, chunkIdx){
         pageNum++;
         var isLastPageOverall = (slideIdx === slidePlans.length - 1) && (chunkIdx === plan.chunks.length - 1);
@@ -2632,6 +3099,7 @@ function initActivityTheme(){
    * ------------------------------------------------------------- */
 
   restoreAutoSaveIfAny();
+  renderModePicker();
   renderCategories();
   renderItems();
   renderSwatches();
@@ -2743,7 +3211,7 @@ function initActivityTheme(){
         initActivityTheme();
 
         document.body.classList.add('srt-preview-only');
-        renderCategories(); renderItems(); renderSwatches(); syncDesignControls(); applyAppearance(); renderActivity(); renderSlideNav();
+        renderModePicker(); renderCategories(); renderItems(); renderSwatches(); syncDesignControls(); applyAppearance(); renderActivity(); renderSlideNav();
         stageInner.style.opacity = "0";
         setTimeout(fitStageToScreen, 50);
 
@@ -2943,7 +3411,7 @@ function initActivityTheme(){
   (function(){
     var STEPS=[
       {get:function(){return document.querySelector('.srt-left-col');},title:'📋 Step 1 of 10 — Activity Slides',desc:'Each slide is a separate sorting task. Click the arrows to switch slides and "+ Add Slide" to create more.',side:'right'},
-      {get:function(){return document.querySelector('.srt-type');},title:'🗂️ Step 2 of 10 — Activity Type',desc:'This is a Sorting activity. Learners drag and drop each picture into the correct group or category you set.',side:'right'},
+      {get:function(){return $('srtModePicker');},title:'🗂️ Step 2 of 10 — Activity Type',desc:'Every slide picks its own answer style: Sort into Bins, Odd One Out, or Yes/No Sort. Mix them across slides to fit the learner.',side:'right'},
       {get:function(){return $('srtCategories');},title:'📁 Step 3 of 10 — Categories',desc:'Define the groups learners will sort into. Give each category a name and optional icon. Use "+ Add Category" to add more groups.',side:'right'},
       {get:function(){return $('srtItems');},title:'🖼️ Step 4 of 10 — Items to Sort',desc:'Add pictures here and assign each one to its correct category. The learner must drag them into the right groups.',side:'right'},
       {get:function(){return $('srtAddItem');},title:'➕ Step 5 of 10 — Add Item',desc:'Click to add more pictures to sort. Give each item a picture or emoji and assign it to the correct category.',side:'right'},
