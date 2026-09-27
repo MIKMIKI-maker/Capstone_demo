@@ -5,6 +5,14 @@
     <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="student" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <!-- Completed activities are re-fetched fresh on every load, but a
+         cached copy of this page's OWN html+script (e.g. from browser
+         back/forward cache) would still show whatever list/logic was live
+         at cache time. Force a fresh load every time this page is reached,
+         including via back navigation right after completing an activity. -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>SPED ALM - My Progress</title>
     <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
     <link href="STUDENT_CSS/Student_progress.css?v=21" rel="stylesheet" />
