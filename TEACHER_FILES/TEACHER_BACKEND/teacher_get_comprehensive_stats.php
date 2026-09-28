@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/teacher_auth.php';
 
 header('Content-Type: application/json');
 
@@ -9,7 +10,7 @@ if (!$conn) {
     exit;
 }
 
-$teacher_id = isset($_REQUEST['teacher_id']) ? intval($_REQUEST['teacher_id']) : 1;
+$teacher_id = requireTeacherId();
 
 // Get overall stats
 $stats = [

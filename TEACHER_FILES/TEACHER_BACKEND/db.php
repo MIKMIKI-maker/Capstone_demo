@@ -53,7 +53,7 @@ function getTeacherDatabaseConnection() {
     // remote database, since the whole block got skipped. A version counter
     // fixes that: bump SCHEMA_VERSION whenever a new migration is added below,
     // and remote re-runs the block until its stored version catches up.
-    $SCHEMA_VERSION = 4;
+    $SCHEMA_VERSION = 5;
     $needsSetup = true;
     if ($envHost !== false && $envHost !== '') {
         $conn->query("CREATE TABLE IF NOT EXISTS schema_meta (component VARCHAR(50) PRIMARY KEY, version INT NOT NULL)");
@@ -105,6 +105,7 @@ function getTeacherDatabaseConnection() {
         parent_email VARCHAR(255),
         parent_phone VARCHAR(20),
         disability_type VARCHAR(100),
+        disability_category VARCHAR(100),
         grade_level VARCHAR(20),
         status VARCHAR(20) DEFAULT 'active',
         age INT,
@@ -126,6 +127,10 @@ function getTeacherDatabaseConnection() {
     $age_col = $conn->query("SHOW COLUMNS FROM students LIKE 'age'");
     if ($age_col && $age_col->num_rows == 0) {
         $conn->query("ALTER TABLE students ADD COLUMN age INT NULL DEFAULT NULL");
+    }
+    $disability_category_col = $conn->query("SHOW COLUMNS FROM students LIKE 'disability_category'");
+    if ($disability_category_col && $disability_category_col->num_rows == 0) {
+        $conn->query("ALTER TABLE students ADD COLUMN disability_category VARCHAR(100) NULL DEFAULT NULL AFTER disability_type");
     }
 
     // Create activities table
@@ -217,6 +222,7 @@ function getTeacherDatabaseConnection() {
         score INT,
         notes TEXT,
         assessment_date DATE,
+        feedback TEXT,
         term_name VARCHAR(20) NOT NULL DEFAULT 'First',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -241,6 +247,31 @@ function getTeacherDatabaseConnection() {
     if ($lp_term_col && $lp_term_col->num_rows == 0) {
         $conn->query("ALTER TABLE learner_progress ADD COLUMN term_name VARCHAR(20) NOT NULL DEFAULT 'First'");
     }
+    $lp_feedback_col = $conn->query("SHOW COLUMNS FROM learner_progress LIKE 'feedback'");
+    if ($lp_feedback_col && $lp_feedback_col->num_rows == 0) {
+        $conn->query("ALTER TABLE learner_progress ADD COLUMN feedback TEXT NULL");
+    }
+
+    // Assessment records are used by teacher assessment and statistics endpoints.
+    $conn->query("CREATE TABLE IF NOT EXISTS assessment_records (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        teacher_id INT NOT NULL,
+        student_id INT NOT NULL,
+        activity_id INT NULL,
+        assessment_date DATE,
+        score INT DEFAULT 0,
+        feedback TEXT,
+        strengths TEXT,
+        areas_for_improvement TEXT,
+        status VARCHAR(20) DEFAULT 'completed',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (teacher_id) REFERENCES teacher_accounts(id) ON DELETE CASCADE,
+        FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+        FOREIGN KEY (activity_id) REFERENCES teacher_activities(id) ON DELETE SET NULL,
+        INDEX idx_assessment_teacher (teacher_id),
+        INDEX idx_assessment_student (student_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
     // Create teacher reports table
     $createReportsTableSql = "CREATE TABLE IF NOT EXISTS teacher_reports (

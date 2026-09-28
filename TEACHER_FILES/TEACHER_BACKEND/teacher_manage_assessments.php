@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/teacher_auth.php';
 
 header('Content-Type: application/json');
 
@@ -15,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $action = isset($_POST['action']) ? trim($_POST['action']) : '';
-$teacher_id = isset($_POST['teacher_id']) ? intval($_POST['teacher_id']) : 1;
+$teacher_id = requireTeacherId();
 
 switch($action) {
     case 'record_assessment':
@@ -57,7 +58,7 @@ function recordAssessment($conn, $teacher_id) {
     $sql = "INSERT INTO assessment_records (teacher_id, student_id, activity_id, assessment_date, score, feedback, strengths, areas_for_improvement, status)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("iiiisssss", $teacher_id, $student_id, $activity_id, $assessment_date, $score, $feedback, $strengths, $areas_for_improvement, $status);
+    $stmt->bind_param("iiisissss", $teacher_id, $student_id, $activity_id, $assessment_date, $score, $feedback, $strengths, $areas_for_improvement, $status);
     
     if ($stmt->execute()) {
         $assessment_id = $stmt->insert_id;
@@ -66,7 +67,7 @@ function recordAssessment($conn, $teacher_id) {
         $progressSQL = "INSERT INTO learner_progress (teacher_id, student_id, activity_id, score, notes, assessment_date, feedback)
                         VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE score=?, feedback=?";
         $progressStmt = $conn->prepare($progressSQL);
-        $progressStmt->bind_param("iiiiisssss", $teacher_id, $student_id, $activity_id, $score, $feedback, $assessment_date, $feedback, $score, $feedback);
+        $progressStmt->bind_param("iiiisssis", $teacher_id, $student_id, $activity_id, $score, $feedback, $assessment_date, $feedback, $score, $feedback);
         $progressStmt->execute();
         $progressStmt->close();
         
@@ -93,7 +94,7 @@ function updateAssessment($conn, $teacher_id) {
     $sql = "UPDATE assessment_records SET score=?, feedback=?, strengths=?, areas_for_improvement=?, status=?
             WHERE id=? AND teacher_id=?";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("isssii", $score, $feedback, $strengths, $areas_for_improvement, $status, $assessment_id, $teacher_id);
+    $stmt->bind_param("issssii", $score, $feedback, $strengths, $areas_for_improvement, $status, $assessment_id, $teacher_id);
     
     if ($stmt->execute()) {
         echo json_encode(['success' => true, 'message' => 'Assessment updated successfully']);

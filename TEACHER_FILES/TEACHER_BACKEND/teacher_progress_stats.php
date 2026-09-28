@@ -2,6 +2,7 @@
 error_reporting(0);
 ini_set('display_errors', 0);
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/teacher_auth.php';
 
 header('Content-Type: application/json');
 
@@ -11,9 +12,7 @@ if (!$conn) {
     exit;
 }
 
-session_start();
-$teacher_id = isset($_REQUEST['teacher_id']) ? intval($_REQUEST['teacher_id'])
-            : (isset($_SESSION['admin_id']) ? intval($_SESSION['admin_id']) : 1);
+$teacher_id = requireTeacherId();
 $student_id = isset($_GET['student_id']) ? intval($_GET['student_id']) : 0;
 if (!$student_id) {
     echo json_encode(['success' => false, 'message' => 'Student ID is required']);

@@ -1,12 +1,11 @@
 <?php
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/db.php';
+require_once __DIR__ . '/teacher_auth.php';
 
 header('Content-Type: application/json');
 
-session_start();
-$teacher_id = isset($_GET['teacher_id']) ? intval($_GET['teacher_id'])
-            : (isset($_SESSION['admin_id']) ? intval($_SESSION['admin_id']) : 1);
+$teacher_id = requireTeacherId();
 
 $teacher_conn = getTeacherDatabaseConnection();
 $admin_conn   = getDatabaseConnection();

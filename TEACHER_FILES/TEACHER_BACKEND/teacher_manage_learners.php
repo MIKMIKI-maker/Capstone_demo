@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/teacher_auth.php';
 
 header('Content-Type: application/json');
 
@@ -15,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $action = isset($_POST['action']) ? trim($_POST['action']) : '';
-$teacher_id = isset($_POST['teacher_id']) ? intval($_POST['teacher_id']) : 1;
+$teacher_id = requireTeacherId();
 
 switch($action) {
     case 'add':
@@ -57,7 +58,7 @@ function addLearner($conn, $teacher_id) {
     $sql = "INSERT INTO students (teacher_id, student_name, parent_name, parent_email, parent_phone, disability_type, disability_category, grade_level, age, status)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("issssssii", $teacher_id, $student_name, $parent_name, $parent_email, $parent_phone, $disability_type, $disability_category, $grade_level, $age);
+    $stmt->bind_param("isssssssi", $teacher_id, $student_name, $parent_name, $parent_email, $parent_phone, $disability_type, $disability_category, $grade_level, $age);
     
     if ($stmt->execute()) {
         $student_id = $stmt->insert_id;

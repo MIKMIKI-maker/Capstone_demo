@@ -1,13 +1,12 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/teacher_auth.php';
 header('Content-Type: application/json');
 
 $conn = getTeacherDatabaseConnection();
 if (!$conn) { echo json_encode(['success' => false]); exit; }
 
-session_start();
-$teacher_id = isset($_REQUEST['teacher_id']) ? intval($_REQUEST['teacher_id']) : 0;
-if (!$teacher_id) { echo json_encode(['success' => false, 'message' => 'teacher_id required']); exit; }
+$teacher_id = requireTeacherId();
 
 $action = isset($_REQUEST['action']) ? trim($_REQUEST['action']) : 'get';
 
