@@ -25,7 +25,7 @@ define('SMTP_FROM_NAME', getenv('SMTP_FROM_NAME') ?: 'SPED ALM');
 // localhost/Docker would otherwise put "http://localhost:8080/..." into
 // the email, which the recipient can never reach. Always point at the
 // real deployed site instead.
-define('PUBLIC_SITE_URL', getenv('PUBLIC_SITE_URL') ?: 'https://capstone-demo-le1j.onrender.com');
+define('PUBLIC_SITE_URL', getenv('PUBLIC_SITE_URL') ?: 'https://capstone-demo-ezwr.onrender.com');
 
 /**
  * The <img src> value for the SPED ALM logo inside an email.
