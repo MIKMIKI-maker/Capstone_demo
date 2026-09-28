@@ -69,6 +69,7 @@ $sql = "INSERT INTO teacher_activities (teacher_id, activity_title, activity_des
 $stmt = $teacher_conn->prepare($sql);
 
 if (!$stmt) {
+    error_log('teacher_create_activity prepare failed: ' . $teacher_conn->error);
     echo json_encode(['success' => false, 'message' => 'Query preparation failed']);
     exit;
 }

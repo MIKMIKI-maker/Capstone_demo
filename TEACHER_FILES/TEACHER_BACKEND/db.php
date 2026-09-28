@@ -53,7 +53,7 @@ function getTeacherDatabaseConnection() {
     // remote database, since the whole block got skipped. A version counter
     // fixes that: bump SCHEMA_VERSION whenever a new migration is added below,
     // and remote re-runs the block until its stored version catches up.
-    $SCHEMA_VERSION = 3;
+    $SCHEMA_VERSION = 4;
     $needsSetup = true;
     if ($envHost !== false && $envHost !== '') {
         $conn->query("CREATE TABLE IF NOT EXISTS schema_meta (component VARCHAR(50) PRIMARY KEY, version INT NOT NULL)");
