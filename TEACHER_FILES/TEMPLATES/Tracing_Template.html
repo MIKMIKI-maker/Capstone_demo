@@ -275,7 +275,7 @@ function initActivityTheme(){
      both modes (see buildLiveFlowMarkup) instead of a bordered card grid —
      .trc-print-flow-grid/.trc-print-flow-row (defined further down) cover
      the actual layout; .trc-live-flow only adds stage-specific spacing. */
-  .trc-live-flow{ width:100%; }
+  .trc-live-flow{ width:100%; grid-column:1 / -1; }
 
   /* Guide (behind) + ink (front, transparent) canvas pair per item — see
      setupDrawCanvas/drawGuideChar. Guide never receives pointer events so
@@ -592,8 +592,8 @@ function initActivityTheme(){
        half the screen before the actual activity even shows. min() caps
        it at a fixed, always-reasonable mobile size regardless of that
        setting. */
-    body.trc-preview-only .trc-title{ font-size:min(1.25em, 24px); line-height:1.25; }
-    body.trc-preview-only .trc-instr{ font-size:min(.5em, 13px); margin:4px 0 14px; }
+    body.trc-preview-only .trc-title{ font-size:min(1.25em, 24px); line-height:1.25; margin-top:20px; }
+    body.trc-preview-only .trc-instr{ font-size:16px; line-height:1.4; margin:2px 0 10px; }
 
     /* Pin the Try Again / Check answers bar to the very bottom of the
        screen instead of it sitting right after the letter grid with a
