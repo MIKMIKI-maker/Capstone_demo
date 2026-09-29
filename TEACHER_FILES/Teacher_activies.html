@@ -308,6 +308,7 @@
                         savedAt:  a.created_at    || '',
                         status:   (a.status || '').toLowerCase(),
                         is_locked: !!a.is_locked,
+                        has_submissions: !!a.has_submissions,
                         thumbnail: a.thumbnail || null,
                         _isLocal: false
                     };
@@ -340,6 +341,7 @@
                     if (matchingRow) {
                         localItem.status = matchingRow.status;
                         localItem.is_locked = matchingRow.is_locked;
+                        localItem.has_submissions = matchingRow.has_submissions;
                         // Also sync the timestamp so an edited/re-published
                         // activity sorts back to the top of the list (most
                         // recent first) instead of staying pinned at its
@@ -541,14 +543,14 @@
                     // the plain local-draft branch above (whose templateFile
                     // is blank for these).
                     var _subDbId = a.db_activity_id || 0;
-                    actions = (EDITABLE_TYPES[a.type] ? '<button class="btn-edit" onclick="editPublished(\'' + esc(a.id) + '\',\'' + esc(a.type) + '\')" type="button" title="Edit"><i class="fa-solid fa-pen"></i> <span class="btn-label">Edit</span></button>' : '')
+                    actions = (EDITABLE_TYPES[a.type] ? activityEditButton(a, 'editPublished(\'' + esc(a.id) + '\',\'' + esc(a.type) + '\')') : '')
                             + (_subDbId && a.status === 'published' ? '<button class="btn-edit" onclick="window.location.href=\'Teacher_reviewact.html?id='+_subDbId+'\'" type="button" title="View Submissions"><i class="fa-solid fa-eye"></i> <span class="btn-label">View Submissions</span></button>' : '')
                             + '<button class="btn-delete" onclick="deletePublished(\'' + esc(a.id) + '\')" type="button" title="Unpublish">'
                             + '<i class="fa-solid fa-trash"></i> <span class="btn-label">Unpublish</span></button>';
                 } else if (a.status === 'published' && !a._isLocal) {
                     // Backend-only published: no local copy in this browser, but
                     // content_json now lives server-side too, so editing still works.
-                    actions = (EDITABLE_TYPES[a.type] ? '<button class="btn-edit" onclick="editPublishedRemote(' + a.id + ',\'' + esc(a.type) + '\')" type="button" title="Edit"><i class="fa-solid fa-pen"></i> <span class="btn-label">Edit</span></button>' : '')
+                    actions = (EDITABLE_TYPES[a.type] ? activityEditButton(a, 'editPublishedRemote(' + a.id + ',\'' + esc(a.type) + '\')') : '')
                             + '<button class="btn-edit" onclick="window.location.href=\'Teacher_reviewact.html?id='+a.id+'\'" type="button" title="View Submissions"><i class="fa-solid fa-eye"></i> <span class="btn-label">View Submissions</span></button>'
                             + '<button class="btn-delete" onclick="deleteBackendPublished(' + a.id + ')" type="button" title="Unpublish">'
                             + '<i class="fa-solid fa-trash"></i> <span class="btn-label">Unpublish</span></button>';
@@ -559,7 +561,7 @@
                     // published activity is edited, covering all 8 template
                     // types instead of just the 3 in the plain stub-draft map
                     // below.
-                    actions = (EDITABLE_TYPES[a.type] ? '<button class="btn-edit" onclick="editPublishedRemote(' + a.id + ',\'' + esc(a.type) + '\')" type="button" title="Edit"><i class="fa-solid fa-pen"></i> <span class="btn-label">Edit</span></button>' : '')
+                    actions = (EDITABLE_TYPES[a.type] ? activityEditButton(a, 'editPublishedRemote(' + a.id + ',\'' + esc(a.type) + '\')') : '')
                             + '<button class="btn-delete" onclick="deleteBackendDraft(' + a.id + ')" type="button" title="Unpublish"><i class="fa-solid fa-trash"></i> <span class="btn-label">Unpublish</span></button>';
                 } else {
                     // Genuine backend-only draft stub (teacher_save_draft.php) —
@@ -568,7 +570,7 @@
                     // restore content that was never there.
                     var _tmplMap = { 'Matching':'TEMPLATES/Matching_Type_Template.html', 'Sorting':'TEMPLATES/Sorting_Type_Template.html', 'Sequencing':'TEMPLATES/Sequencing_Type_Template.html' };
                     var _tmpl = _tmplMap[a.type] || '';
-                    actions = (_tmpl ? '<button class="btn-edit" onclick="editBackendDraft(' + a.id + ',\'' + esc(_tmpl) + '\')" type="button" title="Edit"><i class="fa-solid fa-pen"></i> <span class="btn-label">Edit</span></button>' : '')
+                    actions = (_tmpl ? activityEditButton(a, 'editBackendDraft(' + a.id + ',\'' + esc(_tmpl) + '\')') : '')
                             + '<button class="btn-delete" onclick="deleteBackendDraft(' + a.id + ')" type="button" title="Unpublish"><i class="fa-solid fa-trash"></i> <span class="btn-label">Unpublish</span></button>';
                 }
 
@@ -597,6 +599,15 @@
 
             document.getElementById('activity-count').textContent = activities.length;
             document.getElementById('activity-total').textContent = allActivities.length;
+        }
+
+        function activityEditButton(activity, onclick) {
+            var disabled = !!activity.has_submissions;
+            return '<button class="btn-edit" type="button"'
+                + (disabled
+                    ? ' disabled aria-disabled="true" title="A student has submitted this activity; editing is disabled."'
+                    : ' onclick="' + onclick + '" title="Edit"')
+                + '><i class="fa-solid fa-pen"></i> <span class="btn-label">Edit</span></button>';
         }
 
         /* ── Draft actions ── */
@@ -628,10 +639,21 @@
             if (!target) { alert("Could not find this activity's saved content in this browser."); return; }
 
             var teacherId = sessionStorage.getItem('teacher_id') || '';
-            target.locked = true;
-            localStorage.setItem('published_activities', JSON.stringify(allPubs));
+            function goToEditor() {
+                target.locked = true;
+                localStorage.setItem('published_activities', JSON.stringify(allPubs));
+                window.location.href = tpl + '?edit_pub_id=' + encodeURIComponent(id);
+            }
 
-            function goToEditor() { window.location.href = tpl + '?edit_pub_id=' + encodeURIComponent(id); }
+            function handleLockResult(response) {
+                return response.json().then(function (result) {
+                    if (result && result.success) {
+                        goToEditor();
+                    } else {
+                        window.showToast((result && result.message) || 'This activity cannot be edited.', 'error');
+                    }
+                });
+            }
 
             // Lock it (flips status to draft server-side) and wait for that
             // to finish before opening the editor, so the draft flag is
@@ -642,7 +664,9 @@
                 fetch('TEACHER_BACKEND/teacher_lock_activity.php', {
                     method: 'POST',
                     body: new URLSearchParams({ action: 'lock', teacher_id: teacherId, activity_id: target.db_activity_id, activity_title: target.title || 'Activity' })
-                }).then(goToEditor).catch(goToEditor);
+                }).then(handleLockResult).catch(function () {
+                    window.showToast('Could not verify activity submissions. Please try again.', 'error');
+                });
             } else {
                 goToEditor();
             }
@@ -661,7 +685,12 @@
                 fetch('TEACHER_BACKEND/teacher_lock_activity.php', {
                     method: 'POST',
                     body: new URLSearchParams({ action: 'lock', teacher_id: teacherId, activity_id: dbId, activity_title: 'Activity' })
-                }).then(goToEditor).catch(goToEditor);
+                }).then(function (response) { return response.json(); }).then(function (result) {
+                    if (result && result.success) goToEditor();
+                    else window.showToast((result && result.message) || 'This activity cannot be edited.', 'error');
+                }).catch(function () {
+                    window.showToast('Could not verify activity submissions. Please try again.', 'error');
+                });
             } else {
                 goToEditor();
             }

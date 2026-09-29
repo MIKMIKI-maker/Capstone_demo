@@ -47,6 +47,18 @@ if (!$conn) {
     exit;
 }
 
+$hasSubmissions = activityHasSubmissions($conn, $teacher_id, $activity_id);
+if ($hasSubmissions !== false) {
+    $conn->close();
+    echo json_encode([
+        'success' => false,
+        'message' => $hasSubmissions === true
+            ? 'This activity cannot be edited because a student has already submitted it.'
+            : 'Could not verify activity submissions. Please try again.'
+    ]);
+    exit;
+}
+
 if ($thumbnail !== null && $thumbnail !== '') {
     $stmt = $conn->prepare("UPDATE teacher_activities SET activity_title = ?, subject = ?, content_json = ?, deadline = ?, thumbnail = ? WHERE id = ? AND teacher_id = ?");
     if (!$stmt) {

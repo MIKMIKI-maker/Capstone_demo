@@ -1623,12 +1623,34 @@ function initActivityTheme(){
       } else {
         playDropSound(false);
         a.el.classList.add("wrong"); b.el.classList.add("wrong");
+        recordGridMismatch(aC, bC);
+        $("mtgHint").textContent = _stuMode ? "Hindi magkapareha. Subukan ulit!" : "Not a match. Try again.";
         setTimeout(function(){
           a.el.classList.remove("sel", "wrong"); b.el.classList.remove("sel", "wrong");
           _gridSelected = []; _gridBusy = false;
-        }, 500);
+        }, 850);
       }
     }
+  }
+  function recordGridMismatch(firstCard, secondCard){
+    if (!_stuMode) return;
+    var items = currentActivity().items;
+    [ [firstCard, secondCard], [secondCard, firstCard] ].forEach(function(pair){
+      var selectedCard = pair[0], otherCard = pair[1];
+      var selectedItem = items[selectedCard.itemIdx];
+      var otherItem = items[otherCard.itemIdx];
+      var expectedSide = selectedItem[selectedCard.side === "left" ? "right" : "left"];
+      var chosenSide = otherItem[otherCard.side];
+      var label = selectedItem.left.name || selectedItem.left.emoji || ("Pair " + (selectedCard.itemIdx + 1));
+      function answerValue(side){ return side.img || side.emoji || side.name || "Unknown"; }
+      recordGenericMissedDetail([{
+        label: label,
+        studentAnswer: answerValue(chosenSide),
+        correctAnswer: answerValue(expectedSide),
+        img: selectedItem.left.img || "",
+        correct: false
+      }]);
+    });
   }
   function resetGridMode(){ renderGridStage(currentActivity()); $("mtgHint").textContent = ""; }
 

@@ -28,6 +28,21 @@ function setActivityLocked($conn, $teacher_id, $activity_id, $locked) {
     // unrelated reason; unlock is unconditional since its only caller
     // (teacher_update_activity.php) only ever runs for a just-edited,
     // previously-published activity.
+
+    function activityHasSubmissions($conn, $teacher_id, $activity_id) {
+        $stmt = $conn->prepare("SELECT 1 FROM activity_submissions WHERE teacher_id = ? AND activity_id = ? LIMIT 1");
+        if (!$stmt) return null;
+        $stmt->bind_param("ii", $teacher_id, $activity_id);
+        if (!$stmt->execute()) {
+            $stmt->close();
+            return null;
+        }
+        $result = $stmt->get_result();
+        $hasSubmissions = $result && $result->num_rows > 0;
+        $stmt->close();
+        return $hasSubmissions;
+    }
+
     if ($locked) {
         $stmt = $conn->prepare("UPDATE teacher_activities SET is_locked = 1, status = 'draft' WHERE id = ? AND teacher_id = ? AND status = 'published'");
     } else {

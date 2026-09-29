@@ -26,6 +26,20 @@ if (!$conn) {
     exit;
 }
 
+if ($action === 'lock') {
+    $hasSubmissions = activityHasSubmissions($conn, $teacher_id, $activity_id);
+    if ($hasSubmissions !== false) {
+        $conn->close();
+        echo json_encode([
+            'success' => false,
+            'message' => $hasSubmissions === true
+                ? 'This activity cannot be edited because a student has already submitted it.'
+                : 'Could not verify activity submissions. Please try again.'
+        ]);
+        exit;
+    }
+}
+
 setActivityLocked($conn, $teacher_id, $activity_id, $action === 'lock');
 
 if ($action === 'lock') {

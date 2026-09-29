@@ -7,6 +7,7 @@ header('Cache-Control: no-cache');
 
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/teacher_auth.php';
+require_once __DIR__ . '/teacher_activity_lock_helpers.php';
 
 $teacher_id = requireTeacherId();
 
@@ -38,12 +39,25 @@ $stmt->execute();
 $res = $stmt->get_result();
 $row = $res ? $res->fetch_assoc() : null;
 $stmt->close();
-$conn->close();
 
 if (!$row || !$row['content_json']) {
+    $conn->close();
     echo json_encode(['success' => false, 'message' => 'No saved content found for this activity']);
     exit;
 }
+
+$hasSubmissions = activityHasSubmissions($conn, $teacher_id, $activity_id);
+if ($hasSubmissions !== false) {
+    $conn->close();
+    echo json_encode([
+        'success' => false,
+        'message' => $hasSubmissions === true
+            ? 'This activity cannot be edited because a student has already submitted it.'
+            : 'Could not verify activity submissions. Please try again.'
+    ]);
+    exit;
+}
+$conn->close();
 
 $content = json_decode($row['content_json'], true);
 if ($content === null) {
