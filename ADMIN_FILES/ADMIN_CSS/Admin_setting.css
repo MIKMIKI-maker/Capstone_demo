@@ -356,6 +356,7 @@ body { display: flex; }
   .admin-sidebar-footer { display: none; }
   .admin-main { height: auto; overflow-y: unset; padding: 20px 16px; }
   .admin-settings-body { flex-direction: column; }
+    #admin-section-emaillog .admin-user-access-table { flex: 0 0 300px; max-height: 300px; min-height: 0; }
   .admin-settings-menu { width: 100%; }
   .admin-profile-form-grid { grid-template-columns: 1fr; max-width: 100%; }
   .admin-profile-header-card { flex-wrap: wrap; }

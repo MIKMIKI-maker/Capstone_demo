@@ -531,8 +531,14 @@ body {
     overflow-x: hidden;
   }
 
+  .admin-panel {
+    min-height: 0;
+  }
+
   .admin-panel-body {
     overflow-x: hidden;
+    flex: 0 1 auto;
+    max-height: 280px;
   }
 
   .admin-stat-body {

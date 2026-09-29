@@ -20,7 +20,7 @@ $failedRes = $conn->query("SELECT COUNT(*) AS cnt FROM email_log WHERE success =
 $failedLast24h = $failedRes ? (int)$failedRes->fetch_assoc()['cnt'] : 0;
 
 $rows = [];
-$listRes = $conn->query("SELECT recipient_email, subject, success, error_message, sent_at FROM email_log ORDER BY sent_at DESC LIMIT 100");
+$listRes = $conn->query("SELECT recipient_email, subject, success, error_message, sent_at FROM email_log ORDER BY sent_at DESC LIMIT 30");
 if ($listRes) {
     while ($r = $listRes->fetch_assoc()) {
         $rows[] = [

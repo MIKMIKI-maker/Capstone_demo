@@ -1133,6 +1133,8 @@ body { display: flex; }
   .admin-sidebar-footer { display: none; }
   .admin-main { height: auto; overflow-y: unset; padding: 16px; }
   .admin-topbar-left { width: 100%; text-align: center; }
+  .al-acts-card { flex: 0 1 auto; max-height: 72vh; min-height: 0; }
+  .al-table-scroll { flex: 1 1 auto; min-height: 0; }
   /* Single full-width column, same as the Dashboard stat cards — 2 columns
      left the 5th card (Uploaded Files) alone next to an empty gap. */
   .al-stats-row { grid-template-columns: 1fr; min-width: 0; }

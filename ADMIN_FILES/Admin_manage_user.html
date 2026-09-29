@@ -202,11 +202,7 @@
       </div>
       <div class="admin-pagination-bar">
         <span class="admin-pagination-info">Showing <strong>0</strong> of <strong>0</strong> users</span>
-        <div class="admin-pagination-controls">
-          <button class="admin-page-btn" disabled="" type="button">‹</button>
-          <button class="admin-page-btn active" type="button">1</button>
-          <button class="admin-page-btn" disabled="" type="button">Next ›</button>
-        </div>
+        <div class="admin-pagination-controls" id="admin-user-pagination-controls"></div>
       </div>
     </div>
   </main>
@@ -755,6 +751,8 @@
   </div>
   <script>
     var accountList = [];
+    var userPageSize = 10;
+    var userCurrentPage = 1;
     var deleteSelection = new Set();
     var _adminConfirmResolver = null;
 
@@ -943,14 +941,22 @@
       var emptyState = document.getElementById('admin-table-empty-state');
       if (!tbody) return;
 
-      // "Showing X of Y users" was hardcoded to 0/0 in the HTML and never
-      // updated — reflect the actual filtered count vs. total loaded here.
+      var totalUsers = accounts.length;
+      var totalPages = Math.max(1, Math.ceil(totalUsers / userPageSize));
+      userCurrentPage = Math.min(Math.max(1, userCurrentPage), totalPages);
+      var startIndex = (userCurrentPage - 1) * userPageSize;
+      var endIndex = Math.min(startIndex + userPageSize, totalUsers);
+      var pageAccounts = accounts.slice(startIndex, endIndex);
+
       var paginationInfo = document.querySelector('.admin-pagination-info');
       if (paginationInfo) {
-        paginationInfo.innerHTML = 'Showing <strong>' + accounts.length + '</strong> of <strong>' + accountList.length + '</strong> users';
+        paginationInfo.innerHTML = totalUsers
+          ? 'Showing <strong>' + (startIndex + 1) + ' to ' + endIndex + '</strong> of <strong>' + totalUsers + '</strong> users'
+          : 'Showing <strong>0</strong> of <strong>0</strong> users';
       }
+      renderUserPagination(totalPages, userCurrentPage, totalUsers === 0);
 
-      if (!accounts.length) {
+      if (!totalUsers) {
         tbody.innerHTML = '';
         if (emptyState) emptyState.classList.add('admin-table-empty--visible');
         return;
@@ -958,7 +964,7 @@
 
       if (emptyState) emptyState.classList.remove('admin-table-empty--visible');
 
-      tbody.innerHTML = accounts.map(function (account) {
+      tbody.innerHTML = pageAccounts.map(function (account) {
         var _aBg = _roleAvatarBg(account.role), _aIni = account.initials;
         var avatarHtml = account.profile_photo
           ? '<img src="' + account.profile_photo + '" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;" onerror="var p=this.parentNode;p.style.background=\'' + _aBg + '\';p.style.padding=\'\';p.textContent=\'' + account.initials.replace(/'/g,"\\'") + '\';" />'
@@ -983,6 +989,25 @@
           + '<td><button class="admin-btn-edit" type="button" onclick="editUser(' + account.id + ')"><i class="fa-solid fa-pen"></i> Edit</button></td>'
           + '</tr>';
       }).join('');
+    }
+
+    function renderUserPagination(totalPages, page, empty) {
+      var controls = document.getElementById('admin-user-pagination-controls');
+      if (!controls) return;
+
+      var firstPage = Math.max(1, Math.min(page - 2, totalPages - 4));
+      var lastPage = Math.min(totalPages, firstPage + 4);
+      var html = '<button class="admin-page-btn" type="button" onclick="goToUserPage(' + (page - 1) + ')"' + (empty || page === 1 ? ' disabled' : '') + '>‹</button>';
+      for (var pageNumber = firstPage; pageNumber <= lastPage; pageNumber++) {
+        html += '<button class="admin-page-btn' + (pageNumber === page ? ' active' : '') + '" type="button" onclick="goToUserPage(' + pageNumber + ')"' + (empty ? ' disabled' : '') + '>' + pageNumber + '</button>';
+      }
+      html += '<button class="admin-page-btn" type="button" onclick="goToUserPage(' + (page + 1) + ')"' + (empty || page === totalPages ? ' disabled' : '') + '>Next ›</button>';
+      controls.innerHTML = html;
+    }
+
+    function goToUserPage(page) {
+      userCurrentPage = page;
+      filterAndSearch(false);
     }
 
     var selectedAccount = null;
@@ -1299,7 +1324,7 @@
       showModal('admin-modal-edit');
     }
 
-    function filterAndSearch() {
+    function filterAndSearch(resetPage) {
       var searchInput1 = document.querySelector('input[name="search_user"]');
       var searchInput2 = document.querySelector('input[name="search"]');
       var searchTerm1 = (searchInput1 ? searchInput1.value.toLowerCase() : '').trim();
@@ -1334,6 +1359,7 @@
         return matchesSearch && matchesRole && matchesStatus;
       });
 
+      if (resetPage !== false) userCurrentPage = 1;
       renderAccountTable(filtered);
     }
 
@@ -1828,7 +1854,7 @@
               initials: fullName ? fullName.split(' ').map(function (part) { return part.charAt(0); }).join('').substring(0,2).toUpperCase() : account.admin_email.charAt(0).toUpperCase()
             });
           });
-          renderAccountTable(accountList);
+          filterAndSearch(false);
           // Admin accounts can't be deleted (enforced server-side too, in
           // admin_delete_account.php) — don't even offer them as an option.
           renderDeleteList(accountList.filter(function (a) { return a.role !== 'admin'; }));
