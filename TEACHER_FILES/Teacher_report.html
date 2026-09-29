@@ -12,8 +12,6 @@
     <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
     <link href="../ASSETS/vendor/fontawesome/css/all.min.css" rel="stylesheet" />
     <script src="../ASSETS/vendor/js/chart.umd.min.js"></script>
-    <script src="../ASSETS/vendor/js/html2canvas.min.js"></script>
-    <script src="../ASSETS/vendor/js/jspdf.umd.min.js"></script>
     <link href="TEACHER_CSS/Teacher_report.css" rel="stylesheet" />
     <link href="TEACHER_CSS/teacher_responsive.css?v=75" rel="stylesheet" />
 </head>
@@ -99,9 +97,6 @@
                 <div class="teacher-topbar-actions">
                     <button class="btn-action danger" id="resetRecordsBtn" type="button" onclick="resetAllRecords()">
                         <i class="fa-solid fa-rotate-left"></i> Reset Records
-                    </button>
-                    <button class="btn-action outline" id="reportPdfBtn" type="button" onclick="downloadClassReportPdf()">
-                        <i class="fa-solid fa-file-pdf"></i> Download PDF
                     </button>
                     <a class="teacher-notif-btn" href="Teacher_notif.html">
                         <i class="fa-regular fa-bell"></i>
@@ -342,22 +337,23 @@
                 document.getElementById('teacher-avatar-letter').textContent = name.trim().charAt(0).toUpperCase();
                 document.getElementById('teacher-name-sidebar').textContent = name;
                 _applyTeacherPhoto(sessionStorage.getItem('teacher_profile_pic'));
-            } else {
-                var fd = new FormData(); fd.append('teacher_id', TEACHER_ID);
-                fetch('TEACHER_BACKEND/teacher_get_profile.php', { method: 'POST', body: fd })
-                    .then(function(r) { return r.json(); })
-                    .then(function(d) {
-                        if (d.success && d.teacher) {
-                            document.getElementById('teacher-avatar-letter').textContent = d.teacher.avatarLetter;
-                            document.getElementById('teacher-name-sidebar').textContent = d.teacher.name;
-                            sessionStorage.setItem('teacher_name', d.teacher.name);
-                            if (d.teacher.profilePhoto) {
-                                sessionStorage.setItem('teacher_profile_pic', d.teacher.profilePhoto);
-                                _applyTeacherPhoto(d.teacher.profilePhoto);
-                            }
-                        }
-                    }).catch(function(){});
             }
+            var fd = new FormData(); fd.append('teacher_id', TEACHER_ID);
+            fetch('TEACHER_BACKEND/teacher_get_profile.php', { method: 'POST', body: fd })
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    if (d.success && d.teacher) {
+                        document.getElementById('teacher-avatar-letter').textContent = d.teacher.avatarLetter || (d.teacher.name || 'T').trim().charAt(0).toUpperCase();
+                        document.getElementById('teacher-name-sidebar').textContent = d.teacher.name || 'Teacher';
+                        sessionStorage.setItem('teacher_name', d.teacher.name || 'Teacher');
+                        if (d.teacher.profilePhoto) {
+                            sessionStorage.setItem('teacher_profile_pic', d.teacher.profilePhoto);
+                            _applyTeacherPhoto(d.teacher.profilePhoto);
+                        } else {
+                            sessionStorage.removeItem('teacher_profile_pic');
+                        }
+                    }
+                }).catch(function(){});
         }
 
         var _progressChart = null, _passFailChart = null, _skillsPieChart = null, _reportChartModalInstance = null;
@@ -723,64 +719,6 @@
             };
             window.addEventListener('afterprint', restoreTitle);
             window.print();
-        }
-
-        function downloadClassReportPdf() {
-            var main = document.querySelector('.teacher-main-content');
-            var btn = document.getElementById('reportPdfBtn');
-            if (!main || !btn) return;
-            var originalBtnHtml = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating…';
-            window.showToast('Generating PDF…', 'success', 4000);
-            document.body.classList.add('pdf-capture-mode');
-
-            function restore() {
-                document.body.classList.remove('pdf-capture-mode');
-                btn.disabled = false;
-                btn.innerHTML = originalBtnHtml;
-            }
-
-            // Let the capture-mode CSS (full height, sidebar/topbar hidden)
-            // actually reflow before html2canvas measures the page.
-            setTimeout(function() {
-                html2canvas(main, { scale: 2, useCORS: true, backgroundColor: '#ffffff' })
-                    .then(function(canvas) {
-                        var JsPdfCtor = window.jspdf && window.jspdf.jsPDF;
-                        var pdf = new JsPdfCtor({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-                        var pageWmm = 210, pageHmm = 297;
-                        var pxPerMm = canvas.width / pageWmm;
-                        var pageHeightPx = Math.floor(pageHmm * pxPerMm);
-                        var renderedPx = 0, pageIndex = 0;
-                        // Slice the tall report canvas into A4-height chunks,
-                        // one PDF page per chunk, since the report is one
-                        // continuous scrollable panel rather than pre-built
-                        // page-sized sections (unlike the activity templates).
-                        while (renderedPx < canvas.height) {
-                            var sliceHeightPx = Math.min(pageHeightPx, canvas.height - renderedPx);
-                            var sliceCanvas = document.createElement('canvas');
-                            sliceCanvas.width = canvas.width;
-                            sliceCanvas.height = sliceHeightPx;
-                            sliceCanvas.getContext('2d').drawImage(
-                                canvas, 0, renderedPx, canvas.width, sliceHeightPx,
-                                0, 0, canvas.width, sliceHeightPx
-                            );
-                            var imgData = sliceCanvas.toDataURL('image/jpeg', 0.92);
-                            var sliceHmm = sliceHeightPx / pxPerMm;
-                            if (pageIndex > 0) pdf.addPage();
-                            pdf.addImage(imgData, 'JPEG', 0, 0, pageWmm, sliceHmm);
-                            renderedPx += sliceHeightPx;
-                            pageIndex++;
-                        }
-                        pdf.save('Class_Report_' + new Date().toISOString().slice(0, 10) + '.pdf');
-                        restore();
-                    })
-                    .catch(function(err) {
-                        window.showToast('Could not generate the PDF. Please try again.', 'error', 4500);
-                        console.error(err);
-                        restore();
-                    });
-            }, 60);
         }
 
         document.addEventListener('DOMContentLoaded', function() {
