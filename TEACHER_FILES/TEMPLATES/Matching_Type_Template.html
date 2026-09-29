@@ -631,6 +631,9 @@ function initActivityTheme(){
      capture) — kept far outside the viewport so it never flashes on screen. */
   .mtg-print-area.mtg-pdf-capture{ display:block; position:fixed; left:-99999px; top:0; background:#fff; }
   .mtg-print-area.mtg-pdf-capture .mtg-print-page{ width:794px; height:1123px; padding:32px; box-sizing:border-box; background:#fff; display:flex; flex-direction:column; }
+  .mtg-print-area.mtg-pdf-capture .mtg-print-page--footer{ position:relative; }
+  .mtg-print-area.mtg-pdf-capture .mtg-print-page--footer .mtg-print-grid{ flex:1 0 auto; padding-bottom:112px; }
+  .mtg-print-area.mtg-pdf-capture .mtg-print-page--footer .mtg-print-footer{ position:absolute; left:32px; right:32px; bottom:32px; margin-top:0; }
   .mtg-print-page{ font-family:'Poppins',sans-serif; color:#243a5e; }
   .mtg-print-head{ text-align:center; margin-bottom:10px; }
   .mtg-print-head h2{ font-size:21px; font-weight:700; margin:0 0 4px; }
@@ -669,6 +672,10 @@ function initActivityTheme(){
     .mtg-print-area, .mtg-print-area *{ visibility:visible; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .mtg-print-area{ display:block; position:absolute; left:0; top:0; width:100%; margin:0; padding:0; }
     .mtg-print-page{ page-break-after:always; padding:6mm 8mm; box-sizing:border-box; }
+    .mtg-print-page--footer{ position:relative; display:flex; flex-direction:column; min-height:100vh; padding-bottom:30mm; }
+    .mtg-print-page--footer .mtg-print-grid{ flex:1 0 auto; padding-bottom:24mm; }
+    .mtg-print-page--footer .mtg-print-footer{ position:absolute; left:8mm; right:8mm; bottom:6mm; margin-top:0; }
+    .mtg-print-page--last{ page-break-after:auto; }
     @page{ margin:8mm; size:auto; }
   }
   /* ── SPOTLIGHT TOUR ── */
@@ -2105,17 +2112,14 @@ function initActivityTheme(){
       + '<label><span class="mtg-print-box"></span> Independent</label>'
       + '</div></div>';
   }
-  // Pairs are always the same fixed size when printed (see .mtg-print-item
-  // above), so a page can only fit so many rows before printing would
-  // overflow onto the next physical sheet. Rather than let the browser
-  // silently spill items onto an unlabeled continuation page (which used to
-  // strand the "Pupils Performance Checklist" footer mid-worksheet — it was
-  // emitted once per SLIDE, landing wherever that slide's flex box happened
-  // to overflow), we chunk each slide's rows into explicit pages ourselves
-  // so every physical page is labeled and the checklist can be placed on
-  // the true last page only.
+  // Keep rows within each physical page based on image scale, and reserve
+  // space for a fixed checklist footer on every page.
   function chunkArray(arr, size){ var out=[]; for (var i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size)); return out; }
-  var MTG_PAIRS_PER_PAGE = 5;
+  function printPairsPerPage(){
+    var imageScale = (state.imageSize || 100) / 100;
+    var rowHeight = Math.max(130, 120 * imageScale + 60) + 22;
+    return Math.min(5, Math.max(1, Math.floor(760 / rowHeight)));
+  }
   function buildPrintPages(){
     // Pair / Memory / Grid all share the same {left,right} items model, and
     // on paper they're all just a "draw a line to match" two-column
@@ -2123,7 +2127,7 @@ function initActivityTheme(){
     var slidePlans = state.activities.map(function(activity){
       var mode = activity.mode || "pair";
       var order = shuffle(activity.items.map(function(_, i){ return i; }));
-      var rowChunks = chunkArray(activity.items.map(function(_, i){ return i; }), MTG_PAIRS_PER_PAGE);
+      var rowChunks = chunkArray(activity.items.map(function(_, i){ return i; }), printPairsPerPage());
       return { activity: activity, mode:mode, order: order, rowChunks: rowChunks, pageCount: rowChunks.length };
     });
     var totalPages = slidePlans.reduce(function(sum, p){ return sum + p.pageCount; }, 0);
@@ -2138,12 +2142,12 @@ function initActivityTheme(){
         var isLastPageOverall = (slideIdx === slidePlans.length - 1) && (chunkIdx === plan.rowChunks.length - 1);
         var leftHtml = rowIdxs.map(function(i){ return printSideBox(activity.items[i].left, "left"); }).join("");
         var rightHtml = rowIdxs.map(function(i){ return printSideBox(activity.items[order[i]].right, "right"); }).join("");
-        // The last page is a known, self-contained page (we chunked items
-        // ourselves so it's guaranteed to fit), so it's safe to flex-pin its
+        // Each page has a scale-aware row limit and its own fixed footer.
+        // Only the final sheet suppresses the trailing page break.
         // footer to the physical bottom of that one page — unlike before,
         // when the footer sat inside a single tall box spanning however
         // many pages a slide's items happened to overflow onto.
-        pages += '<div class="mtg-print-page"'+(isLastPageOverall ? ' style="page-break-after:auto; display:flex; flex-direction:column; min-height:100vh;"' : '')+'>'
+        pages += '<div class="mtg-print-page mtg-print-page--footer'+(isLastPageOverall ? ' mtg-print-page--last' : '')+'">'
           + '<div class="mtg-print-head"><h2>'+printEscape(activity.title)+'</h2>'
           + '<div class="mtg-print-divider"><div class="mtg-print-rule"></div><div class="mtg-print-rule-dash"></div><div class="mtg-print-rule"></div></div>'
           + '<div class="mtg-print-objective">('+printEscape(toPrintInstruction(activity.instruction))+')</div>'
@@ -2151,7 +2155,7 @@ function initActivityTheme(){
           + (totalPages > 1 ? '<div class="mtg-print-pagenum">Page '+pageNum+' of '+totalPages+'</div>' : '')
           + '</div>'
           + '<div class="mtg-print-grid"><div class="mtg-print-col">'+leftHtml+'</div><div class="mtg-print-col">'+rightHtml+'</div></div>'
-          + (isLastPageOverall ? printChecklistHtml() : '')
+          + printChecklistHtml()
           + '</div>';
       });
     });

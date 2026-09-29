@@ -159,6 +159,12 @@ body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-s
 .teacher-skills-radar-card, .teacher-trend-card, .teacher-goals-card {
   background: var(--white); border-radius: 18px; padding: 22px 24px; box-shadow: var(--shadow-sm); border: 1px solid #E8EDF4;
 }
+.teacher-chart-heading, .teacher-history-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.teacher-chart-heading .teacher-skills-title { min-width: 0; }
+.teacher-history-heading .teacher-history-title { min-width: 0; }
+.teacher-chart-expand { width: 32px; height: 32px; flex: 0 0 32px; display: inline-flex; align-items: center; justify-content: center; margin-top: -4px; border: 1px solid #DBEAFE; border-radius: 9px; background: #EFF6FF; color: var(--accent); cursor: pointer; transition: var(--transition); }
+.teacher-chart-expand:hover { background: #DBEAFE; color: #1D4ED8; }
+.teacher-chart-expand:focus-visible { outline: 3px solid rgba(37,99,235,.25); outline-offset: 2px; }
 .teacher-skills-radar-card { width: fit-content; }
 .teacher-trend-card, .teacher-goals-card { flex: 1 1 260px; min-width: 260px; }
 .teacher-skills-chart-wrap { position: relative; width: 300px; height: 300px; }
@@ -192,6 +198,33 @@ body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-s
 .teacher-assist-stat-label { font-size: 12px; color: var(--text); font-weight: 600; flex: 1; }
 .teacher-assist-stat-count { font-size: 15px; font-weight: 800; color: var(--text); }
 .teacher-assist-chart-wrap { position: relative; height: 220px; }
+.teacher-history-heading { align-items: center; }
+.teacher-history-heading .teacher-history-title { margin-bottom: 0; }
+.learner-chart-open { overflow: hidden; }
+.learner-chart-overlay { position: fixed; inset: 0; z-index: 9200; display: none; align-items: center; justify-content: center; padding: clamp(8px, 2.5vw, 28px); background: rgba(15,23,42,.62); }
+.learner-chart-overlay.show { display: flex; }
+.learner-chart-modal { position: relative; width: min(1120px, 100%); height: min(90vh, 900px); max-height: 100%; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #E2E8F0; border-radius: 16px; background: #fff; box-shadow: 0 24px 70px rgba(15,23,42,.3); }
+.learner-chart-modal-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 18px 58px 18px 22px; border-bottom: 1px solid #E8EDF4; flex: 0 0 auto; }
+.learner-chart-modal-title { font-size: 18px; line-height: 1.3; color: var(--text); }
+.learner-chart-modal-sub { margin-top: 3px; font-size: 12px; color: var(--muted); }
+.learner-chart-modal-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 12px 20px 0; flex: 0 0 auto; }
+.learner-chart-summary-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; padding: 9px 10px; border-radius: 9px; background: #F8FAFC; font-size: 11px; color: var(--text); }
+.learner-chart-summary-item span { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.learner-chart-summary-item i { width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; }
+.learner-chart-summary-item strong { font-size: 13px; }
+.learner-chart-modal-scroll { position: relative; flex: 1 1 auto; min-height: 0; overflow: auto; padding: 18px 20px 24px; }
+.learner-chart-modal-plot { position: relative; min-width: 100%; height: 460px; margin: 0 auto; }
+.learner-chart-modal-plot canvas { display: block; }
+.learner-chart-modal-empty { display: none; min-height: 300px; align-items: center; justify-content: center; padding: 24px; text-align: center; color: var(--muted); font-size: 14px; }
+.learner-chart-modal-close { position: absolute; top: 12px; right: 14px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 9px; background: #F1F5F9; color: var(--muted); font-size: 14px; cursor: pointer; }
+.learner-chart-modal-close:hover { background: #E2E8F0; color: var(--text); }
+.learner-chart-modal-close:focus-visible { outline: 3px solid #93C5FD; outline-offset: 2px; }
+@media (max-width: 700px) {
+    .learner-chart-modal { width: 100%; height: min(92vh, 900px); }
+    .learner-chart-modal-header { padding: 16px 58px 16px 16px; }
+    .learner-chart-modal-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 10px 12px 0; }
+    .learner-chart-modal-scroll { padding: 14px 10px 18px; }
+}
 .teacher-goal-name-wrap { display: flex; align-items: center; gap: 8px; }
 .teacher-goal-row--focus { background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 12px 14px; margin: -2px -2px 16px; }
 .teacher-goal-focus-tag { font-size: 10.5px; font-weight: 700; color: #b91c1c; background: #fee2e2; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
@@ -332,11 +365,12 @@ body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-s
     *, *::before, *::after { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     html, body { height: auto; overflow: visible; background: #fff; }
     .teacher-app-wrapper, .teacher-main-content { display: block; height: auto; overflow: visible; }
-    .teacher-sidebar, .teacher-progress-topbar, .note-modal-overlay, .sm-overlay, .confirm-modal-overlay { display: none !important; }
+    .teacher-sidebar, .teacher-progress-topbar, .note-modal-overlay, .sm-overlay, .confirm-modal-overlay, .learner-chart-overlay { display: none !important; }
     .teacher-progress-body { overflow: visible; padding: 0; }
     .teacher-ring-card, .teacher-chart-card, .teacher-history-card,
     .teacher-skills-card, .teacher-notes-card { box-shadow: none; break-inside: avoid; page-break-inside: avoid; }
     .teacher-progress-grid { grid-template-columns: 1fr 320px; }
+    .teacher-chart-expand { display: none !important; }
     body.learner-report-print .teacher-main-content > *:not(#learnerPrintReport) { display: none !important; }
     body.learner-report-print .teacher-learner-print-report { display: block !important; }
     @page { margin: 12mm; size: auto; }

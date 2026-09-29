@@ -160,13 +160,19 @@
                 <!-- SKILLS BREAKDOWN + PROGRESS TREND + GOALS & TARGETS -->
                 <div class="teacher-insights-row">
                     <div class="teacher-skills-radar-card">
-                        <div class="teacher-skills-title">Skills Breakdown</div>
+                        <div class="teacher-chart-heading">
+                            <div class="teacher-skills-title">Skills Breakdown</div>
+                            <button class="teacher-chart-expand" type="button" onclick="openLearnerChart('skills')" aria-label="Expand Skills Breakdown" title="Expand chart"><i class="fa-solid fa-up-right-and-down-left-from-center"></i></button>
+                        </div>
                         <div class="teacher-skills-chart-wrap">
-                            <canvas id="skillsRadarChart"></canvas>
+                            <canvas id="skillsPieChart"></canvas>
                         </div>
                     </div>
                     <div class="teacher-trend-card">
-                        <div class="teacher-skills-title">📈 Progress Trend</div>
+                        <div class="teacher-chart-heading">
+                            <div class="teacher-skills-title">📈 Progress Trend</div>
+                            <button class="teacher-chart-expand" type="button" onclick="openLearnerChart('trend')" aria-label="Expand Progress Trend" title="Expand chart"><i class="fa-solid fa-up-right-and-down-left-from-center"></i></button>
+                        </div>
                         <div class="teacher-trend-stats" id="trendStats"></div>
                         <div class="teacher-trend-chart-wrap">
                             <canvas id="trendLineChart"></canvas>
@@ -183,7 +189,10 @@
                     <div class="teacher-left-col">
                         <!-- ASSISTANCE / PROMPT HISTORY -->
                         <div class="teacher-history-card">
-                            <div class="teacher-history-title">📝 Assistance / Prompt History</div>
+                            <div class="teacher-history-heading">
+                                <div class="teacher-history-title">📝 Assistance / Prompt History</div>
+                                <button class="teacher-chart-expand" type="button" onclick="openLearnerChart('assistance')" aria-label="Expand Assistance and Prompt History" title="Expand chart"><i class="fa-solid fa-up-right-and-down-left-from-center"></i></button>
+                            </div>
                             <div id="assistSummary" class="teacher-assist-summary"></div>
                             <div class="teacher-assist-chart-wrap">
                                 <canvas id="assistTrendChart"></canvas>
@@ -259,6 +268,23 @@
             <div class="sm-title" id="smTitle">🚨 Struggled With</div>
             <div class="sm-chips" id="smChips"></div>
         </div>
+    </div>
+
+    <div class="learner-chart-overlay" id="learnerChartOverlay" onclick="if(event.target===this) closeLearnerChart();">
+        <section class="learner-chart-modal" role="dialog" aria-modal="true" aria-labelledby="learnerChartModalTitle">
+            <header class="learner-chart-modal-header">
+                <div>
+                    <h2 class="learner-chart-modal-title" id="learnerChartModalTitle">Learner Chart</h2>
+                    <p class="learner-chart-modal-sub" id="learnerChartModalSub"></p>
+                </div>
+                <button class="learner-chart-modal-close" type="button" onclick="closeLearnerChart()" aria-label="Close chart"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <div class="learner-chart-modal-summary" id="learnerChartModalSummary"></div>
+            <div class="learner-chart-modal-scroll" id="learnerChartModalScroll">
+                <div class="learner-chart-modal-plot" id="learnerChartModalPlot"><canvas id="learnerChartModalCanvas"></canvas></div>
+                <div class="learner-chart-modal-empty" id="learnerChartModalEmpty">No chart data yet.</div>
+            </div>
+        </section>
     </div>
 
     <script>
@@ -397,7 +423,7 @@
                     }
                     updateProgressCards(data);
                     renderActivityHistory(data.activities);
-                    renderSkillsRadar(data.skills);
+                    renderSkillsPie(data.skills);
                     renderProgressTrend(data.activities, data.average_score || 0);
                     renderGoalsTargets(data.skills, data.activities);
                     renderAssistanceHistory(data.activities);
@@ -453,36 +479,31 @@
             document.querySelectorAll('.teacher-ring-sub')[2].textContent = total > 0 ? 'of ' + total + ' assigned' : 'none assigned yet';
         }
 
-        // ── Skills breakdown radar ─────────────────────────────────
-        var _skillsChart = null;
-        function renderSkillsRadar(skills) {
-            const canvas = document.getElementById('skillsRadarChart');
+        // ── Learner progress charts ────────────────────────────────
+        var _skillsChart = null, _learnerChartModalInstance = null;
+        var _learnerChartData = { skills: null, trend: null, assistance: null };
+        var _learnerChartModalTrigger = null;
+        const LEARNER_CHART_COLORS = ['#2563EB', '#10B981', '#F59E0B', '#EC4899', '#7C3AED', '#0D9488', '#E11D48'];
+        function renderSkillsPie(skills) {
+            const canvas = document.getElementById('skillsPieChart');
             if (!canvas || typeof Chart === 'undefined') return;
             const labels = ['Cognitive', 'Communication', 'Fine Motor', 'Social Skills', 'Self Help', 'Language Development', 'Aesthetic & Creative'];
             const data = labels.map(l => (skills && skills[l]) || 0);
+            _learnerChartData.skills = { labels: labels, values: data };
             if (_skillsChart) { _skillsChart.data.datasets[0].data = data; _skillsChart.update(); return; }
             _skillsChart = new Chart(canvas.getContext('2d'), {
-                type: 'radar',
+                type: 'pie',
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Average Score', data: data,
-                        backgroundColor: 'rgba(37,99,235,.35)', borderColor: '#2563eb', borderWidth: 3,
-                        pointRadius: 5, pointHoverRadius: 7, pointBackgroundColor: '#2563eb',
-                        pointBorderColor: '#fff', pointBorderWidth: 2
+                        data: data,
+                        backgroundColor: LEARNER_CHART_COLORS,
+                        borderColor: '#fff', borderWidth: 2
                     }]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        r: {
-                            beginAtZero: true, max: 100,
-                            ticks: { stepSize: 25, backdropColor: 'transparent', font: { size: 10 } },
-                            pointLabels: { font: { size: 10, weight: '700' }, color: '#1e293b', callback: (l) => l.split(' ') },
-                            grid: { color: '#cbd5e1' }, angleLines: { color: '#cbd5e1' }
-                        }
-                    }
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.label + ': ' + ctx.parsed + '%' } } }
                 }
             });
         }
@@ -495,14 +516,16 @@
             const wrap = canvas ? canvas.closest('.teacher-trend-chart-wrap') : null;
             if (!statsEl) return;
             const done = (activities || []).filter(a => a.date);
+            const chrono = done.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+            const scoreOf = a => (a.is_finalized && a.finalized_score !== null) ? a.finalized_score : (a.score || 0);
+            _learnerChartData.trend = { labels: chrono.map(a => fmtHistoryDate(a.date)), values: chrono.map(scoreOf) };
             if (done.length < 2) {
                 statsEl.innerHTML = '<div class="teacher-trend-stat"><div class="teacher-trend-stat-label">Current Average</div><div class="teacher-trend-stat-val">' + (done.length ? Math.round(avgScore) + '%' : '—') + '</div></div>';
+                if (_trendChart) { _trendChart.destroy(); _trendChart = null; }
                 if (wrap) wrap.innerHTML = '<div class="teacher-trend-empty">Not enough activity history yet to show a trend.</div>';
                 return;
             }
             if (!wrap) return;
-            const chrono = done.slice().sort((a, b) => new Date(a.date) - new Date(b.date));
-            const scoreOf = a => (a.is_finalized && a.finalized_score !== null) ? a.finalized_score : (a.score || 0);
             const earlier = chrono.slice(0, chrono.length - 1);
             const previousAvg = Math.round(earlier.reduce((s, a) => s + scoreOf(a), 0) / earlier.length);
             const currentAvg = Math.round(avgScore);
@@ -610,6 +633,16 @@
             const chartWrap = canvas ? canvas.closest('.teacher-assist-chart-wrap') : null;
             const emptyEl = document.getElementById('assistEmpty');
             const graded = (activities || []).filter(a => a.assistance_level && ASSIST_RANK.hasOwnProperty(a.assistance_level));
+            const counts = {};
+            ASSIST_LEVELS.forEach(l => counts[l] = 0);
+            graded.forEach(a => counts[a.assistance_level]++);
+            const dated = graded.filter(a => a.date).slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+            _learnerChartData.assistance = {
+                counts: counts,
+                labels: dated.map(a => fmtHistoryDate(a.date)),
+                values: dated.map(a => ASSIST_RANK[a.assistance_level]),
+                colors: dated.map(a => ASSIST_COLOR[a.assistance_level])
+            };
 
             if (!graded.length) {
                 summaryEl.innerHTML = '';
@@ -620,16 +653,12 @@
             if (emptyEl) emptyEl.style.display = 'none';
             if (chartWrap) chartWrap.style.display = '';
 
-            const counts = {};
-            ASSIST_LEVELS.forEach(l => counts[l] = 0);
-            graded.forEach(a => counts[a.assistance_level]++);
-
             summaryEl.innerHTML = ASSIST_LEVELS.map(function(l) {
                 return '<div class="teacher-assist-stat"><span class="teacher-assist-dot" style="background:' + ASSIST_COLOR[l] + ';"></span><span class="teacher-assist-stat-label">' + l + '</span><span class="teacher-assist-stat-count">' + counts[l] + '</span></div>';
             }).join('');
 
-            const dated = graded.filter(a => a.date).slice().sort((a, b) => new Date(a.date) - new Date(b.date));
             if (dated.length < 2) {
+                if (_assistChart) { _assistChart.destroy(); _assistChart = null; }
                 if (chartWrap) chartWrap.innerHTML = '<div class="teacher-trend-empty">Not enough graded activities yet to show a trend.</div>';
                 return;
             }
@@ -649,6 +678,102 @@
                 }
             });
         }
+
+        function openLearnerChart(kind) {
+            const overlay = document.getElementById('learnerChartOverlay');
+            const title = document.getElementById('learnerChartModalTitle');
+            const subtitle = document.getElementById('learnerChartModalSub');
+            const summary = document.getElementById('learnerChartModalSummary');
+            const scroll = document.getElementById('learnerChartModalScroll');
+            const plot = document.getElementById('learnerChartModalPlot');
+            const empty = document.getElementById('learnerChartModalEmpty');
+            const canvas = document.getElementById('learnerChartModalCanvas');
+            const data = _learnerChartData[kind];
+            if (!data) return;
+
+            if (_learnerChartModalInstance) {
+                _learnerChartModalInstance.destroy();
+                _learnerChartModalInstance = null;
+            }
+            summary.innerHTML = '';
+            plot.style.display = 'none';
+            empty.style.display = 'flex';
+            _learnerChartModalTrigger = document.activeElement;
+
+            let chartType, chartData, chartOptions, hasData = false;
+            if (kind === 'skills') {
+                title.textContent = 'Skills Breakdown';
+                subtitle.textContent = 'Average score by skill area';
+                const rows = data.labels.map((label, i) => ({ label: label, value: data.values[i] })).filter(row => row.value > 0);
+                hasData = rows.length > 0;
+                empty.textContent = 'Skill scores will appear after assessed activities are recorded.';
+                chartType = 'pie';
+                chartData = { labels: rows.map(row => row.label), datasets: [{ data: rows.map(row => row.value), backgroundColor: LEARNER_CHART_COLORS, borderColor: '#fff', borderWidth: 3 }] };
+                chartOptions = {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: window.innerWidth <= 700 ? 'bottom' : 'right', labels: { boxWidth: 14, padding: 14, font: { size: 13 } } },
+                        tooltip: { callbacks: { label: ctx => ctx.label + ': ' + ctx.parsed + '%' } }
+                    }
+                };
+            } else if (kind === 'trend') {
+                title.textContent = 'Progress Trend';
+                subtitle.textContent = data.values.length + ' completed activities';
+                hasData = data.values.length >= 2;
+                empty.textContent = data.values.length ? 'Complete one more activity to see the progress trend.' : 'Progress history will appear after completed activities are recorded.';
+                chartType = 'line';
+                chartData = { labels: data.labels, datasets: [{ label: 'Score', data: data.values, borderColor: '#2563EB', backgroundColor: 'rgba(37,99,235,.12)', tension: .3, fill: true, pointRadius: 5, pointBackgroundColor: '#2563EB' }] };
+                chartOptions = {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } }, x: { ticks: { autoSkip: false, maxRotation: 45 } } }
+                };
+            } else if (kind === 'assistance') {
+                title.textContent = 'Assistance / Prompt History';
+                subtitle.textContent = data.labels.length + ' graded activities';
+                summary.innerHTML = ASSIST_LEVELS.map(level => '<div class="learner-chart-summary-item"><span><i style="background:' + ASSIST_COLOR[level] + '"></i>' + level + '</span><strong>' + (data.counts[level] || 0) + '</strong></div>').join('');
+                hasData = data.values.length >= 2;
+                empty.textContent = data.values.length ? 'At least two dated grades are needed to show the prompt trend.' : 'Prompt history will appear after a teacher grades an activity.';
+                chartType = 'line';
+                chartData = { labels: data.labels, datasets: [{ label: 'Assistance Level', data: data.values, borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,.12)', tension: .3, fill: true, pointRadius: 6, pointBackgroundColor: data.colors }] };
+                chartOptions = {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ASSIST_LEVELS[ctx.parsed.y] || '' } } },
+                    scales: { y: { min: 0, max: 3, ticks: { stepSize: 1, callback: v => ASSIST_LEVELS[v] || '', font: { size: 11 } } }, x: { ticks: { autoSkip: false, maxRotation: 45 } } }
+                };
+            } else {
+                return;
+            }
+
+            overlay.classList.add('show');
+            document.body.classList.add('learner-chart-open');
+            plot.style.display = hasData ? 'block' : 'none';
+            empty.style.display = hasData ? 'none' : 'flex';
+            if (!hasData) return;
+
+            requestAnimationFrame(function() {
+                if (!overlay.classList.contains('show')) return;
+                const availableWidth = Math.max(scroll.clientWidth - 36, 280);
+                const recordCount = kind === 'skills' ? 1 : data.values.length;
+                plot.style.width = Math.max(availableWidth, kind === 'skills' ? availableWidth : recordCount * 66) + 'px';
+                plot.style.height = kind === 'skills' ? '560px' : (kind === 'assistance' ? '500px' : '460px');
+                _learnerChartModalInstance = new Chart(canvas.getContext('2d'), { type: chartType, data: chartData, options: chartOptions });
+            });
+        }
+
+        function closeLearnerChart() {
+            document.getElementById('learnerChartOverlay').classList.remove('show');
+            document.body.classList.remove('learner-chart-open');
+            if (_learnerChartModalInstance) {
+                _learnerChartModalInstance.destroy();
+                _learnerChartModalInstance = null;
+            }
+            if (_learnerChartModalTrigger && _learnerChartModalTrigger.focus) _learnerChartModalTrigger.focus();
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && document.getElementById('learnerChartOverlay').classList.contains('show')) closeLearnerChart();
+        });
 
         // ── Activity history ──────────────────────────────────────
         var _historyActivities = [];

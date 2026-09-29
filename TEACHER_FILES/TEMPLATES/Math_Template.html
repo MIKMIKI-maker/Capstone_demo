@@ -477,6 +477,21 @@ function initActivityTheme(){
   .mth-modal-try{ background:var(--purple); color:#fff; box-shadow:0 4px 0 var(--purple-dark); }
   .mth-modal-close{ background:#eef2f8; color:var(--ink-soft); }
 
+  /* ===== VALIDATION ALERT ===== */
+  body.mth-alert-open{ overflow:hidden; }
+  .mth-alert-overlay{ position:fixed; inset:0; z-index:10020; display:none; align-items:center; justify-content:center; padding:18px; background:rgba(36,58,94,.55); }
+  .mth-alert-overlay.show{ display:flex; }
+  .mth-alert-card{ position:relative; width:min(420px,100%); padding:28px 26px 22px; border:1px solid #e6e8f0; border-radius:22px; background:#fff; text-align:center; box-shadow:0 24px 70px rgba(15,23,55,.28); animation:mthPop .2s ease; }
+  .mth-alert-icon{ width:48px; height:48px; display:flex; align-items:center; justify-content:center; margin:0 auto 12px; border-radius:15px; background:#fff5dc; color:#b77908; font-size:21px; }
+  .mth-alert-title{ margin:0 32px 6px; color:var(--ink); font-size:18px; font-weight:800; }
+  .mth-alert-message{ margin:0 0 20px; color:var(--ink-soft); font-size:14px; font-weight:600; line-height:1.55; overflow-wrap:anywhere; }
+  .mth-alert-actions{ display:flex; justify-content:center; }
+  .mth-alert-ok{ min-width:120px; border:0; border-radius:12px; padding:11px 22px; background:var(--purple); color:#fff; font-family:var(--font); font-size:14px; font-weight:700; cursor:pointer; box-shadow:0 4px 0 var(--purple-dark); }
+  .mth-alert-ok:hover{ filter:brightness(1.05); }
+  .mth-alert-dismiss{ position:absolute; top:12px; right:12px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border:0; border-radius:50%; background:#f1f3f8; color:var(--ink-soft); cursor:pointer; }
+  .mth-alert-dismiss:hover{ background:#e7eaf2; color:var(--ink); }
+  .mth-alert-ok:focus-visible,.mth-alert-dismiss:focus-visible{ outline:3px solid rgba(124,110,240,.35); outline-offset:2px; }
+
   /* ===== PUBLISH MODAL ===== */
   .mth-publish-card{ max-width:560px; text-align:left; }
   .mth-publish-card h3{ text-align:center; font-size:18px; font-weight:800; color:var(--ink); margin-bottom:16px; }
@@ -543,6 +558,9 @@ function initActivityTheme(){
   .mth-print-area{ display:none; }
   .mth-print-area.mth-pdf-capture{ display:block; position:fixed; left:-99999px; top:0; background:#fff; }
   .mth-print-area.mth-pdf-capture .mth-print-page{ width:794px; height:1123px; padding:32px; box-sizing:border-box; background:#fff; display:flex; flex-direction:column; }
+  .mth-print-area.mth-pdf-capture .mth-print-page--footer{ position:relative; }
+  .mth-print-area.mth-pdf-capture .mth-print-page--footer .mth-print-body{ flex:1 0 auto; padding-bottom:112px; }
+  .mth-print-area.mth-pdf-capture .mth-print-page--footer .mth-print-footer{ position:absolute; left:32px; right:32px; bottom:32px; margin-top:0; }
   .mth-print-page{ font-family:'Poppins',sans-serif; color:#243a5e; }
   .mth-print-head{ text-align:center; margin-bottom:10px; }
   .mth-print-head h2{ font-size:21px; font-weight:700; margin:0 0 4px; }
@@ -579,6 +597,10 @@ function initActivityTheme(){
     .mth-print-area, .mth-print-area *{ visibility:visible; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .mth-print-area{ display:block; position:absolute; left:0; top:0; width:100%; margin:0; padding:0; }
     .mth-print-page{ page-break-after:always; padding:6mm 8mm; box-sizing:border-box; }
+    .mth-print-page--footer{ position:relative; display:flex; flex-direction:column; min-height:100vh; padding-bottom:30mm; }
+    .mth-print-page--footer .mth-print-body{ flex:1 0 auto; padding-bottom:24mm; }
+    .mth-print-page--footer .mth-print-footer{ position:absolute; left:8mm; right:8mm; bottom:6mm; margin-top:0; }
+    .mth-print-page--last{ page-break-after:auto; }
     @page{ margin:8mm; size:auto; }
   }
   /* ── SPOTLIGHT TOUR ── */
@@ -846,6 +868,16 @@ function initActivityTheme(){
     </div>
   </div>
 
+  <div class="mth-alert-overlay" id="mthAlertOverlay" onclick="if(event.target===this) closeMthAlert();">
+    <section class="mth-alert-card" role="alertdialog" aria-modal="true" aria-labelledby="mthAlertTitle" aria-describedby="mthAlertMessage">
+      <button class="mth-alert-dismiss" id="mthAlertDismiss" type="button" aria-label="Close alert"><i class="fa-solid fa-xmark"></i></button>
+      <div class="mth-alert-icon"><i class="fa-solid fa-circle-info"></i></div>
+      <h2 class="mth-alert-title" id="mthAlertTitle">Please check this</h2>
+      <p class="mth-alert-message" id="mthAlertMessage"></p>
+      <div class="mth-alert-actions"><button class="mth-alert-ok" id="mthAlertOk" type="button">Got it</button></div>
+    </section>
+  </div>
+
   <!-- PRINTABLE WORKSHEET AREA (populated just before window.print()) -->
   <div class="mth-print-area" id="mthPrintArea"></div>
 
@@ -866,6 +898,30 @@ function initActivityTheme(){
    ===================================================================== */
 
   const $ = id => document.getElementById(id);
+
+  var _mthAlertPreviousFocus = null;
+  function showMthAlert(message){
+    var overlay = $('mthAlertOverlay');
+    if (!overlay) return;
+    _mthAlertPreviousFocus = document.activeElement;
+    $('mthAlertMessage').textContent = String(message == null ? '' : message);
+    overlay.classList.add('show');
+    document.body.classList.add('mth-alert-open');
+    $('mthAlertOk').focus();
+  }
+  function closeMthAlert(){
+    var overlay = $('mthAlertOverlay');
+    if (!overlay || !overlay.classList.contains('show')) return;
+    overlay.classList.remove('show');
+    document.body.classList.remove('mth-alert-open');
+    if (_mthAlertPreviousFocus && _mthAlertPreviousFocus.focus) _mthAlertPreviousFocus.focus();
+  }
+  window.alert = showMthAlert;
+  $('mthAlertOk').addEventListener('click', closeMthAlert);
+  $('mthAlertDismiss').addEventListener('click', closeMthAlert);
+  document.addEventListener('keydown', function(event){
+    if (event.key === 'Escape' && $('mthAlertOverlay').classList.contains('show')) closeMthAlert();
+  });
 
   /* student-mode flags (set by initStudentMode below) */
   var _stuMode = false, _stuPubId = '', _stuRetake = 0,
@@ -1024,6 +1080,7 @@ function initActivityTheme(){
    * ------------------------------------------------------------- */
 
   const MAX_SLIDES = 3;
+  const MAX_QUESTIONS_PER_SLIDE = 30;
   const DIFFICULTY_LABELS = ["Easy", "Medium", "Hard"];
 
   function renderSlideNav(){
@@ -1166,7 +1223,7 @@ function initActivityTheme(){
     });
     const addQBtn = document.createElement("button"); addQBtn.type = "button"; addQBtn.className = "mth-add-row"; addQBtn.textContent = "+ Add Question";
     addQBtn.addEventListener("click", ()=>{
-      if (activity.mcQuestions.length >= 5) { alert("Up to 5 questions per slide."); return; }
+      if (activity.mcQuestions.length >= MAX_QUESTIONS_PER_SLIDE) { alert("Up to " + MAX_QUESTIONS_PER_SLIDE + " questions per slide."); return; }
       activity.mcQuestions.push({ question:"", options:["1","2","3"], correct:0 });
       renderFields(); renderActivity();
     });
@@ -1195,7 +1252,7 @@ function initActivityTheme(){
     });
     const addQBtn = document.createElement("button"); addQBtn.type = "button"; addQBtn.className = "mth-add-row"; addQBtn.textContent = "+ Add Question";
     addQBtn.addEventListener("click", ()=>{
-      if (activity.tenframeQuestions.length >= 5) { alert("Up to 5 questions per slide."); return; }
+      if (activity.tenframeQuestions.length >= MAX_QUESTIONS_PER_SLIDE) { alert("Up to " + MAX_QUESTIONS_PER_SLIDE + " questions per slide."); return; }
       activity.tenframeQuestions.push({ question:"", target:5 });
       renderFields(); renderActivity();
     });
@@ -1290,7 +1347,7 @@ function initActivityTheme(){
     });
     const addQBtn = document.createElement("button"); addQBtn.type = "button"; addQBtn.className = "mth-add-row"; addQBtn.textContent = "+ Add Question";
     addQBtn.addEventListener("click", ()=>{
-      if (activity.equationQuestions.length >= 5) { alert("Up to 5 questions per slide."); return; }
+      if (activity.equationQuestions.length >= MAX_QUESTIONS_PER_SLIDE) { alert("Up to " + MAX_QUESTIONS_PER_SLIDE + " questions per slide."); return; }
       activity.equationQuestions.push({ question:"", operand1:1, operator:"+", operand2:1 });
       renderFields(); renderActivity();
     });
@@ -1889,21 +1946,25 @@ function initActivityTheme(){
   function printQNumHtml(qi, total){
     return total > 1 ? '<div class="mth-print-qnum">Question '+(qi+1)+'</div>' : '';
   }
-  function printMC(activity){
-    return activity.mcQuestions.map(function(q, qi){
+  function printMC(activity, startIndex, endIndex){
+    var total = activity.mcQuestions.length;
+    return activity.mcQuestions.slice(startIndex, endIndex).map(function(q, pageIndex){
+      var qi = startIndex + pageIndex;
       var choicesHtml = q.options.map(function(opt){ return '<span class="mth-print-choice">'+printEscape(opt)+'</span>'; }).join("");
       return '<div class="mth-print-qblock">'
-        + printQNumHtml(qi, activity.mcQuestions.length)
+        + printQNumHtml(qi, total)
         + '<div class="mth-print-question">'+printEscape(q.question||'')+'</div>'
         + '<div class="mth-print-mc-choices">'+choicesHtml+'</div>'
         + '</div>';
     }).join("");
   }
-  function printTenframe(activity){
+  function printTenframe(activity, startIndex, endIndex){
     var cells = ''; for (var i=0;i<10;i++) cells += '<div class="mth-print-cell"></div>';
-    return activity.tenframeQuestions.map(function(q, qi){
+    var total = activity.tenframeQuestions.length;
+    return activity.tenframeQuestions.slice(startIndex, endIndex).map(function(q, pageIndex){
+      var qi = startIndex + pageIndex;
       return '<div class="mth-print-qblock">'
-        + printQNumHtml(qi, activity.tenframeQuestions.length)
+        + printQNumHtml(qi, total)
         + '<div class="mth-print-question">'+printEscape(q.question||('Color in the boxes to show your answer.'))+'</div>'
         + '<div class="mth-print-frame">'+cells+'</div>'
         + '</div>';
@@ -1916,37 +1977,59 @@ function initActivityTheme(){
     return '<div class="mth-print-question">Write the order number (1, 2, 3…) in the box below each value.</div>'
       + '<div class="mth-print-order-row">'+itemsHtml+'</div>';
   }
-  function printEquation(activity){
-    return activity.equationQuestions.map(function(q, qi){
+  function printEquation(activity, startIndex, endIndex){
+    var total = activity.equationQuestions.length;
+    return activity.equationQuestions.slice(startIndex, endIndex).map(function(q, pageIndex){
+      var qi = startIndex + pageIndex;
       return '<div class="mth-print-qblock">'
-        + printQNumHtml(qi, activity.equationQuestions.length)
+        + printQNumHtml(qi, total)
         + '<div class="mth-print-question">'+printEscape(q.question||'Solve the number sentence.')+'</div>'
         + '<div class="mth-print-equation">'+printEscape(q.operand1)+' '+printEscape(q.operator)+' '+printEscape(q.operand2)
         + ' = <span class="mth-print-eq-blank">&nbsp;</span></div>'
         + '</div>';
     }).join("");
   }
-  function buildPrintBodyForMode(activity){
+  function buildPrintBodyForMode(activity, startIndex, endIndex){
     switch(activity.mode){
-      case "tenframe": return printTenframe(activity);
+      case "tenframe": return printTenframe(activity, startIndex, endIndex);
       case "order": return printOrder(activity);
-      case "equation": return printEquation(activity);
-      case "mc": default: return printMC(activity);
+      case "equation": return printEquation(activity, startIndex, endIndex);
+      case "mc": default: return printMC(activity, startIndex, endIndex);
     }
   }
   function buildPrintPages(){
     var slides = state.activities;
+    var printPages = [];
+    slides.forEach(function(activity, slideIndex){
+      var mode = activity.mode || "mc";
+      var totalQuestions = mode === "tenframe" ? activity.tenframeQuestions.length
+        : mode === "equation" ? activity.equationQuestions.length
+        : mode === "order" ? 1 : activity.mcQuestions.length;
+      var pageSize = mode === "tenframe" ? 2 : mode === "order" ? 1 : 3;
+      totalQuestions = Math.max(1, totalQuestions);
+      for (var startIndex = 0; startIndex < totalQuestions; startIndex += pageSize) {
+        printPages.push({
+          activity: activity,
+          slideIndex: slideIndex,
+          startIndex: startIndex,
+          endIndex: Math.min(startIndex + pageSize, totalQuestions)
+        });
+      }
+    });
+
     var pages = "";
-    slides.forEach(function(activity, i){
-      var isLast = i === slides.length - 1;
-      pages += '<div class="mth-print-page"'+(isLast ? ' style="page-break-after:auto; display:flex; flex-direction:column; min-height:100vh;"' : '')+'>'
+    printPages.forEach(function(page, pageIndex){
+      var activity = page.activity;
+      var isLast = pageIndex === printPages.length - 1;
+      pages += '<div class="mth-print-page mth-print-page--footer'+(isLast ? ' mth-print-page--last' : '')+'">'
         + '<div class="mth-print-head"><h2>'+printEscape(activity.title)+'</h2>'
         + '<div class="mth-print-divider"><div class="mth-print-rule"></div><div class="mth-print-rule-dash"></div><div class="mth-print-rule"></div></div>'
         + '<div class="mth-print-objective">('+printEscape(toPrintInstruction(activity.instruction))+')</div>'
-        + (slides.length > 1 ? '<div class="mth-print-sub">Slide '+(i+1)+' of '+slides.length+' — '+(DIFFICULTY_LABELS[i]||"")+'</div>' : '')
+        + (slides.length > 1 ? '<div class="mth-print-sub">Slide '+(page.slideIndex+1)+' of '+slides.length+' — '+(DIFFICULTY_LABELS[page.slideIndex]||"")+'</div>' : '')
+        + (printPages.length > 1 ? '<div class="mth-print-pagenum">Page '+(pageIndex+1)+' of '+printPages.length+'</div>' : '')
         + '</div>'
-        + buildPrintBodyForMode(activity)
-        + (isLast ? printChecklistHtml() : '')
+        + '<div class="mth-print-body">'+buildPrintBodyForMode(activity, page.startIndex, page.endIndex)+'</div>'
+        + printChecklistHtml()
         + '</div>';
     });
     return pages;

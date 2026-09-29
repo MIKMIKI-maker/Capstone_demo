@@ -171,13 +171,19 @@
         <!-- SKILLS BREAKDOWN + PROGRESS TREND + GOALS & TARGETS -->
         <div class="student-insights-row">
             <div class="student-skills-card">
-                <div class="student-skills-title">Skills Breakdown</div>
+                <div class="student-chart-heading">
+                    <div class="student-skills-title">Skills Breakdown</div>
+                    <button class="student-chart-expand" type="button" onclick="openStudentChart('skills')" aria-label="Expand Skills Breakdown" title="Expand chart"><i class="fa-solid fa-up-right-and-down-left-from-center"></i></button>
+                </div>
                 <div class="student-skills-chart-wrap">
-                    <canvas id="skillsRadarChart"></canvas>
+                    <canvas id="skillsPieChart"></canvas>
                 </div>
             </div>
             <div class="student-trend-card">
-                <div class="student-skills-title">📈 Progress Trend</div>
+                <div class="student-chart-heading">
+                    <div class="student-skills-title">📈 Progress Trend</div>
+                    <button class="student-chart-expand" type="button" onclick="openStudentChart('trend')" aria-label="Expand Progress Trend" title="Expand chart"><i class="fa-solid fa-up-right-and-down-left-from-center"></i></button>
+                </div>
                 <div class="student-trend-stats" id="trendStats"></div>
                 <div class="student-trend-chart-wrap">
                     <canvas id="trendLineChart"></canvas>
@@ -194,6 +200,7 @@
             <div class="student-perf-card">
                 <div class="student-perf-header">
                     <span class="student-perf-title">📝 Assistance / Prompt History</span>
+                    <button class="student-chart-expand" type="button" onclick="openStudentChart('assistance')" aria-label="Expand Assistance and Prompt History" title="Expand chart"><i class="fa-solid fa-up-right-and-down-left-from-center"></i></button>
                 </div>
                 <div id="assistSummary" class="student-assist-summary"></div>
                 <div class="student-assist-chart-wrap">
@@ -255,8 +262,25 @@
          content/IDs stay singular instead of being duplicated) -->
     <div class="pg-modal-overlay" id="studentNotesOverlay">
         <div class="pg-modal-card" id="studentNotesModalCard">
-            <button class="pg-modal-close" id="studentNotesCloseBtn" type="button">✖</button>
+            <button class="pg-modal-close" id="studentNotesCloseBtn" type="button" aria-label="Close teacher notes"><i class="fa-solid fa-xmark"></i></button>
         </div>
+    </div>
+
+    <div class="pg-modal-overlay student-chart-overlay" id="studentChartOverlay" onclick="if(event.target===this) closeStudentChartModal();">
+        <section class="pg-chart-modal" role="dialog" aria-modal="true" aria-labelledby="studentChartModalTitle">
+            <header class="pg-chart-modal-header">
+                <div>
+                    <h2 class="pg-chart-modal-title" id="studentChartModalTitle">Progress Chart</h2>
+                    <p class="pg-chart-modal-sub" id="studentChartModalSub"></p>
+                </div>
+                <button class="pg-modal-close" type="button" onclick="closeStudentChartModal()" aria-label="Close chart"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <div class="pg-chart-modal-summary" id="studentChartModalSummary"></div>
+            <div class="pg-chart-modal-scroll" id="studentChartModalScroll">
+                <div class="pg-chart-modal-plot" id="studentChartModalPlot"><canvas id="studentChartModalCanvas"></canvas></div>
+                <div class="pg-chart-modal-empty" id="studentChartModalEmpty">No chart data yet.</div>
+            </div>
+        </section>
     </div>
 
     <script>
@@ -298,20 +322,6 @@
         return '#ef4444';
     }
 
-    // Works the same in the inline desktop card and the mobile modal — both
-    // just render #notesList, so a fresh loadProgress() after deleting
-    // repaints whichever one is currently showing.
-    function deleteNote(noteId, noteType) {
-        if (!confirm('Delete this note? This cannot be undone.')) return;
-        var fd = new FormData();
-        fd.append('note_id', noteId);
-        fd.append('note_type', noteType);
-        fetch('STUDENT_BACKEND/student_delete_note.php', { method: 'POST', body: fd })
-            .then(function(r) { return r.json(); })
-            .then(function(d) { if (d.success) loadProgress(); })
-            .catch(function() {});
-    }
-
     var _progressLoaded = false;
     var _progressRequestSeq = 0;
     function loadProgress() {
@@ -345,46 +355,39 @@
             });
     }
 
-    var _skillsChart = null;
+    var _skillsChart = null, _studentChartModalInstance = null;
+    var _studentChartData = { skills: null, trend: null, assistance: null };
+    var _studentChartModalTrigger = null;
+    var STUDENT_CHART_COLORS = ['#2563eb', '#10b981', '#f59e0b', '#ec4899', '#7c3aed', '#0d9488', '#e11d48'];
+
     function renderSkillsChart(skills) {
-        var canvas = document.getElementById('skillsRadarChart');
+        var canvas = document.getElementById('skillsPieChart');
         if (!canvas || typeof Chart === 'undefined') return;
         var labels = ['Cognitive', 'Communication', 'Fine Motor', 'Social Skills', 'Self Help', 'Language Development', 'Aesthetic & Creative'];
         var data = labels.map(function(l) { return skills[l] || 0; });
+        _studentChartData.skills = { labels: labels, values: data };
         if (_skillsChart) {
             _skillsChart.data.datasets[0].data = data;
             _skillsChart.update();
             return;
         }
         _skillsChart = new Chart(canvas.getContext('2d'), {
-            type: 'radar',
+            type: 'pie',
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Average Score',
                     data: data,
-                    backgroundColor: 'rgba(37,99,235,.35)',
-                    borderColor: '#2563eb',
-                    borderWidth: 3,
-                    pointRadius: 5,
-                    pointHoverRadius: 7,
-                    pointBackgroundColor: '#2563eb',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2
+                    backgroundColor: STUDENT_CHART_COLORS,
+                    borderColor: '#fff',
+                    borderWidth: 2
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    r: {
-                        beginAtZero: true, max: 100,
-                        ticks: { stepSize: 25, backdropColor: 'transparent', font: { size: 10 } },
-                        pointLabels: { font: { size: 10, weight: '700' }, color: '#1e293b', callback: function(label) { return label.split(' '); } },
-                        grid: { color: '#cbd5e1' },
-                        angleLines: { color: '#cbd5e1' }
-                    }
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: function(ctx) { return ctx.label + ': ' + ctx.parsed + '%'; } } }
                 }
             }
         });
@@ -395,14 +398,19 @@
         var statsEl = document.getElementById('trendStats');
         var wrap = document.getElementById('trendLineChart').closest('.student-trend-chart-wrap');
         var done = (activities || []).filter(function(a) { return a.assessment_date; });
+        var chrono = done.slice().sort(function(a, b) { return new Date(a.assessment_date) - new Date(b.assessment_date); });
+        var scoreOf = function(a) { return (a.is_finalized && a.finalized_score !== null) ? a.finalized_score : (a.score || 0); };
+        _studentChartData.trend = {
+            labels: chrono.map(function(a) { return fmtDate(a.assessment_date); }),
+            values: chrono.map(scoreOf)
+        };
         if (done.length < 2) {
             statsEl.innerHTML = '<div class="student-trend-stat"><div class="student-trend-stat-label">Current Average</div><div class="student-trend-stat-val">' + (done.length ? Math.round(avgScore) + '%' : '—') + '</div></div>';
+            if (_trendChart) { _trendChart.destroy(); _trendChart = null; }
             wrap.innerHTML = '<div class="student-trend-empty">Not enough activity history yet to show a trend — this fills in once a couple more activities are completed.</div>';
             return;
         }
         // Chronological (oldest first) so the line reads left-to-right as "over time"
-        var chrono = done.slice().sort(function(a, b) { return new Date(a.assessment_date) - new Date(b.assessment_date); });
-        var scoreOf = function(a) { return (a.is_finalized && a.finalized_score !== null) ? a.finalized_score : (a.score || 0); };
         var latest = chrono[chrono.length - 1];
         var earlier = chrono.slice(0, chrono.length - 1);
         var previousAvg = Math.round(earlier.reduce(function(s, a) { return s + scoreOf(a); }, 0) / earlier.length);
@@ -523,6 +531,17 @@
         var chartWrap = canvas ? canvas.closest('.student-assist-chart-wrap') : null;
         var emptyEl = document.getElementById('assistEmpty');
         var graded = (activities || []).filter(function(a) { return a.assistance_level && ASSIST_RANK.hasOwnProperty(a.assistance_level); });
+        var counts = {};
+        ASSIST_LEVELS.forEach(function(l) { counts[l] = 0; });
+        graded.forEach(function(a) { counts[a.assistance_level]++; });
+        var dated = graded.filter(function(a) { return a.assessment_date; })
+            .slice().sort(function(a, b) { return new Date(a.assessment_date) - new Date(b.assessment_date); });
+        _studentChartData.assistance = {
+            counts: counts,
+            labels: dated.map(function(a) { return fmtDate(a.assessment_date); }),
+            values: dated.map(function(a) { return ASSIST_RANK[a.assistance_level]; }),
+            colors: dated.map(function(a) { return ASSIST_COLOR[a.assistance_level]; })
+        };
 
         if (!graded.length) {
             summaryEl.innerHTML = '';
@@ -533,17 +552,12 @@
         if (emptyEl) emptyEl.style.display = 'none';
         if (chartWrap) chartWrap.style.display = '';
 
-        var counts = {};
-        ASSIST_LEVELS.forEach(function(l) { counts[l] = 0; });
-        graded.forEach(function(a) { counts[a.assistance_level]++; });
-
         summaryEl.innerHTML = ASSIST_LEVELS.map(function(l) {
             return '<div class="student-assist-stat"><span class="student-assist-dot" style="background:' + ASSIST_COLOR[l] + ';"></span><span class="student-assist-stat-label">' + l + '</span><span class="student-assist-stat-count">' + counts[l] + '</span></div>';
         }).join('');
 
-        var dated = graded.filter(function(a) { return a.assessment_date; })
-            .slice().sort(function(a, b) { return new Date(a.assessment_date) - new Date(b.assessment_date); });
         if (dated.length < 2) {
+            if (_assistChart) { _assistChart.destroy(); _assistChart = null; }
             if (chartWrap) chartWrap.innerHTML = '<div class="student-trend-empty">Not enough graded activities yet to show a trend.</div>';
             return;
         }
@@ -563,6 +577,111 @@
             }
         });
     }
+
+    function openStudentChart(kind) {
+        var overlay = document.getElementById('studentChartOverlay');
+        var title = document.getElementById('studentChartModalTitle');
+        var subtitle = document.getElementById('studentChartModalSub');
+        var summary = document.getElementById('studentChartModalSummary');
+        var scroll = document.getElementById('studentChartModalScroll');
+        var plot = document.getElementById('studentChartModalPlot');
+        var empty = document.getElementById('studentChartModalEmpty');
+        var canvas = document.getElementById('studentChartModalCanvas');
+        var data = _studentChartData[kind];
+        var chartType, chartData, chartOptions, hasData = false, emptyMessage = 'No chart data yet.';
+        if (!data) return;
+
+        if (_studentChartModalInstance) {
+            _studentChartModalInstance.destroy();
+            _studentChartModalInstance = null;
+        }
+        summary.innerHTML = '';
+        plot.style.display = 'none';
+        empty.style.display = 'flex';
+        _studentChartModalTrigger = document.activeElement;
+
+        if (kind === 'skills') {
+            title.textContent = 'Skills Breakdown';
+            subtitle.textContent = 'Average score by skill area';
+            var skillRows = data.labels.map(function(label, i) { return { label: label, value: data.values[i] }; }).filter(function(row) { return row.value > 0; });
+            hasData = skillRows.length > 0;
+            emptyMessage = 'Skill scores will appear after assessed activities are recorded.';
+            chartType = 'pie';
+            chartData = {
+                labels: skillRows.map(function(row) { return row.label; }),
+                datasets: [{ data: skillRows.map(function(row) { return row.value; }), backgroundColor: STUDENT_CHART_COLORS, borderColor: '#fff', borderWidth: 3 }]
+            };
+            chartOptions = {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: window.innerWidth <= 700 ? 'bottom' : 'right', labels: { boxWidth: 14, padding: 14, font: { size: 13 } } }, tooltip: { callbacks: { label: function(ctx) { return ctx.label + ': ' + ctx.parsed + '%'; } } } }
+            };
+        } else if (kind === 'trend') {
+            title.textContent = 'Progress Trend';
+            subtitle.textContent = data.values.length + ' completed activities';
+            hasData = data.values.length >= 2;
+            emptyMessage = data.values.length ? 'Complete one more activity to see your progress trend.' : 'Progress history will appear after completed activities are recorded.';
+            chartType = 'line';
+            chartData = {
+                labels: data.labels,
+                datasets: [{ label: 'Score', data: data.values, borderColor: '#2563eb', backgroundColor: 'rgba(37,99,235,.12)', tension: .3, fill: true, pointRadius: 5, pointBackgroundColor: '#2563eb' }]
+            };
+            chartOptions = {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, max: 100, ticks: { callback: function(v) { return v + '%'; } } }, x: { ticks: { autoSkip: false, maxRotation: 45 } } }
+            };
+        } else if (kind === 'assistance') {
+            title.textContent = 'Assistance / Prompt History';
+            subtitle.textContent = data.labels.length + ' graded activities';
+            summary.innerHTML = ASSIST_LEVELS.map(function(level) {
+                return '<div class="pg-chart-summary-item"><span><i style="background:' + ASSIST_COLOR[level] + '"></i>' + level + '</span><strong>' + (data.counts[level] || 0) + '</strong></div>';
+            }).join('');
+            hasData = data.values.length >= 2;
+            emptyMessage = data.values.length ? 'At least two dated grades are needed to show the prompt trend.' : 'Prompt history will appear after a teacher grades an activity.';
+            chartType = 'line';
+            chartData = {
+                labels: data.labels,
+                datasets: [{ label: 'Assistance Level', data: data.values, borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,.12)', tension: .3, fill: true, pointRadius: 6, pointBackgroundColor: data.colors }]
+            };
+            chartOptions = {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(ctx) { return ASSIST_LEVELS[ctx.parsed.y] || ''; } } } },
+                scales: { y: { min: 0, max: 3, ticks: { stepSize: 1, callback: function(v) { return ASSIST_LEVELS[v] || ''; }, font: { size: 11 } } }, x: { ticks: { autoSkip: false, maxRotation: 45 } } }
+            };
+        } else {
+            return;
+        }
+
+        empty.textContent = emptyMessage;
+        overlay.classList.add('show');
+        document.body.classList.add('student-chart-open');
+        plot.style.display = hasData ? 'block' : 'none';
+        empty.style.display = hasData ? 'none' : 'flex';
+        if (!hasData) return;
+
+        requestAnimationFrame(function() {
+            if (!overlay.classList.contains('show')) return;
+            var availableWidth = Math.max(scroll.clientWidth - 36, 280);
+            var recordCount = (kind === 'skills') ? 1 : data.values.length;
+            plot.style.width = Math.max(availableWidth, kind === 'skills' ? availableWidth : recordCount * 66) + 'px';
+            plot.style.height = kind === 'skills' ? '560px' : (kind === 'assistance' ? '500px' : '460px');
+            _studentChartModalInstance = new Chart(canvas.getContext('2d'), { type: chartType, data: chartData, options: chartOptions });
+        });
+    }
+
+    function closeStudentChartModal() {
+        document.getElementById('studentChartOverlay').classList.remove('show');
+        document.body.classList.remove('student-chart-open');
+        if (_studentChartModalInstance) {
+            _studentChartModalInstance.destroy();
+            _studentChartModalInstance = null;
+        }
+        if (_studentChartModalTrigger && _studentChartModalTrigger.focus) _studentChartModalTrigger.focus();
+    }
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape' && document.getElementById('studentChartOverlay').classList.contains('show')) closeStudentChartModal();
+    });
 
     function renderProgressUI(activities, avgScore, totalActivities, notes, skills) {
         var CIRC = 201;
@@ -661,12 +780,9 @@
                     var noteLabel = actTitle
                         ? (actTitle + (subject ? ' · ' + subject : '') + (dateStr ? ' · ' + dateStr : ''))
                         : 'General Note';
-                    var noteId   = (typeof n === 'object' && n.note_id)   ? n.note_id   : '';
-                    var noteType = (typeof n === 'object' && n.note_type) ? n.note_type : '';
                 notesHtml += '<div style="background:#f0f9ff;border-left:3px solid #3b82f6;border-radius:0 10px 10px 0;padding:12px 14px;">'
                         + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">'
                         + '<p style="font-size:11px;font-weight:700;color:#3b82f6;margin:0 0 5px;text-transform:uppercase;letter-spacing:.04em;">📋 ' + escStr(noteLabel) + '</p>'
-                        + (noteId ? '<button type="button" onclick="deleteNote(\'' + escStr(noteId) + '\',\'' + escStr(noteType) + '\')" title="Delete this note" style="flex:none;border:none;background:none;cursor:pointer;color:#dc2626;font-size:14px;padding:0 2px;line-height:1;"><i class="fa-solid fa-trash"></i></button>' : '')
                         + '</div>'
                         + '<p style="font-size:13px;color:#1e293b;line-height:1.6;margin:0;">' + escStr(noteText) + '</p>'
                         + (dateStr && !actTitle ? '<p style="font-size:11px;color:#94a3b8;margin:6px 0 0;">' + dateStr + '</p>' : '')

@@ -179,24 +179,33 @@
             <!-- CHARTS -->
             <div class="teacher-charts-grid">
                 <div class="teacher-panel teacher-chart-panel">
-                    <div class="teacher-panel-title">Progress Over Time</div>
+                    <div class="teacher-chart-heading">
+                        <div class="teacher-panel-title">Progress Over Time</div>
+                        <button class="teacher-chart-expand" type="button" onclick="openReportChart('progress')" aria-label="Expand Progress Over Time chart" title="Expand chart"><i class="fa-solid fa-up-right-and-down-left-from-center"></i></button>
+                    </div>
                     <div class="teacher-chart-wrap">
                         <canvas id="chart-progress-time"></canvas>
                         <div class="teacher-chart-empty" id="chart-progress-time-empty">Not enough data yet — this will fill in as learners complete activities over time.</div>
                     </div>
                 </div>
                 <div class="teacher-panel teacher-chart-panel">
-                    <div class="teacher-panel-title">Pass vs. Fail per Activity</div>
+                    <div class="teacher-chart-heading">
+                        <div class="teacher-panel-title">Pass vs. Fail per Activity</div>
+                        <button class="teacher-chart-expand" type="button" onclick="openReportChart('passFail')" aria-label="Expand Pass vs. Fail per Activity chart" title="Expand chart"><i class="fa-solid fa-up-right-and-down-left-from-center"></i></button>
+                    </div>
                     <div class="teacher-chart-wrap">
                         <canvas id="chart-pass-fail"></canvas>
                         <div class="teacher-chart-empty" id="chart-pass-fail-empty">No submissions yet.</div>
                     </div>
                 </div>
                 <div class="teacher-panel teacher-chart-panel">
-                    <div class="teacher-panel-title">Skills Comparison</div>
+                    <div class="teacher-chart-heading">
+                        <div class="teacher-panel-title">Skills Comparison</div>
+                        <button class="teacher-chart-expand" type="button" onclick="openReportChart('skills')" aria-label="Expand Skills Comparison chart" title="Expand chart"><i class="fa-solid fa-up-right-and-down-left-from-center"></i></button>
+                    </div>
                     <div class="teacher-chart-wrap">
-                        <canvas id="chart-skills-radar"></canvas>
-                        <div class="teacher-chart-empty" id="chart-skills-radar-empty">No skill data yet.</div>
+                        <canvas id="chart-skills-pie"></canvas>
+                        <div class="teacher-chart-empty" id="chart-skills-pie-empty">No skill data yet.</div>
                     </div>
                 </div>
             </div>
@@ -237,7 +246,24 @@
         </div>
     </div>
 
+    <div class="tr-chart-modal-overlay" id="reportChartModal" onclick="if(event.target===this) closeReportChart();">
+        <section class="tr-chart-modal-box" role="dialog" aria-modal="true" aria-labelledby="reportChartModalTitle">
+            <header class="tr-chart-modal-header">
+                <div>
+                    <h2 id="reportChartModalTitle" class="tr-chart-modal-title">Report Chart</h2>
+                    <p id="reportChartModalSub" class="tr-chart-modal-sub">Expanded chart</p>
+                </div>
+                <button class="tr-modal-close" type="button" onclick="closeReportChart()" aria-label="Close chart"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <div class="tr-chart-modal-scroll" id="reportChartModalScroll">
+                <div class="tr-chart-modal-plot" id="reportChartModalPlot"><canvas id="reportChartModalCanvas"></canvas></div>
+                <div class="tr-chart-modal-empty" id="reportChartModalEmpty">No chart data yet.</div>
+            </div>
+        </section>
+    </div>
+
     <dialog class="tr-reset-dialog" id="resetRecordsDialog" aria-label="Reset learner records" aria-describedby="resetRecordsDescription">
+        <button class="tr-reset-close" type="button" aria-label="Close reset confirmation" onclick="document.getElementById('resetRecordsDialog').close('cancel')"><i class="fa-solid fa-xmark"></i></button>
         <div class="tr-reset-content">
             <div class="tr-reset-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
             <p class="tr-reset-message" id="resetRecordsDescription">Reset all learner progress records for this class? This clears score history, notes, and submissions from the teacher and student portals. This action cannot be undone.</p>
@@ -334,7 +360,9 @@
             }
         }
 
-        var _progressChart = null, _passFailChart = null, _skillsRadarChart = null;
+        var _progressChart = null, _passFailChart = null, _skillsPieChart = null, _reportChartModalInstance = null;
+        var _reportChartData = { progress: [], activities: [], skills: null };
+        var _chartModalTrigger = null;
 
         function toggleChartEmpty(canvasId, isEmpty) {
             var canvas = document.getElementById(canvasId);
@@ -344,6 +372,7 @@
         }
 
         function renderProgressChart(rows) {
+            _reportChartData.progress = rows || [];
             toggleChartEmpty('chart-progress-time', !rows.length);
             if (!rows.length) return;
             var ctx = document.getElementById('chart-progress-time').getContext('2d');
@@ -373,7 +402,8 @@
         }
 
         function renderPassFailChart(activities) {
-            var withData = (activities || []).filter(function (a) { return a.submissions > 0; }).slice(0, 8);
+            _reportChartData.activities = (activities || []).filter(function (a) { return a.submissions > 0; });
+            var withData = _reportChartData.activities.slice(0, 8);
             toggleChartEmpty('chart-pass-fail', !withData.length);
             if (!withData.length) return;
             var ctx = document.getElementById('chart-pass-fail').getContext('2d');
@@ -396,34 +426,139 @@
             });
         }
 
-        function renderSkillsRadar(skMap) {
+        function renderSkillsPie(skMap) {
             var labels = ['Cognitive', 'Communication', 'Fine Motor', 'Social Skills', 'Self Help', 'Language Development', 'Aesthetic & Creative'];
             var data = [skMap.cognitive, skMap.communication, skMap.finemotor, skMap.socialskills, skMap.selfhelp, skMap.languagedevelopment, skMap.aestheticcreative];
             var hasData = data.some(function (v) { return v != null; });
-            toggleChartEmpty('chart-skills-radar', !hasData);
+            _reportChartData.skills = { labels: labels, values: data };
+            toggleChartEmpty('chart-skills-pie', !hasData);
             if (!hasData) return;
-            var ctx = document.getElementById('chart-skills-radar').getContext('2d');
-            if (_skillsRadarChart) _skillsRadarChart.destroy();
-            _skillsRadarChart = new Chart(ctx, {
-                type: 'radar',
+            var ctx = document.getElementById('chart-skills-pie').getContext('2d');
+            if (_skillsPieChart) _skillsPieChart.destroy();
+            _skillsPieChart = new Chart(ctx, {
+                type: 'pie',
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Skill Average',
                         data: data.map(function (v) { return v != null ? v : 0; }),
-                        backgroundColor: 'rgba(37,99,235,.2)',
-                        borderColor: '#2563EB',
-                        pointBackgroundColor: '#2563EB'
+                        backgroundColor: ['#2563EB', '#10B981', '#F59E0B', '#EC4899', '#7C3AED', '#0D9488', '#E11D48'],
+                        borderColor: '#FFFFFF',
+                        borderWidth: 2
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { r: { beginAtZero: true, max: 100, ticks: { stepSize: 25 } } }
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 9, boxHeight: 9, padding: 8, font: { size: 9 } } } }
                 }
             });
         }
+
+        function openReportChart(kind) {
+            var modal = document.getElementById('reportChartModal');
+            var title = document.getElementById('reportChartModalTitle');
+            var subtitle = document.getElementById('reportChartModalSub');
+            var scroll = document.getElementById('reportChartModalScroll');
+            var plot = document.getElementById('reportChartModalPlot');
+            var empty = document.getElementById('reportChartModalEmpty');
+            var canvas = document.getElementById('reportChartModalCanvas');
+            var chartTitles = {
+                progress: 'Progress Over Time',
+                passFail: 'Pass vs. Fail per Activity',
+                skills: 'Skills Comparison'
+            };
+            var hasData = kind === 'progress'
+                ? _reportChartData.progress.length > 0
+                : kind === 'passFail'
+                    ? _reportChartData.activities.length > 0
+                    : !!(_reportChartData.skills && _reportChartData.skills.values.some(function(v) { return v != null; }));
+
+            _chartModalTrigger = document.activeElement;
+            title.textContent = chartTitles[kind] || 'Report Chart';
+            if (kind === 'progress') subtitle.textContent = _reportChartData.progress.length + ' progress records';
+            else if (kind === 'passFail') subtitle.textContent = _reportChartData.activities.length + ' activities with submissions';
+            else subtitle.textContent = 'Average score by skill area';
+            modal.classList.add('show');
+            document.body.classList.add('report-chart-open');
+
+            if (_reportChartModalInstance) {
+                _reportChartModalInstance.destroy();
+                _reportChartModalInstance = null;
+            }
+            plot.style.display = hasData ? 'block' : 'none';
+            empty.style.display = hasData ? 'none' : 'flex';
+            if (!hasData) return;
+
+            requestAnimationFrame(function() {
+                if (!modal.classList.contains('show')) return;
+                var availableWidth = Math.max(scroll.clientWidth - 36, 320);
+                var chartType, chartData, chartOptions;
+
+                if (kind === 'progress') {
+                    var rows = _reportChartData.progress;
+                    plot.style.width = Math.max(availableWidth, rows.length * 58) + 'px';
+                    plot.style.height = '500px';
+                    chartType = 'line';
+                    chartData = {
+                        labels: rows.map(function(r) { return r.date; }),
+                        datasets: [{ label: 'Average Score', data: rows.map(function(r) { return r.avg_score; }), borderColor: '#2563EB', backgroundColor: 'rgba(37,99,235,.12)', tension: .3, fill: true, pointRadius: 4, pointBackgroundColor: '#2563EB' }]
+                    };
+                    chartOptions = {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, max: 100, ticks: { callback: function(v) { return v + '%'; } } }, x: { ticks: { autoSkip: false, maxRotation: 45, minRotation: 0 } } }
+                    };
+                } else if (kind === 'passFail') {
+                    var activities = _reportChartData.activities;
+                    plot.style.width = availableWidth + 'px';
+                    plot.style.height = Math.max(460, activities.length * 48) + 'px';
+                    chartType = 'bar';
+                    chartData = {
+                        labels: activities.map(function(a) { return a.activity_title; }),
+                        datasets: [
+                            { label: 'Passed', data: activities.map(function(a) { return a.passed_count; }), backgroundColor: '#10B981' },
+                            { label: 'Failed', data: activities.map(function(a) { return Math.max(a.submissions - a.passed_count, 0); }), backgroundColor: '#EF4444' }
+                        ]
+                    };
+                    chartOptions = {
+                        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                        scales: { x: { stacked: true, beginAtZero: true, ticks: { precision: 0 } }, y: { stacked: true, ticks: { autoSkip: false } } },
+                        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
+                    };
+                } else {
+                    var skills = _reportChartData.skills;
+                    var skillRows = skills.labels.map(function(label, i) { return { label: label, value: skills.values[i] }; }).filter(function(row) { return row.value != null; });
+                    plot.style.width = availableWidth + 'px';
+                    plot.style.height = '560px';
+                    chartType = 'pie';
+                    chartData = {
+                        labels: skillRows.map(function(row) { return row.label; }),
+                        datasets: [{ data: skillRows.map(function(row) { return row.value; }), backgroundColor: ['#2563EB', '#10B981', '#F59E0B', '#EC4899', '#7C3AED', '#0D9488', '#E11D48'], borderColor: '#FFFFFF', borderWidth: 3 }]
+                    };
+                    chartOptions = {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { position: 'right', labels: { boxWidth: 14, padding: 14, font: { size: 13 } } } }
+                    };
+                }
+
+                _reportChartModalInstance = new Chart(canvas.getContext('2d'), { type: chartType, data: chartData, options: chartOptions });
+            });
+        }
+
+        function closeReportChart() {
+            var modal = document.getElementById('reportChartModal');
+            modal.classList.remove('show');
+            document.body.classList.remove('report-chart-open');
+            if (_reportChartModalInstance) {
+                _reportChartModalInstance.destroy();
+                _reportChartModalInstance = null;
+            }
+            if (_chartModalTrigger && _chartModalTrigger.focus) _chartModalTrigger.focus();
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && document.getElementById('reportChartModal').classList.contains('show')) closeReportChart();
+        });
 
         function loadReports() {
             // Use auto-report endpoint for richer, real DB data
@@ -457,7 +592,7 @@
 
                     renderProgressChart(d.progress_over_time || []);
                     renderPassFailChart(d.activities || []);
-                    renderSkillsRadar(skMap);
+                    renderSkillsPie(skMap);
 
                     // Learner performance table
                     var tbody = document.getElementById('report-learner-tbody');

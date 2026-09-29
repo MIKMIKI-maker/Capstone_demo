@@ -225,6 +225,11 @@ body {
   font-family: var(--font-head); font-weight: 700; font-size: 18px; color: var(--ink);
   margin-bottom: 14px;
 }
+.student-chart-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.student-chart-heading .student-skills-title { min-width: 0; }
+.student-chart-expand { width: 34px; height: 34px; flex: 0 0 34px; display: inline-flex; align-items: center; justify-content: center; margin-top: -4px; border: 1px solid #dbeafe; border-radius: 9px; background: #eff6ff; color: #2563eb; cursor: pointer; transition: background .2s, color .2s; }
+.student-chart-expand:hover { background: #dbeafe; color: #1d4ed8; }
+.student-chart-expand:focus-visible { outline: 3px solid rgba(37,99,235,.25); outline-offset: 2px; }
 .student-skills-chart-wrap { position: relative; width: 300px; height: 300px; }
 
 /* ---- Progress trend ---- */
@@ -318,6 +323,21 @@ body {
   max-height: 82vh; overflow-y: auto; position: relative;
   box-shadow: 0 20px 60px rgba(0,0,0,.25);
 }
+.student-chart-open { overflow: hidden; }
+.student-chart-overlay { z-index: 10000; padding: clamp(8px, 2.5vw, 28px); }
+.pg-chart-modal { position: relative; width: min(1120px, 100%); height: min(90vh, 900px); max-height: 100%; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e2e8f0; border-radius: 16px; background: #fff; box-shadow: 0 24px 70px rgba(15,23,42,.3); }
+.pg-chart-modal-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 18px 58px 18px 22px; border-bottom: 1px solid #e8edf4; flex: 0 0 auto; }
+.pg-chart-modal-title { font-family: var(--font-head); font-size: 18px; line-height: 1.3; color: var(--ink); }
+.pg-chart-modal-sub { margin-top: 3px; font-size: 12px; color: var(--ink-soft); }
+.pg-chart-modal-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 12px 20px 0; flex: 0 0 auto; }
+.pg-chart-summary-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; padding: 9px 10px; border-radius: 9px; background: #f8fafc; font-size: 11px; color: var(--ink); }
+.pg-chart-summary-item span { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.pg-chart-summary-item i { width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; }
+.pg-chart-summary-item strong { font-size: 13px; }
+.pg-chart-modal-scroll { position: relative; flex: 1 1 auto; min-height: 0; overflow: auto; padding: 18px 20px 24px; }
+.pg-chart-modal-plot { position: relative; min-width: 100%; height: 460px; margin: 0 auto; }
+.pg-chart-modal-plot canvas { display: block; }
+.pg-chart-modal-empty { display: none; min-height: 300px; align-items: center; justify-content: center; padding: 24px; text-align: center; color: var(--ink-soft); font-size: 14px; }
 
 /* Briefly pulses the overview card when arriving via the "Completed"
    stat-card shortcut on My Materials
@@ -405,6 +425,10 @@ body {
   .student-insights-row { flex-direction: column; }
   .student-skills-card { width: auto; }
   .student-skills-chart-wrap { width: 100%; height: 260px; max-width: 300px; margin: 0 auto; }
+  .pg-chart-modal { width: 100%; height: min(92vh, 900px); }
+  .pg-chart-modal-header { padding: 16px 18px; }
+  .pg-chart-modal-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 10px 14px 0; }
+  .pg-chart-modal-scroll { padding: 14px 12px 18px; }
   /* Same left/right split as desktop — avatar+name hugging the left
      edge, both circles hugging the right edge, with one gap between
      the two clusters (not one even gap between every single item) —
@@ -483,7 +507,7 @@ body {
    print-to-PDF, same approach as the worksheet "Generate Printable".
    ============================================================ */
 @media print {
-  .student-sidebar, .student-notif-btn, #spedLoading { display: none !important; }
+  .student-sidebar, .student-notif-btn, #spedLoading, #studentNotesOverlay, #studentChartOverlay, .student-notes-trigger, .student-chart-expand { display: none !important; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   body { display: block; height: auto; overflow: visible; background: #fff; }
   .student-main { height: auto; overflow: visible; padding: 0; }

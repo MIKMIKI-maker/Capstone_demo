@@ -113,9 +113,27 @@ body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-s
 
 /* ── CHARTS ── */
 .teacher-charts-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-bottom: 22px; align-items: start; }
+.teacher-chart-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.teacher-chart-heading .teacher-panel-title { margin-bottom: 12px; }
+.teacher-chart-expand { width: 32px; height: 32px; flex: 0 0 32px; display: inline-flex; align-items: center; justify-content: center; margin-top: -6px; border: 1px solid #DBEAFE; border-radius: 9px; background: #EFF6FF; color: var(--accent); cursor: pointer; transition: var(--transition); }
+.teacher-chart-expand:hover { background: #DBEAFE; color: #1D4ED8; }
+.teacher-chart-expand:focus-visible { outline: 3px solid rgba(37,99,235,.25); outline-offset: 2px; }
 .teacher-chart-wrap { position: relative; height: 220px; }
 .teacher-chart-empty { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; text-align: center; padding: 16px; font-size: 12px; color: var(--muted); line-height: 1.5; }
 @media (max-width: 1100px) { .teacher-charts-grid { grid-template-columns: 1fr; } }
+
+/* Expanded report charts */
+body.report-chart-open { overflow: hidden; }
+.tr-chart-modal-overlay { position: fixed; inset: 0; z-index: 10001; display: none; align-items: center; justify-content: center; padding: clamp(8px, 2.5vw, 32px); background: rgba(15,23,42,.64); }
+.tr-chart-modal-overlay.show { display: flex; }
+.tr-chart-modal-box { width: min(1440px, 100%); height: min(92vh, 1000px); max-height: 100%; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #E2E8F0; border-radius: 16px; background: var(--white); box-shadow: 0 28px 80px rgba(15,23,42,.32); animation: trModalIn .2s ease; }
+.tr-chart-modal-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 22px; border-bottom: 1px solid #E8EDF4; flex: 0 0 auto; }
+.tr-chart-modal-title { font-size: 18px; line-height: 1.3; font-weight: 700; color: var(--text); }
+.tr-chart-modal-sub { margin-top: 3px; font-size: 12px; color: var(--muted); }
+.tr-chart-modal-scroll { position: relative; flex: 1 1 auto; min-height: 0; overflow: auto; padding: 18px 20px 24px; }
+.tr-chart-modal-plot { position: relative; height: 500px; min-width: 100%; margin: 0 auto; }
+.tr-chart-modal-plot canvas { display: block; }
+.tr-chart-modal-empty { display: none; min-height: 360px; align-items: center; justify-content: center; padding: 24px; text-align: center; font-size: 14px; color: var(--muted); }
 
 /* ── SKILLS ── */
 .teacher-skill-row { margin-bottom: 14px; }
@@ -186,6 +204,9 @@ tbody tr:hover { background: #FAFBFF; }
 .tr-reset-dialog { position: fixed; inset: 0; margin: auto; width: min(400px, calc(100% - 32px)); max-width: none; max-height: calc(100% - 32px); padding: 0; border: 0; border-radius: 18px; background: var(--white); color: var(--text); box-shadow: 0 20px 50px rgba(0,0,0,.25); overflow: auto; }
 .tr-reset-dialog[open] { animation: trModalIn .18s ease; }
 .tr-reset-dialog::backdrop { background: rgba(15,23,42,.5); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+.tr-reset-close { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: 0; border-radius: 9px; background: #F1F5F9; color: var(--muted); font-size: 14px; cursor: pointer; }
+.tr-reset-close:hover { background: #E2E8F0; color: var(--text); }
+.tr-reset-close:focus-visible { outline: 3px solid #93C5FD; outline-offset: 2px; }
 .tr-reset-content { padding: 24px 24px 20px; text-align: center; font-family: 'Poppins', sans-serif; }
 .tr-reset-icon { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; border-radius: 50%; background: #FEF2F2; color: #EF4444; font-size: 19px; }
 .tr-reset-message { margin: 0 0 18px; color: var(--text); font-size: 14px; line-height: 1.5; }
@@ -245,7 +266,7 @@ tbody tr:hover { background: #FAFBFF; }
     *, *::before, *::after { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     html, body { height: auto; overflow: visible; background: #fff; }
     .teacher-app-wrapper, .teacher-main-content { display: block; height: auto; overflow: visible; }
-    .teacher-sidebar, .teacher-topbar-actions, .teacher-divider, #activitySubModal { display: none !important; }
+    .teacher-sidebar, .teacher-topbar-actions, .teacher-divider, #activitySubModal, #reportChartModal { display: none !important; }
     .teacher-main-content { padding: 0; }
     .teacher-stat-card, .teacher-panel, .teacher-table-card { box-shadow: none; break-inside: avoid; page-break-inside: avoid; }
     .teacher-grading-generator { box-shadow: none; }
@@ -267,5 +288,6 @@ body.pdf-capture-mode .teacher-main-content { display: block; height: auto; over
 body.pdf-capture-mode .teacher-sidebar,
 body.pdf-capture-mode .teacher-topbar-actions,
 body.pdf-capture-mode .teacher-divider,
-body.pdf-capture-mode #activitySubModal { display: none !important; }
+body.pdf-capture-mode #activitySubModal,
+body.pdf-capture-mode #reportChartModal { display: none !important; }
 body.pdf-capture-mode .teacher-main-content { padding: 16px; }
