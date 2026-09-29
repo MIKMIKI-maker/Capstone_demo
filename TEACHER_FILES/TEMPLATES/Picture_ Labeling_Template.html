@@ -648,9 +648,9 @@ body.lbl-preview-only .lbl-exit-float{display:flex;}
 .lbl-print-objective{ font-size:13.5px; font-style:italic; color:#5d7299; font-weight:600; }
 .lbl-print-sub{ font-size:12.5px; color:#5d7299; font-weight:500; margin-top:4px; }
 .lbl-print-pagenum{ font-size:11.5px; color:#94a3b8; font-weight:600; margin-top:4px; }
-.lbl-print-divider{ margin:14px 0 22px; display:flex; flex-direction:column; gap:22px; }
-.lbl-print-divider .lbl-print-rule{ border-top:2.5px solid #94a3b8; }
-.lbl-print-divider .lbl-print-rule-dash{ border-top:2.5px dashed #94a3b8; }
+.lbl-print-divider{ width:calc(100% + 24px); margin-left:-12px; margin-top:14px; margin-bottom:40px; display:flex; flex-direction:column; gap:28px; }
+.lbl-print-divider .lbl-print-rule{ border-top:3px solid #94a3b8; }
+.lbl-print-divider .lbl-print-rule-dash{ border-top:3px dashed #94a3b8; }
 .lbl-print-footer{ margin-top:auto; padding-top:14px; border-top:1.5px solid #cbd5e1; font-size:11.5px; break-inside:avoid; page-break-inside:avoid; }
 .lbl-print-footer-label{ font-weight:700; }
 .lbl-print-checks{ display:flex; flex-wrap:wrap; gap:16px; margin-top:8px; }
@@ -658,7 +658,7 @@ body.lbl-preview-only .lbl-exit-float{display:flex;}
 .lbl-print-box{ width:13px; height:13px; border:1.5px solid #64748b; border-radius:3px; display:inline-block; }
 .lbl-print-grid{ display:grid; grid-template-columns:1fr 1fr; gap:24px 32px; }
 .lbl-print-item{ border:2px solid #cbd5e1; border-radius:16px; padding:20px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; break-inside:avoid; page-break-inside:avoid; }
-.lbl-print-item img{ max-width:100%; max-height:160px; object-fit:contain; }
+.lbl-print-item img{ width:100%; max-width:100%; max-height:calc(160px * var(--print-image-scale,1)); object-fit:contain; display:block; }
 .lbl-print-blank{ width:85%; border-bottom:2px solid #94a3b8; height:30px; }
 
 @media print{
@@ -2160,6 +2160,7 @@ function applyAppearance(){
   stage.style.fontFamily   = state.font;
   stage.style.fontSize     = state.fontSize+'px';
   stage.style.setProperty('--img-scale', (state.imageSize || 100) / 100);
+  $('lblPrintArea').style.setProperty('--print-image-scale', (state.imageSize || 100) / 100);
   stage.classList.toggle('no-deco', !state.showDeco);
   stage.classList.toggle('bs-dashed', state.border === 'dashed');
   stage.classList.toggle('bs-solid', state.border === 'solid');
@@ -2637,6 +2638,7 @@ function buildPrintPages(){
       var isLastDiagramPage = (slideIdx === slidePlans.length - 1);
       pages += '<div class="lbl-print-page"'+(isLastDiagramPage ? ' style="page-break-after:auto; display:flex; flex-direction:column; min-height:100vh;"' : '')+'>'
         + '<div class="lbl-print-head"><h2>'+printEscape(activity.title)+'</h2>'
+        + '<div class="lbl-print-divider"><div class="lbl-print-rule"></div><div class="lbl-print-rule-dash"></div><div class="lbl-print-rule"></div></div>'
         + '<div class="lbl-print-objective">('+printEscape(toPrintInstruction(activity.instruction))+')</div>'
         + (state.activities.length > 1 ? '<div class="lbl-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+' — '+(DIFFICULTY_LABELS[slideIdx]||"")+'</div>' : '')
         + (totalPages > 1 ? '<div class="lbl-print-pagenum">Page '+pageNum+' of '+totalPages+'</div>' : '')
@@ -2657,11 +2659,11 @@ function buildPrintPages(){
       }).join("");
       pages += '<div class="lbl-print-page"'+(isLastPageOverall ? ' style="page-break-after:auto; display:flex; flex-direction:column; min-height:100vh;"' : '')+'>'
         + '<div class="lbl-print-head"><h2>'+printEscape(activity.title)+'</h2>'
+        + '<div class="lbl-print-divider"><div class="lbl-print-rule"></div><div class="lbl-print-rule-dash"></div><div class="lbl-print-rule"></div></div>'
         + '<div class="lbl-print-objective">('+printEscape(toPrintInstruction(activity.instruction))+')</div>'
         + (state.activities.length > 1 ? '<div class="lbl-print-sub">Slide '+(slideIdx+1)+' of '+state.activities.length+' — '+(DIFFICULTY_LABELS[slideIdx]||"")+'</div>' : '')
         + (totalPages > 1 ? '<div class="lbl-print-pagenum">Page '+pageNum+' of '+totalPages+'</div>' : '')
         + '</div>'
-        + (chunkIdx === 0 ? '<div class="lbl-print-divider"><div class="lbl-print-rule"></div><div class="lbl-print-rule-dash"></div><div class="lbl-print-rule"></div></div>' : '')
         + '<div class="lbl-print-grid">'+itemsHtml+'</div>'
         + (isLastPageOverall ? printChecklistHtml() : '')
         + '</div>';
@@ -2669,13 +2671,30 @@ function buildPrintPages(){
   });
   return pages;
 }
+function applyPrintFontSize(area){
+  var baseSize = DEFAULT_DESIGN.fontSize || 40;
+  var scale = Math.max(0.8, Math.min(1.6, (state.fontSize || baseSize) / baseSize));
+  if (!area || scale === 1) return;
+  var textElements = [];
+  area.querySelectorAll('*').forEach(function(el){
+    if (Array.from(el.classList || []).some(function(cls){ return cls.indexOf('emoji') !== -1; })) return;
+    var hasText = Array.from(el.childNodes).some(function(node){ return node.nodeType === 3 && node.textContent.trim(); });
+    if (!hasText) return;
+    var fontSize = parseFloat(getComputedStyle(el).fontSize);
+    if (fontSize) textElements.push([el, fontSize]);
+  });
+  textElements.forEach(function(entry){ entry[0].style.fontSize = (entry[1] * scale) + 'px'; });
+}
+
 function generatePrintable(){
   $('lblPrintArea').innerHTML = buildPrintPages();
+  applyPrintFontSize($('lblPrintArea'));
   setTimeout(function(){ window.print(); }, 60);
 }
 function downloadAsPdf(){
   var area = $('lblPrintArea');
   area.innerHTML = buildPrintPages();
+  applyPrintFontSize(area);
   area.classList.add('lbl-pdf-capture');
   var pageEls = Array.prototype.slice.call(area.querySelectorAll('.lbl-print-page'));
   if (!pageEls.length) { area.classList.remove('lbl-pdf-capture'); area.innerHTML = ''; return; }

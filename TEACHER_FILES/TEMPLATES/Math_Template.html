@@ -548,9 +548,9 @@ function initActivityTheme(){
   .mth-print-head h2{ font-size:21px; font-weight:700; margin:0 0 4px; }
   .mth-print-objective{ font-size:13.5px; font-style:italic; color:#5d7299; font-weight:600; }
   .mth-print-sub{ font-size:12.5px; color:#5d7299; font-weight:500; margin-top:4px; }
-  .mth-print-divider{ margin:14px 0 22px; display:flex; flex-direction:column; gap:22px; }
-  .mth-print-divider .mth-print-rule{ border-top:2.5px solid #94a3b8; }
-  .mth-print-divider .mth-print-rule-dash{ border-top:2.5px dashed #94a3b8; }
+  .mth-print-divider{ width:calc(100% + 24px); margin-left:-12px; margin-top:14px; margin-bottom:40px; display:flex; flex-direction:column; gap:28px; }
+  .mth-print-divider .mth-print-rule{ border-top:3px solid #94a3b8; }
+  .mth-print-divider .mth-print-rule-dash{ border-top:3px dashed #94a3b8; }
   .mth-print-footer{ margin-top:auto; padding-top:14px; border-top:1.5px solid #cbd5e1; font-size:11.5px; break-inside:avoid; page-break-inside:avoid; }
   .mth-print-footer-label{ font-weight:700; }
   .mth-print-checks{ display:flex; flex-wrap:wrap; gap:16px; margin-top:8px; }
@@ -1941,23 +1941,40 @@ function initActivityTheme(){
       var isLast = i === slides.length - 1;
       pages += '<div class="mth-print-page"'+(isLast ? ' style="page-break-after:auto; display:flex; flex-direction:column; min-height:100vh;"' : '')+'>'
         + '<div class="mth-print-head"><h2>'+printEscape(activity.title)+'</h2>'
+        + '<div class="mth-print-divider"><div class="mth-print-rule"></div><div class="mth-print-rule-dash"></div><div class="mth-print-rule"></div></div>'
         + '<div class="mth-print-objective">('+printEscape(toPrintInstruction(activity.instruction))+')</div>'
         + (slides.length > 1 ? '<div class="mth-print-sub">Slide '+(i+1)+' of '+slides.length+' — '+(DIFFICULTY_LABELS[i]||"")+'</div>' : '')
         + '</div>'
-        + '<div class="mth-print-divider"><div class="mth-print-rule"></div><div class="mth-print-rule-dash"></div><div class="mth-print-rule"></div></div>'
         + buildPrintBodyForMode(activity)
         + (isLast ? printChecklistHtml() : '')
         + '</div>';
     });
     return pages;
   }
+  function applyPrintFontSize(area){
+    var baseSize = DEFAULT_DESIGN.fontSize || 40;
+    var scale = Math.max(0.8, Math.min(1.6, (state.fontSize || baseSize) / baseSize));
+    if (!area || scale === 1) return;
+    var textElements = [];
+    area.querySelectorAll("*").forEach(function(el){
+      if (Array.from(el.classList || []).some(function(cls){ return cls.indexOf("emoji") !== -1; })) return;
+      var hasText = Array.from(el.childNodes).some(function(node){ return node.nodeType === 3 && node.textContent.trim(); });
+      if (!hasText) return;
+      var fontSize = parseFloat(getComputedStyle(el).fontSize);
+      if (fontSize) textElements.push([el, fontSize]);
+    });
+    textElements.forEach(function(entry){ entry[0].style.fontSize = (entry[1] * scale) + "px"; });
+  }
+
   function generatePrintable(){
     $("mthPrintArea").innerHTML = buildPrintPages();
+    applyPrintFontSize($("mthPrintArea"));
     setTimeout(function(){ window.print(); }, 60);
   }
   function downloadAsPdf(){
     var area = $("mthPrintArea");
     area.innerHTML = buildPrintPages();
+    applyPrintFontSize(area);
     area.classList.add("mth-pdf-capture");
     var pageEls = Array.prototype.slice.call(area.querySelectorAll(".mth-print-page"));
     if (!pageEls.length) { area.classList.remove("mth-pdf-capture"); area.innerHTML = ""; return; }
