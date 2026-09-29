@@ -330,53 +330,55 @@ img, video, canvas { max-width: 100%; height: auto; }
   .btn-search { flex-shrink: 0; padding: 7px 10px; font-size: 9.5px; }
   .btn-add { flex-shrink: 0; margin-left: 0; padding: 7px 8px; font-size: 9px; white-space: nowrap; }
 
-  /* Keep #teacher-learnersTable looking like the real table (same
-     columns side by side as desktop), genuinely fitting the phone
-     width with no horizontal scroll. table-layout:fixed is the part
-     that actually makes this possible — plain auto layout keeps
-     widening the table to fit each cell's full content (a whole email
-     address, a full phone number), no matter how small the font gets,
-     which is what kept forcing horizontal scroll. Fixed layout instead
-     divides the available width evenly across columns and lets long
-     content truncate with an ellipsis within its own cell. */
-  #teacher-learnersTable { display: table; width: 100%; table-layout: fixed; }
-  /* Contact and Email genuinely can't be both small enough to fit and
-     actually readable — 7 columns forced font-size down to ~7px with
-     everything ellipsis-truncated into illegibility. Drop those two
-     columns from view on a phone (still in the desktop table, still in
-     the underlying data) so the remaining 5 can use a real, readable size. */
-  #teacher-learnersTable th:nth-child(4), #teacher-learnersTable td:nth-child(4),
-  #teacher-learnersTable th:nth-child(5), #teacher-learnersTable td:nth-child(5) {
-    display: none;
+  /* Turn each learner into a compact card so parent email stays readable
+     on narrow screens instead of being hidden or squeezed into a column. */
+  #teacher-learnersTable { display: block; width: 100%; table-layout: auto; overflow: visible; }
+  #teacher-learnersTable thead { display: none; }
+  #teacher-learnersTable tbody { display: block; }
+  #teacher-learnersTable tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 7px 10px;
+    padding: 10px;
+    border-top: 1px solid #F1F5F9;
   }
-  #teacher-learnersTable th, #teacher-learnersTable td {
-    padding: 7px 10px 7px 6px;
-    font-size: 9px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  #teacher-learnersTable tbody td {
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    font-size: 10px;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
   }
+  #teacher-learnersTable tbody td::before {
+    display: block;
+    margin-bottom: 2px;
+    color: #64748B;
+    font-size: 8px;
+    content: attr(data-label);
+  }
+  #teacher-learnersTable tbody td:nth-child(1) { grid-column: 1 / -1; grid-row: 1; }
+  #teacher-learnersTable tbody td:nth-child(2) { grid-column: 1; grid-row: 4; }
+  #teacher-learnersTable tbody td:nth-child(3) { grid-column: 1 / -1; grid-row: 2; }
+  #teacher-learnersTable tbody td:nth-child(4) { display: none; }
+  #teacher-learnersTable tbody td:nth-child(5) { grid-column: 1 / -1; grid-row: 3; }
+  #teacher-learnersTable tbody td:nth-child(5) a { display: block; overflow-wrap: anywhere; font-size: 10px !important; }
+  #teacher-learnersTable tbody td:nth-child(6) { grid-column: 2; grid-row: 4; }
+  #teacher-learnersTable tbody td:nth-child(7) { grid-column: 3; grid-row: 4; }
   #teacher-learnersTable .teacher-badge-active,
   #teacher-learnersTable .teacher-badge-inactive { padding: 2px 5px; font-size: 7.5px !important; }
-  #teacher-learnersTable .btn-view { padding: 4px 3px; font-size: 6.5px !important; white-space: normal; line-height: 1.1; }
+  #teacher-learnersTable .btn-view { padding: 4px 6px; font-size: 8px !important; white-space: nowrap; line-height: 1.1; }
   /* The "(ASD)"/"(ADHD)" condition tag carries its own inline font-size
      (renderTable() in Teacher_learners.html) that otherwise wins over
      the td rule above by specificity — !important is the only way to
      actually resize it to match everything else. */
   #teacher-learnersTable td span { font-size: 8px !important; }
-  /* Give the naturally-short columns (Age, Status) less of the fixed
-     width and the naturally-long ones (Name, Parent Name) more, instead
-     of the 5 visible columns splitting it perfectly evenly. */
-  #teacher-learnersTable th:nth-child(1), #teacher-learnersTable td:nth-child(1) { width: 28%; }
-  #teacher-learnersTable th:nth-child(2), #teacher-learnersTable td:nth-child(2) { width: 10%; }
-  #teacher-learnersTable th:nth-child(3), #teacher-learnersTable td:nth-child(3) { width: 24%; }
-  #teacher-learnersTable th:nth-child(6), #teacher-learnersTable td:nth-child(6) { width: 19%; }
-  #teacher-learnersTable th:nth-child(7), #teacher-learnersTable td:nth-child(7) { width: 19%; }
   /* The Status pill and the View Progress button are fixed UI elements,
      not free text — ellipsis-truncating them (the generic td rule above)
      just clipped the badge and left a stray "…" floating past its edge.
      They should fit or wrap, never truncate. */
-  #teacher-learnersTable td:nth-child(6), #teacher-learnersTable td:nth-child(7) {
+   #teacher-learnersTable td:nth-child(6), #teacher-learnersTable td:nth-child(7) {
     overflow: visible;
     text-overflow: clip;
     white-space: normal;
