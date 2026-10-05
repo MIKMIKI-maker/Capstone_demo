@@ -357,6 +357,10 @@ body { display: flex; }
 .admin-input-wrap input::placeholder { color: #aaa; }
 
 /* Field helper / note text (e.g. email hints, status lock notice, "no teacher yet" warning) */
+.admin-req { color: #dc2626; }
+.admin-field-required .admin-input-wrap,
+.admin-field-required .admin-cond-select { box-shadow: 0 0 0 2px #dc2626; }
+.admin-field-required::after { content: attr(data-error); display: block; font-size: 12px; font-weight: 600; color: #dc2626; margin-top: 6px; }
 .admin-field-note { font-size: 12px; color: #888; margin-top: 6px; line-height: 1.5; }
 
 /* Role cards */

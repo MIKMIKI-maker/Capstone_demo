@@ -4,6 +4,8 @@ require_once __DIR__ . '/csrf.php';
 require_once __DIR__ . '/admin_push_notification.php';
 require_once __DIR__ . '/password_policy.php';
 require_once __DIR__ . '/../../MAILER/send_email.php';
+require_once __DIR__ . '/../../MAILER/email_domains.php';
+require_once __DIR__ . '/school_year.php';
 requireAdminSession();
 csrf_require_valid_token();
 
@@ -33,27 +35,32 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if ($role === 'teacher' && $condition === '' && isset($_POST['grade_level']) && trim($_POST['grade_level']) !== '') {
         $condition = trim($_POST['grade_level']);
     }
-    $defaults = ['admin' => 'Admin@123', 'teacher' => 'Teacher@123', 'student' => 'Student@123'];
-    $customPasswordInput = isset($_POST['enter_password']) ? trim($_POST['enter_password']) : '';
-    $raw_password = $customPasswordInput !== '' ? $customPasswordInput : ($defaults[$role] ?? 'Teacher@123');
-
-    // Only a custom (admin-typed) password is checked against the policy —
-    // the role defaults above are pre-approved system passwords.
-    if ($customPasswordInput !== '') {
-        $violation = passwordPolicyViolation($customPasswordInput, $firstName, $lastName);
-        if ($violation) {
-            echo json_encode(['success' => false, 'message' => $violation]);
-            $conn->close();
-            exit;
-        }
-    }
-
+    $raw_password = generateTemporaryPassword($firstName, $lastName);
     $password = password_hash($raw_password, PASSWORD_DEFAULT);
     $assigned_teacher_id = ($role === 'student' && !empty($_POST['assigned_teacher_id'])) ? intval($_POST['assigned_teacher_id']) : 0;
     $parent_name_val = ($role === 'student' && isset($_POST['enter_parent_name'])) ? trim($_POST['enter_parent_name']) : '';
 
-    if ($firstName === '' || $email === '') {
-        echo json_encode(['success' => false, 'message' => 'First name and email are required']);
+    // Every field on the Add Account form is required. $condition holds the
+    // Section for teachers and the Condition for students.
+    $missing = [];
+    if ($firstName === '') $missing[] = 'First Name';
+    if ($lastName === '')  $missing[] = 'Last Name';
+    if ($email === '')     $missing[] = 'Email Address';
+    if ($role === 'teacher' && $condition === '') $missing[] = 'Section';
+    if ($role === 'student') {
+        if ($condition === '')         $missing[] = 'Condition';
+        if ($parent_name_val === '')   $missing[] = 'Parent/Guardian Full Name';
+        if ($assigned_teacher_id <= 0) $missing[] = 'Assigned Teacher';
+    }
+    if ($missing) {
+        echo json_encode(['success' => false, 'message' => 'Required: ' . implode(', ', $missing)]);
+        $conn->close();
+        exit;
+    }
+
+    // One teacher per Section.
+    if ($role === 'teacher' && ($owner = sectionTakenBy($conn, $condition))) {
+        echo json_encode(['success' => false, 'message' => "$condition already has a teacher ($owner). Choose another Section."]);
         $conn->close();
         exit;
     }
@@ -66,6 +73,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         echo json_encode(['success' => false, 'message' => 'Please enter a valid email address']);
+        $conn->close();
+        exit;
+    }
+
+    if (!isAllowedEmailDomain($email)) {
+        echo json_encode(['success' => false, 'message' => ALLOWED_EMAIL_DOMAINS_MESSAGE]);
         $conn->close();
         exit;
     }
@@ -93,7 +106,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         if ($role === 'teacher') {
             syncTeacherAccount($email, $firstName, $lastName);
         }
-        
+        // Put the new teacher's Section / student's class into the Active S.Y.
+        reconcileActiveEnrollments($conn);
+
         // Log the activity
         $logStmt = $conn->prepare("INSERT INTO admin_activities (activity_type, user_type, user_name, user_email, action_detail) VALUES (?,?,?,?,?)");
         if ($logStmt) {
@@ -116,8 +131,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         );
 
         // Welcome email straight to the new account's own inbox with its
-        // login credentials — $raw_password is the plaintext default (or
-        // admin-chosen) password, before it got hashed into $password above.
+        // login credentials — $raw_password is the plaintext random
+        // temporary password, before it got hashed into $password above.
         // PUBLIC_SITE_URL (not the request's own host) so the logo/login
         // link work in the recipient's inbox even when this code is running
         // on localhost/Docker — see MAILER/mailer_config.php.
@@ -150,9 +165,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             // Spam"), but it's a real, controllable signal.
             . "<p style=\"font-size:11px;color:#94a3b8;text-align:center;margin:0;\">Mamatid Elementary School &middot; SPED Program &middot; Cabuyao, Laguna<br>If you did not expect this email, you can safely ignore it.</p>"
             . "</div>";
-        send_email($email, $fullName, 'Your SPED ALM account has been created', $welcomeHtml);
+        $emailSent = send_email($email, $fullName, 'Your SPED ALM account has been created', $welcomeHtml);
 
-        echo json_encode(['success' => true, 'message' => 'Account added successfully']);
+        // The email is the only place the temporary password is shown, so if
+        // it didn't go out, hand it to the Admin to pass along instead.
+        if ($emailSent) {
+            echo json_encode(['success' => true, 'email_sent' => true, 'message' => 'Account added successfully']);
+        } else {
+            echo json_encode(['success' => true, 'email_sent' => false, 'temp_password' => $raw_password, 'message' => 'Account added, but the welcome email could not be sent']);
+        }
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to add account: ' . $stmt->error]);
     }

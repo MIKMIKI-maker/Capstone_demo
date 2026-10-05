@@ -31,3 +31,37 @@ function passwordPolicyViolation($password, $firstName = '', $lastName = '') {
 
     return null;
 }
+
+/**
+ * Random 8-character temporary password for a new account, emailed to its
+ * owner instead of a shared role default like "Teacher@123" that anyone
+ * could guess. Always has an uppercase, lowercase, number and special
+ * character. Look-alike characters (0/O, 1/l/I) are left out since parents
+ * and teachers type it by hand from the email.
+ */
+function generateTemporaryPassword($firstName = '', $lastName = '') {
+    $upper   = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    $lower   = 'abcdefghijkmnopqrstuvwxyz';
+    $digits  = '23456789';
+    $special = '!@#$%&*?';
+    $all = $upper . $lower . $digits . $special;
+
+    do {
+        $chars = [
+            $upper[random_int(0, strlen($upper) - 1)],
+            $lower[random_int(0, strlen($lower) - 1)],
+            $digits[random_int(0, strlen($digits) - 1)],
+            $special[random_int(0, strlen($special) - 1)],
+        ];
+        while (count($chars) < 8) {
+            $chars[] = $all[random_int(0, strlen($all) - 1)];
+        }
+        for ($i = count($chars) - 1; $i > 0; $i--) {
+            $j = random_int(0, $i);
+            [$chars[$i], $chars[$j]] = [$chars[$j], $chars[$i]];
+        }
+        $password = implode('', $chars);
+    } while (passwordPolicyViolation($password, $firstName, $lastName) !== null);
+
+    return $password;
+}

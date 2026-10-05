@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
   <title>SPED ALM - Manage Users</title>
   <link href="ADMIN_CSS/animations.css" rel="stylesheet" />
-   <link href="ADMIN_CSS/Admin_manage_user.css?v=11" rel="stylesheet" />
+   <link href="ADMIN_CSS/Admin_manage_user.css?v=12" rel="stylesheet" />
   <link href="ADMIN_CSS/admin_responsive.css" rel="stylesheet" />
   <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
   <link href="../ASSETS/vendor/fontawesome/css/all.min.css" rel="stylesheet" />
@@ -511,16 +511,16 @@
         <div class="admin-modal-body">
           <div class="admin-field-pair">
             <div class="admin-field-group admin-field-pair__item">
-              <label>First Name</label>
+              <label>First Name <span class="admin-req">*</span></label>
               <div class="admin-input-wrap"><span>👤</span><input id="admin-add-first-name" name="enter_first_name" placeholder="Enter first name..." type="text" required /></div>
             </div>
             <div class="admin-field-group admin-field-pair__item">
-              <label>Last Name</label>
+              <label>Last Name <span class="admin-req">*</span></label>
               <div class="admin-input-wrap"><span>👤</span><input id="admin-add-last-name" name="enter_last_name" placeholder="Enter last name..." type="text" required /></div>
             </div>
           </div>
           <div class="admin-field-group">
-            <label>Email Address</label>
+            <label>Email Address <span class="admin-req">*</span></label>
             <div class="admin-input-wrap"><span>🔔</span><input id="admin-add-email" name="enter_email_address"
                 placeholder="Enter email address..." type="email" required /></div>
           </div>
@@ -541,12 +541,11 @@
             </div>
             <input type="hidden" name="enter_role" id="admin-add-role-input" value="teacher" />
             <input type="hidden" name="enter_condition" id="admin-add-condition-input" value="" />
-            <input type="hidden" name="enter_password" id="admin-add-password-input" value="Teacher@123" />
             <input type="hidden" name="enter_status" id="admin-add-status-input" value="inactive" />
             <div class="admin-field-note">🔒 Status can't be set manually here — the account starts as <strong>Inactive</strong> and automatically switches to <strong>Active</strong> once the user logs in.</div>
           </div>
           <div class="admin-field-group" id="admin-add-section-wrap" style="display:block">
-            <label>Section</label>
+            <label>Section <span class="admin-req">*</span></label>
             <div class="admin-cond-dropdown-wrap">
               <select class="admin-cond-select" id="admin-add-section-select" name="grade_level">
                 <option value="">Select Section</option>
@@ -559,7 +558,7 @@
             </div>
           </div>
           <div class="admin-field-group" id="admin-add-condition-wrap" style="display:none">
-            <label>Condition</label>
+            <label>Condition <span class="admin-req">*</span></label>
             <div class="admin-cond-dropdown-wrap">
               <select class="admin-cond-select" id="admin-add-cond-select" name="admin_add_cond_select">
                 <option value="">Select condition...</option>
@@ -569,12 +568,12 @@
             </div>
           </div>
           <div class="admin-field-group" id="admin-add-parent-wrap" style="display:none">
-            <label>Parent/Guardian Full Name</label>
+            <label>Parent/Guardian Full Name <span class="admin-req">*</span></label>
             <div class="admin-input-wrap"><span>👤</span><input id="admin-add-parent-name" name="enter_parent_name" placeholder="Enter parent/guardian full name..."
                 type="text" /></div>
           </div>
           <div class="admin-field-group" id="admin-add-teacher-wrap" style="display:none">
-            <label>Assigned Teacher</label>
+            <label>Assigned Teacher <span class="admin-req">*</span></label>
             <div class="admin-cond-dropdown-wrap">
               <select class="admin-cond-select" id="admin-add-teacher-select" name="assigned_teacher_id">
                 <option value="">Select teacher...</option>
@@ -796,14 +795,15 @@
       // Reset and initialize Add Account form when opening
       if (id === 'admin-modal-add') {
         document.getElementById('admin_manage_user_form_2').reset();
+        document.querySelectorAll('#admin-modal-add .admin-field-required').forEach(function (el) { el.classList.remove('admin-field-required'); });
         document.getElementById('admin-add-role-input').value = 'teacher';
-        document.getElementById('admin-add-password-input').value = 'Teacher@123';
         document.getElementById('admin-add-status-input').value = 'inactive';
         document.getElementById('admin-add-condition-input').value = '';
         document.getElementById('admin-add-cond-select').value = '';
         document.getElementById('admin-add-condition-wrap').style.display = 'none';
         // Default role is teacher: show Section, hide parent/teacher fields
         document.getElementById('admin-add-section-wrap').style.display = 'block';
+        markTakenSections('admin-add-section-select', 0);
         document.getElementById('admin-add-section-select').value = '';
         document.getElementById('admin-add-parent-wrap').style.display = 'none';
         document.getElementById('admin-add-teacher-wrap').style.display = 'none';
@@ -1300,6 +1300,7 @@
       parentWrap.style.display = account.role === 'student' ? 'block' : 'none';
       teacherWrap.style.display = account.role === 'student' ? 'block' : 'none';
 
+      markTakenSections('admin-edit-section-select', account.id);
       document.getElementById('admin-edit-section-select').value = account.role === 'teacher' ? (account.condition_info || '') : '';
       document.getElementById('admin-edit-parent-name').value = account.role === 'student' ? (account.parent_name || '') : '';
       if (account.role === 'student') {
@@ -1399,7 +1400,68 @@
       });
     }
 
+    // Fields required on the Add Account form, per role. Checked before the
+    // modal closes, since reopening it on a server error resets the form.
+    function validateAddAccount() {
+      var role = document.getElementById('admin-add-role-input').value;
+      var fields = [
+        ['admin-add-first-name', 'First Name'],
+        ['admin-add-last-name', 'Last Name'],
+        ['admin-add-email', 'Email Address']
+      ];
+      if (role === 'teacher') {
+        fields.push(['admin-add-section-select', 'Section']);
+      } else if (role === 'student') {
+        fields.push(['admin-add-cond-select', 'Condition']);
+        fields.push(['admin-add-parent-name', 'Parent/Guardian Full Name']);
+        fields.push(['admin-add-teacher-select', 'Assigned Teacher']);
+      }
+
+      var modal = document.getElementById('admin-modal-add');
+      modal.querySelectorAll('.admin-field-required').forEach(function (el) { el.classList.remove('admin-field-required'); });
+
+      var missing = [];
+      var firstEmpty = null;
+      fields.forEach(function (f) {
+        var input = document.getElementById(f[0]);
+        if (input.value.trim() !== '') return;
+        missing.push(f[1]);
+        markAddFieldError(input, 'This field is required.');
+        if (!firstEmpty) firstEmpty = input;
+      });
+
+      if (missing.length) {
+        showMuToast('This field is required: ' + missing.join(', '), true);
+        firstEmpty.focus();
+        return false;
+      }
+
+      var emailInput = document.getElementById('admin-add-email');
+      if (!emailInput.checkValidity()) {
+        markAddFieldError(emailInput, 'Please enter a valid email address.');
+        showMuToast('Please enter a valid email address.', true);
+        emailInput.focus();
+        return false;
+      }
+      return true;
+    }
+
+    function markAddFieldError(input, message) {
+      var group = input.closest('.admin-field-group');
+      group.classList.add('admin-field-required');
+      group.setAttribute('data-error', message);
+    }
+
+    // Clear a field's red "required" state as soon as the Admin fills it in.
+    ['input', 'change'].forEach(function (evt) {
+      document.getElementById('admin-modal-add').addEventListener(evt, function (e) {
+        var group = e.target.closest && e.target.closest('.admin-field-required');
+        if (group && e.target.value && e.target.value.trim() !== '') group.classList.remove('admin-field-required');
+      });
+    });
+
     function saveAddAccount() {
+      if (!validateAddAccount()) return;
       var addForm = document.getElementById('admin_manage_user_form_2');
       var formData = new FormData(addForm);
       formData.append('csrf_token', _csrfToken);
@@ -1421,7 +1483,11 @@
           // Reload data after successful addition
           loadAccounts();
           updateStats();
-          showMuToast('Account added successfully!');
+          if (result.email_sent === false) {
+            showMuToast('Account added, but the welcome email failed. Give this temporary password to the user: ' + result.temp_password, true, 15000);
+          } else {
+            showMuToast('Account added! Login details were emailed to the user.');
+          }
         } else {
           // Show error message and reopen modal
           showModal('admin-modal-add');
@@ -1825,16 +1891,21 @@
 
     function renderBulkResults(result) {
       var skipped = result.results.filter(function (r) { return r.status !== 'created'; });
+      var emailFailed = result.results.filter(function (r) { return r.status === 'created' && r.email_sent === false; });
+      var issues = skipped.concat(emailFailed);
       document.getElementById('admin-bulk-created-count').textContent = result.created;
       document.getElementById('admin-bulk-skipped-count').textContent = skipped.length;
       var list = document.getElementById('admin-bulk-results-list');
-      if (!skipped.length) {
+      if (!issues.length) {
         list.innerHTML = '<div class="admin-bulk-results-row created"><span>All rows imported successfully.</span></div>';
       } else {
-        list.innerHTML = skipped.map(function (r) {
+        list.innerHTML = issues.map(function (r) {
+          var reason = r.status === 'created'
+            ? 'Created, but email failed. Temporary password: ' + r.temp_password
+            : (r.reason || 'Skipped');
           return '<div class="admin-bulk-results-row">'
             + '<span class="bulk-row-email">Row ' + r.row + (r.email ? ' &middot; ' + escBulk(r.email) : '') + '</span>'
-            + '<span class="bulk-row-reason">' + escBulk(r.reason || 'Skipped') + '</span>'
+            + '<span class="bulk-row-reason">' + escBulk(reason) + '</span>'
             + '</div>';
         }).join('');
       }
@@ -2032,17 +2103,7 @@
         roleInput.value = role;
       }
       
-      // Set default password based on role
       if (prefix === 'add') {
-        var passwordInput = document.getElementById('admin-add-password-input');
-        if (passwordInput) {
-          if (role === 'teacher') {
-            passwordInput.value = 'Teacher@123';
-          } else if (role === 'student') {
-            passwordInput.value = 'Student@123';
-          }
-        }
-        
         var condInput = document.getElementById('admin-add-condition-input');
         if (condInput && role !== 'student') {
           condInput.value = '';
@@ -2054,6 +2115,24 @@
           if (sectionSelect) sectionSelect.value = '';
         }
       }
+    }
+
+    // One teacher per Section: grey out Sections another teacher already has
+    // (the server refuses them too). selfId keeps a teacher's own Section open.
+    function markTakenSections(selectId, selfId) {
+      var select = document.getElementById(selectId);
+      if (!select) return;
+      Array.prototype.forEach.call(select.options, function (opt) {
+        if (!opt.dataset.section) opt.dataset.section = opt.value;
+        var section = opt.dataset.section;
+        if (!section) return;
+        opt.value = section;
+        var owner = accountList.filter(function (a) {
+          return a.role === 'teacher' && String(a.id) !== String(selfId) && (a.condition_info || '').trim() === section;
+        })[0];
+        opt.disabled = !!owner;
+        opt.textContent = owner ? section + ' — taken by ' + owner.full_name : section;
+      });
     }
 
     // Fills the "Assigned Teacher" dropdown (add/edit) with teacher accounts that

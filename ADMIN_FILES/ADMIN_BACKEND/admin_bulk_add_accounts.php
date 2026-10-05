@@ -5,6 +5,9 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/csrf.php';
 require_once __DIR__ . '/admin_push_notification.php';
 require_once __DIR__ . '/../../MAILER/send_email.php';
+require_once __DIR__ . '/../../MAILER/email_domains.php';
+require_once __DIR__ . '/password_policy.php';
+require_once __DIR__ . '/school_year.php';
 requireAdminSession();
 csrf_require_valid_token();
 
@@ -103,8 +106,6 @@ if (empty($rows)) {
     exit;
 }
 
-$rawPassword = 'Student@123';
-$password = password_hash($rawPassword, PASSWORD_DEFAULT);
 $schoolName = 'Mamatid Elementary School';
 $results = [];
 $createdCount = 0;
@@ -126,6 +127,10 @@ foreach ($rows as $r) {
     }
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $results[] = ['row' => $num, 'email' => $email, 'status' => 'skipped', 'reason' => 'Invalid email address'];
+        continue;
+    }
+    if (!isAllowedEmailDomain($email)) {
+        $results[] = ['row' => $num, 'email' => $email, 'status' => 'skipped', 'reason' => 'Unsupported email provider'];
         continue;
     }
     if (mb_strlen($firstName) > 100 || mb_strlen($lastName) > 100 || mb_strlen($email) > 255) {
@@ -151,11 +156,12 @@ foreach ($rows as $r) {
         $results[] = ['row' => $num, 'email' => $email, 'status' => 'skipped', 'reason' => 'Database error'];
         continue;
     }
+    $rawPassword = generateTemporaryPassword($firstName, $lastName);
+    $password = password_hash($rawPassword, PASSWORD_DEFAULT);
     $stmt->bind_param("ssssssssisi", $email, $password, $firstName, $lastName, $schoolName, $role, $condition, $status, $assignedTeacherId, $parentName, $mustChangePassword);
 
     if ($stmt->execute()) {
         $stmt->close();
-        $results[] = ['row' => $num, 'email' => $email, 'status' => 'created'];
         $createdCount++;
 
         // Best-effort welcome email — a slow/failed send here shouldn't
@@ -182,7 +188,13 @@ foreach ($rows as $r) {
             . "<p style=\"margin:0 0 16px;\">Sincerely yours,<br>SPED ALM System</p>"
             . "<p style=\"font-size:11px;color:#94a3b8;text-align:center;margin:0;\">Mamatid Elementary School &middot; SPED Program &middot; Cabuyao, Laguna<br>If you did not expect this email, you can safely ignore it.</p>"
             . "</div>";
-        send_email($email, $fullName, 'Your SPED ALM account has been created', $welcomeHtml);
+        if (send_email($email, $fullName, 'Your SPED ALM account has been created', $welcomeHtml)) {
+            $results[] = ['row' => $num, 'email' => $email, 'status' => 'created'];
+        } else {
+            // Email is the only place the temporary password is shown, so
+            // surface it to the Admin when the send fails.
+            $results[] = ['row' => $num, 'email' => $email, 'status' => 'created', 'email_sent' => false, 'temp_password' => $rawPassword];
+        }
     } else {
         $err = $stmt->error;
         $stmt->close();
@@ -206,6 +218,8 @@ if ($createdCount > 0) {
     $title = "{$createdCount} Students Added";
     $msg   = "{$createdCount} student account(s) were added via bulk CSV import.";
     pushAdminNotification($conn, 'account', $title, $msg);
+    // Enroll the imported students in the teacher's class for the Active S.Y.
+    reconcileActiveEnrollments($conn);
 }
 
 $conn->close();
