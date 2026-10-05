@@ -110,11 +110,17 @@ function send_email(string $toEmail, string $toName, string $subject, string $ht
         return false;
     }
 
+    $deliverTo = $toEmail;
+    if (EMAIL_REDIRECT_TO !== '' && filter_var(EMAIL_REDIRECT_TO, FILTER_VALIDATE_EMAIL)) {
+        $deliverTo = EMAIL_REDIRECT_TO;
+        $subject = '[For: ' . $toEmail . '] ' . $subject;
+    }
+
     $altBody = trim(strip_tags(str_replace(['<br>', '<br/>', '<br />'], "\n", $htmlBody)));
 
     $payload = [
         'sender'      => ['name' => SMTP_FROM_NAME, 'email' => SMTP_USER],
-        'to'          => [['email' => $toEmail, 'name' => $toName]],
+        'to'          => [['email' => $deliverTo, 'name' => $toName]],
         'subject'     => $subject,
         'htmlContent' => $htmlBody,
         'textContent' => $altBody,

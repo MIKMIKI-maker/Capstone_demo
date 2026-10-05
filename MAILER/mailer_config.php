@@ -23,6 +23,12 @@ define('SMTP_FROM_NAME', getenv('SMTP_FROM_NAME') ?: 'SPED ALM');
 // Brevo reject them. Set EMAIL_DAILY_LIMIT if the plan is upgraded.
 define('EMAIL_DAILY_LIMIT', (int)(getenv('EMAIL_DAILY_LIMIT') ?: 300));
 
+// Demo/testing: when set, every email goes to this one inbox instead of the
+// account's own address (the subject says who it was for). Accounts can then
+// use made-up addresses without anyone else receiving mail. Leave it set for
+// as long as such accounts exist; unset it to send to real addresses again.
+define('EMAIL_REDIRECT_TO', trim((string)getenv('EMAIL_REDIRECT_TO')));
+
 // Base URL used for the "Log In"/"View Notification" LINKS inside emails.
 // Deliberately NOT derived from the request ($_SERVER['HTTP_HOST']) —
 // emails are opened in the recipient's own mail client (Gmail, etc.),
