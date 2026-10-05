@@ -2,6 +2,7 @@
 error_reporting(0);
 ini_set('display_errors', '0');
 mysqli_report(MYSQLI_REPORT_OFF);
+require_once __DIR__ . '/school_config.php';
 
 // Guards account-management endpoints (create/edit/delete/restore/reset password)
 // so they can only be used by a logged-in admin, instead of trusting whatever
@@ -204,7 +205,7 @@ function getDatabaseConnection() {
     if ($seed_check && $seed_check->fetch_assoc()['cnt'] == 0) {
         $h_admin = password_hash('Admin@123', PASSWORD_DEFAULT);
         $conn->query("INSERT IGNORE INTO admin_accounts (admin_email, admin_password, first_name, last_name, school_name, role, status)
-            VALUES ('admin@spedalm.edu.ph', '$h_admin', 'Admin', 'User', 'Mamatid Elementary School', 'admin', 'active')");
+            VALUES ('admin@spedalm.edu.ph', '$h_admin', 'Admin', 'User', '" . $conn->real_escape_string(SCHOOL_NAME) . "', 'admin', 'active')");
     }
 
     // School Year support — also run from the teacher setup, whichever
@@ -246,6 +247,24 @@ function getDatabaseConnection() {
     $mcp_col = $conn->query("SHOW COLUMNS FROM admin_accounts LIKE 'must_change_password'");
     if ($mcp_col && $mcp_col->num_rows == 0) {
         $conn->query("ALTER TABLE admin_accounts ADD COLUMN must_change_password TINYINT(1) NOT NULL DEFAULT 0");
+    }
+
+    // Teacher/Student accounts still on an old shared role default
+    // ("Teacher@123"/"Student@123", from before random temporary passwords)
+    // must pick their own password on their next login. Their password is
+    // kept so they aren't locked out. password_verify is slow by design, so
+    // this runs once (marked in schema_meta).
+    $conn->query("CREATE TABLE IF NOT EXISTS schema_meta (component VARCHAR(50) PRIMARY KEY, version INT NOT NULL)");
+    $rolePwDone = $conn->query("SELECT 1 FROM schema_meta WHERE component = 'role_default_pw'");
+    if ($rolePwDone && $rolePwDone->num_rows === 0) {
+        $rp = $conn->query("SELECT id, admin_password FROM admin_accounts WHERE role IN ('teacher', 'student') AND must_change_password = 0");
+        while ($rp && ($rpRow = $rp->fetch_assoc())) {
+            $hash = (string)$rpRow['admin_password'];
+            if (password_verify('Teacher@123', $hash) || password_verify('Student@123', $hash)) {
+                $conn->query("UPDATE admin_accounts SET must_change_password = 1 WHERE id = " . (int)$rpRow['id']);
+            }
+        }
+        $conn->query("INSERT IGNORE INTO schema_meta (component, version) VALUES ('role_default_pw', 1)");
     }
 
     // "Permanent delete" no longer means DELETE FROM - the row (and every

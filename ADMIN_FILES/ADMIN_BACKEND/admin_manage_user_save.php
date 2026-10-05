@@ -81,8 +81,10 @@ if (strcasecmp($email_address, $previous_email) !== 0) {
     }
 }
 
-// Update the user account
-$sql = "UPDATE admin_accounts SET first_name = ?, last_name = ?, admin_email = ?, phone_number = ?, status = ?, condition_info = ?, assigned_teacher_id = ?, parent_name = ? WHERE id = ?";
+// Update the user account. `status` is left alone: it only says whether the
+// user is logged in (set by login/logout) — writing the value the form was
+// opened with could flip a user who logged in meanwhile back to inactive.
+$sql = "UPDATE admin_accounts SET first_name = ?, last_name = ?, admin_email = ?, phone_number = ?, condition_info = ?, assigned_teacher_id = ?, parent_name = ? WHERE id = ?";
 $stmt = $conn->prepare($sql);
 
 if (!$stmt) {
@@ -90,11 +92,11 @@ if (!$stmt) {
     exit;
 }
 
-$stmt->bind_param("ssssssisi", $first_name, $last_name, $email_address, $phone_number, $status, $condition_info, $assigned_teacher_id, $parent_name_val, $user_id);
+$stmt->bind_param("sssssisi", $first_name, $last_name, $email_address, $phone_number, $condition_info, $assigned_teacher_id, $parent_name_val, $user_id);
 
 if ($stmt->execute()) {
     if ($user_role === 'teacher') {
-        syncTeacherAccount($email_address, $first_name, $last_name, $phone_number);
+        syncTeacherAccount($email_address, $first_name, $last_name, $phone_number, $previous_email);
     } elseif ($user_role === 'student') {
         if (!syncStudentRecord($user_id, trim($full_name), $parent_name_val, $status, $condition_info, $grade_level, $assigned_teacher_id, $previous_assigned_teacher_id)) {
             echo json_encode(['success' => false, 'message' => 'Student assignment could not be synchronized']);
@@ -114,25 +116,39 @@ $stmt->close();
 $conn->close();
 
 // Function to sync teacher to teacher_accounts table
-function syncTeacherAccount($email, $firstName, $lastName, $phone = '') {
+function syncTeacherAccount($email, $firstName, $lastName, $phone = '', $previousEmail = '') {
     require_once __DIR__ . '/../../TEACHER_FILES/TEACHER_BACKEND/db.php';
+    require_once __DIR__ . '/school_config.php';
     $teacher_conn = getTeacherDatabaseConnection();
 
     if (!$teacher_conn) {
         return false;
     }
 
-    // Check if teacher exists
+    // The teacher's activities, learners and records hang off their
+    // teacher_accounts row, which is matched to this account by email. When
+    // the Admin changes the email, move that same row to the new address —
+    // looking it up by the new email used to create a second, empty teacher
+    // account and leave all the teacher's work on the old one.
+    if ($previousEmail !== '' && strcasecmp($previousEmail, $email) !== 0) {
+        $move_stmt = $teacher_conn->prepare("UPDATE teacher_accounts SET teacher_email = ? WHERE teacher_email = ?
+            AND NOT EXISTS (SELECT 1 FROM (SELECT id FROM teacher_accounts WHERE teacher_email = ?) taken)");
+        $move_stmt->bind_param("sss", $email, $previousEmail, $email);
+        $move_stmt->execute();
+        $move_stmt->close();
+    }
+
     $check_stmt = $teacher_conn->prepare("SELECT id FROM teacher_accounts WHERE teacher_email = ?");
     $check_stmt->bind_param("s", $email);
     $check_stmt->execute();
-    $check_result = $check_stmt->get_result();
+    $exists = (bool)$check_stmt->get_result()->fetch_assoc();
+    $check_stmt->close();
 
-    if ($check_result->num_rows == 0) {
-        // Create new teacher account
-        $insert_stmt = $teacher_conn->prepare("INSERT INTO teacher_accounts (teacher_email, teacher_password, first_name, last_name, phone_number, school_name, status) VALUES (?, ?, ?, ?, ?, 'Mamatid Elementary School', 'active')");
-        $password = password_hash('Teacher@123', PASSWORD_DEFAULT);
-        $insert_stmt->bind_param("sssss", $email, $password, $firstName, $lastName, $phone);
+    if (!$exists) {
+        $insert_stmt = $teacher_conn->prepare("INSERT INTO teacher_accounts (teacher_email, teacher_password, first_name, last_name, phone_number, school_name, status) VALUES (?, ?, ?, ?, ?, ?, 'active')");
+        $password = unusableTeacherPasswordHash();
+        $school = SCHOOL_NAME;
+        $insert_stmt->bind_param("ssssss", $email, $password, $firstName, $lastName, $phone, $school);
         $insert_stmt->execute();
         $insert_stmt->close();
     } else {
@@ -143,7 +159,6 @@ function syncTeacherAccount($email, $firstName, $lastName, $phone = '') {
         $update_stmt->close();
     }
 
-    $check_stmt->close();
     $teacher_conn->close();
     return true;
 }

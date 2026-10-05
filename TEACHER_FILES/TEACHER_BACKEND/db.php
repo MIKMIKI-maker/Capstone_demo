@@ -53,7 +53,7 @@ function getTeacherDatabaseConnection() {
     // remote database, since the whole block got skipped. A version counter
     // fixes that: bump SCHEMA_VERSION whenever a new migration is added below,
     // and remote re-runs the block until its stored version catches up.
-    $SCHEMA_VERSION = 6;
+    $SCHEMA_VERSION = 7;
     $needsSetup = true;
     if ($envHost !== false && $envHost !== '') {
         $conn->query("CREATE TABLE IF NOT EXISTS schema_meta (component VARCHAR(50) PRIMARY KEY, version INT NOT NULL)");
@@ -423,6 +423,32 @@ function getTeacherDatabaseConnection() {
     // School Year support (school_years table, S.Y. tags, per-S.Y. grading locks)
     require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/school_year.php';
     ensureSchoolYearSchema($conn);
+
+    // An activity a teacher unpublished was stored as 'archived', the same
+    // word the Admin uses for archived accounts — it is now 'unpublished'.
+    $conn->query("UPDATE teacher_activities SET status = 'unpublished' WHERE status = 'archived'");
+
+    // teacher_accounts.teacher_password is never used to sign in (logins
+    // check admin_accounts), but rows created with the old shared
+    // "Teacher@123" still held that known password — replace those.
+    // password_verify is slow by design, so this runs once (marked in
+    // schema_meta) rather than on every local request.
+    require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/school_config.php';
+    $conn->query("CREATE TABLE IF NOT EXISTS schema_meta (component VARCHAR(50) PRIMARY KEY, version INT NOT NULL)");
+    $scrubbed = $conn->query("SELECT 1 FROM schema_meta WHERE component = 'teacher_pw_scrub'");
+    if ($scrubbed && $scrubbed->num_rows === 0) {
+        $tp = $conn->query("SELECT id, teacher_password FROM teacher_accounts");
+        while ($tp && ($tpRow = $tp->fetch_assoc())) {
+            if (password_verify('Teacher@123', (string)$tpRow['teacher_password'])) {
+                $fresh = unusableTeacherPasswordHash();
+                $fix = $conn->prepare("UPDATE teacher_accounts SET teacher_password = ? WHERE id = ?");
+                $fix->bind_param("si", $fresh, $tpRow['id']);
+                $fix->execute();
+                $fix->close();
+            }
+        }
+        $conn->query("INSERT IGNORE INTO schema_meta (component, version) VALUES ('teacher_pw_scrub', 1)");
+    }
 
     if ($envHost !== false && $envHost !== '') {
         $conn->query("INSERT INTO schema_meta (component, version) VALUES ('teacher', $SCHEMA_VERSION)

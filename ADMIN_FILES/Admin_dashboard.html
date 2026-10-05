@@ -14,6 +14,7 @@
   <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
   <link href="../ASSETS/vendor/fontawesome/css/all.min.css" rel="stylesheet" />
   <script src="../ASSETS/admin_portal.js?v=14"></script>
+  <script src="../ASSETS/school_info.js?v=1"></script>
 </head>
 
 <body>
@@ -197,10 +198,12 @@
             timeZone: 'Asia/Singapore'
           });
           var currentTime = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Singapore' });
-          greetingSub.textContent = currentDate + ' · ' + currentTime + ' · Mamatid Elementary School · Cabuyao, Laguna';
+          var school = window.schoolInfo || { name: 'Mamatid Elementary School', location: 'Cabuyao, Laguna' };
+          greetingSub.textContent = currentDate + ' · ' + currentTime + ' · ' + school.name + (school.location ? ' · ' + school.location : '');
         }
         updateDateTime();
         setInterval(updateDateTime, 30000);
+        document.addEventListener('schoolinfo', updateDateTime);
       }
 
       /* Ripple effect on buttons only */

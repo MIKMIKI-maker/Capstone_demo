@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/school_config.php';
 require_once __DIR__ . '/csrf.php';
 require_once __DIR__ . '/admin_push_notification.php';
 require_once __DIR__ . '/password_policy.php';
@@ -85,7 +86,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     $fullName = trim($firstName . ' ' . $lastName);
 
-    $schoolName = 'Mamatid Elementary School';
+    $schoolName = SCHOOL_NAME;
     $status = 'inactive';
     // Teacher/Student accounts start with a password the Admin set or a role
     // default - force a change on first login so the account's real owner
@@ -163,7 +164,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             // else behind it — this doesn't guarantee inbox placement (that
             // mostly comes from the recipient marking a first email "Not
             // Spam"), but it's a real, controllable signal.
-            . "<p style=\"font-size:11px;color:#94a3b8;text-align:center;margin:0;\">Mamatid Elementary School &middot; SPED Program &middot; Cabuyao, Laguna<br>If you did not expect this email, you can safely ignore it.</p>"
+            . "<p style=\"font-size:11px;color:#94a3b8;text-align:center;margin:0;\">" . htmlspecialchars(SCHOOL_NAME) . " &middot; SPED Program &middot; " . htmlspecialchars(SCHOOL_LOCATION) . "<br>If you did not expect this email, you can safely ignore it.</p>"
             . "</div>";
         $emailSent = send_email($email, $fullName, 'Your SPED ALM account has been created', $welcomeHtml);
 
@@ -200,9 +201,10 @@ function syncTeacherAccount($email, $firstName, $lastName) {
     
     if ($check_result->num_rows == 0) {
         // Create new teacher account
-        $insert_stmt = $teacher_conn->prepare("INSERT INTO teacher_accounts (teacher_email, teacher_password, first_name, last_name, school_name, status) VALUES (?, ?, ?, ?, 'Mamatid Elementary School', 'active')");
-        $password = password_hash('Teacher@123', PASSWORD_DEFAULT);
-        $insert_stmt->bind_param("ssss", $email, $password, $firstName, $lastName);
+        $insert_stmt = $teacher_conn->prepare("INSERT INTO teacher_accounts (teacher_email, teacher_password, first_name, last_name, school_name, status) VALUES (?, ?, ?, ?, ?, 'active')");
+        $password = unusableTeacherPasswordHash();
+        $school = SCHOOL_NAME;
+        $insert_stmt->bind_param("sssss", $email, $password, $firstName, $lastName, $school);
         $insert_stmt->execute();
         $insert_stmt->close();
     } else {

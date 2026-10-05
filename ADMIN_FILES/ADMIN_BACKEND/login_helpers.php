@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/school_config.php';
 // Shared by login_screen_submit.php (normal login) and
 // admin_force_password_change.php (completes login after a forced
 // first-login password change) - both need to land the user in the exact
@@ -38,10 +39,11 @@ function syncTeacherAccount($email, $first_name, $last_name) {
             $update_stmt->close();
         }
     } else {
-        $insert_stmt = $teacher_conn->prepare("INSERT INTO teacher_accounts (teacher_email, teacher_password, first_name, last_name, school_name, status) VALUES (?, ?, ?, ?, 'Mamatid Elementary School', 'active')");
+        $insert_stmt = $teacher_conn->prepare("INSERT INTO teacher_accounts (teacher_email, teacher_password, first_name, last_name, school_name, status) VALUES (?, ?, ?, ?, ?, 'active')");
         if ($insert_stmt) {
-            $password = password_hash('Teacher@123', PASSWORD_DEFAULT);
-            $insert_stmt->bind_param("ssss", $email, $password, $first_name, $last_name);
+            $password = unusableTeacherPasswordHash();
+            $school = SCHOOL_NAME;
+            $insert_stmt->bind_param("sssss", $email, $password, $first_name, $last_name, $school);
             if ($insert_stmt->execute()) {
                 $teacher_id = (int)$teacher_conn->insert_id;
             }

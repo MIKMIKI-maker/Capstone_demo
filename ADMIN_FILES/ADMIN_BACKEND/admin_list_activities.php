@@ -13,7 +13,7 @@ if (!$conn) {
 
 $activities = [];
 $syId = getViewedSchoolYearId($conn);
-// 'archived' is what a teacher's Unpublish sets — those are no longer live,
+// 'unpublished' is what a teacher's Unpublish sets — those are no longer live,
 // so they're left out instead of being shown (and counted) as Published.
 
 $sql = "SELECT
@@ -35,7 +35,7 @@ LEFT JOIN admin_accounts aa ON aa.admin_email = tc.teacher_email
 WHERE (tc.status IS NULL OR tc.status = 'active')
   AND (aa.is_deleted IS NULL OR aa.is_deleted = 0)
   AND ta.school_year_id = $syId
-  AND ta.status <> 'archived'
+  AND ta.status <> 'unpublished'
 ORDER BY ta.created_at DESC";
 
 $result = $conn->query($sql);

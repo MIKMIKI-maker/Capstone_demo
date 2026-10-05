@@ -49,7 +49,7 @@ if ($tconn) {
         LEFT JOIN admin_accounts aa ON aa.admin_email = tc.teacher_email
         WHERE (tc.status IS NULL OR tc.status = 'active')
           AND (aa.is_deleted IS NULL OR aa.is_deleted = 0)
-          AND ta.status <> 'archived'");
+          AND ta.status <> 'unpublished'");
     if ($ar) {
         $arow = $ar->fetch_assoc();
         $stats['total_activities']     = (int)($arow['total']     ?? 0);

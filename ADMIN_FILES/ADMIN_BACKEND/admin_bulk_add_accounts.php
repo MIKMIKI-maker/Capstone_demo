@@ -2,6 +2,7 @@
 error_reporting(0);
 ini_set('display_errors', 0);
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/school_config.php';
 require_once __DIR__ . '/csrf.php';
 require_once __DIR__ . '/admin_push_notification.php';
 require_once __DIR__ . '/../../MAILER/send_email.php';
@@ -106,7 +107,7 @@ if (empty($rows)) {
     exit;
 }
 
-$schoolName = 'Mamatid Elementary School';
+$schoolName = SCHOOL_NAME;
 $results = [];
 $createdCount = 0;
 $seenEmails = [];
@@ -186,7 +187,7 @@ foreach ($rows as $r) {
             . "<p style=\"font-size:13px;color:#64748b;margin:0 0 20px;\">Please keep your account credentials confidential and secure. You may now log in to the SPED ALM System using the credentials provided above.</p>"
             . "<hr style=\"border:none;border-top:1px solid #e2e8f0;margin:0 0 16px;\">"
             . "<p style=\"margin:0 0 16px;\">Sincerely yours,<br>SPED ALM System</p>"
-            . "<p style=\"font-size:11px;color:#94a3b8;text-align:center;margin:0;\">Mamatid Elementary School &middot; SPED Program &middot; Cabuyao, Laguna<br>If you did not expect this email, you can safely ignore it.</p>"
+            . "<p style=\"font-size:11px;color:#94a3b8;text-align:center;margin:0;\">" . htmlspecialchars(SCHOOL_NAME) . " &middot; SPED Program &middot; " . htmlspecialchars(SCHOOL_LOCATION) . "<br>If you did not expect this email, you can safely ignore it.</p>"
             . "</div>";
         if (send_email($email, $fullName, 'Your SPED ALM account has been created', $welcomeHtml)) {
             $results[] = ['row' => $num, 'email' => $email, 'status' => 'created'];

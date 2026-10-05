@@ -5,6 +5,7 @@
 <head>
     <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
     <script src="../ASSETS/teacher_portal.js?v=15"></script>
+    <script src="../ASSETS/school_info.js?v=1"></script>
     <script src="../ASSETS/school_year_switcher.js?v=9" data-picker="off" defer></script>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
@@ -237,7 +238,7 @@
             <article class="teacher-learner-print-report" id="learnerPrintReport">
                 <header class="learner-print-header">
                     <img src="../ASSETS/School_logo.png" alt="School logo">
-                    <div><h1>Mamatid Elementary School</h1><p>Special Education Program &middot; SPED ALM</p><p>Individual Learner Grading Report</p></div>
+                    <div><h1 data-school-name>Mamatid Elementary School</h1><p>Special Education Program &middot; SPED ALM</p><p>Individual Learner Grading Report</p></div>
                 </header>
                 <div class="learner-print-meta"><span>Grading period: ____________________</span><span>Date: <strong id="learnerPrintDate"></strong></span></div>
                 <table class="learner-print-identity"><tr><th>Learner</th><td id="learnerPrintName"></td><th>Teacher</th><td id="learnerPrintTeacher"></td></tr><tr><th>Grade level</th><td id="learnerPrintGrade"></td><th>Learning profile</th><td id="learnerPrintCondition">Not recorded</td></tr></table>

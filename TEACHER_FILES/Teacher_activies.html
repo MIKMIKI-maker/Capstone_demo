@@ -351,10 +351,10 @@
                     }
                 });
 
-                // Archived activities are retained in the database for reports,
+                // Unpublished activities are retained in the database for reports,
                 // but must disappear from every activity-management tab.
                 localPublished = localPublished.filter(function(item) {
-                    return item.status !== 'archived';
+                    return item.status !== 'unpublished' && item.status !== 'archived';
                 });
 
                 // Exclude a backend row only when it's the exact same row as a
@@ -365,7 +365,7 @@
                 // paper over, so a title-based exclusion here would just
                 // hide a real published activity again.
                 var dedupedBackend = backend.filter(function(a) {
-                    return a.status !== 'archived' && !coveredDbIds.has(String(a.id));
+                    return a.status !== 'unpublished' && a.status !== 'archived' && !coveredDbIds.has(String(a.id));
                 });
 
                 // allActivities keeps ALL local drafts + ALL local published + filtered backend

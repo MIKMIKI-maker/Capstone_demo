@@ -48,7 +48,7 @@ if ($infoStmt) {
 // Unpublish archives the activity so it disappears from active lists and the
 // student portal, while keeping its assignments and score history intact.
 if ($activity_status === 'published' || $activity_locked) {
-    $unpublish = $teacher_conn->prepare("UPDATE teacher_activities SET status = 'archived', is_locked = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND teacher_id = ?");
+    $unpublish = $teacher_conn->prepare("UPDATE teacher_activities SET status = 'unpublished', is_locked = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND teacher_id = ?");
     if (!$unpublish) {
         echo json_encode(['success' => false, 'message' => 'Prepare failed: ' . $teacher_conn->error]);
         $teacher_conn->close();
