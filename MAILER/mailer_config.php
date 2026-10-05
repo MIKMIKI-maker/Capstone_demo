@@ -18,6 +18,11 @@ define('BREVO_API_KEY', getenv('BREVO_API_KEY') ?: '');
 define('SMTP_USER', getenv('SMTP_USER') ?: '');
 define('SMTP_FROM_NAME', getenv('SMTP_FROM_NAME') ?: 'SPED ALM');
 
+// Brevo's free plan allows 300 emails per rolling 24 hours. send_email()
+// stops sending once this many went out in the last 24h, instead of letting
+// Brevo reject them. Set EMAIL_DAILY_LIMIT if the plan is upgraded.
+define('EMAIL_DAILY_LIMIT', (int)(getenv('EMAIL_DAILY_LIMIT') ?: 300));
+
 // Base URL used for the "Log In"/"View Notification" LINKS inside emails.
 // Deliberately NOT derived from the request ($_SERVER['HTTP_HOST']) —
 // emails are opened in the recipient's own mail client (Gmail, etc.),

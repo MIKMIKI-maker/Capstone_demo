@@ -34,6 +34,46 @@ function _logEmailAttempt(string $toEmail, string $subject, bool $success, ?stri
     }
 }
 
+/** Emails successfully sent in the last 24 hours (Brevo's limit window). */
+function emailsSentLast24h(): int {
+    try {
+        require_once __DIR__ . '/../ADMIN_FILES/ADMIN_BACKEND/db.php';
+        $conn = getDatabaseConnection();
+        if (!$conn) return 0;
+        $res = $conn->query("SELECT COUNT(*) AS cnt FROM email_log WHERE success = 1 AND sent_at >= (NOW() - INTERVAL 1 DAY)");
+        $count = $res ? (int)$res->fetch_assoc()['cnt'] : 0;
+        $conn->close();
+        return $count;
+    } catch (\Throwable $e) {
+        return 0;
+    }
+}
+
+/**
+ * One Admin notification per 24 hours for a given title, so a busy day
+ * doesn't flood the bell with the same "limit" warning on every send.
+ */
+function _notifyAdminOncePerDay(string $title, string $message): void {
+    try {
+        require_once __DIR__ . '/../ADMIN_FILES/ADMIN_BACKEND/db.php';
+        require_once __DIR__ . '/../ADMIN_FILES/ADMIN_BACKEND/admin_push_notification.php';
+        $conn = getDatabaseConnection();
+        if (!$conn) return;
+        $stmt = $conn->prepare("SELECT 1 FROM admin_notifications WHERE title = ? AND created_at >= (NOW() - INTERVAL 1 DAY) LIMIT 1");
+        $already = false;
+        if ($stmt) {
+            $stmt->bind_param("s", $title);
+            $stmt->execute();
+            $already = (bool)$stmt->get_result()->fetch_assoc();
+            $stmt->close();
+        }
+        if (!$already) pushAdminNotification($conn, 'email', $title, $message);
+        $conn->close();
+    } catch (\Throwable $e) {
+        error_log('_notifyAdminOncePerDay failed: ' . $e->getMessage());
+    }
+}
+
 /**
  * Sends an HTML email via Brevo's transactional email HTTP API.
  * Returns true on success, false on failure — never throws, so a broken
@@ -56,6 +96,17 @@ function send_email(string $toEmail, string $toName, string $subject, string $ht
     if (!filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
         error_log('send_email: invalid recipient address: ' . $toEmail);
         _logEmailAttempt($toEmail, $subject, false, 'Invalid recipient address');
+        return false;
+    }
+
+    // Stop at the daily limit ourselves rather than sending into a wall of
+    // Brevo rejections; callers already handle false (e.g. Add Account shows
+    // the temporary password to the Admin instead).
+    $sentLast24h = emailsSentLast24h();
+    if ($sentLast24h >= EMAIL_DAILY_LIMIT) {
+        _logEmailAttempt($toEmail, $subject, false, 'Daily email limit reached (' . EMAIL_DAILY_LIMIT . ' per 24 hours) - not sent');
+        _notifyAdminOncePerDay('Daily email limit reached',
+            'SPED ALM has sent ' . EMAIL_DAILY_LIMIT . ' emails in the last 24 hours, so new emails are paused until older ones fall outside the 24-hour window. See Settings > Email Log.');
         return false;
     }
 
@@ -102,6 +153,11 @@ function send_email(string $toEmail, string $toName, string $subject, string $ht
     // with the reason in the response body.
     if ($httpCode >= 200 && $httpCode < 300) {
         _logEmailAttempt($toEmail, $subject, true, null);
+        $warnAt = (int)ceil(EMAIL_DAILY_LIMIT * 0.8);
+        if ($sentLast24h + 1 >= $warnAt) {
+            _notifyAdminOncePerDay('Email limit almost reached',
+                ($sentLast24h + 1) . ' of ' . EMAIL_DAILY_LIMIT . ' emails used in the last 24 hours. Sending pauses at ' . EMAIL_DAILY_LIMIT . '. See Settings > Email Log.');
+        }
         return true;
     }
 
