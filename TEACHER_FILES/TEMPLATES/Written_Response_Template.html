@@ -3,6 +3,7 @@
 <head>
 <script src="../../ASSETS/portal_guard.js?v=2" data-portal-role="teacher,student" data-status-path="../../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../../ADMIN_FILES/login_screen.html?session=expired"></script>
 <script src="../../ASSETS/teacher_portal.js?v=17"></script>
+<script src="../../ASSETS/print_options.js?v=7"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SPED ALM — Written Response Template Generator</title>
@@ -635,9 +636,9 @@ function initActivityTheme(){
   .wrt-print-page{ font-family:'Poppins',sans-serif; color:#243a5e; }
   .wrt-print-head{ text-align:center; margin-bottom:10px; }
   .wrt-print-head h2{ font-size:21px; font-weight:700; margin:0 0 4px; }
-  .wrt-print-objective{ font-size:13.5px; font-style:italic; color:#5d7299; font-weight:600; }
+  .wrt-print-objective{ font-size:17px; font-style:italic; color:#5d7299; font-weight:600; }
   .wrt-print-sub{ font-size:12.5px; color:#5d7299; font-weight:500; margin-top:4px; }
-  .wrt-print-pagenum{ font-size:11.5px; color:#94a3b8; font-weight:600; margin-top:4px; }
+  .wrt-print-pagenum{ font-size:14px; color:#64748b; font-weight:600; margin-top:4px; }
   .wrt-print-divider{ width:calc(100% + 24px); margin-left:-12px; margin-top:14px; margin-bottom:40px; display:flex; flex-direction:column; gap:28px; }
   .wrt-print-divider .wrt-print-rule{ border-top:3px solid #94a3b8; }
   .wrt-print-divider .wrt-print-rule-dash{ border-top:3px dashed #94a3b8; }
@@ -2125,15 +2126,15 @@ function initActivityTheme(){
   }
 
   function generatePrintable(){
-    $("wrtPrintArea").innerHTML = buildPrintPages();
+    $("wrtPrintArea").innerHTML = PrintOptions.build(buildPrintPages, "wrt");
     applyPrintFontSize($("wrtPrintArea"));
     setTimeout(function(){ window.print(); }, 60);
   }
   function downloadAsPdf(){
     var area = $("wrtPrintArea");
-    area.innerHTML = buildPrintPages();
+    area.innerHTML = PrintOptions.build(buildPrintPages, "wrt");
     applyPrintFontSize(area);
-    area.classList.add("wrt-pdf-capture");
+    area.classList.add("wrt-pdf-capture"); PrintOptions.fit(area, "wrt");
     var pageEls = Array.prototype.slice.call(area.querySelectorAll(".wrt-print-page"));
     if (!pageEls.length) { area.classList.remove("wrt-pdf-capture"); area.innerHTML = ""; return; }
     window.showToast("Generating PDF…", "success", 4000);
@@ -2166,8 +2167,8 @@ function initActivityTheme(){
     });
   }
   window.addEventListener("afterprint", function(){ $("wrtPrintArea").innerHTML = ""; });
-  $("wrtPrintBtn").addEventListener("click", generatePrintable);
-  $("wrtPdfBtn").addEventListener("click", downloadAsPdf);
+  $("wrtPrintBtn").addEventListener("click", function(){ PrintOptions.ask(generatePrintable); });
+  $("wrtPdfBtn").addEventListener("click", function(){ PrintOptions.ask(downloadAsPdf); });
 
   function saveDraft() {
     var firstTitle = (state.activities[0] && state.activities[0].title) || '';

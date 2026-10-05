@@ -3,6 +3,7 @@
 <head>
 <script src="../../ASSETS/portal_guard.js?v=2" data-portal-role="teacher,student" data-status-path="../../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../../ADMIN_FILES/login_screen.html?session=expired"></script>
 <script src="../../ASSETS/teacher_portal.js?v=17"></script>
+<script src="../../ASSETS/print_options.js?v=7"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SPED ALM — Tracing Template Generator</title>
@@ -632,9 +633,9 @@ function initActivityTheme(){
   .trc-print-page{ font-family:'Poppins',sans-serif; color:#243a5e; }
   .trc-print-head{ text-align:center; margin-bottom:10px; }
   .trc-print-head h2{ font-size:21px; font-weight:700; margin:0 0 4px; }
-  .trc-print-objective{ font-size:13.5px; font-style:italic; color:#5d7299; font-weight:600; }
+  .trc-print-objective{ font-size:17px; font-style:italic; color:#5d7299; font-weight:600; }
   .trc-print-sub{ font-size:12.5px; color:#5d7299; font-weight:500; margin-top:4px; }
-  .trc-print-pagenum{ font-size:11.5px; color:#94a3b8; font-weight:600; margin-top:4px; }
+  .trc-print-pagenum{ font-size:14px; color:#64748b; font-weight:600; margin-top:4px; }
   .trc-print-divider{ width:calc(100% + 24px); margin-left:-12px; margin-top:14px; margin-bottom:40px; display:flex; flex-direction:column; gap:28px; }
   .trc-print-divider .trc-print-rule{ border-top:3px solid #94a3b8; }
   .trc-print-divider .trc-print-rule-dash{ border-top:3px dashed #94a3b8; }
@@ -2568,7 +2569,6 @@ function initActivityTheme(){
           return '<div class="trc-print-flow-row">'+buildFlowLineSvg(lineItems, activity, slideIdx)+'</div>';
         }).join("");
         pages += '<div class="trc-print-page"'+(isLastPageOverall ? ' style="page-break-after:auto; display:flex; flex-direction:column; min-height:100vh;"' : '')+'>'
-          + '<div class="trc-print-namedate"><span>Name: <span class="trc-print-nd-line"></span></span><span>Date: <span class="trc-print-nd-line"></span></span></div>'
           + '<div class="trc-print-head"><h2>'+printEscape(activity.title)+'</h2>'
           + '<div class="trc-print-divider"><div class="trc-print-rule"></div><div class="trc-print-rule-dash"></div><div class="trc-print-rule"></div></div>'
           + '<div class="trc-print-objective">('+printEscape(toPrintInstruction(activity.instruction))+')</div>'
@@ -2598,7 +2598,7 @@ function initActivityTheme(){
   }
 
   function generatePrintable(){
-    $("trcPrintArea").innerHTML = buildPrintPages();
+    $("trcPrintArea").innerHTML = PrintOptions.build(buildPrintPages, "trc");
     applyPrintFontSize($("trcPrintArea"));
     $("trcPrintArea").classList.toggle("trc-landscape", state.orientation === "landscape");
     applyOrientationStyle();
@@ -2606,10 +2606,10 @@ function initActivityTheme(){
   }
   function downloadAsPdf(){
     var area = $("trcPrintArea");
-    area.innerHTML = buildPrintPages();
+    area.innerHTML = PrintOptions.build(buildPrintPages, "trc");
     applyPrintFontSize(area);
     area.classList.toggle("trc-landscape", state.orientation === "landscape");
-    area.classList.add("trc-pdf-capture");
+    area.classList.add("trc-pdf-capture"); PrintOptions.fit(area, "trc");
     var pageEls = Array.prototype.slice.call(area.querySelectorAll(".trc-print-page"));
     if (!pageEls.length) { area.classList.remove("trc-pdf-capture"); area.innerHTML = ""; return; }
     window.showToast("Generating PDF…", "success", 4000);
@@ -2643,8 +2643,8 @@ function initActivityTheme(){
     });
   }
   window.addEventListener("afterprint", function(){ $("trcPrintArea").innerHTML = ""; });
-  $("trcPrintBtn").addEventListener("click", generatePrintable);
-  $("trcPdfBtn").addEventListener("click", downloadAsPdf);
+  $("trcPrintBtn").addEventListener("click", function(){ PrintOptions.ask(generatePrintable); });
+  $("trcPdfBtn").addEventListener("click", function(){ PrintOptions.ask(downloadAsPdf); });
 
   /* ── Save Draft to localStorage ── */
   function saveDraft() {

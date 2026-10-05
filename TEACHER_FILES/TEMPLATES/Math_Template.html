@@ -3,6 +3,7 @@
 <head>
 <script src="../../ASSETS/portal_guard.js?v=2" data-portal-role="teacher,student" data-status-path="../../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../../ADMIN_FILES/login_screen.html?session=expired"></script>
 <script src="../../ASSETS/teacher_portal.js?v=17"></script>
+<script src="../../ASSETS/print_options.js?v=7"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SPED ALM — Math Activity Builder</title>
@@ -564,7 +565,7 @@ function initActivityTheme(){
   .mth-print-page{ font-family:'Poppins',sans-serif; color:#243a5e; }
   .mth-print-head{ text-align:center; margin-bottom:10px; }
   .mth-print-head h2{ font-size:21px; font-weight:700; margin:0 0 4px; }
-  .mth-print-objective{ font-size:13.5px; font-style:italic; color:#5d7299; font-weight:600; }
+  .mth-print-objective{ font-size:17px; font-style:italic; color:#5d7299; font-weight:600; }
   .mth-print-sub{ font-size:12.5px; color:#5d7299; font-weight:500; margin-top:4px; }
   .mth-print-divider{ width:calc(100% + 24px); margin-left:-12px; margin-top:14px; margin-bottom:40px; display:flex; flex-direction:column; gap:28px; }
   .mth-print-divider .mth-print-rule{ border-top:3px solid #94a3b8; }
@@ -2050,15 +2051,15 @@ function initActivityTheme(){
   }
 
   function generatePrintable(){
-    $("mthPrintArea").innerHTML = buildPrintPages();
+    $("mthPrintArea").innerHTML = PrintOptions.build(buildPrintPages, "mth");
     applyPrintFontSize($("mthPrintArea"));
     setTimeout(function(){ window.print(); }, 60);
   }
   function downloadAsPdf(){
     var area = $("mthPrintArea");
-    area.innerHTML = buildPrintPages();
+    area.innerHTML = PrintOptions.build(buildPrintPages, "mth");
     applyPrintFontSize(area);
-    area.classList.add("mth-pdf-capture");
+    area.classList.add("mth-pdf-capture"); PrintOptions.fit(area, "mth");
     var pageEls = Array.prototype.slice.call(area.querySelectorAll(".mth-print-page"));
     if (!pageEls.length) { area.classList.remove("mth-pdf-capture"); area.innerHTML = ""; return; }
     window.showToast("Generating PDF…", "success", 4000);
@@ -2091,8 +2092,8 @@ function initActivityTheme(){
     });
   }
   window.addEventListener("afterprint", function(){ $("mthPrintArea").innerHTML = ""; });
-  $("mthPrintBtn").addEventListener("click", generatePrintable);
-  $("mthPdfBtn").addEventListener("click", downloadAsPdf);
+  $("mthPrintBtn").addEventListener("click", function(){ PrintOptions.ask(generatePrintable); });
+  $("mthPdfBtn").addEventListener("click", function(){ PrintOptions.ask(downloadAsPdf); });
 
   /* ── Save Draft ── */
   function saveDraft() {

@@ -3,6 +3,7 @@
 <head>
 <script src="../../ASSETS/portal_guard.js?v=2" data-portal-role="teacher,student" data-status-path="../../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../../ADMIN_FILES/login_screen.html?session=expired"></script>
 <script src="../../ASSETS/teacher_portal.js?v=17"></script>
+<script src="../../ASSETS/print_options.js?v=7"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SPED ALM — Check or X Template Generator</title>
@@ -579,9 +580,9 @@ function initActivityTheme(){
   .chk-print-page{ font-family:'Poppins',sans-serif; color:#243a5e; }
   .chk-print-head{ text-align:center; margin-bottom:10px; }
   .chk-print-head h2{ font-size:21px; font-weight:700; margin:0 0 4px; }
-  .chk-print-objective{ font-size:13.5px; font-style:italic; color:#5d7299; font-weight:600; }
+  .chk-print-objective{ font-size:17px; font-style:italic; color:#5d7299; font-weight:600; }
   .chk-print-sub{ font-size:12.5px; color:#5d7299; font-weight:500; margin-top:4px; }
-  .chk-print-pagenum{ font-size:11.5px; color:#94a3b8; font-weight:600; margin-top:4px; }
+  .chk-print-pagenum{ font-size:14px; color:#64748b; font-weight:600; margin-top:4px; }
   .chk-print-divider{ width:calc(100% + 24px); margin-left:-12px; margin-top:14px; margin-bottom:40px; display:flex; flex-direction:column; gap:28px; }
   .chk-print-divider .chk-print-rule{ border-top:3px solid #94a3b8; }
   .chk-print-divider .chk-print-rule-dash{ border-top:3px dashed #94a3b8; }
@@ -1714,15 +1715,15 @@ function initActivityTheme(){
   }
 
   function generatePrintable(){
-    $("chkPrintArea").innerHTML = buildPrintPages();
+    $("chkPrintArea").innerHTML = PrintOptions.build(buildPrintPages, "chk");
     applyPrintFontSize($("chkPrintArea"));
     setTimeout(function(){ window.print(); }, 60);
   }
   function downloadAsPdf(){
     var area = $("chkPrintArea");
-    area.innerHTML = buildPrintPages();
+    area.innerHTML = PrintOptions.build(buildPrintPages, "chk");
     applyPrintFontSize(area);
-    area.classList.add("chk-pdf-capture");
+    area.classList.add("chk-pdf-capture"); PrintOptions.fit(area, "chk");
     var pageEls = Array.prototype.slice.call(area.querySelectorAll(".chk-print-page"));
     if (!pageEls.length) { area.classList.remove("chk-pdf-capture"); area.innerHTML = ""; return; }
     window.showToast("Generating PDF…", "success", 4000);
@@ -1755,8 +1756,8 @@ function initActivityTheme(){
     });
   }
   window.addEventListener("afterprint", function(){ $("chkPrintArea").innerHTML = ""; });
-  $("chkPrintBtn").addEventListener("click", generatePrintable);
-  $("chkPdfBtn").addEventListener("click", downloadAsPdf);
+  $("chkPrintBtn").addEventListener("click", function(){ PrintOptions.ask(generatePrintable); });
+  $("chkPdfBtn").addEventListener("click", function(){ PrintOptions.ask(downloadAsPdf); });
 
   function saveDraft() {
     var firstTitle = (state.activities[0] && state.activities[0].title) || '';

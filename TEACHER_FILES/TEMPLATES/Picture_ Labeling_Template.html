@@ -3,6 +3,7 @@
 <head>
 <script src="../../ASSETS/portal_guard.js?v=2" data-portal-role="teacher,student" data-status-path="../../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../../ADMIN_FILES/login_screen.html?session=expired"></script>
 <script src="../../ASSETS/teacher_portal.js?v=17"></script>
+<script src="../../ASSETS/print_options.js?v=7"></script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>SPED ALM — Picture Labeling Template Generator</title>
@@ -645,9 +646,9 @@ body.lbl-preview-only .lbl-exit-float{display:flex;}
 .lbl-print-page{ font-family:'Poppins',sans-serif; color:#243a5e; }
 .lbl-print-head{ text-align:center; margin-bottom:10px; }
 .lbl-print-head h2{ font-size:21px; font-weight:700; margin:0 0 4px; }
-.lbl-print-objective{ font-size:13.5px; font-style:italic; color:#5d7299; font-weight:600; }
+.lbl-print-objective{ font-size:17px; font-style:italic; color:#5d7299; font-weight:600; }
 .lbl-print-sub{ font-size:12.5px; color:#5d7299; font-weight:500; margin-top:4px; }
-.lbl-print-pagenum{ font-size:11.5px; color:#94a3b8; font-weight:600; margin-top:4px; }
+.lbl-print-pagenum{ font-size:14px; color:#64748b; font-weight:600; margin-top:4px; }
 .lbl-print-divider{ width:calc(100% + 24px); margin-left:-12px; margin-top:14px; margin-bottom:40px; display:flex; flex-direction:column; gap:28px; }
 .lbl-print-divider .lbl-print-rule{ border-top:3px solid #94a3b8; }
 .lbl-print-divider .lbl-print-rule-dash{ border-top:3px dashed #94a3b8; }
@@ -2687,15 +2688,15 @@ function applyPrintFontSize(area){
 }
 
 function generatePrintable(){
-  $('lblPrintArea').innerHTML = buildPrintPages();
+  $('lblPrintArea').innerHTML = PrintOptions.build(buildPrintPages, "lbl");
   applyPrintFontSize($('lblPrintArea'));
   setTimeout(function(){ window.print(); }, 60);
 }
 function downloadAsPdf(){
   var area = $('lblPrintArea');
-  area.innerHTML = buildPrintPages();
+  area.innerHTML = PrintOptions.build(buildPrintPages, "lbl");
   applyPrintFontSize(area);
-  area.classList.add('lbl-pdf-capture');
+  area.classList.add('lbl-pdf-capture'); PrintOptions.fit(area, "lbl");
   var pageEls = Array.prototype.slice.call(area.querySelectorAll('.lbl-print-page'));
   if (!pageEls.length) { area.classList.remove('lbl-pdf-capture'); area.innerHTML = ''; return; }
   window.showToast('Generating PDF…', 'success', 4000);
@@ -2728,8 +2729,8 @@ function downloadAsPdf(){
   });
 }
 window.addEventListener('afterprint', function(){ $('lblPrintArea').innerHTML = ''; });
-$('lblPrintBtn').onclick = generatePrintable;
-$('lblPdfBtn').onclick = downloadAsPdf;
+$('lblPrintBtn').onclick = function(){ PrintOptions.ask(generatePrintable); };
+$('lblPdfBtn').onclick = function(){ PrintOptions.ask(downloadAsPdf); };
 
 function openPublishModal(){
   if (_editingPub) {
