@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/teacher_auth.php';
+require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/school_year.php';
 require_once __DIR__ . '/teacher_activity_lock_helpers.php';
 require_once __DIR__ . '/teacher_push_notification.php';
 
@@ -46,6 +47,7 @@ if (!$conn) {
     echo json_encode(['success' => false, 'message' => 'Database connection failed']);
     exit;
 }
+requireActiveSchoolYearView($conn);
 
 $hasSubmissions = activityHasSubmissions($conn, $teacher_id, $activity_id);
 if ($hasSubmissions !== false) {

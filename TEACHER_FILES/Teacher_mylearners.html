@@ -5,6 +5,7 @@
 <head>
     <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
     <script src="../ASSETS/teacher_portal.js?v=15"></script>
+    <script src="../ASSETS/school_year_switcher.js?v=9" data-picker="off" defer></script>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
@@ -211,6 +212,13 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- SCHOOL YEAR HISTORY — every S.Y., class and teacher, from teacher_student_history.php -->
+                        <div class="teacher-history-card">
+                            <div class="teacher-history-title">📚 School Year History</div>
+                            <div id="sy-history-list" style="display:flex;flex-direction:column;gap:10px;margin-top:10px;">
+                                <div class="teacher-goals-empty">Loading...</div>
+                            </div>
+                        </div>
                     </div>
                     <!-- RIGHT -->
                     <div class="teacher-right-col">
@@ -221,7 +229,7 @@
                                 <div class="teacher-notes-empty">No notes yet. Click + Add Note to add a recommendation for
                                     this student.</div>
                             </div>
-                            <button class="btn-add-note" id="btnAddNote" type="button">+ Add Note</button>
+                            <button class="btn-add-note" id="btnAddNote" type="button" data-sy-write>+ Add Note</button>
                         </div>
                     </div>
                 </div><!-- /teacher-progress-grid -->
@@ -396,6 +404,40 @@
             return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
 
+        // ── School Year history (every S.Y., whichever teacher) ───
+        function loadSchoolYearHistory() {
+            const list = document.getElementById('sy-history-list');
+            fetch('TEACHER_BACKEND/teacher_student_history.php?student_id=' + currentStudentId + '&_t=' + Date.now(), { cache: 'no-store' })
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success || !data.years.length) {
+                        list.innerHTML = '<div class="teacher-goals-empty">No School Year records yet.</div>';
+                        return;
+                    }
+                    list.innerHTML = data.years.map(y => {
+                        const meta = [y.section, y.teacher_name ? 'Teacher ' + y.teacher_name : null].filter(Boolean).join(' · ');
+                        const badge = y.is_active
+                            ? '<span style="background:#16a34a;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;">ACTIVE</span>'
+                            : (y.exit_reason ? '<span style="background:#fee2e2;color:#991b1b;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;">' + escHtml(y.exit_reason.toUpperCase()) + '</span>' : '');
+                        const rows = y.activities.map(a =>
+                            '<div class="teacher-history-row">'
+                            + '<span class="teacher-history-date">' + (a.completed_on ? new Date(a.completed_on + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—') + '</span>'
+                            + '<span class="teacher-history-activity">' + escHtml(a.title) + (a.teacher_name ? ' <span style="color:#94a3b8;font-size:11px;">(' + escHtml(a.teacher_name) + ')</span>' : '') + '</span>'
+                            + '<span class="teacher-history-score">' + (a.score !== null ? a.score + '%' : '—') + '</span>'
+                            + '</div>').join('') || '<div class="teacher-goals-empty">No activities this School Year.</div>';
+                        return '<details style="border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;"' + (y.is_active ? '' : ' open') + '>'
+                            + '<summary style="cursor:pointer;list-style:none;">'
+                            + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><strong>S.Y. ' + escHtml(y.name) + '</strong>' + badge + '</div>'
+                            + '<div style="font-size:12px;color:#64748b;margin-top:2px;">' + escHtml(meta || 'No class on record') + '</div>'
+                            + '<div style="font-size:12px;color:#334155;margin-top:4px;">Assigned ' + y.assigned + ' · Completed ' + y.completed + ' · Average ' + (y.average !== null ? y.average + '%' : '—') + '</div>'
+                            + '</summary>'
+                            + '<div style="margin-top:8px;">' + rows + '</div>'
+                            + '</details>';
+                    }).join('');
+                })
+                .catch(() => { list.innerHTML = '<div class="teacher-goals-empty">Could not load School Year history.</div>'; });
+        }
+
         // ── Fetch & render ────────────────────────────────────────
         function loadLearnerProgress() {
             if (!currentStudentId) {
@@ -428,6 +470,7 @@
                     renderGoalsTargets(data.skills, data.activities);
                     renderAssistanceHistory(data.activities);
                     renderTeacherNotes(data.notes);
+                    loadSchoolYearHistory();
                 })
                 .catch(err => showLoadError(err.message));
         }
@@ -911,7 +954,7 @@
                 return `<div class="teacher-note-item">
                     <div class="teacher-note-head">
                         <span class="teacher-note-label">${label}</span>
-                        <button class="teacher-note-del" type="button" onclick="deleteTeacherNote('${delType}', ${n.id})" title="Delete note">🗑️</button>
+                        <button class="teacher-note-del" type="button" data-sy-write onclick="deleteTeacherNote('${delType}', ${n.id})" title="Delete note">🗑️</button>
                     </div>
                     <div class="teacher-note-text">${escHtml(n.note)}</div>
                     ${dateStr && n.source !== 'activity' ? '<div class="teacher-note-date">' + dateStr + '</div>' : ''}

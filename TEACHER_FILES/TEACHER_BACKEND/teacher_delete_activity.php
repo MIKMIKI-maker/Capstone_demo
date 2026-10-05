@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/teacher_auth.php';
+require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/school_year.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/db.php';
 session_start();
 $_SESSION['teacher_id'] = requireTeacherId();
@@ -17,6 +18,7 @@ if (!$teacher_conn) {
     echo json_encode(['success' => false, 'message' => 'DB connection failed']);
     exit;
 }
+requireActiveSchoolYearView($teacher_conn);
 
 $teacher_id  = requireTeacherId();
 $activity_id = isset($_POST['activity_id']) ? intval($_POST['activity_id']) : 0;

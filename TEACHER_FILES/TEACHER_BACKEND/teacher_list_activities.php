@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/teacher_auth.php';
+require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/school_year.php';
 
 header('Content-Type: application/json');
 
@@ -77,10 +78,11 @@ if ($single_id) {
                     WHERE aa.activity_id = ta.id
                 ) AS learner
          FROM teacher_activities ta
-         WHERE ta.teacher_id = ?
+         WHERE ta.teacher_id = ? AND ta.school_year_id = ?
          ORDER BY ta.updated_at DESC"
     );
-    $stmt->bind_param("i", $teacher_id);
+    $school_year_id = getViewedSchoolYearId($conn);
+    $stmt->bind_param("ii", $teacher_id, $school_year_id);
     $stmt->execute();
     $result = $stmt->get_result();
 

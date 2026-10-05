@@ -19,6 +19,7 @@ if (!$rec) {
     exit;
 }
 $student_id = (int)$rec['student_record_id'];
+$current_teacher_id = (int)$rec['teacher_id'];
 
 $conn->query("CREATE TABLE IF NOT EXISTS teacher_uploaded_materials (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -40,10 +41,10 @@ $conn->query("CREATE TABLE IF NOT EXISTS teacher_uploaded_materials (
 $stmt = $conn->prepare(
     "SELECT id, grading_period, title, description, file_name, file_original_name, file_type, file_size, link_url, uploaded_at
      FROM teacher_uploaded_materials
-     WHERE student_id = ?
+     WHERE student_id = ? AND teacher_id = ?
      ORDER BY grading_period ASC, uploaded_at DESC"
 );
-$stmt->bind_param("i", $student_id);
+$stmt->bind_param("ii", $student_id, $current_teacher_id);
 $stmt->execute();
 $result = $stmt->get_result();
 $files = [];

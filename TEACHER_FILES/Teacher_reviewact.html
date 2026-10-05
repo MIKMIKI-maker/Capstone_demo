@@ -3,6 +3,7 @@
 <head>
   <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
   <script src="../ASSETS/teacher_portal.js?v=15"></script>
+  <script src="../ASSETS/school_year_switcher.js?v=9" data-picker="off" defer></script>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
   <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
@@ -114,6 +115,8 @@
     .rv-save-btn { width:100%; padding:13px; border:none; border-radius:11px; background:#1d4ed8; color:#fff; font-size:14px; font-weight:700; cursor:pointer; transition:.15s; font-family:'Poppins',sans-serif; }
     .rv-save-btn:hover { background:#1e40af; }
     .rv-save-btn:disabled { background:#93c5fd; cursor:not-allowed; }
+    .rv-readonly .rv-assist-card { cursor:not-allowed; opacity:.6; }
+    .rv-notes:disabled, .rv-final-input:disabled { background:#f1f5f9; color:#64748b; cursor:not-allowed; }
   </style>
 </head>
 <body>
@@ -268,7 +271,7 @@
       <span>💡 <strong id="modalSuggestText"></strong> Pwede mo pa ring i-edit at ikaw pa rin ang magfi-finalize.</span>
     </div>
 
-    <button type="button" class="rv-save-btn" id="modalSaveBtn" onclick="saveAssessment()">💾 Save Assessment</button>
+    <button type="button" class="rv-save-btn" id="modalSaveBtn" onclick="saveAssessment()" data-sy-write>💾 Save Assessment</button>
   </div>
 
   <!-- Non-Graded Rubric — reference only, sits beside the modal above so
@@ -589,16 +592,22 @@ function openModal(s) {
   // back and forth. The whole assessment (score, note, assistance level)
   // freezes together since Save writes them as one record.
   var isLocked = !!s.is_finalized;
-  document.getElementById('modalFinalScore').disabled = isLocked;
-  document.getElementById('modalNote').disabled = isLocked;
-  document.querySelectorAll('#assistGrid input[type=radio]').forEach(function (r) { r.disabled = isLocked; });
-  document.getElementById('modalSaveBtn').disabled = isLocked;
-  document.getElementById('modalSaveBtn').textContent = isLocked ? '🔒 Already Finalized' : '💾 Save Assessment';
+  // A School Year that isn't Active is view-only (school_year_switcher.js
+  // marks the page) — the same freeze applies even to ungraded submissions.
+  var isPastYear = document.body.classList.contains('sy-archived');
+  var readOnly = isLocked || isPastYear;
+  document.getElementById('modalFinalScore').disabled = readOnly;
+  document.getElementById('modalNote').disabled = readOnly;
+  document.querySelectorAll('#assistGrid input[type=radio]').forEach(function (r) { r.disabled = readOnly; });
+  document.getElementById('modalSaveBtn').disabled = readOnly;
+  document.getElementById('modalSaveBtn').textContent = isLocked ? '🔒 Already Finalized'
+    : (isPastYear ? '🔒 View only — past School Year' : '💾 Save Assessment');
   document.getElementById('rvFinalHint').textContent = isLocked
     ? 'Naka-finalize na ang gradeng ito — hindi na ito mababago.'
-    : 'Leave blank to use auto-computed score';
-  if (isLocked) suggestBox.style.display = 'none'; // editing is moot once locked
-  document.getElementById('rvOnetimeWarning').style.display = isLocked ? 'none' : 'flex';
+    : (isPastYear ? 'Tinitingnan mo ang lumang School Year — hindi na puwedeng mag-grade dito.' : 'Leave blank to use auto-computed score');
+  if (readOnly) suggestBox.style.display = 'none'; // editing is moot once locked
+  document.getElementById('rvOnetimeWarning').style.display = readOnly ? 'none' : 'flex';
+  document.getElementById('assistGrid').classList.toggle('rv-readonly', readOnly);
 
   document.getElementById('rvModal').classList.add('open');
 }

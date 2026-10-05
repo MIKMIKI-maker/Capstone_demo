@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/csrf.php';
+require_once __DIR__ . '/../../MAILER/email_domains.php';
+require_once __DIR__ . '/school_year.php';
 requireAdminSession();
 csrf_require_valid_token();
 
@@ -42,17 +44,42 @@ if (!$user_id) {
 }
 
 // Get the user's role before updating
-$role_check = $conn->prepare("SELECT role, assigned_teacher_id FROM admin_accounts WHERE id = ?");
+$role_check = $conn->prepare("SELECT role, assigned_teacher_id, admin_email, condition_info FROM admin_accounts WHERE id = ?");
 $role_check->bind_param("i", $user_id);
 $role_check->execute();
 $role_result = $role_check->get_result();
 $user_role = '';
 $previous_assigned_teacher_id = 0;
+$previous_email = '';
+$previous_section = '';
 if ($role_row = $role_result->fetch_assoc()) {
     $user_role = $role_row['role'];
     $previous_assigned_teacher_id = (int)($role_row['assigned_teacher_id'] ?? 0);
+    $previous_email = (string)($role_row['admin_email'] ?? '');
+    $previous_section = trim((string)($role_row['condition_info'] ?? ''));
 }
 $role_check->close();
+
+// One teacher per Section — checked only when the Section changes, so a
+// teacher saved before this rule can still be edited.
+if ($user_role === 'teacher' && trim($condition_info) !== $previous_section
+    && ($owner = sectionTakenBy($conn, $condition_info, $user_id))) {
+    echo json_encode(['success' => false, 'message' => trim($condition_info) . " already has a teacher ($owner). Choose another Section."]);
+    exit;
+}
+
+// Only check a changed email, so accounts created before the provider
+// restriction can still be edited without being forced onto a new address.
+if (strcasecmp($email_address, $previous_email) !== 0) {
+    if (!filter_var($email_address, FILTER_VALIDATE_EMAIL)) {
+        echo json_encode(['success' => false, 'message' => 'Please enter a valid email address']);
+        exit;
+    }
+    if (!isAllowedEmailDomain($email_address)) {
+        echo json_encode(['success' => false, 'message' => ALLOWED_EMAIL_DOMAINS_MESSAGE]);
+        exit;
+    }
+}
 
 // Update the user account
 $sql = "UPDATE admin_accounts SET first_name = ?, last_name = ?, admin_email = ?, phone_number = ?, status = ?, condition_info = ?, assigned_teacher_id = ?, parent_name = ? WHERE id = ?";
@@ -76,6 +103,8 @@ if ($stmt->execute()) {
             exit;
         }
     }
+    // Keep this S.Y.'s class enrollments in step with the new assignment.
+    reconcileActiveEnrollments($conn);
     echo json_encode(['success' => true, 'message' => 'User updated successfully']);
 } else {
     echo json_encode(['success' => false, 'message' => 'Update failed']);
@@ -128,72 +157,31 @@ function syncStudentRecord($adminAccountId, $studentName, $parentName, $accountS
         return false;
     }
 
-    $studentStatus = strtolower($accountStatus) === 'active' ? 'active' : 'inactive';
-
-    // Assignment changes require a fresh enrollment by the newly assigned teacher.
-    if ($assignedTeacherAdminId !== $previousAssignedTeacherAdminId) {
-        $removeStmt = $teacher_conn->prepare("DELETE FROM students WHERE admin_account_id = ?");
-        if (!$removeStmt) {
-            $teacher_conn->close();
-            return false;
-        }
-        $removeStmt->bind_param("i", $adminAccountId);
-        if (!$removeStmt->execute()) {
-            $removeStmt->close();
-            $teacher_conn->close();
-            return false;
-        }
-        $removeStmt->close();
-        $teacher_conn->close();
-        return true;
-    }
-
-    $teacherId = 0;
-    if ($assignedTeacherAdminId > 0) {
-        $teacherLookup = $teacher_conn->prepare(
-            "SELECT t.id
-             FROM teacher_accounts t
-             INNER JOIN admin_accounts a ON a.admin_email = t.teacher_email
-             WHERE a.id = ? AND a.role = 'teacher'
-             LIMIT 1"
-        );
-        if ($teacherLookup) {
-            $teacherLookup->bind_param("i", $assignedTeacherAdminId);
-            $teacherLookup->execute();
-            if ($teacherRow = $teacherLookup->get_result()->fetch_assoc()) {
-                $teacherId = (int)$teacherRow['id'];
-            }
-            $teacherLookup->close();
-        }
-    }
-
-    if ($assignedTeacherAdminId > 0 && $teacherId <= 0) {
-        $teacher_conn->close();
-        return false;
-    }
-
-    if ($teacherId > 0) {
-        $stmt = $teacher_conn->prepare(
-            "UPDATE students
-             SET student_name = ?, parent_name = ?, disability_type = ?, grade_level = ?, status = ?, teacher_id = ?
-             WHERE admin_account_id = ?"
-        );
-        $stmt->bind_param("sssssii", $studentName, $parentName, $condition, $gradeLevel, $studentStatus, $teacherId, $adminAccountId);
-    } else {
-        $stmt = $teacher_conn->prepare(
-            "UPDATE students
-             SET student_name = ?, parent_name = ?, disability_type = ?, grade_level = ?, status = ?
-             WHERE admin_account_id = ?"
-        );
-        $stmt->bind_param("sssssi", $studentName, $parentName, $condition, $gradeLevel, $studentStatus, $adminAccountId);
-    }
-    if (!$stmt || !$stmt->execute()) {
-        if ($stmt) $stmt->close();
-        $teacher_conn->close();
-        return false;
-    }
-    $updated = $stmt->affected_rows >= 0;
+    // The account's status is only an online indicator (Active on login,
+    // Inactive on logout), so it is NOT copied onto the student record —
+    // doing so made a student who was edited while logged out look
+    // un-enrolled (no teacher in their portal, "Inactive" for the teacher).
+    $stmt = $teacher_conn->prepare(
+        "UPDATE students SET student_name = ?, parent_name = ?, disability_type = ?, grade_level = ?
+         WHERE admin_account_id = ?"
+    );
+    $stmt->bind_param("ssssi", $studentName, $parentName, $condition, $gradeLevel, $adminAccountId);
+    $ok = $stmt->execute();
     $stmt->close();
+
+    // A new teacher chosen here must enroll the student themselves ("+ Add
+    // Student"). Until then the record is 'pending': the student leaves the
+    // old teacher's list and shows as not enrolled. The record (and all past
+    // activities/scores) is kept — the new teacher's enrollment re-uses it.
+    // Moves made by the School Year tools enroll automatically instead
+    // (see moveStudentToTeacher in school_year.php).
+    if ($ok && $assignedTeacherAdminId !== $previousAssignedTeacherAdminId) {
+        $pending = $teacher_conn->prepare("UPDATE students SET status = 'pending' WHERE admin_account_id = ?");
+        $pending->bind_param("i", $adminAccountId);
+        $ok = $pending->execute();
+        $pending->close();
+    }
+
     $teacher_conn->close();
-    return $updated;
+    return $ok;
 }

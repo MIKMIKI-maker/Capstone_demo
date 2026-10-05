@@ -53,7 +53,7 @@ function getTeacherDatabaseConnection() {
     // remote database, since the whole block got skipped. A version counter
     // fixes that: bump SCHEMA_VERSION whenever a new migration is added below,
     // and remote re-runs the block until its stored version catches up.
-    $SCHEMA_VERSION = 5;
+    $SCHEMA_VERSION = 6;
     $needsSetup = true;
     if ($envHost !== false && $envHost !== '') {
         $conn->query("CREATE TABLE IF NOT EXISTS schema_meta (component VARCHAR(50) PRIMARY KEY, version INT NOT NULL)");
@@ -419,6 +419,10 @@ function getTeacherDatabaseConnection() {
         UNIQUE KEY unique_student_notification (student_id, notif_key),
         FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    // School Year support (school_years table, S.Y. tags, per-S.Y. grading locks)
+    require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/school_year.php';
+    ensureSchoolYearSchema($conn);
 
     if ($envHost !== false && $envHost !== '') {
         $conn->query("INSERT INTO schema_meta (component, version) VALUES ('teacher', $SCHEMA_VERSION)

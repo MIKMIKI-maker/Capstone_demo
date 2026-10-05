@@ -1,5 +1,7 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/teacher_auth.php';
+require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/school_year.php';
 header('Content-Type: application/json');
 
 $conn = getTeacherDatabaseConnection();
@@ -11,27 +13,21 @@ $conn->query("CREATE TABLE IF NOT EXISTS teacher_activity_plan (
   grading_period ENUM('First','Second','Third') NOT NULL,
   item_text VARCHAR(255) NOT NULL,
   sort_order INT DEFAULT 0,
+  school_year_id INT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  INDEX idx_teacher_grading (teacher_id, grading_period)
+  INDEX idx_teacher_grading (teacher_id, grading_period),
+  INDEX idx_school_year (school_year_id)
 )");
 
-// School-wide (not per-teacher) lock state — Admin controls which grading
-// period(s) teachers can currently edit from Admin Settings. Only First
-// Grading starts unlocked; the seed only runs once, the first time this
-// table is empty.
-$conn->query("CREATE TABLE IF NOT EXISTS grading_period_locks (
-  grading_period VARCHAR(20) PRIMARY KEY,
-  is_unlocked TINYINT(1) NOT NULL DEFAULT 0
-)");
-$lockSeedCheck = $conn->query("SELECT COUNT(*) AS cnt FROM grading_period_locks");
-if ($lockSeedCheck && $lockSeedCheck->fetch_assoc()['cnt'] == 0) {
-    $conn->query("INSERT INTO grading_period_locks (grading_period, is_unlocked) VALUES
-        ('First', 1), ('Second', 0), ('Third', 0)");
-}
+// Each School Year has its own plan and its own grading period locks
+// (school-wide, set by the Admin in Settings) — see school_year.php.
+$sy_id = getViewedSchoolYearId($conn);
+seedGradingLocks($conn, $sy_id);
 
 function isGradingUnlocked($conn, $period) {
-    $stmt = $conn->prepare("SELECT is_unlocked FROM grading_period_locks WHERE grading_period=?");
-    $stmt->bind_param("s", $period);
+    global $sy_id;
+    $stmt = $conn->prepare("SELECT is_unlocked FROM grading_period_locks WHERE school_year_id=? AND grading_period=?");
+    $stmt->bind_param("is", $sy_id, $period);
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
     $stmt->close();
@@ -39,32 +35,38 @@ function isGradingUnlocked($conn, $period) {
 }
 
 function getAllGradingLocks($conn) {
+    global $sy_id;
     $locks = ['First' => false, 'Second' => false, 'Third' => false];
-    $res = $conn->query("SELECT grading_period, is_unlocked FROM grading_period_locks");
+    $stmt = $conn->prepare("SELECT grading_period, is_unlocked FROM grading_period_locks WHERE school_year_id=?");
+    $stmt->bind_param("i", $sy_id);
+    $stmt->execute();
+    $res = $stmt->get_result();
     while ($row = $res->fetch_assoc()) {
         $locks[$row['grading_period']] = (bool)$row['is_unlocked'];
     }
     return $locks;
 }
 
-$teacher_id = isset($_REQUEST['teacher_id']) ? intval($_REQUEST['teacher_id']) : 0;
+// The logged-in teacher, from the session — never a teacher_id sent by the browser.
+$teacher_id = requireTeacherId();
 if (!$teacher_id) { echo json_encode(['success' => false, 'message' => 'teacher_id required']); exit; }
 
 $action = isset($_REQUEST['action']) ? trim($_REQUEST['action']) : 'get';
+if ($action !== 'get') requireActiveSchoolYearView($conn);
 
 // The plan used to be hardcoded HTML — seed a new teacher's plan with that
 // same content once, so making it editable doesn't leave the dashboard
 // looking blank on first load.
-function seedDefaultPlan($conn, $teacher_id) {
+function seedDefaultPlan($conn, $teacher_id, $sy_id) {
     $defaults = [
         'First'  => ['Cognitive Development', 'Communication Skills', 'Fine Motor Skills', 'Attention & Routine'],
         'Second' => ['Social Skills', 'Emotional Regulation', 'Gross Motor Skills', 'Behavior Support'],
         'Third'  => ['Life Skills', 'Self-Help Skills', 'Functional Communication', 'Evaluation & Progress Monitoring'],
     ];
-    $stmt = $conn->prepare("INSERT INTO teacher_activity_plan (teacher_id, grading_period, item_text, sort_order) VALUES (?, ?, ?, ?)");
+    $stmt = $conn->prepare("INSERT INTO teacher_activity_plan (teacher_id, grading_period, item_text, sort_order, school_year_id) VALUES (?, ?, ?, ?, ?)");
     foreach ($defaults as $period => $items) {
         foreach ($items as $i => $text) {
-            $stmt->bind_param("issi", $teacher_id, $period, $text, $i);
+            $stmt->bind_param("issii", $teacher_id, $period, $text, $i, $sy_id);
             $stmt->execute();
         }
     }
@@ -73,15 +75,16 @@ function seedDefaultPlan($conn, $teacher_id) {
 
 switch ($action) {
     case 'get':
-        $check = $conn->prepare("SELECT COUNT(*) AS cnt FROM teacher_activity_plan WHERE teacher_id=?");
-        $check->bind_param("i", $teacher_id);
+        $check = $conn->prepare("SELECT COUNT(*) AS cnt FROM teacher_activity_plan WHERE teacher_id=? AND school_year_id=?");
+        $check->bind_param("ii", $teacher_id, $sy_id);
         $check->execute();
         $cnt = $check->get_result()->fetch_assoc()['cnt'];
         $check->close();
-        if ($cnt == 0) seedDefaultPlan($conn, $teacher_id);
+        // Only the Active S.Y. gets a starter plan — a past one stays as it was.
+        if ($cnt == 0 && $sy_id === getActiveSchoolYearId($conn)) seedDefaultPlan($conn, $teacher_id, $sy_id);
 
-        $stmt = $conn->prepare("SELECT id, grading_period, item_text FROM teacher_activity_plan WHERE teacher_id=? ORDER BY grading_period, sort_order ASC, id ASC");
-        $stmt->bind_param("i", $teacher_id);
+        $stmt = $conn->prepare("SELECT id, grading_period, item_text FROM teacher_activity_plan WHERE teacher_id=? AND school_year_id=? ORDER BY grading_period, sort_order ASC, id ASC");
+        $stmt->bind_param("ii", $teacher_id, $sy_id);
         $stmt->execute();
         $res = $stmt->get_result();
         $plan = ['First' => [], 'Second' => [], 'Third' => []];
@@ -99,14 +102,14 @@ switch ($action) {
         if (!isGradingUnlocked($conn, $period)) { echo json_encode(['success' => false, 'message' => 'This grading period is locked. Contact your Admin to unlock it.']); break; }
         if (mb_strlen($text) > 255) $text = mb_substr($text, 0, 255);
 
-        $ord = $conn->prepare("SELECT COALESCE(MAX(sort_order), -1) + 1 AS next_ord FROM teacher_activity_plan WHERE teacher_id=? AND grading_period=?");
-        $ord->bind_param("is", $teacher_id, $period);
+        $ord = $conn->prepare("SELECT COALESCE(MAX(sort_order), -1) + 1 AS next_ord FROM teacher_activity_plan WHERE teacher_id=? AND grading_period=? AND school_year_id=?");
+        $ord->bind_param("isi", $teacher_id, $period, $sy_id);
         $ord->execute();
         $nextOrd = $ord->get_result()->fetch_assoc()['next_ord'];
         $ord->close();
 
-        $stmt = $conn->prepare("INSERT INTO teacher_activity_plan (teacher_id, grading_period, item_text, sort_order) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param("issi", $teacher_id, $period, $text, $nextOrd);
+        $stmt = $conn->prepare("INSERT INTO teacher_activity_plan (teacher_id, grading_period, item_text, sort_order, school_year_id) VALUES (?, ?, ?, ?, ?)");
+        $stmt->bind_param("issii", $teacher_id, $period, $text, $nextOrd, $sy_id);
         $stmt->execute();
         $newId = $stmt->insert_id;
         $stmt->close();
@@ -115,8 +118,8 @@ switch ($action) {
 
     case 'delete':
         $item_id = intval($_POST['item_id'] ?? 0);
-        $ownerStmt = $conn->prepare("SELECT grading_period FROM teacher_activity_plan WHERE id=? AND teacher_id=?");
-        $ownerStmt->bind_param("ii", $item_id, $teacher_id);
+        $ownerStmt = $conn->prepare("SELECT grading_period FROM teacher_activity_plan WHERE id=? AND teacher_id=? AND school_year_id=?");
+        $ownerStmt->bind_param("iii", $item_id, $teacher_id, $sy_id);
         $ownerStmt->execute();
         $ownerRow = $ownerStmt->get_result()->fetch_assoc();
         $ownerStmt->close();
@@ -124,8 +127,8 @@ switch ($action) {
             echo json_encode(['success' => false, 'message' => 'This grading period is locked. Contact your Admin to unlock it.']);
             break;
         }
-        $stmt = $conn->prepare("DELETE FROM teacher_activity_plan WHERE id=? AND teacher_id=?");
-        $stmt->bind_param("ii", $item_id, $teacher_id);
+        $stmt = $conn->prepare("DELETE FROM teacher_activity_plan WHERE id=? AND teacher_id=? AND school_year_id=?");
+        $stmt->bind_param("iii", $item_id, $teacher_id, $sy_id);
         $stmt->execute();
         $stmt->close();
         echo json_encode(['success' => true]);
@@ -138,9 +141,9 @@ switch ($action) {
         if (!isGradingUnlocked($conn, $period)) { echo json_encode(['success' => false, 'message' => 'This grading period is locked. Contact your Admin to unlock it.']); break; }
         $ids = array_filter(array_map('intval', explode(',', $order)));
 
-        $stmt = $conn->prepare("UPDATE teacher_activity_plan SET sort_order=? WHERE id=? AND teacher_id=? AND grading_period=?");
+        $stmt = $conn->prepare("UPDATE teacher_activity_plan SET sort_order=? WHERE id=? AND teacher_id=? AND grading_period=? AND school_year_id=?");
         foreach (array_values($ids) as $i => $id) {
-            $stmt->bind_param("iiis", $i, $id, $teacher_id, $period);
+            $stmt->bind_param("iiisi", $i, $id, $teacher_id, $period, $sy_id);
             $stmt->execute();
         }
         $stmt->close();

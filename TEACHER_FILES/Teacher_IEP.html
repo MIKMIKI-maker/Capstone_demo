@@ -5,6 +5,7 @@
 <head>
     <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
     <script src="../ASSETS/teacher_portal.js?v=15"></script>
+    <script src="../ASSETS/school_year_switcher.js?v=9" data-picker="off" defer></script>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
@@ -147,7 +148,7 @@
             </div>
             <!-- ACTION BUTTONS -->
             <div class="teacher-action-row">
-                <button class="btn-generate" onclick="goGenerate()" type="button">
+                <button class="btn-generate" onclick="goGenerate()" type="button" data-sy-write>
                     <i class="fa-solid fa-wand-magic-sparkles"></i>
                     GENERATE NEW MATERIAL
                 </button>
@@ -155,7 +156,7 @@
                     <i class="fa-solid fa-eye"></i>
                     VIEW ACTIVITIES
                 </button>
-                <button class="btn-upload-mat" onclick="openUploadModal()" type="button">
+                <button class="btn-upload-mat" onclick="openUploadModal()" type="button" data-sy-write>
                     <i class="fa-solid fa-paperclip"></i>
                     UPLOAD MATERIAL
                 </button>

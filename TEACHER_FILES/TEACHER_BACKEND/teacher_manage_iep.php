@@ -1,5 +1,9 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/teacher_auth.php';
+require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/school_year.php';
+// A School Year that isn't Active is read-only.
+requireActiveSchoolYearView();
 
 header('Content-Type: application/json');
 
@@ -15,7 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $action = isset($_POST['action']) ? trim($_POST['action']) : '';
-$teacher_id = isset($_POST['teacher_id']) ? intval($_POST['teacher_id']) : 1;
+// The logged-in teacher, from the session — never a teacher_id sent by the browser.
+$teacher_id = requireTeacherId();
 
 switch($action) {
     case 'create':

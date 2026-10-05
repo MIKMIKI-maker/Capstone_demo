@@ -3,6 +3,7 @@ error_reporting(0);
 ini_set('display_errors', 0);
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/teacher_auth.php';
+require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/school_year.php';
 
 header('Content-Type: application/json');
 header('Cache-Control: no-cache');
@@ -20,6 +21,12 @@ if (!$teacher_id) {
     exit;
 }
 
+// The report covers the School Year being viewed: that year's class roster
+// and only activities from that year.
+$syId = getViewedSchoolYearId($conn);
+$roster = teacherRosterCondition($conn, $teacher_id, $syId, 's');
+$syActivities = "SELECT id FROM teacher_activities WHERE school_year_id = $syId";
+
 $students     = [];
 $total_scores = [];
 $activities   = [];
@@ -29,13 +36,12 @@ try {
 
 // Step 1: Get all active students (no learner_progress dependency)
 $stmt = $conn->prepare("
-    SELECT id AS student_id, student_name, grade_level, disability_type
-    FROM students
-    WHERE teacher_id = ? AND status = 'active'
-    ORDER BY student_name ASC
+    SELECT s.id AS student_id, s.student_name, s.grade_level, s.disability_type
+    FROM students s
+    WHERE $roster AND s.status = 'active'
+    ORDER BY s.student_name ASC
 ");
 if ($stmt) {
-    $stmt->bind_param("i", $teacher_id);
     $stmt->execute();
     $rows = $stmt->get_result();
     while ($r = $rows->fetch_assoc()) {
@@ -62,7 +68,7 @@ if ($stmt) {
 $stmt2 = $conn->prepare("
     SELECT id, activity_title, activity_type, created_at
     FROM teacher_activities
-    WHERE teacher_id = ? AND status = 'published'
+    WHERE teacher_id = ? AND status = 'published' AND school_year_id = $syId
     ORDER BY created_at DESC
 ");
 if ($stmt2) {
@@ -95,7 +101,7 @@ $progStmt = $conn->prepare("
           AND sub.student_id  = lp.student_id
           AND sub.teacher_id  = lp.teacher_id
           AND sub.is_finalized = 1
-    WHERE lp.teacher_id = ?
+    WHERE lp.teacher_id = ? AND lp.activity_id IN ($syActivities)
 ");
 if ($progStmt) {
     $progStmt->bind_param("i", $teacher_id);
@@ -149,7 +155,7 @@ if ($progStmt) {
 $assistStmt = $conn->prepare("
     SELECT student_id, assistance_level, finalized_at
     FROM activity_submissions
-    WHERE teacher_id = ? AND is_finalized = 1 AND assistance_level IS NOT NULL
+    WHERE teacher_id = ? AND is_finalized = 1 AND assistance_level IS NOT NULL AND activity_id IN ($syActivities)
     ORDER BY finalized_at ASC
 ");
 if ($assistStmt) {
@@ -201,7 +207,7 @@ $skillStmt = $conn->prepare("
           AND sub.student_id  = lp.student_id
           AND sub.teacher_id  = lp.teacher_id
           AND sub.is_finalized = 1
-    WHERE lp.teacher_id = ?
+    WHERE lp.teacher_id = ? AND lp.activity_id IN ($syActivities)
     GROUP BY ta.subject
 ");
 if ($skillStmt) {
@@ -242,7 +248,7 @@ $potStmt = $conn->prepare("
           AND sub.student_id  = lp.student_id
           AND sub.teacher_id  = lp.teacher_id
           AND sub.is_finalized = 1
-    WHERE lp.teacher_id = ?
+    WHERE lp.teacher_id = ? AND lp.activity_id IN ($syActivities)
     GROUP BY day
     ORDER BY day ASC
 ");
@@ -263,7 +269,7 @@ $stmt3 = $conn->prepare("
     FROM learner_progress lp
     JOIN students s          ON s.id = lp.student_id
     JOIN teacher_activities a ON a.id = lp.activity_id
-    WHERE lp.teacher_id = ? AND lp.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+    WHERE lp.teacher_id = ? AND lp.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) AND a.school_year_id = $syId
     ORDER BY lp.created_at DESC
     LIMIT 20
 ");

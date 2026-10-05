@@ -30,7 +30,10 @@ if (!$act) {
     exit;
 }
 
-// All assigned students + their submission status
+// All assigned students + their submission status. The activity is already
+// confirmed as this teacher's, so its assignments decide who is listed — not
+// the students' *current* teacher, which changes when a student moves to a
+// new teacher in a later School Year (their old submissions must still show).
 $stmt = $conn->prepare("
     SELECT s.id AS student_id, s.student_name,
            sub.id            AS submission_id,
@@ -49,10 +52,9 @@ $stmt = $conn->prepare("
            ON aa.student_id = s.id AND aa.activity_id = ?
     LEFT JOIN activity_submissions sub
            ON sub.student_id = s.id AND sub.activity_id = ? AND sub.teacher_id = ?
-    WHERE s.teacher_id = ?
     ORDER BY sub.submitted_at DESC, s.student_name ASC
 ");
-$stmt->bind_param("iiii", $activity_id, $activity_id, $teacher_id, $teacher_id);
+$stmt->bind_param("iii", $activity_id, $activity_id, $teacher_id);
 $stmt->execute();
 $rows = $stmt->get_result();
 

@@ -3,6 +3,7 @@ error_reporting(0);
 ini_set('display_errors', 0);
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/teacher_auth.php';
+require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/school_year.php';
 
 header('Content-Type: application/json');
 
@@ -13,6 +14,8 @@ if (!$conn) {
 }
 
 $teacher_id = requireTeacherId();
+// Activity-based stats only cover the School Year being viewed.
+$syId = getViewedSchoolYearId($conn);
 $student_id = isset($_GET['student_id']) ? intval($_GET['student_id']) : 0;
 if (!$student_id) {
     echo json_encode(['success' => false, 'message' => 'Student ID is required']);
@@ -55,9 +58,14 @@ $progress = [
 ];
 
 // ── Student info ─────────────────────────────────────────────────────────────
+// Current learners, and past ones from this teacher's earlier classes.
+if (!teacherCanSeeStudent($conn, $teacher_id, $student_id)) {
+    echo json_encode(['success' => false, 'message' => 'Student not found (id=' . $student_id . ', teacher=' . $teacher_id . ')']);
+    exit;
+}
 $stmt = safeQuery($conn,
-    "SELECT student_name, grade_level, disability_type FROM students WHERE id = ? AND teacher_id = ?",
-    "ii", $student_id, $teacher_id
+    "SELECT student_name, grade_level, disability_type FROM students WHERE id = ?",
+    "i", $student_id
 );
 if (!$stmt) {
     echo json_encode(['success' => false, 'message' => 'DB error: students query — ' . $conn->error]);
@@ -79,7 +87,7 @@ $stmt = safeQuery($conn,
     "SELECT COUNT(*) as cnt
      FROM activity_assignments aa
      INNER JOIN teacher_activities ta ON ta.id = aa.activity_id
-    WHERE aa.student_id = ? AND ta.teacher_id = ?",
+    WHERE aa.student_id = ? AND ta.teacher_id = ? AND ta.school_year_id = $syId",
     "ii", $student_id, $teacher_id
 );
 if ($stmt) {
@@ -94,7 +102,8 @@ $stmt = safeQuery($conn,
      FROM learner_progress lp
      INNER JOIN activity_assignments aa ON aa.activity_id = lp.activity_id
                                        AND aa.student_id  = lp.student_id
-    WHERE lp.student_id = ? AND lp.teacher_id = ?",
+     INNER JOIN teacher_activities ta ON ta.id = lp.activity_id
+    WHERE lp.student_id = ? AND lp.teacher_id = ? AND ta.school_year_id = $syId",
     "ii", $student_id, $teacher_id
 );
 if ($stmt) {
@@ -134,7 +143,7 @@ $stmt = safeQuery($conn,
      INNER JOIN teacher_activities ta ON ta.id = aa.activity_id
     LEFT  JOIN learner_progress lp   ON ta.id = lp.activity_id AND lp.student_id = ?
      LEFT  JOIN activity_submissions sub ON sub.activity_id = ta.id AND sub.student_id = ? AND sub.teacher_id = ?
-    WHERE aa.student_id = ? AND ta.teacher_id = ?
+    WHERE aa.student_id = ? AND ta.teacher_id = ? AND ta.school_year_id = $syId
      ORDER BY COALESCE(lp.assessment_date, ta.created_at) DESC
      LIMIT 15",
     "iiiii", $student_id, $student_id, $teacher_id, $student_id, $teacher_id
@@ -170,8 +179,8 @@ if ($stmt) {
 $stmt = safeQuery($conn,
     "SELECT COALESCE(ta.subject,'Other') AS subject, AVG(lp.score) AS avg_score
      FROM learner_progress lp
-     LEFT JOIN teacher_activities ta ON lp.activity_id = ta.id
-    WHERE lp.student_id = ?
+     INNER JOIN teacher_activities ta ON lp.activity_id = ta.id
+    WHERE lp.student_id = ? AND ta.school_year_id = $syId
      GROUP BY ta.subject",
     "i", $student_id
 );
@@ -238,7 +247,7 @@ $stmt = safeQuery($conn,
     "SELECT sub.id AS submission_id, sub.teacher_note AS note, sub.finalized_at AS created_at, ta.activity_title, ta.subject
      FROM activity_submissions sub
      JOIN teacher_activities ta ON ta.id = sub.activity_id
-     WHERE sub.student_id = ? AND sub.teacher_id = ? AND sub.is_finalized = 1
+     WHERE sub.student_id = ? AND sub.teacher_id = ? AND sub.is_finalized = 1 AND ta.school_year_id = $syId
        AND sub.teacher_note IS NOT NULL AND sub.teacher_note != ''
      ORDER BY sub.finalized_at DESC LIMIT 20",
     "ii", $student_id, $teacher_id

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/teacher_auth.php';
 
 header('Content-Type: application/json');
 
@@ -15,7 +16,8 @@ if (!$conn) {
 }
 
 session_start();
-$teacher_id = isset($_SESSION['admin_id']) ? intval($_SESSION['admin_id']) : 1;
+// The logged-in teacher, from the session — never a teacher_id sent by the browser.
+$teacher_id = requireTeacherId();
 
 $student_id = isset($_POST['student_id']) ? intval($_POST['student_id']) : 0;
 $student_name = isset($_POST['student_name']) ? trim($_POST['student_name']) : '';

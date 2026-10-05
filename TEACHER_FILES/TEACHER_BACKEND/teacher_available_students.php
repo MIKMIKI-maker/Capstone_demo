@@ -37,9 +37,11 @@ if ($teacher_admin_id <= 0) {
     exit;
 }
 
-// Names already enrolled by this teacher (for the enrolled flag)
+// Names already enrolled by this teacher (for the enrolled flag). A record
+// marked 'pending' belongs to a student the Admin moved to a new teacher in
+// Manage Users — they still need to be enrolled by that new teacher.
 $enrolled = [];
-$stmt = $teacher_conn->prepare("SELECT LOWER(TRIM(student_name)) as sn FROM students WHERE teacher_id=?");
+$stmt = $teacher_conn->prepare("SELECT LOWER(TRIM(student_name)) as sn FROM students WHERE teacher_id=? AND status <> 'pending'");
 $stmt->bind_param("i", $teacher_id);
 $stmt->execute();
 $res = $stmt->get_result();
@@ -48,7 +50,7 @@ $stmt->close();
 
 // admin_account_ids already enrolled by this teacher (handles students enrolled before assignment system)
 $enrolled_ids = [];
-$eid_stmt = $teacher_conn->prepare("SELECT admin_account_id FROM students WHERE teacher_id=? AND admin_account_id IS NOT NULL AND admin_account_id > 0");
+$eid_stmt = $teacher_conn->prepare("SELECT admin_account_id FROM students WHERE teacher_id=? AND admin_account_id IS NOT NULL AND admin_account_id > 0 AND status <> 'pending'");
 $eid_stmt->bind_param("i", $teacher_id);
 $eid_stmt->execute();
 $eid_res = $eid_stmt->get_result();
@@ -61,7 +63,7 @@ $result_stmt = $admin_conn->prepare(
      FROM admin_accounts
      WHERE role='student' AND (
          assigned_teacher_id = ?
-         OR id IN (SELECT admin_account_id FROM students WHERE teacher_id = ? AND admin_account_id > 0)
+         OR id IN (SELECT admin_account_id FROM students WHERE teacher_id = ? AND admin_account_id > 0 AND status <> 'pending')
      )
      ORDER BY first_name, last_name"
 );

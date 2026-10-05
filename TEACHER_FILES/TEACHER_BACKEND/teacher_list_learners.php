@@ -4,6 +4,7 @@ ini_set('display_errors', 0);
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/db.php';
 require_once __DIR__ . '/teacher_auth.php';
+require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/school_year.php';
 
 header('Content-Type: application/json');
 
@@ -24,10 +25,11 @@ $conn->query("DELETE FROM students
                 AND admin_account_id > 0
                 AND admin_account_id NOT IN (SELECT id FROM admin_accounts)");
 
-// Get all students for this teacher
-$stmt = $conn->prepare("SELECT id, student_name, parent_name, parent_email, parent_phone, disability_type, status, age, grade_level, created_at FROM students WHERE teacher_id = ? ORDER BY created_at DESC");
+// This teacher's learners in the School Year being viewed (a past S.Y.
+// shows that year's class, even students who have since moved on).
+$roster = teacherRosterCondition($conn, $teacher_id, getViewedSchoolYearId($conn), 's');
+$stmt = $conn->prepare("SELECT s.id, s.student_name, s.parent_name, s.parent_email, s.parent_phone, s.disability_type, s.status, s.age, s.grade_level, s.created_at FROM students s WHERE $roster ORDER BY s.created_at DESC");
 if (!$stmt) { echo json_encode([]); $conn->close(); exit; }
-$stmt->bind_param("i", $teacher_id);
 $stmt->execute();
 $result = $stmt->get_result();
 $students = [];

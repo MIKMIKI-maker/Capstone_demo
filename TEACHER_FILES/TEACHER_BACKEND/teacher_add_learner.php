@@ -1,8 +1,12 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/school_year.php';
+// A School Year that isn't Active is read-only.
+requireActiveSchoolYearView();
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/db.php';
 require_once __DIR__ . '/teacher_auth.php';
 require_once __DIR__ . '/../../MAILER/send_email.php';
+require_once __DIR__ . '/../../MAILER/email_domains.php';
 
 header('Content-Type: application/json');
 
@@ -33,6 +37,18 @@ $status            = 'active';
 if (!$student_name) {
     echo json_encode(['success' => false, 'message' => 'Student name is required']);
     exit;
+}
+
+// Parent email is optional, but if given it must be a real, supported inbox.
+if ($parent_email !== '') {
+    if (!filter_var($parent_email, FILTER_VALIDATE_EMAIL)) {
+        echo json_encode(['success' => false, 'message' => 'Please enter a valid parent email address']);
+        exit;
+    }
+    if (!isAllowedEmailDomain($parent_email)) {
+        echo json_encode(['success' => false, 'message' => 'Parent ' . lcfirst(ALLOWED_EMAIL_DOMAINS_MESSAGE)]);
+        exit;
+    }
 }
 
 // Verify student is pre-assigned to this teacher before allowing enrollment
@@ -73,8 +89,25 @@ if ($admin_account_id > 0) {
     }
 }
 
-$stmt = $conn->prepare("INSERT INTO students (teacher_id, admin_account_id, student_name, parent_name, parent_email, parent_phone, disability_type, grade_level, age, status)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+// A student moved to this teacher in Manage Users already has a record from
+// their previous teacher — enrolling re-uses it (so past activities and
+// scores stay with the learner) instead of starting a new one.
+$existing_id = 0;
+if ($admin_account_id > 0) {
+    $ex = $conn->prepare("SELECT id FROM students WHERE admin_account_id = ? LIMIT 1");
+    $ex->bind_param("i", $admin_account_id);
+    $ex->execute();
+    if ($exRow = $ex->get_result()->fetch_assoc()) $existing_id = (int)$exRow['id'];
+    $ex->close();
+}
+
+if ($existing_id) {
+    $stmt = $conn->prepare("UPDATE students SET teacher_id = ?, student_name = ?, parent_name = ?, parent_email = ?, parent_phone = ?,
+                            disability_type = ?, grade_level = ?, age = ?, status = ? WHERE id = ?");
+} else {
+    $stmt = $conn->prepare("INSERT INTO students (teacher_id, admin_account_id, student_name, parent_name, parent_email, parent_phone, disability_type, grade_level, age, status)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+}
 
 if (!$stmt) {
     echo json_encode(['success' => false, 'message' => 'Database prepare failed']);
@@ -82,10 +115,14 @@ if (!$stmt) {
     exit;
 }
 
-$stmt->bind_param("iissssssis", $teacher_id, $admin_account_id, $student_name, $parent_name, $parent_email, $parent_phone, $disability_type, $grade_level, $age, $status);
+if ($existing_id) {
+    $stmt->bind_param("issssssisi", $teacher_id, $student_name, $parent_name, $parent_email, $parent_phone, $disability_type, $grade_level, $age, $status, $existing_id);
+} else {
+    $stmt->bind_param("iissssssis", $teacher_id, $admin_account_id, $student_name, $parent_name, $parent_email, $parent_phone, $disability_type, $grade_level, $age, $status);
+}
 
 if ($stmt->execute()) {
-    $new_student_id = $stmt->insert_id;
+    $new_student_id = $existing_id ?: $stmt->insert_id;
 
     $teacher_label = 'Your child\'s teacher';
     $tnq = $conn->prepare("SELECT first_name, last_name FROM teacher_accounts WHERE id = ?");

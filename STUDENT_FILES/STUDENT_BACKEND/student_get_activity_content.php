@@ -29,19 +29,20 @@ if (!$rec) {
     exit;
 }
 $student_record_id = (int)$rec['student_record_id'];
+$current_teacher_id = (int)$rec['teacher_id'];
 
 // Only serve content for activities actually assigned to this student
 $stmt = $conn->prepare("
     SELECT a.id, a.teacher_id, a.activity_title, a.activity_type, a.subject, a.deadline, a.content_json, a.is_locked
     FROM teacher_activities a
     INNER JOIN activity_assignments aa ON aa.activity_id = a.id AND aa.student_id = ?
-    WHERE a.id = ? AND a.status = 'published'
+    WHERE a.id = ? AND a.status = 'published' AND a.teacher_id = ?
 ");
 if (!$stmt) {
     echo json_encode(['success' => false, 'message' => 'Query failed']);
     exit;
 }
-$stmt->bind_param("ii", $student_record_id, $activity_id);
+$stmt->bind_param("iii", $student_record_id, $activity_id, $current_teacher_id);
 $stmt->execute();
 $res = $stmt->get_result();
 $row = $res ? $res->fetch_assoc() : null;

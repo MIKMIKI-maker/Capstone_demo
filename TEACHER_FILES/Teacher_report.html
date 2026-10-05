@@ -5,6 +5,7 @@
 <head>
     <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
     <script src="../ASSETS/teacher_portal.js?v=15"></script>
+    <script src="../ASSETS/school_year_switcher.js?v=9" data-picker="off" defer></script>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
@@ -95,7 +96,7 @@
                     <p class="teacher-page-sub">Track learner progress and activity performance</p>
                 </div>
                 <div class="teacher-topbar-actions">
-                    <button class="btn-action danger" id="resetRecordsBtn" type="button" onclick="resetAllRecords()">
+                    <button class="btn-action danger" id="resetRecordsBtn" type="button" onclick="resetAllRecords()" data-sy-write>
                         <i class="fa-solid fa-rotate-left"></i> Reset Records
                     </button>
                     <a class="teacher-notif-btn" href="Teacher_notif.html">

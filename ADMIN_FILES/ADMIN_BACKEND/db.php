@@ -104,7 +104,7 @@ function getDatabaseConnection() {
     // the block below, and remote re-runs it until its stored version
     // catches up, instead of every future migration needing the same
     // move-it-outside-the-gate workaround forever.
-    $SCHEMA_VERSION = 2;
+    $SCHEMA_VERSION = 3;
     $needsSetup = true;
     if ($envHost !== false && $envHost !== '') {
         $conn->query("CREATE TABLE IF NOT EXISTS schema_meta (component VARCHAR(50) PRIMARY KEY, version INT NOT NULL)");
@@ -206,6 +206,11 @@ function getDatabaseConnection() {
         $conn->query("INSERT IGNORE INTO admin_accounts (admin_email, admin_password, first_name, last_name, school_name, role, status)
             VALUES ('admin@spedalm.edu.ph', '$h_admin', 'Admin', 'User', 'Mamatid Elementary School', 'admin', 'active')");
     }
+
+    // School Year support — also run from the teacher setup, whichever
+    // connection happens to be opened first.
+    require_once __DIR__ . '/school_year.php';
+    ensureSchoolYearSchema($conn);
 
     if ($envHost !== false && $envHost !== '') {
         $conn->query("INSERT INTO schema_meta (component, version) VALUES ('admin', $SCHEMA_VERSION)

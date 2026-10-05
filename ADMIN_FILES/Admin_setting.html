@@ -117,6 +117,9 @@
         <button class="admin-settings-tab" onclick="switchTab('emaillog', this)" type="button">
           <span class="admin-tab-icon"><i class="fa-solid fa-envelope"></i></span> Email Log
         </button>
+        <button class="admin-settings-tab" onclick="switchTab('schoolyear', this)" type="button">
+          <span class="admin-tab-icon"><i class="fa-solid fa-calendar-days"></i></span> School Year
+        </button>
         <button class="admin-settings-tab" onclick="switchTab('grading', this)" type="button">
           <span class="admin-tab-icon"><i class="fa-solid fa-lock"></i></span> Grading Periods
         </button>
@@ -172,7 +175,8 @@
           </div>
           <div class="admin-section-content">
             <h3 class="admin-subsection-title">Email Sending Activity</h3>
-            <p class="admin-subsection-desc">Brevo's free tier caps at 300 emails per rolling 24 hours — track usage here, or on Brevo's own "Usage and plan" page.</p>
+            <p class="admin-subsection-desc">Brevo's free tier caps at <span class="email-log-limit-text">300</span> emails per rolling 24 hours. SPED ALM pauses sending when the limit is reached and resumes on its own as older emails pass the 24-hour mark — track usage here, or on Brevo's own "Usage and plan" page.</p>
+            <div id="email-limit-alert" style="display:none;margin:14px 0 0;padding:12px 16px;border-radius:10px;font-size:13px;font-weight:500;max-width:720px;"></div>
             <div style="display:flex;gap:14px;margin:16px 0 22px;flex-wrap:wrap;">
               <div style="flex:1;min-width:160px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:16px 20px;">
                 <div style="font-size:12px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:.04em;">Sent (last 24h)</div>
@@ -203,6 +207,49 @@
             </div>
           </div>
         </div>
+        <!-- SCHOOL YEAR -->
+        <div class="admin-settings-section" id="admin-section-schoolyear" style="display:none;">
+          <div class="admin-section-header">
+            <span class="admin-section-dot"></span>
+            <h2 class="admin-section-title">School Year</h2>
+          </div>
+          <div class="admin-section-content">
+            <h3 class="admin-subsection-title">School Years</h3>
+            <p class="admin-subsection-desc">Only one School Year is Active at a time. New activities and each teacher's Learning Activity Plan go to the Active School Year, and it has its own Grading Period locks. Past School Years stay viewable as read-only history: teachers pick one from the School Year dropdown on their pages, and you can browse past classes below.</p>
+            <div id="sy-message" style="display:none;margin:14px 0 4px;padding:10px 14px;border-radius:8px;font-size:12.5px;font-weight:500;max-width:560px;"></div>
+            <button class="admin-btn-signin" style="width:auto;align-self:flex-start;padding:10px 20px;font-size:13px;margin-top:16px;" type="button" onclick="openNewSyWizard()"><i class="fa-solid fa-forward"></i> Start New School Year</button>
+            <div id="sy-list" style="display:flex;flex-direction:column;gap:10px;max-width:560px;margin-top:16px;">
+              <div class="admin-uat-empty" style="padding:20px 0;">Loading...</div>
+            </div>
+
+            <h3 class="admin-subsection-title" style="margin-top:28px;">Classes</h3>
+            <p class="admin-subsection-desc">View only — a class is a Section with its Teacher for one School Year. To change a teacher's Section or a student's teacher, edit the account in <a href="Admin_manage_user.html">Manage Users</a>; classes here update to match. Past School Years are kept as history.</p>
+            <div style="display:flex;align-items:center;gap:10px;margin:12px 0;">
+              <label for="sy-classes-select" style="font-size:13px;font-weight:600;color:#334155;">School Year</label>
+              <select id="sy-classes-select" class="sy-input" style="max-width:220px;" onchange="loadClasses()"></select>
+            </div>
+            <div id="sy-classes" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;max-width:900px;"></div>
+
+            <h3 class="admin-subsection-title" style="margin-top:28px;">Add School Year</h3>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:18px 20px;max-width:560px;">
+              <div class="admin-form-group" style="margin-bottom:12px;">
+                <label>School Year</label>
+                <input id="sy-new-name" type="text" placeholder="e.g. 2027-2028" style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:'Poppins',sans-serif;font-size:13px;" />
+              </div>
+              <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
+                <div class="admin-form-group" style="flex:1;min-width:160px;margin:0;">
+                  <label>Start Date</label>
+                  <input id="sy-new-start" type="date" style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:'Poppins',sans-serif;font-size:13px;" />
+                </div>
+                <div class="admin-form-group" style="flex:1;min-width:160px;margin:0;">
+                  <label>End Date</label>
+                  <input id="sy-new-end" type="date" style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:'Poppins',sans-serif;font-size:13px;" />
+                </div>
+              </div>
+              <button class="admin-btn-signin" style="width:auto;padding:9px 18px;font-size:12.5px;" type="button" onclick="addSchoolYear()"><i class="fa-solid fa-plus"></i> Add School Year</button>
+            </div>
+          </div>
+        </div>
         <!-- GRADING PERIODS -->
         <div class="admin-settings-section" id="admin-section-grading" style="display:none;">
           <div class="admin-section-header">
@@ -211,7 +258,7 @@
           </div>
           <div class="admin-section-content">
             <h3 class="admin-subsection-title">Learning Activity Plan Access</h3>
-            <p class="admin-subsection-desc">Controls which grading period teachers can currently add or edit focus areas for, on their Dashboard's Learning Activity Plan. This applies school-wide — unlocking a grading period opens it for every teacher.</p>
+            <p class="admin-subsection-desc">Controls which grading period teachers can currently add or edit focus areas for, on their Dashboard's Learning Activity Plan. This applies school-wide — unlocking a grading period opens it for every teacher. These locks belong to the Active School Year; a new School Year starts with only First Grading unlocked.</p>
             <div id="grading-lock-message" style="display:none;margin:14px 0 4px;padding:10px 14px;border-radius:8px;font-size:12.5px;font-weight:500;max-width:560px;"></div>
             <div id="grading-locks-list" style="display:flex;flex-direction:column;gap:10px;max-width:560px;margin-top:16px;">
               <div class="admin-uat-empty" style="padding:20px 0;">Loading...</div>
@@ -291,8 +338,10 @@
       el.classList.add('active');
       document.getElementById('admin-section-profile').style.display = tab === 'profile' ? 'flex' : 'none';
       document.getElementById('admin-section-emaillog').style.display = tab === 'emaillog' ? 'flex' : 'none';
+      document.getElementById('admin-section-schoolyear').style.display = tab === 'schoolyear' ? 'flex' : 'none';
       document.getElementById('admin-section-grading').style.display = tab === 'grading' ? 'flex' : 'none';
       document.getElementById('admin-section-security').style.display = tab === 'security' ? 'flex' : 'none';
+      if (tab === 'schoolyear') loadSchoolYears();
       if (tab === 'grading') loadGradingLocks();
       if (tab === 'emaillog') loadEmailLog();
     }
@@ -530,7 +579,28 @@
           if (!data.success) return;
           document.getElementById('email-log-sent').textContent = data.sent_last_24h;
           document.getElementById('email-log-failed').textContent = data.failed_last_24h;
-          if (data.daily_limit) document.getElementById('email-log-limit').textContent = data.daily_limit;
+          if (data.daily_limit) {
+            document.getElementById('email-log-limit').textContent = data.daily_limit;
+            document.querySelectorAll('.email-log-limit-text').forEach(function (el) { el.textContent = data.daily_limit; });
+          }
+          // Near / at the daily limit: amber from 80%, red once sending is paused.
+          var alertEl = document.getElementById('email-limit-alert');
+          var used = data.sent_last_24h, limit = data.daily_limit || 300;
+          if (used >= limit) {
+            alertEl.style.display = 'block';
+            alertEl.style.background = '#fee2e2';
+            alertEl.style.color = '#991b1b';
+            alertEl.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> <b>Daily email limit reached (' + used + ' / ' + limit + ').</b> New emails are paused'
+              + (data.resumes_at ? ' until about <b>' + data.resumes_at + '</b>' : '')
+              + '. Welcome emails that can\'t be sent show the temporary password to you instead.';
+          } else if (used >= Math.ceil(limit * 0.8)) {
+            alertEl.style.display = 'block';
+            alertEl.style.background = '#fef3c7';
+            alertEl.style.color = '#92400e';
+            alertEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> <b>Almost at the daily limit:</b> ' + used + ' of ' + limit + ' emails used in the last 24 hours. Only ' + (limit - used) + ' left.';
+          } else {
+            alertEl.style.display = 'none';
+          }
           document.getElementById('email-log-count').textContent = data.rows.length;
 
           var wrap = document.getElementById('email-log-rows');
@@ -621,6 +691,625 @@
           loadGradingLocks();
         })
         .catch(function () { showGradingMsg('Network error. Please try again.', false); });
+    }
+
+    /* ── School Year ─────────────────────────────────────────────────── */
+    function escSy(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+    function formatSyDate(d) {
+      var parts = String(d).split('-');
+      var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return months[parseInt(parts[1], 10) - 1] + ' ' + parseInt(parts[2], 10) + ', ' + parts[0];
+    }
+
+    function loadSchoolYears() {
+      fetch('ADMIN_BACKEND/school_year_view.php')
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.success) throw new Error();
+          renderSchoolYears(data.years);
+          fillClassesYearSelect(data.years);
+          // Suggest the S.Y. after the latest one in the Add form.
+          if (data.years.length && !document.getElementById('sy-new-name').value) {
+            var startYear = parseInt(data.years[0].name.split('-')[1], 10);
+            document.getElementById('sy-new-name').value = startYear + '-' + (startYear + 1);
+            document.getElementById('sy-new-start').value = startYear + '-06-01';
+            document.getElementById('sy-new-end').value = (startYear + 1) + '-05-31';
+          }
+        })
+        .catch(function () {
+          document.getElementById('sy-list').innerHTML =
+            '<div class="admin-uat-empty" style="padding:20px 0;">Unable to load school years.</div>';
+        });
+    }
+
+    function renderSchoolYears(years) {
+      document.getElementById('sy-list').innerHTML = years.map(function (sy) {
+        var cardStyle = sy.is_active
+          ? 'background:#f0fdf4;border:1.5px solid #bbf7d0;'
+          : 'background:#f8fafc;border:1.5px solid #e2e8f0;';
+        var iconCircle = sy.is_active
+          ? '<div style="width:40px;height:40px;border-radius:50%;background:#dcfce7;color:#16a34a;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;"><i class="fa-solid fa-calendar-check"></i></div>'
+          : '<div style="width:40px;height:40px;border-radius:50%;background:#e2e8f0;color:#94a3b8;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;"><i class="fa-solid fa-box-archive"></i></div>';
+        var badge = sy.is_active
+          ? '<span style="display:inline-block;background:#16a34a;color:#fff;font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:3px 10px;border-radius:20px;">Active</span>'
+          : '<span style="display:inline-block;background:#cbd5e1;color:#475569;font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:3px 10px;border-radius:20px;">Inactive</span>';
+        var btn = sy.is_active ? ''
+          : '<div style="display:flex;gap:8px;flex-wrap:wrap;">'
+            + '<button class="admin-btn-signin" style="width:auto;padding:9px 18px;font-size:12.5px;white-space:nowrap;" type="button" onclick="activateSchoolYear(' + sy.id + ', \'' + escSy(sy.name) + '\')"><i class="fa-solid fa-check"></i> Set as Active</button>'
+            + '<button style="background:#fff;color:#dc2626;border:1.5px solid #fecaca;border-radius:9px;padding:9px 16px;font-family:\'Poppins\',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;" type="button" onclick="deleteSchoolYear(' + sy.id + ', \'' + escSy(sy.name) + '\')"><i class="fa-solid fa-trash"></i> Delete</button>'
+            + '</div>';
+        return '<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;' + cardStyle + 'border-radius:14px;padding:14px 18px;">'
+          + '<div style="display:flex;align-items:center;gap:14px;min-width:0;">'
+          +   iconCircle
+          +   '<div><div style="font-size:14px;font-weight:700;color:#1e293b;margin-bottom:2px;">S.Y. ' + escSy(sy.name) + '</div>'
+          +   '<div style="font-size:12px;color:#64748b;margin-bottom:5px;">' + formatSyDate(sy.start_date) + ' – ' + formatSyDate(sy.end_date) + '</div>' + badge + '</div>'
+          + '</div>'
+          + btn
+          + '</div>';
+      }).join('');
+    }
+
+    function showSyMsg(text, ok) {
+      var msgEl = document.getElementById('sy-message');
+      msgEl.textContent = text;
+      msgEl.style.display = 'block';
+      msgEl.style.background = ok ? '#d1fae5' : '#fee2e2';
+      msgEl.style.color = ok ? '#065f46' : '#991b1b';
+    }
+
+    function postSchoolYear(params) {
+      params.append('csrf_token', _csrfToken);
+      return fetch('ADMIN_BACKEND/admin_school_years.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString()
+      }).then(function (r) { return r.json(); });
+    }
+
+    function addSchoolYear() {
+      var params = new URLSearchParams();
+      params.append('action', 'add');
+      params.append('name', document.getElementById('sy-new-name').value.trim());
+      params.append('start_date', document.getElementById('sy-new-start').value);
+      params.append('end_date', document.getElementById('sy-new-end').value);
+      postSchoolYear(params)
+        .then(function (data) {
+          showSyMsg(data.message || (data.success ? 'School Year added.' : 'Could not add School Year.'), !!data.success);
+          if (data.success) {
+            document.getElementById('sy-new-name').value = '';
+            loadSchoolYears();
+          }
+        })
+        .catch(function () { showSyMsg('Network error. Please try again.', false); });
+    }
+
+    // Styled replacement for the browser's confirm(): resolves true on OK.
+    // opts: { icon, title, lines: [text...], okLabel, danger }
+    function syConfirm(opts) {
+      return new Promise(function (resolve) {
+        var el = document.createElement('div');
+        el.className = 'sy-wiz-overlay';
+        el.style.alignItems = 'center';
+        var color = opts.danger ? '#dc2626' : '#1e3a8a';
+        var tint = opts.danger ? '#fee2e2' : '#dbeafe';
+        el.innerHTML = '<div class="sy-wiz" role="alertdialog" aria-modal="true" style="max-width:440px;text-align:center;padding:28px 26px;">'
+          + '<div style="width:56px;height:56px;border-radius:50%;background:' + tint + ';color:' + color + ';display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 14px;"><i class="fa-solid ' + opts.icon + '"></i></div>'
+          + '<h3 style="font-size:17px;margin:0 0 10px;color:#1e293b;"></h3>'
+          + '<div class="sy-confirm-lines" style="font-size:13.5px;color:#475569;line-height:1.6;"></div>'
+          + '<div style="display:flex;gap:10px;justify-content:center;margin-top:22px;">'
+          +   '<button type="button" class="sy-input" data-r="0" style="width:auto;min-width:110px;cursor:pointer;font-weight:600;">Cancel</button>'
+          +   '<button type="button" data-r="1" style="min-width:140px;padding:10px 18px;border:none;border-radius:9px;background:' + color + ';color:#fff;font-family:\'Poppins\',sans-serif;font-size:13px;font-weight:700;cursor:pointer;"></button>'
+          + '</div></div>';
+        el.querySelector('h3').textContent = opts.title;
+        el.querySelector('[data-r="1"]').textContent = opts.okLabel;
+        var box = el.querySelector('.sy-confirm-lines');
+        opts.lines.forEach(function (text) {
+          var p = document.createElement('p');
+          p.style.margin = '0 0 6px';
+          p.textContent = text;
+          box.appendChild(p);
+        });
+        var done = function (result) {
+          document.removeEventListener('keydown', onKey);
+          el.remove();
+          resolve(result);
+        };
+        var onKey = function (e) { if (e.key === 'Escape') done(false); };
+        el.addEventListener('click', function (e) {
+          if (e.target === el) return done(false);
+          var btn = e.target.closest('[data-r]');
+          if (btn) done(btn.getAttribute('data-r') === '1');
+        });
+        document.addEventListener('keydown', onKey);
+        document.body.appendChild(el);
+        el.querySelector('[data-r="1"]').focus();
+      });
+    }
+
+    function deleteSchoolYear(id, name) {
+      syConfirm({
+        icon: 'fa-trash', danger: true, okLabel: 'Delete',
+        title: 'Delete S.Y. ' + name + '?',
+        lines: ['This School Year will be removed.', 'This cannot be undone.']
+      }).then(function (ok) { if (ok) doDeleteSchoolYear(id); });
+    }
+
+    function doDeleteSchoolYear(id) {
+      var params = new URLSearchParams();
+      params.append('action', 'delete');
+      params.append('id', id);
+      postSchoolYear(params)
+        .then(function (data) {
+          showSyMsg(data.message || (data.success ? 'School Year deleted.' : 'Could not delete School Year.'), !!data.success);
+          if (data.success) {
+            loadSchoolYears();
+            if (window.refreshSchoolYearSwitcher) window.refreshSchoolYearSwitcher();
+          }
+        })
+        .catch(function () { showSyMsg('Network error. Please try again.', false); });
+    }
+
+    function activateSchoolYear(id, name) {
+      syConfirm({
+        icon: 'fa-calendar-check', okLabel: 'Set as Active',
+        title: 'Set S.Y. ' + name + ' as Active?',
+        lines: [
+          'New activities and Learning Activity Plans will go to S.Y. ' + name + '.',
+          'Teachers and students switch to their classes for S.Y. ' + name + '.',
+          'The current School Year becomes read-only for everyone.'
+        ]
+      }).then(function (ok) { if (ok) doActivateSchoolYear(id); });
+    }
+
+    function doActivateSchoolYear(id) {
+      var params = new URLSearchParams();
+      params.append('action', 'activate');
+      params.append('id', id);
+      postSchoolYear(params)
+        .then(function (data) {
+          showSyMsg(data.message || (data.success ? 'School Year activated.' : 'Could not activate School Year.'), !!data.success);
+          if (data.success) {
+            // Show the newly Active S.Y.'s classes right away.
+            document.getElementById('sy-classes-select').value = '';
+            loadSchoolYears();
+            if (window.refreshSchoolYearSwitcher) window.refreshSchoolYearSwitcher();
+          }
+        })
+        .catch(function () { showSyMsg('Network error. Please try again.', false); });
+    }
+
+    /* ── Classes (Section + Teacher per School Year) ─────────────────── */
+    (function () {
+      var s = document.createElement('style');
+      // The section body is a scrolling flex column: keep its children from
+      // shrinking (which squashed the buttons) once the content gets long.
+      s.textContent = '#admin-section-schoolyear .admin-section-content > *{flex-shrink:0;}'
+        + '.sy-input{width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-family:\'Poppins\',sans-serif;font-size:13px;background:#fff;}'
+        + '.sy-class-card{background:#fff;border:1.5px solid #e2e8f0;border-radius:14px;padding:14px 16px;}'
+        + '.sy-class-student{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid #f1f5f9;font-size:12.5px;color:#334155;}'
+        + '.sy-class-student select{max-width:140px;padding:4px 6px;font-size:11.5px;}'
+        + '.sy-wiz-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;align-items:flex-start;justify-content:center;z-index:9999;overflow-y:auto;padding:32px 16px;}'
+        + '.sy-wiz{background:#fff;border-radius:18px;max-width:820px;width:100%;padding:24px;font-family:\'Poppins\',sans-serif;color:#1e293b;}'
+        + '.sy-wiz h3{font-size:15px;margin:22px 0 6px;}'
+        + '.sy-wiz p.sy-hint{font-size:12.5px;color:#64748b;margin:0 0 10px;}'
+        + '.sy-wiz-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 0;border-top:1px solid #f1f5f9;}'
+        + '.sy-wiz-row > *{flex:1;min-width:140px;}'
+        + '.sy-wiz-row .sy-wiz-name{font-size:13px;font-weight:600;}'
+        + '.sy-wiz-row .sy-wiz-from{font-size:11.5px;color:#64748b;font-weight:400;display:block;}'
+        + '.sy-wiz-x{flex:0 0 auto!important;min-width:0!important;background:none;border:none;color:#dc2626;cursor:pointer;font-size:15px;}'
+        + '.sy-wiz-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;}'
+        + '.sy-wiz-row > .sy-wiz-check{flex:0 0 auto;min-width:0;width:16px;height:16px;}'
+        + '.sy-wiz-summary{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:12.5px;color:#334155;}'
+        + '.sy-wiz-summary input{flex:1;min-width:180px;margin-left:auto;}'
+        + '.sy-wiz-group{border:1px solid #e2e8f0;border-radius:12px;padding:4px 12px;margin-bottom:10px;}'
+        + '.sy-wiz-ghead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0;}'
+        + '.sy-wiz-ghead input[type=checkbox]{width:16px;height:16px;}'
+        + '.sy-wiz-toggle{flex:1;min-width:180px;text-align:left;background:none;border:none;font-family:inherit;font-size:13.5px;font-weight:700;color:#1e293b;cursor:pointer;padding:0;}'
+        + '.sy-wiz-count{color:#64748b;font-weight:500;}'
+        + '.sy-wiz-gaction{max-width:220px;}'
+        + '.sy-wiz-bulk{position:sticky;bottom:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#1e3a8a;color:#fff;border-radius:12px;padding:10px 14px;margin-top:12px;font-size:13px;}'
+        + '.sy-wiz-bulk select{max-width:260px;color:#1e293b;}';
+      document.head.appendChild(s);
+    })();
+
+    function fillClassesYearSelect(years) {
+      var sel = document.getElementById('sy-classes-select');
+      var keep = sel.value;
+      sel.innerHTML = years.map(function (sy) {
+        return '<option value="' + sy.id + '">' + escSy(sy.name) + (sy.is_active ? ' (Active)' : '') + '</option>';
+      }).join('');
+      var active = years.filter(function (sy) { return sy.is_active; })[0];
+      sel.value = keep && years.some(function (sy) { return String(sy.id) === keep; }) ? keep : (active ? active.id : '');
+      loadClasses();
+    }
+
+    function loadClasses() {
+      var syId = document.getElementById('sy-classes-select').value;
+      fetch('ADMIN_BACKEND/admin_classes.php?school_year_id=' + encodeURIComponent(syId))
+        .then(function (r) { return r.json(); })
+        .then(function (data) { if (data.success) renderClasses(data); })
+        .catch(function () {
+          document.getElementById('sy-classes').innerHTML = '<div class="admin-uat-empty">Unable to load classes.</div>';
+        });
+    }
+
+    function renderClasses(data) {
+      var box = document.getElementById('sy-classes');
+      if (!data.classes.length) {
+        box.innerHTML = '<div class="admin-uat-empty">No classes in this School Year.</div>';
+        return;
+      }
+      box.innerHTML = data.classes.map(function (c) {
+        var students = c.students.map(function (st) {
+          var exit = st.exit_reason ? '<span style="font-size:11px;color:#991b1b;font-weight:600;">' + escSy(st.exit_reason) + '</span>' : '';
+          return '<div class="sy-class-student"><span>' + escSy(st.name) + '</span>' + exit + '</div>';
+        }).join('') || '<div style="font-size:12px;color:#94a3b8;padding:6px 0;">No students enrolled.</div>';
+        return '<div class="sy-class-card">'
+          + '<div style="font-size:14px;font-weight:700;">' + escSy(c.section_name) + '</div>'
+          + '<div style="font-size:12px;color:#64748b;margin-bottom:6px;"><i class="fa-solid fa-chalkboard-user"></i> ' + escSy(c.teacher_name) + ' · ' + c.students.length + ' student(s)</div>'
+          + students + '</div>';
+      }).join('');
+    }
+
+    /* ── "Start New School Year" wizard ──────────────────────────────── */
+    // Four steps, one screen each: School Year → Classes → Students → Review.
+    // Each student has one choice: "continue" | "move:<class key>" | "exit:<reason>".
+    var _wiz = null;
+    var WIZ_STEPS = ['School Year', 'Classes', 'Students', 'Review'];
+    var WIZ_EXITS = ['Graduated', 'Transferred', 'Dropped'];
+
+    (function () {
+      var s = document.createElement('style');
+      s.textContent = ''
+        + '.sy-steps{display:flex;align-items:center;gap:6px;margin:14px 0 6px;flex-wrap:wrap;}'
+        + '.sy-step{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:#94a3b8;background:none;border:none;font-family:inherit;padding:0;cursor:default;}'
+        + '.sy-step b{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#e2e8f0;color:#64748b;font-size:12px;}'
+        + '.sy-step.done{color:#16a34a;cursor:pointer;}.sy-step.done b{background:#dcfce7;color:#16a34a;}'
+        + '.sy-step.current{color:#1e3a8a;}.sy-step.current b{background:#1e3a8a;color:#fff;}'
+        + '.sy-step-line{flex:1;min-width:16px;height:2px;background:#e2e8f0;}'
+        + '.sy-wiz-pane{min-height:220px;}'
+        + '.sy-wiz-student.st-move{background:#eff6ff;}.sy-wiz-student.st-exit{background:#fef2f2;}'
+        + '.sy-wiz-student{border-radius:8px;padding-left:6px;padding-right:6px;}'
+        + '.sy-wiz-student.st-move select{border-color:#93c5fd;}.sy-wiz-student.st-exit select{border-color:#fca5a5;}'
+        + '.sy-wiz-foot{justify-content:space-between!important;}'
+        + '.sy-review{border:1px solid #e2e8f0;border-radius:12px;padding:12px 16px;margin-bottom:12px;font-size:13px;color:#334155;}'
+        + '.sy-review h4{font-size:13.5px;margin:0 0 8px;color:#1e293b;}'
+        + '.sy-review li{margin:3px 0;}';
+      document.head.appendChild(s);
+    })();
+
+    function openNewSyWizard() {
+      fetch('ADMIN_BACKEND/admin_new_school_year.php')
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.success) { showSyMsg(data.message || 'Could not load the wizard.', false); return; }
+          // New classes start as a copy of this year's; a student "continues"
+          // into the copy of the class they're in now (same key).
+          _wiz = {
+            data: data, step: 1, collapsed: {}, search: '',
+            name: data.suggested.name, start_date: data.suggested.start_date, end_date: data.suggested.end_date,
+            classes: data.classes.map(function (c) {
+              return { key: 'c' + c.id, section_name: c.section_name, teacher_admin_id: c.teacher_admin_id };
+            }),
+            students: []
+          };
+          data.classes.forEach(function (c) {
+            c.students.forEach(function (st) {
+              if (st.exit_reason) return;
+              _wiz.students.push({ student_admin_id: st.student_admin_id, name: st.name, from: c.section_name + ' – ' + c.teacher_name,
+                from_key: 'c' + c.id, action: 'continue', class_key: 'c' + c.id, exit_reason: 'Graduated', checked: false });
+            });
+          });
+          renderWizard();
+        })
+        .catch(function () { showSyMsg('Network error. Please try again.', false); });
+    }
+
+    function closeWizard() {
+      var el = document.getElementById('sy-wiz');
+      if (el) el.remove();
+      _wiz = null;
+    }
+
+    function wizClassLabel(c) {
+      var t = _wiz.data.teachers.filter(function (t) { return t.id === Number(c.teacher_admin_id); })[0];
+      return c.section_name + ' – ' + (t ? t.name : '?');
+    }
+    function wizClass(key) { return _wiz.classes.filter(function (c) { return c.key === key; })[0]; }
+    function wizChoice(st) {
+      return st.action === 'exit' ? 'exit:' + st.exit_reason : (st.action === 'move' ? 'move:' + st.class_key : 'continue');
+    }
+
+    // The single dropdown for one student, or (fromKey = null) for a group.
+    function wizChoiceOptions(fromKey, selected, placeholder) {
+      var opt = function (value, label) {
+        return '<option value="' + value + '"' + (value === selected ? ' selected' : '') + '>' + label + '</option>';
+      };
+      var html = placeholder ? '<option value="">' + placeholder + '</option>' : '';
+      var stay = fromKey ? wizClass(fromKey) : null;
+      if (!fromKey) html += opt('continue', '✅ Stay in their class');
+      else if (stay) html += opt('continue', '✅ Stay: ' + escSy(wizClassLabel(stay)));
+      _wiz.classes.forEach(function (c) {
+        if (c.key !== fromKey) html += opt('move:' + c.key, '➡️ Move to: ' + escSy(wizClassLabel(c)));
+      });
+      WIZ_EXITS.forEach(function (r) { html += opt('exit:' + r, '🎓 Exit: ' + r); });
+      return html;
+    }
+
+    function wizStepper() {
+      return '<div class="sy-steps">' + WIZ_STEPS.map(function (label, i) {
+        var n = i + 1;
+        var cls = n === _wiz.step ? 'current' : (n < _wiz.step ? 'done' : '');
+        var btn = '<button type="button" class="sy-step ' + cls + '"' + (n < _wiz.step ? ' onclick="wizGo(' + n + ')"' : ' disabled') + '>'
+          + '<b>' + (n < _wiz.step ? '<i class="fa-solid fa-check"></i>' : n) + '</b>' + label + '</button>';
+        return (i ? '<span class="sy-step-line"></span>' : '') + btn;
+      }).join('') + '</div>';
+    }
+
+    function wizPaneSchoolYear() {
+      return '<p class="sy-hint">Name the new School Year. Current: S.Y. ' + escSy(_wiz.data.current_name) + ', which becomes read-only history when you finish. Nothing is deleted.</p>'
+        + '<div class="sy-wiz-row" style="border:none;">'
+        +   '<label style="font-size:12px;font-weight:600;">Name<input class="sy-input" value="' + escSy(_wiz.name) + '" placeholder="2027-2028" oninput="_wiz.name=this.value.trim()" /></label>'
+        +   '<label style="font-size:12px;font-weight:600;">Start<input class="sy-input" type="date" value="' + escSy(_wiz.start_date) + '" onchange="_wiz.start_date=this.value" /></label>'
+        +   '<label style="font-size:12px;font-weight:600;">End<input class="sy-input" type="date" value="' + escSy(_wiz.end_date) + '" onchange="_wiz.end_date=this.value" /></label>'
+        + '</div>';
+    }
+
+    function wizPaneClasses() {
+      var d = _wiz.data;
+      var sectionOpts = function (sel) {
+        var list = d.sections.slice();
+        if (sel && list.indexOf(sel) === -1) list.push(sel);
+        return list.map(function (s) { return '<option' + (s === sel ? ' selected' : '') + '>' + escSy(s) + '</option>'; }).join('');
+      };
+      var teacherOpts = function (sel) {
+        return d.teachers.map(function (t) { return '<option value="' + t.id + '"' + (t.id === Number(sel) ? ' selected' : '') + '>' + escSy(t.name) + '</option>'; }).join('');
+      };
+      return '<p class="sy-hint">These are copied from this year. Change a Section or Teacher, remove, or add classes. A teacher can have more than one class. <b>Changing a class\'s teacher here moves its whole class to that teacher.</b></p>'
+        + (_wiz.classes.map(function (c, i) {
+          var dup = wizDuplicateSections().indexOf(c.section_name) !== -1;
+          return '<div class="sy-wiz-row">'
+            + '<select class="sy-input" aria-label="Section" style="' + (dup ? 'border-color:#dc2626;background:#fef2f2;' : '') + '" onchange="_wiz.classes[' + i + '].section_name=this.value;renderWizard()">' + sectionOpts(c.section_name) + '</select>'
+            + '<select class="sy-input" aria-label="Teacher" onchange="_wiz.classes[' + i + '].teacher_admin_id=Number(this.value)">' + teacherOpts(c.teacher_admin_id) + '</select>'
+            + '<button class="sy-wiz-x" type="button" title="Remove class" onclick="wizRemoveClass(' + i + ')"><i class="fa-solid fa-xmark"></i></button>'
+            + (dup ? '<div style="flex-basis:100%;font-size:12px;color:#dc2626;font-weight:600;">' + escSy(c.section_name) + ' is already used by another class — each Section can only have one class.</div>' : '')
+            + '</div>';
+        }).join('') || '<p class="sy-hint">No classes yet — add one below.</p>')
+        + '<button type="button" class="sy-input" style="width:auto;margin-top:8px;cursor:pointer;" onclick="wizAddClass()"><i class="fa-solid fa-plus"></i> Add class</button>';
+    }
+
+    function wizPaneStudents() {
+      var groups = [];
+      _wiz.students.forEach(function (st, i) {
+        var g = groups.filter(function (g) { return g.key === st.from_key; })[0];
+        if (!g) { g = { key: st.from_key, label: st.from, idx: [] }; groups.push(g); }
+        g.idx.push(i);
+      });
+      var counts = { continue: 0, move: 0, exit: 0 };
+      var checkedIdx = [];
+      _wiz.students.forEach(function (st, i) { counts[st.action]++; if (st.checked) checkedIdx.push(i); });
+
+      var rows = groups.map(function (g) {
+        var allChecked = g.idx.every(function (i) { return _wiz.students[i].checked; });
+        var collapsed = !!_wiz.collapsed[g.key];
+        return '<div class="sy-wiz-group" data-group="' + g.key + '">'
+          + '<div class="sy-wiz-ghead">'
+          +   '<input type="checkbox"' + (allChecked ? ' checked' : '') + ' onchange="wizCheck(' + JSON.stringify(g.idx) + ', this.checked)" aria-label="Select whole class" />'
+          +   '<button type="button" class="sy-wiz-toggle" onclick="_wiz.collapsed[\'' + g.key + '\']=' + !collapsed + ';renderWizard()">'
+          +     '<i class="fa-solid fa-chevron-' + (collapsed ? 'right' : 'down') + '"></i> Now in ' + escSy(g.label) + ' <span class="sy-wiz-count">(' + g.idx.length + ')</span></button>'
+          +   '<select class="sy-input sy-wiz-gaction" aria-label="Whole class" onchange="if(this.value)wizApply(' + JSON.stringify(g.idx) + ', this.value)">' + wizChoiceOptions(null, '', 'Whole class…') + '</select>'
+          + '</div>'
+          + (collapsed ? '' : g.idx.map(function (i) {
+            var st = _wiz.students[i];
+            return '<div class="sy-wiz-row sy-wiz-student st-' + st.action + '" data-name="' + escSy(st.name.toLowerCase()) + '">'
+              + '<input type="checkbox" class="sy-wiz-check"' + (st.checked ? ' checked' : '') + ' onchange="_wiz.students[' + i + '].checked=this.checked;renderWizard()" aria-label="Select ' + escSy(st.name) + '" />'
+              + '<span class="sy-wiz-name">' + escSy(st.name) + '</span>'
+              + '<select class="sy-input" aria-label="Next School Year for ' + escSy(st.name) + '" onchange="wizApply([' + i + '], this.value)">' + wizChoiceOptions(st.from_key, wizChoice(st)) + '</select>'
+              + '</div>';
+          }).join(''))
+          + '</div>';
+      }).join('') || '<p class="sy-hint">No enrolled students this School Year.</p>';
+
+      return '<p class="sy-hint">Everyone starts on <b>Stay</b> — only change the ones who move or leave. Use <b>Whole class…</b>, or tick students and use <b>Apply to selected…</b>, to change many at once.</p>'
+        + '<div class="sy-wiz-summary">'
+        +   '<span>✅ <b>' + counts.continue + '</b> Stay</span><span>➡️ <b>' + counts.move + '</b> Move</span><span>🎓 <b>' + counts.exit + '</b> Exit</span>'
+        +   '<input id="wiz-search" class="sy-input" type="search" placeholder="Search student..." value="' + escSy(_wiz.search) + '" oninput="_wiz.search=this.value;wizFilter()" />'
+        + '</div>'
+        + rows
+        + (checkedIdx.length
+          ? '<div class="sy-wiz-bulk"><b>' + checkedIdx.length + ' selected</b>'
+            + '<select class="sy-input" onchange="if(this.value)wizApply(' + JSON.stringify(checkedIdx) + ', this.value, true)">' + wizChoiceOptions(null, '', 'Apply to selected…') + '</select>'
+            + '<button type="button" class="sy-input" style="width:auto;cursor:pointer;" onclick="wizCheck(' + JSON.stringify(checkedIdx) + ', false)">Clear</button></div>'
+          : '');
+    }
+
+    function wizPaneReview() {
+      var moves = _wiz.students.filter(function (st) { return st.action === 'move'; });
+      var exits = _wiz.students.filter(function (st) { return st.action === 'exit'; });
+      var stays = _wiz.students.length - moves.length - exits.length;
+      var classList = _wiz.classes.map(function (c) {
+        var n = _wiz.students.filter(function (st) { return st.action !== 'exit' && st.class_key === c.key; }).length;
+        return '<li>' + escSy(wizClassLabel(c)) + ' — <b>' + n + '</b> student(s)</li>';
+      }).join('');
+      return '<p class="sy-hint">Check everything below. Use <b>Back</b> to change anything. Nothing happens until you press <b>Start School Year</b>.</p>'
+        + '<div class="sy-review"><h4><i class="fa-solid fa-calendar-days"></i> S.Y. ' + escSy(_wiz.name) + '</h4>'
+        +   formatSyDate(_wiz.start_date) + ' – ' + formatSyDate(_wiz.end_date) + '. S.Y. ' + escSy(_wiz.data.current_name) + ' becomes read-only history.</div>'
+        + '<div class="sy-review"><h4><i class="fa-solid fa-chalkboard-user"></i> ' + _wiz.classes.length + ' class(es)</h4><ul style="margin:0;padding-left:18px;">' + classList + '</ul></div>'
+        + '<div class="sy-review"><h4><i class="fa-solid fa-users"></i> Students</h4>'
+        +   '<div>✅ <b>' + stays + '</b> stay in their class</div>'
+        +   (moves.length ? '<div style="margin-top:8px;">➡️ <b>' + moves.length + '</b> move:</div><ul style="margin:4px 0 0;padding-left:18px;">'
+              + moves.map(function (st) { return '<li>' + escSy(st.name) + ': ' + escSy(st.from) + ' → <b>' + escSy(wizClassLabel(wizClass(st.class_key))) + '</b></li>'; }).join('') + '</ul>' : '')
+        +   (exits.length ? '<div style="margin-top:8px;">🎓 <b>' + exits.length + '</b> exit:</div><ul style="margin:4px 0 0;padding-left:18px;">'
+              + exits.map(function (st) { return '<li>' + escSy(st.name) + ' — ' + escSy(st.exit_reason) + '</li>'; }).join('') + '</ul>' : '')
+        + '</div>';
+    }
+
+    function renderWizard() {
+      var old = document.getElementById('sy-wiz');
+      var sameStep = old && old.getAttribute('data-step') === String(_wiz.step);
+      var keepScroll = sameStep ? old.scrollTop : 0;
+      var keepSearchFocus = sameStep && document.activeElement === document.getElementById('wiz-search');
+      if (old) old.remove();
+
+      var pane = [wizPaneSchoolYear, wizPaneClasses, wizPaneStudents, wizPaneReview][_wiz.step - 1]();
+      var next = _wiz.step < 4
+        ? '<button type="button" class="admin-btn-signin" style="width:auto;padding:9px 20px;font-size:13px;" onclick="wizNext()">Next <i class="fa-solid fa-arrow-right"></i></button>'
+        : '<button type="button" class="admin-btn-signin" style="width:auto;padding:9px 20px;font-size:13px;" onclick="submitWizard()"><i class="fa-solid fa-check"></i> Start School Year</button>';
+
+      var el = document.createElement('div');
+      el.id = 'sy-wiz';
+      el.className = 'sy-wiz-overlay';
+      el.setAttribute('data-step', _wiz.step);
+      el.innerHTML = '<div class="sy-wiz" role="dialog" aria-modal="true" aria-label="Start New School Year">'
+        + '<h2 style="font-size:19px;margin:0;">Start New School Year</h2>'
+        + wizStepper()
+        + '<h3>' + _wiz.step + '. ' + WIZ_STEPS[_wiz.step - 1] + '</h3>'
+        + '<div class="sy-wiz-pane">' + pane + '</div>'
+        + '<div id="wiz-error" style="display:none;margin-top:14px;padding:10px 14px;border-radius:8px;background:#fee2e2;color:#991b1b;font-size:12.5px;"></div>'
+        + '<div class="sy-wiz-foot">'
+        +   '<button type="button" class="sy-input" style="width:auto;cursor:pointer;" onclick="closeWizard()">Cancel</button>'
+        +   '<div style="display:flex;gap:10px;">'
+        +     (_wiz.step > 1 ? '<button type="button" class="sy-input" style="width:auto;cursor:pointer;" onclick="wizGo(' + (_wiz.step - 1) + ')"><i class="fa-solid fa-arrow-left"></i> Back</button>' : '')
+        +     next
+        +   '</div>'
+        + '</div></div>';
+      document.body.appendChild(el);
+      // Re-rendering replaces the overlay; keep the Admin's place in a long list.
+      el.scrollTop = keepScroll;
+      if (_wiz.step === 3) wizFilter();
+      if (keepSearchFocus) {
+        var search = document.getElementById('wiz-search');
+        search.focus();
+        search.setSelectionRange(search.value.length, search.value.length);
+      }
+    }
+
+    function wizError(text) {
+      var err = document.getElementById('wiz-error');
+      err.textContent = text;
+      err.style.display = 'block';
+    }
+
+    // Problems with a step, or '' when it's fine to move on.
+    function wizCheckStep(step) {
+      if (step === 1) {
+        var m = /^(\d{4})-(\d{4})$/.exec(_wiz.name);
+        if (!m || Number(m[2]) !== Number(m[1]) + 1) return 'School Year must look like 2027-2028.';
+        if (!_wiz.start_date || !_wiz.end_date || _wiz.end_date <= _wiz.start_date) return 'Please enter a start and end date (end must be after start).';
+      }
+      if (step === 2) {
+        var dups = wizDuplicateSections();
+        if (dups.length) return dups.join(', ') + ' is used by more than one class. Each Section can only have one class per School Year — change or remove one.';
+        if (!_wiz.classes.length && _wiz.students.length) return 'Add at least one class for the students to go to.';
+      }
+      if (step === 3 && _wiz.students.some(function (st) { return st.action !== 'exit' && !wizClass(st.class_key); })) {
+        return 'Every student who stays or moves needs a class.';
+      }
+      return '';
+    }
+
+    // Sections picked by more than one class (each Section gets one class per S.Y.).
+    function wizDuplicateSections() {
+      var count = {};
+      _wiz.classes.forEach(function (c) { count[c.section_name] = (count[c.section_name] || 0) + 1; });
+      return Object.keys(count).filter(function (s) { return count[s] > 1; });
+    }
+
+    function wizNext() {
+      var problem = wizCheckStep(_wiz.step);
+      if (problem) { wizError(problem); return; }
+      wizGo(_wiz.step + 1);
+    }
+
+    function wizGo(step) {
+      _wiz.step = step;
+      renderWizard();
+    }
+
+    function wizApply(indexes, value, clearSelection) {
+      indexes.forEach(function (i) {
+        var st = _wiz.students[i];
+        if (value === 'continue') {
+          st.class_key = wizClass(st.from_key) ? st.from_key : (_wiz.classes[0] ? _wiz.classes[0].key : '');
+          st.action = st.class_key === st.from_key ? 'continue' : 'move';
+        } else if (value.indexOf('move:') === 0) {
+          st.class_key = value.slice(5);
+          st.action = st.class_key === st.from_key ? 'continue' : 'move';
+        } else if (value.indexOf('exit:') === 0) {
+          st.action = 'exit';
+          st.exit_reason = value.slice(5);
+        }
+        if (clearSelection) st.checked = false;
+      });
+      renderWizard();
+    }
+
+    function wizCheck(indexes, checked) {
+      indexes.forEach(function (i) { _wiz.students[i].checked = checked; });
+      renderWizard();
+    }
+
+    // Hides students (and empty classes) that don't match the search box.
+    function wizFilter() {
+      var q = (_wiz.search || '').trim().toLowerCase();
+      document.querySelectorAll('#sy-wiz .sy-wiz-group').forEach(function (g) {
+        var shown = 0;
+        g.querySelectorAll('.sy-wiz-student').forEach(function (row) {
+          var match = !q || row.getAttribute('data-name').indexOf(q) !== -1;
+          row.style.display = match ? '' : 'none';
+          if (match) shown++;
+        });
+        g.style.display = q && !shown && !_wiz.collapsed[g.getAttribute('data-group')] ? 'none' : '';
+      });
+    }
+
+    function wizAddClass() {
+      var d = _wiz.data;
+      var used = _wiz.classes.map(function (c) { return c.section_name; });
+      var free = d.sections.filter(function (s) { return used.indexOf(s) === -1; })[0];
+      _wiz.classes.push({ key: 'n' + Date.now(), section_name: free || d.sections[0], teacher_admin_id: d.teachers.length ? d.teachers[0].id : 0 });
+      renderWizard();
+    }
+
+    function wizRemoveClass(i) {
+      var key = _wiz.classes[i].key;
+      _wiz.classes.splice(i, 1);
+      // Students who were staying in or moving to that class need a new one.
+      _wiz.students.forEach(function (st) {
+        if (st.action !== 'exit' && st.class_key === key) {
+          st.class_key = _wiz.classes.length ? _wiz.classes[0].key : '';
+          st.action = 'move';
+        }
+      });
+      renderWizard();
+    }
+
+    function submitWizard() {
+      var payload = {
+        name: _wiz.name,
+        start_date: _wiz.start_date,
+        end_date: _wiz.end_date,
+        classes: _wiz.classes,
+        students: _wiz.students.map(function (st) {
+          return { student_admin_id: st.student_admin_id, action: st.action, class_key: st.class_key, exit_reason: st.exit_reason };
+        })
+      };
+      fetch('ADMIN_BACKEND/admin_new_school_year.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': _csrfToken },
+        body: JSON.stringify(payload)
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.success) { wizError(data.message || 'Could not start the School Year.'); return; }
+          closeWizard();
+          showSyMsg(data.message, true);
+          document.getElementById('sy-classes-select').value = '';
+          loadSchoolYears();
+          if (window.refreshSchoolYearSwitcher) window.refreshSchoolYearSwitcher();
+        })
+        .catch(function () { wizError('Network error. Please try again.'); });
     }
 
   </script>

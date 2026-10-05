@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../TEACHER_FILES/TEACHER_BACKEND/db.php';
 require_once __DIR__ . '/student_auth.php';
+require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/school_year.php';
 
 header('Content-Type: application/json');
 header('Cache-Control: no-cache');
@@ -20,6 +21,12 @@ if (!$rec) {
     exit;
 }
 $student_record_id = (int)$rec['student_record_id'];
+// Only the current teacher's activities: after moving to a new teacher, the
+// previous teacher's activities stop showing here (their records are kept and
+// stay visible to teachers in the School Year History).
+$current_teacher_id = (int)$rec['teacher_id'];
+// Students only ever see the Active School Year.
+$syId = getActiveSchoolYearId($conn);
 
 // Only return activities explicitly assigned to this student via activity_assignments
 $stmt = $conn->prepare("
@@ -35,7 +42,7 @@ $stmt = $conn->prepare("
     INNER JOIN activity_assignments aa ON aa.activity_id = a.id AND aa.student_id = ?
     LEFT JOIN learner_progress lp ON lp.activity_id = a.id AND lp.student_id = ?
     LEFT JOIN activity_submissions sub ON sub.student_id = lp.student_id AND sub.activity_id = lp.activity_id AND sub.teacher_id = lp.teacher_id
-    WHERE a.status = 'published'
+    WHERE a.status = 'published' AND a.school_year_id = $syId AND a.teacher_id = $current_teacher_id
     ORDER BY a.created_at DESC
 ");
 

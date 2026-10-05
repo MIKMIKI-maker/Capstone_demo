@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/teacher_auth.php';
+require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/school_year.php';
 require_once __DIR__ . '/../../MAILER/notify_parent.php';
 
 header('Content-Type: application/json');
@@ -15,6 +16,7 @@ if (!$conn) {
     echo json_encode(['success' => false]);
     exit;
 }
+requireActiveSchoolYearView($conn);
 
 $submission_id    = intval($_POST['submission_id']    ?? 0);
 $teacher_id       = requireTeacherId();

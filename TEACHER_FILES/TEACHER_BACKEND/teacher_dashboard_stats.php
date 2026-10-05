@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/teacher_auth.php';
 require_once __DIR__ . '/teacher_check_pending_reminders.php';
+require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/school_year.php';
 
 header('Content-Type: application/json');
 
@@ -10,7 +12,8 @@ if (!$conn) {
     exit;
 }
 
-$teacher_id = isset($_REQUEST['teacher_id']) ? intval($_REQUEST['teacher_id']) : 1;
+// The logged-in teacher, from the session — never a teacher_id sent by the browser.
+$teacher_id = requireTeacherId();
 
 // See teacher_check_pending_reminders.php — this is the closest thing this
 // app has to a daily cron, piggybacked on the one page every teacher is
@@ -28,20 +31,24 @@ $stats = [
     'student_progress'     => []
 ];
 
+// Activity counts/lists only cover the School Year being viewed.
+$syId = getViewedSchoolYearId($conn);
+$roster = teacherRosterCondition($conn, $teacher_id, $syId, 's');
+
 // Basic counts
 $countQueries = [
-    ['assigned_learners',    "SELECT COUNT(*) as c FROM students WHERE teacher_id=?",                                         'i'],
-    ['active_learners',      "SELECT COUNT(*) as c FROM students WHERE teacher_id=? AND status='active'",                    'i'],
-    ['total_activities',     "SELECT COUNT(*) as c FROM teacher_activities WHERE teacher_id=?",                               'i'],
-    ['draft_activities',     "SELECT COUNT(*) as c FROM teacher_activities WHERE teacher_id=? AND status='draft'",            'i'],
-    ['published_activities', "SELECT COUNT(*) as c FROM teacher_activities WHERE teacher_id=? AND status='published'",        'i'],
+    ['assigned_learners',    "SELECT COUNT(*) as c FROM students s WHERE $roster",                                           ''],
+    ['active_learners',      "SELECT COUNT(*) as c FROM students s WHERE $roster AND s.status='active'",                     ''],
+    ['total_activities',     "SELECT COUNT(*) as c FROM teacher_activities WHERE teacher_id=? AND school_year_id=$syId",                        'i'],
+    ['draft_activities',     "SELECT COUNT(*) as c FROM teacher_activities WHERE teacher_id=? AND school_year_id=$syId AND status='draft'",     'i'],
+    ['published_activities', "SELECT COUNT(*) as c FROM teacher_activities WHERE teacher_id=? AND school_year_id=$syId AND status='published'", 'i'],
 ];
 
 foreach ($countQueries as $q) {
     list($key, $sql, $types) = $q;
     $stmt = $conn->prepare($sql);
     if (!$stmt) continue;
-    $stmt->bind_param($types, $teacher_id);
+    if ($types) $stmt->bind_param($types, $teacher_id);
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
     $stats[$key] = (int)($row['c'] ?? 0);
@@ -54,7 +61,7 @@ $recent = [];
 
 $stmt = $conn->prepare(
     "SELECT activity_title as title, status as sub, created_at as date
-     FROM teacher_activities WHERE teacher_id=? ORDER BY created_at DESC LIMIT 20"
+     FROM teacher_activities WHERE teacher_id=? AND school_year_id=$syId ORDER BY created_at DESC LIMIT 20"
 );
 if ($stmt) {
     $stmt->bind_param("i", $teacher_id);
@@ -79,17 +86,17 @@ $stmt = $conn->prepare(
          FROM learner_progress lp
          JOIN teacher_activities ta ON ta.id = lp.activity_id AND ta.teacher_id = lp.teacher_id
          LEFT JOIN activity_submissions sub ON sub.student_id = lp.student_id AND sub.activity_id = lp.activity_id AND sub.teacher_id = lp.teacher_id
-         WHERE lp.student_id = s.id AND lp.teacher_id = ?) AS last_score,
+         WHERE lp.student_id = s.id AND lp.teacher_id = ? AND ta.school_year_id = $syId) AS last_score,
         (SELECT COUNT(*) FROM learner_progress lp
          JOIN teacher_activities ta ON ta.id = lp.activity_id AND ta.teacher_id = lp.teacher_id
-         WHERE lp.student_id = s.id AND lp.teacher_id = ?) AS activity_count
+         WHERE lp.student_id = s.id AND lp.teacher_id = ? AND ta.school_year_id = $syId) AS activity_count
      FROM students s
-     WHERE s.teacher_id = ?
+     WHERE $roster
      ORDER BY s.student_name ASC
      LIMIT 12"
 );
 if ($stmt) {
-    $stmt->bind_param("iii", $teacher_id, $teacher_id, $teacher_id);
+    $stmt->bind_param("ii", $teacher_id, $teacher_id);
     $stmt->execute();
     $res = $stmt->get_result();
     while ($row = $res->fetch_assoc()) {

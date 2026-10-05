@@ -5,6 +5,7 @@
 <head>
     <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
     <script src="../ASSETS/teacher_portal.js?v=15"></script>
+    <script src="../ASSETS/school_year_switcher.js?v=9" data-picker="off" defer></script>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
@@ -529,11 +530,11 @@
                     // URL in file_name; older entries are still a bare local filename.
                     var _uploadUrl = a.file_name.indexOf('http') === 0 ? a.file_name : 'uploads/materials/' + a.file_name;
                     actions = '<a class="btn-edit" href="' + esc(_uploadUrl) + '" target="_blank" rel="noopener" title="Open" style="display:inline-flex;align-items:center;gap:5px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> <span class="btn-label">Open</span></a>'
-                            + '<button class="btn-delete" onclick="deleteUpload(' + a.upload_id + ')" type="button" title="Delete"><i class="fa-solid fa-trash"></i> <span class="btn-label">Delete</span></button>';
+                            + '<button class="btn-delete" data-sy-write onclick="deleteUpload(' + a.upload_id + ')" type="button" title="Delete"><i class="fa-solid fa-trash"></i> <span class="btn-label">Delete</span></button>';
                 } else if (a.status === 'draft' && a._isLocal && !a.db_activity_id) {
-                    actions = '<button class="btn-edit" onclick="editDraft(\'' + esc(a.id) + '\',\'' + esc(a.templateFile) + '\')" type="button" title="Edit">'
+                    actions = '<button class="btn-edit" data-sy-write onclick="editDraft(\'' + esc(a.id) + '\',\'' + esc(a.templateFile) + '\')" type="button" title="Edit">'
                             + '<i class="fa-solid fa-pen"></i> <span class="btn-label">Edit</span></button>'
-                            + '<button class="btn-delete" onclick="deleteDraft(\'' + esc(a.id) + '\')" type="button" title="Unpublish">'
+                            + '<button class="btn-delete" data-sy-write onclick="deleteDraft(\'' + esc(a.id) + '\')" type="button" title="Unpublish">'
                             + '<i class="fa-solid fa-trash"></i> <span class="btn-label">Unpublish</span></button>';
                 } else if (a._isLocal && (a.status === 'published' || a.is_locked)) {
                     // Covers both a genuinely-published local item and one that
@@ -545,14 +546,14 @@
                     var _subDbId = a.db_activity_id || 0;
                     actions = (EDITABLE_TYPES[a.type] ? activityEditButton(a, 'editPublished(\'' + esc(a.id) + '\',\'' + esc(a.type) + '\')') : '')
                             + (_subDbId && a.status === 'published' ? '<button class="btn-edit" onclick="window.location.href=\'Teacher_reviewact.html?id='+_subDbId+'\'" type="button" title="View Submissions"><i class="fa-solid fa-eye"></i> <span class="btn-label">View Submissions</span></button>' : '')
-                            + '<button class="btn-delete" onclick="deletePublished(\'' + esc(a.id) + '\')" type="button" title="Unpublish">'
+                            + '<button class="btn-delete" data-sy-write onclick="deletePublished(\'' + esc(a.id) + '\')" type="button" title="Unpublish">'
                             + '<i class="fa-solid fa-trash"></i> <span class="btn-label">Unpublish</span></button>';
                 } else if (a.status === 'published' && !a._isLocal) {
                     // Backend-only published: no local copy in this browser, but
                     // content_json now lives server-side too, so editing still works.
                     actions = (EDITABLE_TYPES[a.type] ? activityEditButton(a, 'editPublishedRemote(' + a.id + ',\'' + esc(a.type) + '\')') : '')
                             + '<button class="btn-edit" onclick="window.location.href=\'Teacher_reviewact.html?id='+a.id+'\'" type="button" title="View Submissions"><i class="fa-solid fa-eye"></i> <span class="btn-label">View Submissions</span></button>'
-                            + '<button class="btn-delete" onclick="deleteBackendPublished(' + a.id + ')" type="button" title="Unpublish">'
+                            + '<button class="btn-delete" data-sy-write onclick="deleteBackendPublished(' + a.id + ')" type="button" title="Unpublish">'
                             + '<i class="fa-solid fa-trash"></i> <span class="btn-label">Unpublish</span></button>';
                 } else if (a.is_locked) {
                     // Was published, currently mid-edit or bounced back to draft
@@ -562,7 +563,7 @@
                     // types instead of just the 3 in the plain stub-draft map
                     // below.
                     actions = (EDITABLE_TYPES[a.type] ? activityEditButton(a, 'editPublishedRemote(' + a.id + ',\'' + esc(a.type) + '\')') : '')
-                            + '<button class="btn-delete" onclick="deleteBackendDraft(' + a.id + ')" type="button" title="Unpublish"><i class="fa-solid fa-trash"></i> <span class="btn-label">Unpublish</span></button>';
+                            + '<button class="btn-delete" data-sy-write onclick="deleteBackendDraft(' + a.id + ')" type="button" title="Unpublish"><i class="fa-solid fa-trash"></i> <span class="btn-label">Unpublish</span></button>';
                 } else {
                     // Genuine backend-only draft stub (teacher_save_draft.php) —
                     // no real content_json saved server-side yet, so Edit just
@@ -571,7 +572,7 @@
                     var _tmplMap = { 'Matching':'TEMPLATES/Matching_Type_Template.html', 'Sorting':'TEMPLATES/Sorting_Type_Template.html', 'Sequencing':'TEMPLATES/Sequencing_Type_Template.html' };
                     var _tmpl = _tmplMap[a.type] || '';
                     actions = (_tmpl ? activityEditButton(a, 'editBackendDraft(' + a.id + ',\'' + esc(_tmpl) + '\')') : '')
-                            + '<button class="btn-delete" onclick="deleteBackendDraft(' + a.id + ')" type="button" title="Unpublish"><i class="fa-solid fa-trash"></i> <span class="btn-label">Unpublish</span></button>';
+                            + '<button class="btn-delete" data-sy-write onclick="deleteBackendDraft(' + a.id + ')" type="button" title="Unpublish"><i class="fa-solid fa-trash"></i> <span class="btn-label">Unpublish</span></button>';
                 }
 
                 var learnerCell = a.grading
@@ -603,7 +604,7 @@
 
         function activityEditButton(activity, onclick) {
             var disabled = !!activity.has_submissions;
-            return '<button class="btn-edit" type="button"'
+            return '<button class="btn-edit" data-sy-write type="button"'
                 + (disabled
                     ? ' disabled aria-disabled="true" title="A student has submitted this activity; editing is disabled."'
                     : ' onclick="' + onclick + '" title="Edit"')

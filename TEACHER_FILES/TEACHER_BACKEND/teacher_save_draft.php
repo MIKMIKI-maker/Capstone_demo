@@ -1,6 +1,8 @@
 <?php
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/db.php';
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/teacher_auth.php';
+require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/school_year.php';
 
 header('Content-Type: application/json');
 
@@ -9,7 +11,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$teacher_id  = intval($_POST['teacher_id']    ?? 0);
+// The logged-in teacher, from the session — never a teacher_id sent by the browser.
+$teacher_id = requireTeacherId();
 $title       = trim($_POST['activity_title']  ?? '');
 $type        = trim($_POST['activity_type']   ?? '');
 $db_draft_id = intval($_POST['db_draft_id']   ?? 0);
@@ -25,6 +28,10 @@ if (!$teacher_conn || !$conn) {
     echo json_encode(['success' => false, 'message' => 'Database connection failed']);
     exit;
 }
+
+// Drafts belong to the Active School Year; a past S.Y. is read-only.
+requireActiveSchoolYearView($teacher_conn);
+$school_year_id = getActiveSchoolYearId($teacher_conn);
 
 $result_id = 0;
 
@@ -42,10 +49,10 @@ if ($db_draft_id > 0) {
 } else {
     // Insert new draft record
     $stmt = $teacher_conn->prepare(
-        "INSERT INTO teacher_activities (teacher_id, activity_title, activity_type, status) VALUES (?, ?, ?, 'draft')"
+        "INSERT INTO teacher_activities (teacher_id, activity_title, activity_type, status, school_year_id) VALUES (?, ?, ?, 'draft', ?)"
     );
     if ($stmt) {
-        $stmt->bind_param("iss", $teacher_id, $title, $type);
+        $stmt->bind_param("issi", $teacher_id, $title, $type, $school_year_id);
         $stmt->execute();
         $result_id = $teacher_conn->insert_id;
         $stmt->close();
