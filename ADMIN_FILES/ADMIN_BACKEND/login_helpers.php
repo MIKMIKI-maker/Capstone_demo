@@ -76,15 +76,19 @@ function getStudentRecord($admin_account_id, $full_name = '') {
         }
     }
 
+    // Name matching only claims an old record no account is linked to yet, and
+    // only when exactly one such record has that name — it used to re-link
+    // whichever record matched first, even one belonging to another learner.
     if (!$row && $full_name !== '') {
-        $stmt2 = $conn->prepare("SELECT id AS student_record_id, teacher_id, disability_type, grade_level, student_name FROM students WHERE LOWER(TRIM(student_name)) = LOWER(TRIM(?)) AND status = 'active' LIMIT 1");
+        $stmt2 = $conn->prepare("SELECT id AS student_record_id, teacher_id, disability_type, grade_level, student_name FROM students WHERE LOWER(TRIM(student_name)) = LOWER(TRIM(?)) AND status = 'active' AND COALESCE(admin_account_id, 0) = 0 LIMIT 2");
         if ($stmt2) {
             $stmt2->bind_param("s", $full_name);
             $stmt2->execute();
-            $row = $stmt2->get_result()->fetch_assoc();
+            $matches = $stmt2->get_result()->fetch_all(MYSQLI_ASSOC);
             $stmt2->close();
+            $row = count($matches) === 1 ? $matches[0] : null;
             if ($row && $admin_account_id > 0) {
-                $upd = $conn->prepare("UPDATE students SET admin_account_id = ? WHERE id = ?");
+                $upd = $conn->prepare("UPDATE students SET admin_account_id = ? WHERE id = ? AND COALESCE(admin_account_id, 0) = 0");
                 if ($upd) { $upd->bind_param("ii", $admin_account_id, $row['student_record_id']); $upd->execute(); $upd->close(); }
             }
         }

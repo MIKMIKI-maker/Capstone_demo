@@ -2,6 +2,7 @@
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/db.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/admin_push_notification.php';
+require_once __DIR__ . '/../../STUDENT_FILES/STUDENT_BACKEND/student_auth.php';
 
 header('Content-Type: application/json');
 
@@ -16,8 +17,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$teacher_id  = isset($_POST['teacher_id'])   ? intval($_POST['teacher_id'])   : 0;
-$student_id  = isset($_POST['student_id'])   ? intval($_POST['student_id'])   : 0;
+// Only a logged-in student can submit, and only for themselves — the
+// student and teacher are worked out from the session and the activity,
+// never taken from what the browser sends (anyone could post a fake score).
+$student_admin_id = requireStudentSession();
 $activity_id = isset($_POST['activity_id'])  ? intval($_POST['activity_id'])  : 0;
 $score       = isset($_POST['score'])        ? intval($_POST['score'])        : 0;
 $notes       = isset($_POST['notes'])        ? trim($_POST['notes'])          : '';
@@ -28,8 +31,8 @@ $retake_count  = isset($_POST['retake_count'])  ? intval($_POST['retake_count'])
 $scaffold_used = isset($_POST['scaffold_used']) ? intval($_POST['scaffold_used']) : 0;
 $struggled_items_json = isset($_POST['struggled_items_json']) ? trim($_POST['struggled_items_json']) : '';
 
-if (!$teacher_id || !$student_id || !$activity_id) {
-    echo json_encode(['success' => false, 'message' => 'Teacher ID, student ID, and activity ID are required']);
+if (!$activity_id) {
+    echo json_encode(['success' => false, 'message' => 'Activity ID is required']);
     exit;
 }
 
@@ -39,6 +42,29 @@ if (!$teacher_conn) {
     echo json_encode(['success' => false, 'message' => 'Teacher database connection failed']);
     exit;
 }
+
+$rec = resolveStudentRecord($teacher_conn, $student_admin_id);
+if (!$rec) {
+    echo json_encode(['success' => false, 'message' => 'Not enrolled']);
+    exit;
+}
+$student_id = (int)$rec['student_record_id'];
+
+// The activity must be published, assigned to this student, and from their
+// current teacher — its teacher is who the result is recorded for.
+$own = $teacher_conn->prepare("SELECT a.teacher_id FROM teacher_activities a
+    INNER JOIN activity_assignments aa ON aa.activity_id = a.id AND aa.student_id = ?
+    WHERE a.id = ? AND a.status = 'published' AND a.teacher_id = ?");
+$current_teacher_id = (int)$rec['teacher_id'];
+$own->bind_param("iii", $student_id, $activity_id, $current_teacher_id);
+$own->execute();
+$ownRow = $own->get_result()->fetch_assoc();
+$own->close();
+if (!$ownRow) {
+    echo json_encode(['success' => false, 'message' => 'This activity is not assigned to you']);
+    exit;
+}
+$teacher_id = (int)$ownRow['teacher_id'];
 
 // Remove any existing record for this student+activity so retakes update the score
 $del = $teacher_conn->prepare("DELETE FROM learner_progress WHERE student_id = ? AND activity_id = ?");

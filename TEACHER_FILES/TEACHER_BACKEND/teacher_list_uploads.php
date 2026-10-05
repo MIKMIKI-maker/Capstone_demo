@@ -1,9 +1,11 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/teacher_auth.php';
 header('Content-Type: application/json');
 header('Cache-Control: no-cache');
 
-$teacher_id = isset($_GET['teacher_id']) ? intval($_GET['teacher_id']) : 0;
+// The logged-in teacher, from the session — never a teacher_id sent by the browser.
+$teacher_id = requireTeacherId();
 if (!$teacher_id) {
     echo json_encode(['success' => false, 'uploads' => []]);
     exit;

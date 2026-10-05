@@ -38,14 +38,18 @@ function resolveStudentRecord($conn, $admin_account_id) {
 
     $full_name = isset($_SESSION['admin_name']) ? trim($_SESSION['admin_name']) : '';
 
+    // 2./3. Name matching is only for old records no account is linked to yet,
+    // and only when the name points to exactly ONE such record — otherwise two
+    // learners with the same name could open each other's activities.
     // 2. Case-insensitive exact name match
     if (!$row && $full_name !== '') {
-        $stmt2 = $conn->prepare("SELECT id AS student_record_id, teacher_id, disability_type, grade_level, student_name FROM students WHERE LOWER(TRIM(student_name)) = LOWER(TRIM(?)) AND status = 'active' LIMIT 1");
+        $stmt2 = $conn->prepare("SELECT id AS student_record_id, teacher_id, disability_type, grade_level, student_name FROM students WHERE LOWER(TRIM(student_name)) = LOWER(TRIM(?)) AND status = 'active' AND COALESCE(admin_account_id, 0) = 0 LIMIT 2");
         if ($stmt2) {
             $stmt2->bind_param("s", $full_name);
             $stmt2->execute();
-            $row = $stmt2->get_result()->fetch_assoc();
+            $matches = $stmt2->get_result()->fetch_all(MYSQLI_ASSOC);
             $stmt2->close();
+            if (count($matches) === 1) $row = $matches[0];
         }
     }
 
@@ -57,12 +61,13 @@ function resolveStudentRecord($conn, $admin_account_id) {
             $last  = strtolower(end($parts));
             $like  = '%' . $conn->real_escape_string($first) . '%';
             $like2 = '%' . $conn->real_escape_string($last)  . '%';
-            $stmt3 = $conn->prepare("SELECT id AS student_record_id, teacher_id, disability_type, grade_level, student_name FROM students WHERE LOWER(student_name) LIKE ? AND LOWER(student_name) LIKE ? AND status = 'active' LIMIT 1");
+            $stmt3 = $conn->prepare("SELECT id AS student_record_id, teacher_id, disability_type, grade_level, student_name FROM students WHERE LOWER(student_name) LIKE ? AND LOWER(student_name) LIKE ? AND status = 'active' AND COALESCE(admin_account_id, 0) = 0 LIMIT 2");
             if ($stmt3) {
                 $stmt3->bind_param("ss", $like, $like2);
                 $stmt3->execute();
-                $row = $stmt3->get_result()->fetch_assoc();
+                $matches = $stmt3->get_result()->fetch_all(MYSQLI_ASSOC);
                 $stmt3->close();
+                if (count($matches) === 1) $row = $matches[0];
             }
         }
     }
