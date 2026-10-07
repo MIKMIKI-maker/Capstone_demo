@@ -26,6 +26,8 @@ $stats = [
     'total_activities'     => 0,
     'draft_activities'     => 0,
     'published_activities' => 0,
+    'pending_reviews'      => 0,
+    'new_material_submissions' => 0,
     'recent_activities'    => [],
     'today_tasks'          => [],
     'student_progress'     => []
@@ -52,6 +54,27 @@ foreach ($countQueries as $q) {
     $stmt->execute();
     $row = $stmt->get_result()->fetch_assoc();
     $stats[$key] = (int)($row['c'] ?? 0);
+    $stmt->close();
+}
+
+// Submissions still waiting for the teacher's final grade (Review Activities).
+$stmt = $conn->prepare("SELECT COUNT(*) AS c FROM activity_submissions sub
+    INNER JOIN teacher_activities ta ON ta.id = sub.activity_id
+    WHERE sub.teacher_id = ? AND ta.school_year_id = $syId AND COALESCE(sub.is_finalized, 0) = 0");
+if ($stmt) {
+    $stmt->bind_param("i", $teacher_id);
+    $stmt->execute();
+    $stats['pending_reviews'] = (int)($stmt->get_result()->fetch_assoc()['c'] ?? 0);
+    $stmt->close();
+}
+
+// Files learners sent for 'activity' uploaded materials in the last 7 days.
+$stmt = $conn->prepare("SELECT COUNT(*) AS c FROM material_submissions
+    WHERE teacher_id = ? AND submitted_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)");
+if ($stmt) {
+    $stmt->bind_param("i", $teacher_id);
+    $stmt->execute();
+    $stats['new_material_submissions'] = (int)($stmt->get_result()->fetch_assoc()['c'] ?? 0);
     $stmt->close();
 }
 

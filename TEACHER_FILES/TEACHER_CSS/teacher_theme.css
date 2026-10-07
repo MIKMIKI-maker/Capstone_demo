@@ -1,0 +1,59 @@
+/* ======================================================
+   TEACHER PORTAL THEME — loaded on every teacher page, right after
+   the page's own stylesheet and before teacher_responsive.css.
+
+   Gives the portal the same look as the Student and Admin portals: a
+   soft blue page instead of flat gray/beige, and white cards that sit
+   on a visible soft shadow instead of a thin gray outline. It only
+   re-tunes shared tokens and card surfaces, so page layouts (and the
+   phone rules in teacher_responsive.css, which load after this file)
+   are untouched.
+   ====================================================== */
+
+:root {
+    --bg:          #EAF0FC;
+    /* a slight bottom edge + a wide soft blur, like the Student cards */
+    --shadow-sm:   0 6px 0 rgba(36, 58, 94, .06), 0 14px 28px rgba(36, 58, 94, .12);
+    --shadow-md:   0 8px 0 rgba(36, 58, 94, .07), 0 20px 38px rgba(36, 58, 94, .18);
+    --card-border: #E3EAF6;
+}
+
+body {
+    background: linear-gradient(180deg, #F3F7FF 0%, #E8EFFB 100%);
+}
+
+/* White cards on every teacher page: lifted, with a barely-there edge */
+.teacher-panel,
+.teacher-plan-section,
+.teacher-qa,
+.teacher-table-card,
+.teacher-table-container,
+.iep-student-card,
+.teacher-notif-item,
+.teacher-stat-card,
+.teacher-ring-card,
+.teacher-skills-radar-card,
+.teacher-trend-card,
+.teacher-goals-card,
+.teacher-history-card,
+.teacher-notes-card,
+.teacher-profile-box,
+.teacher-settings-menu,
+.teacher-content-panel,
+.teacher-grading-generator,
+.teacher-placeholder-section,
+.gen-teacher-filter-bar,
+.teacher-tpl-card,
+.teacher-search-wrap,
+.teacher-search-box {
+    box-shadow: var(--shadow-sm);
+    border-color: var(--card-border);
+}
+
+/* Review Activities defines its cards in an inline <style> (which comes
+   after this file), hence the extra `body`. */
+body .rv-card,
+body .rv-act-strip {
+    box-shadow: var(--shadow-sm);
+    border-color: var(--card-border);
+}

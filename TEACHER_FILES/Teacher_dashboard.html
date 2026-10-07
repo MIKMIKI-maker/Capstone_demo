@@ -12,7 +12,8 @@
     <title>Teacher Dashboard – SPED ALM</title>
     <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
     <link href="../ASSETS/vendor/fontawesome/css/all.min.css" rel="stylesheet" />
-    <link href="TEACHER_CSS/Teacher_dashboard.css?v=14" rel="stylesheet" />
+    <link href="TEACHER_CSS/Teacher_dashboard.css?v=15" rel="stylesheet" />
+    <link href="TEACHER_CSS/teacher_theme.css?v=2" rel="stylesheet" />
     <link href="TEACHER_CSS/teacher_responsive.css?v=75" rel="stylesheet" />
 </head>
 
@@ -103,7 +104,7 @@
                 </div>
             </header>
             <hr class="teacher-divider" />
-            <!-- WELCOME BANNER -->
+            <!-- WELCOME BANNER: who you are + the four numbers worth a glance -->
             <section class="teacher-welcome-banner">
                 <div class="teacher-welcome-left">
                     <div class="teacher-welcome-avatar">
@@ -113,25 +114,77 @@
                         <span class="teacher-online-dot"></span>
                     </div>
                     <div class="teacher-welcome-text">
-               <h2><span id="dashboard-teacher-name"><strong>[Full Name Here]</strong></span></h2>
-                    <p>Special Education Teacher</p>
-                </div>
-                </div>
-                <div class="teacher-welcome-stat">
-                    <i class="fa-solid fa-users teacher-stat-icon"></i>
-                    <div>
-                        <span class="teacher-stat-number" id="dashboard-assigned-learners">0</span>
-                        <span class="teacher-stat-label">Assigned Learners</span>
+                        <h2><span id="dashboard-teacher-name"><strong>[Full Name Here]</strong></span></h2>
+                        <p>Special Education Teacher</p>
+                        <p class="teacher-welcome-school" id="dashboard-teacher-school"></p>
                     </div>
                 </div>
+                <div class="teacher-kpis">
+                    <a class="teacher-kpi kpi-blue" href="Teacher_learners.html">
+                        <span class="teacher-kpi-icon"><i class="fa-solid fa-users"></i></span>
+                        <span class="teacher-kpi-body">
+                            <span class="teacher-kpi-value" id="dashboard-assigned-learners">0</span>
+                            <span class="teacher-kpi-label">Assigned learners</span>
+                            <span class="teacher-kpi-sub" id="kpi-learners-sub">&nbsp;</span>
+                        </span>
+                    </a>
+                    <a class="teacher-kpi kpi-violet" href="Teacher_activies.html">
+                        <span class="teacher-kpi-icon"><i class="fa-solid fa-book-open"></i></span>
+                        <span class="teacher-kpi-body">
+                            <span class="teacher-kpi-value" id="kpi-published">0</span>
+                            <span class="teacher-kpi-label">Published activities</span>
+                            <span class="teacher-kpi-sub" id="kpi-published-sub">&nbsp;</span>
+                        </span>
+                    </a>
+                    <a class="teacher-kpi kpi-amber" href="Teacher_activies.html">
+                        <span class="teacher-kpi-icon"><i class="fa-solid fa-inbox"></i></span>
+                        <span class="teacher-kpi-body">
+                            <span class="teacher-kpi-value" id="kpi-review">0</span>
+                            <span class="teacher-kpi-label">To review</span>
+                            <span class="teacher-kpi-sub" id="kpi-review-sub">&nbsp;</span>
+                        </span>
+                    </a>
+                    <a class="teacher-kpi kpi-green" href="Teacher_report.html">
+                        <span class="teacher-kpi-icon"><i class="fa-solid fa-star"></i></span>
+                        <span class="teacher-kpi-body">
+                            <span class="teacher-kpi-value" id="kpi-avg">—</span>
+                            <span class="teacher-kpi-label">Average score</span>
+                            <span class="teacher-kpi-meter" id="kpi-avg-meter"><i></i></span>
+                            <span class="teacher-kpi-sub" id="kpi-avg-sub">&nbsp;</span>
+                        </span>
+                    </a>
+                </div>
             </section>
+            <!-- QUICK ACTIONS -->
+            <nav class="teacher-quick-actions" aria-label="Quick actions">
+                <a class="teacher-qa" href="Teacher_IEP.html">
+                    <span class="teacher-qa-icon qa-violet"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+                    <span class="teacher-qa-text"><b>Create a material</b><small>Generate or upload</small></span>
+                </a>
+                <a class="teacher-qa" href="Teacher_activies.html">
+                    <span class="teacher-qa-icon qa-blue"><i class="fa-solid fa-list-check"></i></span>
+                    <span class="teacher-qa-text"><b>Review submissions</b><small>Finalize grades</small></span>
+                </a>
+                <a class="teacher-qa" href="Teacher_report.html">
+                    <span class="teacher-qa-icon qa-amber"><i class="fa-solid fa-chart-column"></i></span>
+                    <span class="teacher-qa-text"><b>Check progress</b><small>Learner reports</small></span>
+                </a>
+                <a class="teacher-qa" href="Teacher_learners.html">
+                    <span class="teacher-qa-icon qa-teal"><i class="fa-solid fa-user-graduate"></i></span>
+                    <span class="teacher-qa-text"><b>My learners</b><small>Profiles &amp; IEP notes</small></span>
+                </a>
+            </nav>
             <!-- DASHBOARD GRID -->
             <div class="teacher-dashboard-grid">
                 <!-- LEFT COLUMN: Learning Activity Plan + Tasks + Recent Activity -->
                 <div class="teacher-left-col">
                     <!-- LEARNING ACTIVITY PLAN -->
                     <section class="teacher-plan-section">
-                        <h3 class="teacher-section-title">Learning Activity Plan</h3>
+                        <h3 class="teacher-section-title">
+                            <span class="teacher-section-icon"><i class="fa-solid fa-calendar-days"></i></span>
+                            <span>Learning Activity Plan</span>
+                            <span class="teacher-section-hint">Focus areas per grading period</span>
+                        </h3>
                         <div class="teacher-plan-grid">
                             <div class="teacher-plan-card">
                                 <div class="teacher-plan-card-head">
@@ -168,22 +221,8 @@
                             </div>
                         </div>
                     </section>
-                    <!-- BOTTOM: Tasks + Recent Activity side by side -->
+                    <!-- BOTTOM: Recent Activity (My Tasks lives in the right column) -->
                     <div class="teacher-bottom-row">
-                        <!-- TODAY'S TASKS -->
-                        <section class="teacher-panel teacher-tasks-panel">
-                            <div class="teacher-panel-header teacher-tasks-header" onclick="if(window.innerWidth<=640)openTasksModal()" title="My Tasks">
-                                <h3 style="cursor:pointer;" onclick="openTasksModal()">
-                                    <span class="teacher-panel-icon">📋</span>
-                                    <span class="teacher-tasks-label">My Tasks</span>
-                                </h3>
-                                <div style="display:flex;gap:8px;align-items:center;" class="teacher-tasks-header-actions">
-                                    <span class="teacher-task-count-badge" id="teacher-task-count"></span>
-                                    <button class="teacher-task-add-btn" onclick="openTasksModal()" title="View / add tasks">+</button>
-                                </div>
-                            </div>
-                            <div class="teacher-panel-body" id="teacher-tasks-container"></div>
-                        </section>
                         <!-- RECENT ACTIVITY -->
                         <section class="teacher-panel teacher-activity-panel">
                             <div class="teacher-panel-header teacher-activity-header" onclick="openMobilePanelModal(this.closest('.teacher-panel'), '⚡ Recent Activity')" title="Recent Activity">
@@ -197,7 +236,10 @@
                         </section>
                     </div><!-- /teacher-bottom-row -->
                 </div><!-- /teacher-left-col -->
-                <!-- RIGHT COLUMN: Student Progress -->
+                <!-- RIGHT COLUMN: Learners Progress + My Tasks. On a phone this
+                     wrapper is display:contents, so the panels still become the
+                     same three icon tiles as before (see the 640px rules). -->
+                <div class="teacher-dash-right">
                 <aside class="teacher-progress-panel teacher-panel">
                     <div class="teacher-panel-header teacher-progress-header" onclick="openMobilePanelModal(this.closest('.teacher-panel'), '🎓 Learners Progress')" title="Learners Progress">
                         <h3>
@@ -211,6 +253,21 @@
                     <div class="teacher-panel-body" id="teacher-student-progress-container"></div>
                     <div class="teacher-progress-footer" id="teacher-progress-footer"></div>
                 </aside>
+                <!-- MY TASKS -->
+                <section class="teacher-panel teacher-tasks-panel">
+                    <div class="teacher-panel-header teacher-tasks-header" onclick="if(window.innerWidth<=640)openTasksModal()" title="My Tasks">
+                        <h3 style="cursor:pointer;" onclick="openTasksModal()">
+                            <span class="teacher-panel-icon">📋</span>
+                            <span class="teacher-tasks-label">My Tasks</span>
+                        </h3>
+                        <div style="display:flex;gap:8px;align-items:center;" class="teacher-tasks-header-actions">
+                            <span class="teacher-task-count-badge" id="teacher-task-count"></span>
+                            <button class="teacher-task-add-btn" onclick="openTasksModal()" title="View / add tasks">+</button>
+                        </div>
+                    </div>
+                    <div class="teacher-panel-body" id="teacher-tasks-container"></div>
+                </section>
+                </div><!-- /teacher-dash-right -->
             </div>
         </main>
     </div>
@@ -298,8 +355,19 @@
                        .replace(/\s+national\s+high\s+school$/i, ' NHS');
         }
 
+        // What the "Good morning, ___" greeting calls the teacher: the first
+        // name, plus the next one when the first is only a title/initial
+        // ("Ma." alone reads oddly — "Ma. Teresa" doesn't).
+        function greetingName(fullName, firstName) {
+            var parts = String(fullName || '').trim().split(/\s+/);
+            var first = firstName || parts[0] || 'Teacher';
+            if ((/\.$/.test(first) || first.length <= 2) && parts.length > 1) first = parts.slice(0, 2).join(' ');
+            return first;
+        }
+
         function updateTeacherDateTime() {
             var name = sessionStorage.getItem('teacher_name') || 'Teacher';
+            var greetName = sessionStorage.getItem('teacher_greet_name') || greetingName(name);
             var school = sessionStorage.getItem('teacher_school') || '';
             var now = new Date();
             var opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Singapore' };
@@ -307,7 +375,7 @@
             var timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Singapore' });
             var hour = parseInt(now.toLocaleString('en-US', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Asia/Singapore' }), 10);
             var tod = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
-            document.getElementById('teacher-greeting').textContent = 'Good ' + tod + ', ' + name + ' 👋';
+            document.getElementById('teacher-greeting').textContent = 'Good ' + tod + ', ' + greetName + ' 👋';
             // Mobile gets the card layout with "(PHST)" and the school
             // as a "📍 " location tag on the same line; desktop keeps the
             // original plain "date · time · school".
@@ -504,8 +572,11 @@
                     var now = new Date();
                     var hour = parseInt(now.toLocaleString('en-US', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Asia/Singapore' }), 10);
                     var tod = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
-                    var firstName = t.firstName || t.name.split(' ')[0];
+                    var firstName = greetingName(t.name, t.firstName);
+                    sessionStorage.setItem('teacher_greet_name', firstName);
                     document.getElementById('teacher-greeting').textContent = 'Good ' + tod + ', ' + firstName + ' 👋';
+                    var schoolEl = document.getElementById('dashboard-teacher-school');
+                    if (schoolEl) schoolEl.innerHTML = t.schoolName ? '<i class="fa-solid fa-location-dot"></i> ' + escHtml(t.schoolName) : '';
 
                     var opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Singapore' };
                     var dateStr = now.toLocaleDateString('en-US', opts);
@@ -530,6 +601,7 @@
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
                     document.getElementById('dashboard-assigned-learners').textContent = data.assigned_learners || 0;
+                    renderKpis(data);
                     renderRecentActivities(data.recent_activities || []);
                     renderTodaysTasks(data.today_tasks || []);
                     renderStudentProgress(data.student_progress || [], data.assigned_learners || 0);
@@ -537,9 +609,39 @@
                 .catch(function() {});
         }
 
-        // ── RECENT ACTIVITY ──────────────────────────────────────────────
-        var dotMap = { publish: 'dot-green', draft: 'dot-muted', enroll: 'dot-orange', score: 'dot-pink' };
+        // ── KPI TILES (welcome banner) ───────────────────────────────────
+        function setKpiText(id, text) {
+            var el = document.getElementById(id);
+            if (el) el.textContent = text;
+        }
+        // Same three bands everywhere a score is drawn: on track / watch / needs help.
+        function scoreLevel(score) {
+            if (score === null || score === undefined) return 'lvl-none';
+            return score >= 75 ? 'lvl-good' : score >= 60 ? 'lvl-warn' : 'lvl-low';
+        }
+        function renderKpis(d) {
+            var learners = d.assigned_learners || 0;
+            setKpiText('kpi-learners-sub', learners ? (d.active_learners || 0) + ' active' : 'No learners yet');
+            var drafts = d.draft_activities || 0;
+            setKpiText('kpi-published', d.published_activities || 0);
+            setKpiText('kpi-published-sub', drafts + ' draft' + (drafts === 1 ? '' : 's'));
+            var pending = d.pending_reviews || 0, files = d.new_material_submissions || 0;
+            setKpiText('kpi-review', pending);
+            setKpiText('kpi-review-sub', (pending ? 'Waiting for your grade' : 'All caught up')
+                + (files ? ' · ' + files + ' new file' + (files === 1 ? '' : 's') : ''));
+            // Average of the learners that have at least one score.
+            var scored = (d.student_progress || []).filter(function(s) { return s.last_score !== null && s.last_score !== undefined; });
+            var avg = scored.length ? Math.round(scored.reduce(function(sum, s) { return sum + s.last_score; }, 0) / scored.length) : null;
+            setKpiText('kpi-avg', avg === null ? '—' : avg + '%');
+            setKpiText('kpi-avg-sub', scored.length ? 'Across ' + scored.length + ' learner' + (scored.length === 1 ? '' : 's') : 'No scores yet');
+            var meter = document.getElementById('kpi-avg-meter');
+            if (meter) {
+                meter.className = 'teacher-kpi-meter ' + scoreLevel(avg);
+                meter.firstChild.style.width = (avg === null ? 0 : Math.max(3, Math.min(100, avg))) + '%';
+            }
+        }
 
+        // ── RECENT ACTIVITY ──────────────────────────────────────────────
         function renderRecentActivities(activities) {
             var container = document.getElementById('teacher-activity-container');
             if (!activities || activities.length === 0) {
@@ -547,12 +649,17 @@
                 return;
             }
             container.innerHTML = activities.map(function(a) {
-                var dc = dotMap[a.type] || '';
+                // "Published: Match the Pictures" -> a status tag + the title.
+                var m = /^(Published|Draft):\s*(.*)$/.exec(a.title || '');
+                var kind = a.type === 'publish' ? 'pub' : a.type === 'draft' ? 'draft' : 'other';
+                var icon = kind === 'pub' ? 'fa-paper-plane' : kind === 'draft' ? 'fa-pen' : 'fa-bolt';
                 return '<div class="teacher-activity-item">'
-                    + '<span class="teacher-activity-dot ' + dc + '"></span>'
+                    + '<span class="teacher-activity-ico ra-' + kind + '"><i class="fa-solid ' + icon + '"></i></span>'
                     + '<div class="teacher-activity-text">'
-                    + '<p class="teacher-activity-title">' + escHtml(a.title) + '</p>'
-                    + '<p class="teacher-activity-time">' + getTimeAgo(parseUtc(a.date)) + '</p>'
+                    + '<p class="teacher-activity-title">' + escHtml(m ? m[2] : a.title) + '</p>'
+                    + '<p class="teacher-activity-time">'
+                    + (m ? '<span class="teacher-activity-tag ra-' + kind + '">' + m[1] + '</span>' : '')
+                    + getTimeAgo(parseUtc(a.date)) + '</p>'
                     + '</div></div>';
             }).join('');
         }
@@ -591,8 +698,10 @@
                 return;
             }
             container.innerHTML = students.map(function(s) {
-                var scoreHtml = (s.last_score !== null && s.last_score !== undefined)
-                    ? '<span class="teacher-prog-score">' + s.last_score + '%</span>'
+                var hasScore = s.last_score !== null && s.last_score !== undefined;
+                var level = scoreLevel(hasScore ? s.last_score : null);
+                var scoreHtml = hasScore
+                    ? '<span class="teacher-prog-score ' + level + '">' + s.last_score + '%</span>'
                     : '<span class="teacher-prog-score score-none">No score</span>';
                 var acts = s.activity_count ? s.activity_count + ' activit' + (s.activity_count === 1 ? 'y' : 'ies') : '';
                 var sub = [s.condition || 'Student', acts].filter(Boolean).join(' · ');
@@ -601,6 +710,7 @@
                     + '<div class="teacher-prog-info">'
                     + '<div class="teacher-prog-name">' + escHtml(s.name) + '</div>'
                     + '<div class="teacher-prog-sub">' + escHtml(sub) + '</div>'
+                    + '<div class="teacher-prog-meter ' + level + '"><i style="width:' + (hasScore ? Math.max(3, Math.min(100, s.last_score)) : 0) + '%"></i></div>'
                     + '</div>'
                     + scoreHtml
                     + '</div>';
