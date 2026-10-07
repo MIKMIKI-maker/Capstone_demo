@@ -43,13 +43,14 @@ if (!$conn) {
 // 6-digit code indefinitely.
 $MAX_ATTEMPTS = 5;
 $LOCKOUT_MINUTES = 5;
-$chk = $conn->prepare("SELECT COUNT(*) AS cnt, MIN(attempted_at) AS oldest FROM totp_attempts WHERE admin_id = ? AND attempted_at > DATE_SUB(NOW(), INTERVAL ? MINUTE)");
+// Age measured with MySQL's clock — see login_screen_submit.php.
+$chk = $conn->prepare("SELECT COUNT(*) AS cnt, TIMESTAMPDIFF(SECOND, MIN(attempted_at), NOW()) AS age FROM totp_attempts WHERE admin_id = ? AND attempted_at > DATE_SUB(NOW(), INTERVAL ? MINUTE)");
 $chk->bind_param("ii", $adminId, $LOCKOUT_MINUTES);
 $chk->execute();
 $chkRow = $chk->get_result()->fetch_assoc();
 $chk->close();
 if ($chkRow && (int)$chkRow['cnt'] >= $MAX_ATTEMPTS) {
-    $retryAfter = max(1, ($LOCKOUT_MINUTES * 60) - (time() - strtotime($chkRow['oldest'])));
+    $retryAfter = max(1, ($LOCKOUT_MINUTES * 60) - (int)$chkRow['age']);
     echo json_encode(['status' => 'error', 'code' => 'too_many_attempts', 'message' => 'Too many incorrect codes. Please try again in ' . $LOCKOUT_MINUTES . ' minutes.', 'retry_after_seconds' => $retryAfter]);
     $conn->close();
     exit;
