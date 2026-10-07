@@ -856,9 +856,18 @@
                     ? `<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:#fef3c7;color:#92400e;white-space:nowrap;" title="${retakeCount} retake(s)">🔁 ${retakeCount}</span>`
                     : '<span style="color:#cbd5e1;">—</span>';
 
+                // Score of every try before the final submission (per slide)
+                const hist = (act.attempt_history || []).filter(h => h.attempts && h.attempts.length > 1);
+                const triesLbl = hist.length
+                    ? `<span style="display:block;margin-top:3px;font-size:11px;font-weight:600;color:#475569;" title="Score per try, last one is the submitted score">📊 ${hist.map(h =>
+                        ((act.attempt_history.length > 1) ? 'S' + h.slide + ': ' : 'Tries: ') +
+                        h.attempts.map(a => a.correct + '/' + a.total).join(' → ')
+                      ).join(' · ')}</span>`
+                    : '';
+
                 html += `<div class="teacher-history-row">
                     <span class="teacher-history-date">${dateStr}</span>
-                    <span class="teacher-history-activity">${escHtml(act.name)}</span>
+                    <span class="teacher-history-activity">${escHtml(act.name)}${triesLbl}</span>
                     <span class="teacher-history-score" style="color:${scoreCol};">${scoreStr}</span>
                     <span class="teacher-history-retakes">${retakeLbl}</span>
                     <span class="teacher-history-assist">${assistLbl}</span>

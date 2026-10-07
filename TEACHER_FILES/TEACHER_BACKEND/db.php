@@ -53,7 +53,7 @@ function getTeacherDatabaseConnection() {
     // remote database, since the whole block got skipped. A version counter
     // fixes that: bump SCHEMA_VERSION whenever a new migration is added below,
     // and remote re-runs the block until its stored version catches up.
-    $SCHEMA_VERSION = 7;
+    $SCHEMA_VERSION = 8; // 8: activity_submissions.attempt_history_json
     $needsSetup = true;
     if ($envHost !== false && $envHost !== '') {
         $conn->query("CREATE TABLE IF NOT EXISTS schema_meta (component VARCHAR(50) PRIMARY KEY, version INT NOT NULL)");
@@ -360,6 +360,11 @@ function getTeacherDatabaseConnection() {
     $si_col = $conn->query("SHOW COLUMNS FROM activity_submissions LIKE 'struggled_items_json'");
     if ($si_col && $si_col->num_rows == 0) {
         $conn->query("ALTER TABLE activity_submissions ADD COLUMN struggled_items_json LONGTEXT DEFAULT NULL AFTER scaffold_used");
+    }
+    // Migration: per-slide score of every try before submitting
+    $ah_col = $conn->query("SHOW COLUMNS FROM activity_submissions LIKE 'attempt_history_json'");
+    if ($ah_col && $ah_col->num_rows == 0) {
+        $conn->query("ALTER TABLE activity_submissions ADD COLUMN attempt_history_json TEXT DEFAULT NULL AFTER struggled_items_json");
     }
 
     // Personal task/checklist notes for teacher dashboard

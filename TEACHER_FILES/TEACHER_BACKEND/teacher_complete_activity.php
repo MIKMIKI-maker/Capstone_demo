@@ -30,6 +30,24 @@ $answers_json  = isset($_POST['answers_json'])  ? trim($_POST['answers_json'])  
 $retake_count  = isset($_POST['retake_count'])  ? intval($_POST['retake_count'])  : 0;
 $scaffold_used = isset($_POST['scaffold_used']) ? intval($_POST['scaffold_used']) : 0;
 $struggled_items_json = isset($_POST['struggled_items_json']) ? trim($_POST['struggled_items_json']) : '';
+$attempt_history_json = isset($_POST['attempt_history_json']) ? trim($_POST['attempt_history_json']) : '';
+// Comes from the browser and is rendered on teacher pages — rebuild it from
+// integers only so nothing but numbers can ever reach the HTML.
+$ah = json_decode($attempt_history_json, true);
+$attempt_history_json = '';
+if (is_array($ah)) {
+    $clean = [];
+    foreach (array_slice($ah, 0, 20) as $i => $slide) {
+        $tries = [];
+        foreach (array_slice(is_array($slide) && is_array($slide['attempts'] ?? null) ? $slide['attempts'] : [], 0, 50) as $a) {
+            if (!is_array($a)) continue;
+            $c = (int)($a['correct'] ?? 0); $t = (int)($a['total'] ?? 0);
+            if ($t > 0) $tries[] = ['correct' => $c, 'total' => $t, 'percent' => (int)round($c / $t * 100)];
+        }
+        $clean[] = ['slide' => $i + 1, 'attempts' => $tries];
+    }
+    $attempt_history_json = json_encode($clean);
+}
 
 if (!$activity_id) {
     echo json_encode(['success' => false, 'message' => 'Activity ID is required']);
@@ -115,12 +133,12 @@ if ($stmt->execute()) {
     
     // Also upsert into activity_submissions so teacher can review item-by-item answers
     $subStmt = $teacher_conn->prepare(
-        "INSERT INTO activity_submissions (teacher_id, student_id, activity_id, pub_id, score, total_items, retake_count, scaffold_used, struggled_items_json, answers_json)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-         ON DUPLICATE KEY UPDATE score=VALUES(score), total_items=VALUES(total_items), retake_count=VALUES(retake_count), scaffold_used=VALUES(scaffold_used), struggled_items_json=VALUES(struggled_items_json), answers_json=VALUES(answers_json), submitted_at=NOW()"
+        "INSERT INTO activity_submissions (teacher_id, student_id, activity_id, pub_id, score, total_items, retake_count, scaffold_used, struggled_items_json, attempt_history_json, answers_json)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE score=VALUES(score), total_items=VALUES(total_items), retake_count=VALUES(retake_count), scaffold_used=VALUES(scaffold_used), struggled_items_json=VALUES(struggled_items_json), attempt_history_json=VALUES(attempt_history_json), answers_json=VALUES(answers_json), submitted_at=NOW()"
     );
     if ($subStmt) {
-        $subStmt->bind_param("iiisiiiiss", $teacher_id, $student_id, $activity_id, $pub_id, $score, $total_items, $retake_count, $scaffold_used, $struggled_items_json, $answers_json);
+        $subStmt->bind_param("iiisiiiisss", $teacher_id, $student_id, $activity_id, $pub_id, $score, $total_items, $retake_count, $scaffold_used, $struggled_items_json, $attempt_history_json, $answers_json);
         $subStmt->execute();
         $subStmt->close();
     }

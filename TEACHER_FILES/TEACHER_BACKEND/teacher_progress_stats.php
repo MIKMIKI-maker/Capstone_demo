@@ -138,7 +138,7 @@ if ($stmt) {
 $stmt = safeQuery($conn,
     "SELECT ta.id, ta.activity_title, ta.subject, lp.score, lp.assessment_date,
          CASE WHEN lp.assessment_date IS NOT NULL THEN 'completed' ELSE 'not-started' END AS status,
-         sub.assistance_level, sub.finalized_score, sub.is_finalized, sub.scaffold_used, sub.struggled_items_json, sub.retake_count
+         sub.assistance_level, sub.finalized_score, sub.is_finalized, sub.scaffold_used, sub.struggled_items_json, sub.retake_count, sub.attempt_history_json
      FROM activity_assignments aa
      INNER JOIN teacher_activities ta ON ta.id = aa.activity_id
     LEFT  JOIN learner_progress lp   ON ta.id = lp.activity_id AND lp.student_id = ?
@@ -169,7 +169,8 @@ if ($stmt) {
             'is_finalized'    => (bool)($row['is_finalized'] ?? false),
             'scaffold_used'   => (int)($row['scaffold_used'] ?? 0),
             'struggled_items' => $row['struggled_items_json'] ? json_decode($row['struggled_items_json'], true) : [],
-            'retake_count'    => (int)($row['retake_count'] ?? 0)
+            'retake_count'    => (int)($row['retake_count'] ?? 0),
+            'attempt_history' => $row['attempt_history_json'] ? (json_decode($row['attempt_history_json'], true) ?: []) : []
         ];
     }
     $stmt->close();

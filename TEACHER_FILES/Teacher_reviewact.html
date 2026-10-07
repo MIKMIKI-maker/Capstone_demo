@@ -227,6 +227,7 @@
     <div class="rv-modal-title" id="modalStudentName">—</div>
     <div class="rv-modal-score" id="modalScoreInfo">—</div>
     <div id="modalRetakeChip" style="margin:-4px 0 8px;"></div>
+    <div id="modalAttemptHistory" style="display:none;margin:0 0 10px;"></div>
     <div id="modalNeedsReviewBanner" style="display:none;margin:0 0 14px;"></div>
 
     <!-- Per-item table -->
@@ -486,6 +487,33 @@ function openModal(s) {
     chipEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;background:#f0fdf4;color:#15803d;">✅ First Attempt</span>';
   } else {
     chipEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;background:#fff7ed;color:#c2410c;">🔁 ' + retakes + ' Retake' + (retakes === 1 ? '' : 's') + ' before this submission</span>';
+  }
+
+  // Score of every try before the final submission, per slide, so the
+  // teacher can see whether the student improved between retakes.
+  var histEl = document.getElementById('modalAttemptHistory');
+  var hist = [];
+  try { hist = JSON.parse(s.attempt_history_json || '[]') || []; } catch(e){ hist = []; }
+  var multiSlide = hist.length > 1;
+  var histRows = hist.filter(function(h){ return h.attempts && h.attempts.length > 1; }).map(function(h){
+    var chips = h.attempts.map(function(a, i){
+      var isLast = i === h.attempts.length - 1;
+      return '<span style="display:inline-flex;flex-direction:column;align-items:center;padding:3px 9px;border-radius:10px;line-height:1.15;'
+        + (isLast ? 'border:2px solid #2563eb;background:#eff6ff;' : 'border:1px solid #cbd5e1;background:#fff;') + '">'
+        + '<small style="font-size:9.5px;color:#64748b;font-weight:600;">' + (isLast ? 'Submitted' : 'Try ' + (i + 1)) + '</small>'
+        + '<b style="font-size:13px;color:#0f172a;">' + a.correct + '/' + a.total + '</b></span>';
+    }).join('<span style="color:#94a3b8;font-size:12px;">→</span>');
+    return '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:4px;">'
+      + (multiSlide ? '<span style="font-size:11px;font-weight:700;color:#475569;min-width:52px;">Slide ' + h.slide + '</span>' : '')
+      + chips + '</div>';
+  });
+  if (histRows.length) {
+    histEl.innerHTML = '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 12px;">'
+      + '<div style="font-size:12px;font-weight:700;color:#1e3a8a;">📊 Score per try</div>' + histRows.join('') + '</div>';
+    histEl.style.display = '';
+  } else {
+    histEl.style.display = 'none';
+    histEl.innerHTML = '';
   }
 
   // Suggest a score based on the attempt number. retake_count excludes the

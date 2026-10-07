@@ -4,6 +4,9 @@
 <script src="../../ASSETS/portal_guard.js?v=2" data-portal-role="teacher,student" data-status-path="../../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../../ADMIN_FILES/login_screen.html?session=expired"></script>
 <script src="../../ASSETS/teacher_portal.js?v=17"></script>
 <script src="../../ASSETS/print_options.js?v=7"></script>
+<script src="../../ASSETS/attempt_history.js?v=1"></script>
+<script src="../../ASSETS/missing_highlight.js?v=1"></script>
+<script src="../../ASSETS/activity_audio.js?v=2"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SPED ALM — Sorting Template Generator</title>
@@ -25,7 +28,7 @@ function _actTone(ctx, freq, startTime, duration, peakGain){
   osc.type = 'triangle';
   osc.frequency.setValueAtTime(freq, startTime);
   gain.gain.setValueAtTime(0, startTime);
-  gain.gain.linearRampToValueAtTime(peakGain, startTime + 0.02);
+  gain.gain.linearRampToValueAtTime(peakGain * (window.ActivityAudio ? ActivityAudio.sfxLevel() : 1), startTime + 0.02);
   gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
   osc.connect(gain); gain.connect(ctx.destination);
   osc.start(startTime); osc.stop(startTime + duration + 0.02);
@@ -35,6 +38,7 @@ function playActivitySound(tier){
   var ctx = _actGetAudioCtx();
   if (!ctx) return;
   _duckThemeForCelebration();
+  if (window.ActivityAudio) ActivityAudio.cheer(tier);
   var now = ctx.currentTime;
   if (tier === 'perfect') {
     [523.25, 659.25, 783.99, 1046.50, 1318.51].forEach(function(f, i){ _actTone(ctx, f, now + i*0.09, 0.35, 0.22); });
@@ -74,7 +78,7 @@ var _themeGain = null, _themeLoopTimer = null, _themeLoopActive = false, _themeM
 // "duck" still work the same way. Falls back to a short synthesized riff if
 // the file is ever missing or the browser can't decode it.
 var THEME_AUDIO_SRC = 'audio/theme.mp3';
-var THEME_VOLUME = 0.15;
+var THEME_VOLUME = window.ActivityAudio ? ActivityAudio.musicVolume() : 0.15;
 var _themeAudioEl = null, _themeMediaSrc = null, _themeUsingFallback = false;
 // Fallback riff only — used if THEME_AUDIO_SRC fails to load.
 var THEME_PATTERN = [
@@ -180,6 +184,7 @@ function initActivityTheme(){
     btn.onclick = function(){ setThemeMuted(!_themeMuted); };
     document.body.appendChild(btn);
   }
+  if (window.ActivityAudio) ActivityAudio.mount();
   startThemeMusic();
 }
 </script>
@@ -1922,8 +1927,10 @@ function initActivityTheme(){
     const totalItems = activity.items.length;
     if (Object.keys(assignments).length < totalItems){
       $("srtHint").textContent = "Sort all the pictures first before checking.";
+      MissingMark.flag(Array.from(document.querySelectorAll(".srt-chip")).filter(el=> assignments[+el.dataset.i] === undefined));
       return;
     }
+    MissingMark.clear();
     let correctCount = 0; _srtResults = [];
     document.querySelectorAll(".srt-chip").forEach(el=>{
       const i = +el.dataset.i, chosen = assignments[i], isCorrect = chosen === activity.items[i].category;
@@ -1956,7 +1963,8 @@ function initActivityTheme(){
     const totalItems = _srtOddRounds.length;
     if (!totalItems){ $("srtHint").textContent = "Add at least 2 categories with a few items each to generate Odd One Out rounds."; return; }
     const unanswered = _srtOddRounds.some(function(r){ return r.selected === null; });
-    if (unanswered){ $("srtHint").textContent = "Tap the odd one out in every round before checking."; return; }
+    if (unanswered){ $("srtHint").textContent = "Tap the odd one out in every round before checking."; MissingMark.flag(_srtOddRounds.map(function(r, ri){ return r.selected === null ? document.querySelector('.srt-oo-round[data-round="'+ri+'"]') : null; })); return; }
+    MissingMark.clear();
     let correctCount = 0; _srtResults = [];
     _srtOddRounds.forEach(function(round, ri){
       const isCorrect = round.selected === round.oddIdx;
@@ -1989,8 +1997,10 @@ function initActivityTheme(){
     if (!totalItems){ $("srtHint").textContent = "Add at least one item first."; return; }
     if (Object.keys(_srtYesNoAnswers).length < totalItems){
       $("srtHint").textContent = "Answer Yes or No for every picture before checking.";
+      MissingMark.flag(items.map(function(_, i){ return _srtYesNoAnswers[i] === undefined ? document.querySelector('.srt-yn-row[data-item="'+i+'"]') : null; }));
       return;
     }
+    MissingMark.clear();
     let correctCount = 0; _srtResults = [];
     items.forEach(function(item, i){
       const studentYes = _srtYesNoAnswers[i];
@@ -2060,18 +2070,20 @@ function initActivityTheme(){
         return { label:r.label||'Item', img:r.img||'', studentAnswer:r.studentAnswer!=null?String(r.studentAnswer):'—', correctAnswer:r.correctAnswer!=null?String(r.correctAnswer):'—', correct:r.correct };
       }) };
       var _ts = state.activities.length, _isLast = state.currentIndex >= _ts - 1;
-      var _allDone = _stuSlideScores.filter(Boolean).length === _ts && _stuSlideScores.every(function(s){ return s && (s.correct / s.total) >= PASS_THRESHOLD; });
-      if (_ts > 1 && !_isLast && percent >= PASS_THRESHOLD) {
+      var _allDone = _stuSlideScores.filter(Boolean).length === _ts;
+      if (_ts > 1 && !_isLast) {
         $("srtModalCloseBtn").style.display = ""; $("srtModalCloseBtn").textContent = "Next Slide →"; $("srtModalCloseBtn").dataset.nextSlide = "1";
       } else {
         $("srtModalCloseBtn").style.display = "none"; $("srtModalCloseBtn").dataset.nextSlide = "";
       }
       $("srtModalTryBtn").textContent = "🔁 Retake";
       $("srtStudentSubmitBtn").style.display = (_allDone && !_stuAlreadyPassed) ? "" : "none";
+      if (percent < PASS_THRESHOLD && _allDone && !_stuAlreadyPassed) $("srtModalMsg").textContent = "Nice try! Submit when you're ready, or retake for more practice. 💪";
       var ri = $("srtRetakeInfo");
       var _csr = _stuSlideRetakes[state.currentIndex] || 0;
       ri.style.display = _stuRetake > 0 ? "" : "none";
       if (_stuRetake > 0) ri.textContent = (_ts > 1 ? 'Slide '+(state.currentIndex+1)+': ' : '') + (_csr > 0 ? _csr + ' retake(s). ' : '') + 'Total retakes: ' + _stuRetake;
+      AttemptHistory.record(state.currentIndex, _stuSlideRetakes[state.currentIndex]||0, _stuSlideScores[state.currentIndex]); AttemptHistory.show(ri, state.currentIndex);
     }
   }
   function renderReviewRows(stuMode) {
@@ -3364,7 +3376,6 @@ function initActivityTheme(){
           var _totCorrect=_stuSlideScores.reduce(function(s,x){return s+x.correct;},0);
           var _totItems=_stuSlideScores.reduce(function(s,x){return s+x.total;},0);
           var pct = Math.round((_totCorrect / _totItems) * 100);
-          if (pct < Math.round(PASS_THRESHOLD*100)) { alert('You need at least ' + Math.round(PASS_THRESHOLD*100) + '% to submit this activity. Keep trying!'); return; }
 
           // Show final summary right away — the recording/notification below
           // finishes compressing thumbnails in the background afterward.
@@ -3376,7 +3387,7 @@ function initActivityTheme(){
           var _fbR=$('srtReviewRows'); _fbR.innerHTML='';
           $('srtReviewList').style.display=_slideCount>1?'block':'none';
           if(_slideCount>1){_stuSlideScores.forEach(function(s,si){var sp=Math.round((s.correct/s.total)*100);var sc=sp>=80?'#1f9d44':sp>=50?'#ca8a04':'#e23b54';var sr=_stuSlideRetakes[si]||0;var rd=document.createElement('div');rd.style.cssText='display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:13px;align-items:center;';rd.innerHTML='<span style="font-weight:600;">Slide '+(si+1)+(sr>0?' <span style="color:#e23b54;font-size:10px;">('+sr+'× retake)</span>':'')+'</span><span style="font-weight:700;color:'+sc+';">'+s.correct+'/'+s.total+' ('+sp+'%)</span>';_fbR.appendChild(rd);});}
-          _stuSubmitDone=true;
+          _stuSubmitDone=true; AttemptHistory.showSummary($('srtRetakeInfo'), _slideCount);
 
           if (_stuAlreadyPassed || _stuReviewMode) return;
 
@@ -3426,7 +3437,7 @@ function initActivityTheme(){
             if (_submitActId && _submitTeacherId && _stuId) {
               _stuSubmissionPromise = fetch('../TEACHER_BACKEND/teacher_complete_activity.php', {
                 method: 'POST', keepalive: true,
-                body: new URLSearchParams({ teacher_id: _submitTeacherId, student_id: _stuId, activity_id: _submitActId, score: pct, total_items: _totItems, pub_id: _stuPubId||'', answers_json: _ansJson, retake_count: _stuRetake||0, scaffold_used: _scaffoldUsed, struggled_items_json: JSON.stringify(_struggledItems) })
+                body: new URLSearchParams({ teacher_id: _submitTeacherId, student_id: _stuId, activity_id: _submitActId, score: pct, total_items: _totItems, pub_id: _stuPubId||'', answers_json: _ansJson, retake_count: _stuRetake||0, scaffold_used: _scaffoldUsed, struggled_items_json: JSON.stringify(_struggledItems), attempt_history_json: AttemptHistory.toJSON(_slideCount) })
               }).then(function(r){ return r.json(); }).then(function(d){
                 // teacher_complete_activity.php always returns HTTP 200, even on a
                 // DB write failure — checking response.ok alone (as elsewhere) never

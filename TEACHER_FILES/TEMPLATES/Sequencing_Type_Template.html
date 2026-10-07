@@ -4,6 +4,11 @@
 <script src="../../ASSETS/portal_guard.js?v=2" data-portal-role="teacher,student" data-status-path="../../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../../ADMIN_FILES/login_screen.html?session=expired"></script>
 <script src="../../ASSETS/teacher_portal.js?v=17"></script>
 <script src="../../ASSETS/print_options.js?v=7"></script>
+<script src="../../ASSETS/attempt_history.js?v=1"></script>
+<script src="../../ASSETS/missing_highlight.js?v=1"></script>
+<script src="../../ASSETS/activity_audio.js?v=2"></script>
+<script src="../../ASSETS/activity_demo.js?v=1"></script>
+<script src="../../ASSETS/activity_demos/sequencing.js?v=1"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SPED ALM — Sequencing Template Generator</title>
@@ -24,7 +29,7 @@ function _actTone(ctx, freq, startTime, duration, peakGain){
   osc.type = 'triangle';
   osc.frequency.setValueAtTime(freq, startTime);
   gain.gain.setValueAtTime(0, startTime);
-  gain.gain.linearRampToValueAtTime(peakGain, startTime + 0.02);
+  gain.gain.linearRampToValueAtTime(peakGain * (window.ActivityAudio ? ActivityAudio.sfxLevel() : 1), startTime + 0.02);
   gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
   osc.connect(gain); gain.connect(ctx.destination);
   osc.start(startTime); osc.stop(startTime + duration + 0.02);
@@ -34,6 +39,7 @@ function playActivitySound(tier){
   var ctx = _actGetAudioCtx();
   if (!ctx) return;
   _duckThemeForCelebration();
+  if (window.ActivityAudio) ActivityAudio.cheer(tier);
   var now = ctx.currentTime;
   if (tier === 'perfect') {
     [523.25, 659.25, 783.99, 1046.50, 1318.51].forEach(function(f, i){ _actTone(ctx, f, now + i*0.09, 0.35, 0.22); });
@@ -73,7 +79,7 @@ var _themeGain = null, _themeLoopTimer = null, _themeLoopActive = false, _themeM
 // "duck" still work the same way. Falls back to a short synthesized riff if
 // the file is ever missing or the browser can't decode it.
 var THEME_AUDIO_SRC = 'audio/theme.mp3';
-var THEME_VOLUME = 0.15;
+var THEME_VOLUME = window.ActivityAudio ? ActivityAudio.musicVolume() : 0.15;
 var _themeAudioEl = null, _themeMediaSrc = null, _themeUsingFallback = false;
 // Fallback riff only — used if THEME_AUDIO_SRC fails to load.
 var THEME_PATTERN = [
@@ -179,6 +185,7 @@ function initActivityTheme(){
     btn.onclick = function(){ setThemeMuted(!_themeMuted); };
     document.body.appendChild(btn);
   }
+  if (window.ActivityAudio) ActivityAudio.mount();
   startThemeMusic();
 }
 </script>
@@ -1402,8 +1409,10 @@ function initActivityTheme(){
     const totalSteps = currentActivity().steps.length;
     if (tapOrder.length < totalSteps){
       $("seqHint").textContent = "Tap all the steps first before checking.";
+      MissingMark.flag(Array.from(document.querySelectorAll(".seq-card-it")).filter(card=> tapOrder.indexOf(+card.dataset.i) < 0));
       return;
     }
+    MissingMark.clear();
     let correctCount = 0; _seqResults = [];
     const _seqSteps = currentActivity().steps;
     document.querySelectorAll(".seq-card-it").forEach(card=>{
@@ -1490,18 +1499,20 @@ function initActivityTheme(){
       _stuLastScore = correctCount; _stuLastTotal = totalSteps;
       _stuSlideScores[state.currentIndex] = { correct: correctCount, total: totalSteps, ansItems: _seqResults.map(function(r){return{label:(r.step.emoji||'')+' '+(r.step.label||('Hakbang '+(r.idx+1))),studentAnswer:'Ika-'+(r.position+1),correctAnswer:'Ika-'+(r.idx+1),correct:r.correct};}) };
       var _ts = state.activities.length, _isLast = state.currentIndex >= _ts - 1;
-      var _allDone = _stuSlideScores.filter(Boolean).length === _ts && _stuSlideScores.every(function(s){ return s && (s.correct / s.total) >= PASS_THRESHOLD; });
-      if (_ts > 1 && !_isLast && percent >= PASS_THRESHOLD) {
+      var _allDone = _stuSlideScores.filter(Boolean).length === _ts;
+      if (_ts > 1 && !_isLast) {
         $("seqModalCloseBtn").style.display = ""; $("seqModalCloseBtn").textContent = "Next Slide →"; $("seqModalCloseBtn").dataset.nextSlide = "1";
       } else {
         $("seqModalCloseBtn").style.display = "none"; $("seqModalCloseBtn").dataset.nextSlide = "";
       }
       $("seqModalTryBtn").textContent = "🔁 Retake";
       $("seqStudentSubmitBtn").style.display = (_allDone && !_stuAlreadyPassed) ? "" : "none";
+      if (percent < PASS_THRESHOLD && _allDone && !_stuAlreadyPassed) $("seqModalMsg").textContent = "Nice try! Submit when you're ready, or retake for more practice. 💪";
       var ri = $("seqRetakeInfo");
       var _csr = _stuSlideRetakes[state.currentIndex] || 0;
       ri.style.display = _stuRetake > 0 ? "" : "none";
       if (_stuRetake > 0) ri.textContent = (_ts > 1 ? 'Slide '+(state.currentIndex+1)+': ' : '') + (_csr > 0 ? _csr + ' retake(s). ' : '') + 'Total retakes: ' + _stuRetake;
+      AttemptHistory.record(state.currentIndex, _stuSlideRetakes[state.currentIndex]||0, _stuSlideScores[state.currentIndex]); AttemptHistory.show(ri, state.currentIndex);
     }
   }
 
@@ -2515,20 +2526,10 @@ function initActivityTheme(){
         + '<span style="color:#78350f;font-size:14px;font-weight:800;text-align:left;line-height:1.4;">Kailangan ng gabay ng magulang o guardian sa pagsagot nito!</span>'
         + '</div>';
 
-      // Shown AFTER the student taps Start (not on the intro splash) — a
-      // real-photo drag demo overlaid on top of the freshly-rendered
-      // activity, so the child sees exactly what to do before touching it.
-      var demoHTML = '<style>'
-        + '@keyframes stuSeqMove{0%,15%{left:5px;}55%,70%{left:215px;}100%{left:5px;}}'
-        + '@keyframes stuSeqHand{0%,15%{left:12px;}55%,70%{left:222px;}100%{left:12px;}}'
-        + '</style>'
-        + '<div style="position:relative;width:270px;height:66px;margin:2px 0;">'
-        + '<img src="DEMO_ASSETS/wethands.jpg" style="position:absolute;left:90px;top:0;width:50px;height:50px;object-fit:cover;border-radius:12px;border:3px solid #fff;box-shadow:0 4px 0 rgba(0,0,0,.15);">'
-        + '<img src="DEMO_ASSETS/applysoap.jpg" style="position:absolute;left:160px;top:0;width:50px;height:50px;object-fit:cover;border-radius:12px;border:3px solid #fff;box-shadow:0 4px 0 rgba(0,0,0,.15);">'
-        + '<img src="DEMO_ASSETS/rinsehands.jpg" style="position:absolute;top:0;width:50px;height:50px;object-fit:cover;border-radius:12px;border:3px solid #fff;box-shadow:0 4px 0 rgba(0,0,0,.15);animation:stuSeqMove 2.8s ease-in-out infinite;">'
-        + '<div style="position:absolute;top:-8px;font-size:26px;animation:stuSeqHand 2.8s ease-in-out infinite;">👆</div>'
-        + '</div>'
-        + '<p style="color:#e2e8f0;font-size:14px;margin:0;font-weight:700;">👉 I-drag ang mga larawan sa tamang ayos!</p>';
+      // "Paano Sagutan?" how-to demo, shown AFTER the student taps Start —
+      // tapping the steps in order (1, 2, 3) then "Check answers", see
+      // ASSETS/activity_demos/sequencing.js.
+      var stuDemo = window.ActivityDemo ? ActivityDemo.get('sequencing') : null;
 
       var splash = document.createElement('div');
       splash.id = 'stuSplash';
@@ -2563,16 +2564,7 @@ function initActivityTheme(){
         if (fs.requestFullscreen) fs.requestFullscreen().catch(function(){});
         else if (fs.webkitRequestFullscreen) fs.webkitRequestFullscreen();
         splash.remove();
-        var stuDemoOverlay = document.createElement('div');
-        stuDemoOverlay.id = 'stuDemoOverlay';
-        stuDemoOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.94);display:flex;align-items:center;justify-content:center;z-index:100000;padding:24px;text-align:center;';
-        stuDemoOverlay.innerHTML = '<div style="background:#1e293b;border:3px solid #fbbf24;border-radius:28px;padding:40px 64px;display:flex;flex-direction:column;align-items:center;gap:22px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.5);">'
-          + '<p style="color:#facc15;font-size:23px;font-weight:800;letter-spacing:.6px;margin:0;text-transform:uppercase;">📖 Paano Sagutan</p>'
-          + '<div style="transform:scale(1.3);margin:14px 0;">' + demoHTML + '</div>'
-          + '<button id="stuDemoOkBtn" style="margin-top:10px;background:#22c55e;color:#fff;border:none;padding:18px 60px;border-radius:18px;font-family:Fredoka,Poppins,sans-serif;font-size:24px;font-weight:700;cursor:pointer;box-shadow:0 5px 0 #15803d;">Nakuha ko! ▶</button>'
-          + '</div>';
-        document.body.appendChild(stuDemoOverlay);
-        document.getElementById('stuDemoOkBtn').addEventListener('click', function() { stuDemoOverlay.remove(); });
+        if (stuDemo) ActivityDemo.show(stuDemo);
         if (window.finishStudentLaunch) window.finishStudentLaunch();
         initActivityTheme();
 
@@ -2605,7 +2597,6 @@ function initActivityTheme(){
           var _totCorrect=_stuSlideScores.reduce(function(s,x){return s+x.correct;},0);
           var _totItems=_stuSlideScores.reduce(function(s,x){return s+x.total;},0);
           var pct = Math.round((_totCorrect / _totItems) * 100);
-          if (pct < Math.round(PASS_THRESHOLD*100)) { alert('You need at least ' + Math.round(PASS_THRESHOLD*100) + '% to submit this activity. Keep trying!'); return; }
           if (!_stuAlreadyPassed && !_stuReviewMode) {
             var _scaffoldUsed = Math.max(0, ...Object.keys(_stuScaffoldLevel).map(function(k){ return _stuScaffoldLevel[k]; }));
             var _struggledItems = [];
@@ -2646,7 +2637,7 @@ function initActivityTheme(){
             if (_submitActId && _submitTeacherId && _stuId) {
               _stuSubmissionPromise = fetch('../TEACHER_BACKEND/teacher_complete_activity.php', {
                 method: 'POST', keepalive: true,
-                body: new URLSearchParams({ teacher_id: _submitTeacherId, student_id: _stuId, activity_id: _submitActId, score: pct, total_items: _totItems, pub_id: _stuPubId||'', answers_json: _ansJson, retake_count: _stuRetake||0, scaffold_used: _scaffoldUsed, struggled_items_json: JSON.stringify(_struggledItems) })
+                body: new URLSearchParams({ teacher_id: _submitTeacherId, student_id: _stuId, activity_id: _submitActId, score: pct, total_items: _totItems, pub_id: _stuPubId||'', answers_json: _ansJson, retake_count: _stuRetake||0, scaffold_used: _scaffoldUsed, struggled_items_json: JSON.stringify(_struggledItems), attempt_history_json: AttemptHistory.toJSON(_slideCount) })
               }).then(function(r){ return r.json(); }).then(function(d){
                 // teacher_complete_activity.php always returns HTTP 200, even on a
                 // DB write failure — the old response.ok check above never actually
@@ -2672,7 +2663,7 @@ function initActivityTheme(){
           var _fbR=$('seqReviewRows'); _fbR.innerHTML='';
           $('seqReviewList').style.display=_slideCount>1?'block':'none';
           if(_slideCount>1){_stuSlideScores.forEach(function(s,si){var sp=Math.round((s.correct/s.total)*100);var sc=sp>=80?'#1f9d44':sp>=50?'#ca8a04':'#e23b54';var sr=_stuSlideRetakes[si]||0;var rd=document.createElement('div');rd.style.cssText='display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:13px;align-items:center;';rd.innerHTML='<span style="font-weight:600;">Slide '+(si+1)+(sr>0?' <span style="color:#e23b54;font-size:10px;">('+sr+'× retake)</span>':'')+'</span><span style="font-weight:700;color:'+sc+';">'+s.correct+'/'+s.total+' ('+sp+'%)</span>';_fbR.appendChild(rd);});}
-          _stuSubmitDone=true;
+          _stuSubmitDone=true; AttemptHistory.showSummary($('seqRetakeInfo'), _slideCount);
         });
       });
 

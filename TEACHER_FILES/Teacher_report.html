@@ -304,6 +304,15 @@
                             ? ((s.is_finalized && s.finalized_score !== null ? s.finalized_score : s.score) + '%')
                             : 'Not yet submitted';
                         var retakeStr = s.submitted && s.retake_count > 0 ? (' · 🔁 ' + s.retake_count + ' retake(s)') : '';
+                        // Score of every try before the final submission (per slide)
+                        var hist = [];
+                        try { hist = JSON.parse(s.attempt_history_json || '[]') || []; } catch (e) { hist = []; }
+                        var histRows = hist.filter(function(h){ return h.attempts && h.attempts.length > 1; });
+                        if (s.submitted && histRows.length) {
+                            retakeStr += '<div style="margin-top:2px;font-size:11px;font-weight:600;color:#475569;">📊 ' + histRows.map(function(h){
+                                return (hist.length > 1 ? 'S' + h.slide + ': ' : 'Tries: ') + h.attempts.map(function(a){ return a.correct + '/' + a.total; }).join(' → ');
+                            }).join(' · ') + '</div>';
+                        }
                         var badge = s.submitted
                             ? '<span class="tr-sub-badge done">✅ Submitted</span>'
                             : '<span class="tr-sub-badge pending">⭕ Pending</span>';
