@@ -9,7 +9,7 @@
   <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
   <title>SPED ALM - Admin Dashboard</title>
   <link href="ADMIN_CSS/animations.css" rel="stylesheet" />
-  <link href="ADMIN_CSS/Admin_dashboard.css?v=3" rel="stylesheet" />
+  <link href="ADMIN_CSS/Admin_dashboard.css?v=4" rel="stylesheet" />
   <link href="ADMIN_CSS/admin_responsive.css" rel="stylesheet" />
   <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
   <link href="../ASSETS/vendor/fontawesome/css/all.min.css" rel="stylesheet" />
@@ -102,53 +102,68 @@
         </a>
       </div>
     </header>
-    <!-- STAT CARDS -->
-    <section class="admin-stats-grid">
-      <div class="admin-stat-card anim-fade-up anim-d1">
-        <div class="admin-stat-icon admin-stat-icon--blue">👥</div>
-        <div class="admin-stat-body">
-          <div class="admin-stat-number" id="dashboard-total-users">—</div>
-          <div class="admin-stat-label">Total Users</div>
-          <div class="admin-stat-sub">Updated from database</div>
-          <div class="admin-stat-breakdown">
-            <span>Teachers: <strong id="dashboard-teacher-count">—</strong></span>
-            <span>Students: <strong id="dashboard-student-count">—</strong></span>
-          </div>
+    <!-- OVERVIEW BANNER: the school + the four numbers worth a glance -->
+    <section class="admin-hero anim-fade-up anim-d1">
+      <div class="admin-hero-left">
+        <img class="admin-hero-logo" src="../ASSETS/logo.png" alt="" />
+        <div class="admin-hero-text">
+          <p class="admin-hero-kicker">School overview</p>
+          <h2 class="admin-hero-title" id="admin-hero-school">SPED ALM</h2>
+          <p class="admin-hero-sub" id="admin-hero-sub"></p>
         </div>
       </div>
-      <div class="admin-stat-card anim-fade-up anim-d2">
-        <div class="admin-stat-icon admin-stat-icon--orange">📖</div>
-        <div class="admin-stat-body">
-          <div class="admin-stat-number" id="dashboard-total-activities">—</div>
-          <div class="admin-stat-label">Total Activities</div>
-          <div class="admin-stat-sub" id="dashboard-activities-sub">Loading...</div>
-        </div>
-      </div>
-      <div class="admin-stat-card anim-fade-up anim-d3">
-        <div class="admin-stat-icon admin-stat-icon--green">⭐</div>
-        <div class="admin-stat-body">
-          <div class="admin-stat-label">Status Overview</div>
-          <div class="admin-stat-breakdown" style="margin-top:8px;gap:6px;flex-direction:column;">
-            <div style="font-size:11px;color:#555;font-weight:600;">Teachers</div>
-            <div class="admin-stat-breakdown" style="margin-top:0;">
-              <span>Active: <strong id="dash-teacher-active">—</strong></span>
-              <span>Inactive: <strong id="dash-teacher-inactive">—</strong></span>
-            </div>
-            <div style="font-size:11px;color:#555;font-weight:600;margin-top:4px;">Students</div>
-            <div class="admin-stat-breakdown" style="margin-top:0;">
-              <span>Active: <strong id="dash-student-active">—</strong></span>
-              <span>Inactive: <strong id="dash-student-inactive">—</strong></span>
-            </div>
-          </div>
-        </div>
+      <div class="admin-kpis">
+        <a class="admin-kpi kpi-blue" href="Admin_manage_user.html">
+          <span class="admin-kpi-icon"><i class="fa-solid fa-users"></i></span>
+          <span class="admin-kpi-value" id="dashboard-total-users">—</span>
+          <span class="admin-kpi-label">Total users</span>
+          <span class="admin-kpi-sub"><span id="dashboard-teacher-count">—</span> teachers · <span id="dashboard-student-count">—</span> students</span>
+        </a>
+        <a class="admin-kpi kpi-green" href="Admin_manage_user.html">
+          <span class="admin-kpi-icon"><i class="fa-solid fa-signal"></i></span>
+          <span class="admin-kpi-value" id="kpi-online">—</span>
+          <span class="admin-kpi-label">Online now</span>
+          <span class="admin-kpi-sub" id="kpi-online-sub">&nbsp;</span>
+        </a>
+        <a class="admin-kpi kpi-violet" href="Admin_activity_library.html">
+          <span class="admin-kpi-icon"><i class="fa-solid fa-book-open"></i></span>
+          <span class="admin-kpi-value" id="dashboard-total-activities">—</span>
+          <span class="admin-kpi-label">Activities</span>
+          <span class="admin-kpi-sub" id="dashboard-activities-sub">&nbsp;</span>
+        </a>
+        <a class="admin-kpi kpi-amber" href="Admin_report.html">
+          <span class="admin-kpi-icon"><i class="fa-solid fa-user-graduate"></i></span>
+          <span class="admin-kpi-value" id="kpi-enrolled">—</span>
+          <span class="admin-kpi-label">Enrolled learners</span>
+          <span class="admin-kpi-sub">In teachers' classes</span>
+        </a>
       </div>
     </section>
-    <!-- BOTTOM PANELS -->
-    <section class="admin-panels-grid">
+    <!-- QUICK ACTIONS -->
+    <nav class="admin-quick-actions anim-fade-up anim-d2" aria-label="Quick actions">
+      <a class="admin-qa" href="Admin_manage_user.html">
+        <span class="admin-qa-icon qa-blue"><i class="fa-solid fa-user-plus"></i></span>
+        <span class="admin-qa-text"><b>Add or manage users</b><small>Teachers, students, admins</small></span>
+      </a>
+      <a class="admin-qa" href="Admin_activity_library.html">
+        <span class="admin-qa-icon qa-violet"><i class="fa-solid fa-book"></i></span>
+        <span class="admin-qa-text"><b>Activity library</b><small>Every teacher's materials</small></span>
+      </a>
+      <a class="admin-qa" href="Admin_report.html">
+        <span class="admin-qa-icon qa-amber"><i class="fa-solid fa-chart-column"></i></span>
+        <span class="admin-qa-text"><b>Reports</b><small>School-wide progress</small></span>
+      </a>
+      <a class="admin-qa" href="Admin_setting.html">
+        <span class="admin-qa-icon qa-teal"><i class="fa-solid fa-calendar-check"></i></span>
+        <span class="admin-qa-text"><b>School year &amp; settings</b><small>Grading locks, school info</small></span>
+      </a>
+    </nav>
+    <!-- PANELS -->
+    <section class="admin-panels-grid anim-fade-up anim-d3">
       <!-- Recent Activities -->
-      <div class="admin-panel">
+      <div class="admin-panel admin-panel--activity">
         <div class="admin-panel-header">
-          <h2 class="admin-panel-title">Recent Activities</h2>
+          <h2 class="admin-panel-title"><span class="admin-panel-icon pi-violet"><i class="fa-solid fa-bolt"></i></span>Recent activities</h2>
           <a class="admin-panel-link" href="Admin_activity_library.html">View all</a>
         </div>
         <div id="admin-recent-activities-content" class="admin-panel-body">
@@ -159,17 +174,42 @@
           </div>
         </div>
       </div>
-      <!-- User Overview -->
-      <div class="admin-panel">
-        <div class="admin-panel-header">
-          <h2 class="admin-panel-title">User Overview</h2>
-          <a class="admin-panel-link" href="Admin_manage_user.html">View All</a>
+      <div class="admin-side-col">
+        <!-- Who's online -->
+        <div class="admin-panel admin-panel--online">
+          <div class="admin-panel-header">
+            <h2 class="admin-panel-title"><span class="admin-panel-icon pi-green"><i class="fa-solid fa-signal"></i></span>Who's online</h2>
+            <span class="admin-live-dot" title="Updates every few seconds">Live</span>
+          </div>
+          <div class="admin-meters">
+            <div class="admin-meter-row">
+              <div class="admin-meter-top"><span><i class="fa-solid fa-chalkboard-user"></i> Teachers</span><b><span id="dash-teacher-active">—</span> of <span id="dash-teacher-total">—</span> online</b></div>
+              <div class="admin-meter" role="img" id="meter-teachers-wrap"><i id="meter-teachers"></i></div>
+            </div>
+            <div class="admin-meter-row">
+              <div class="admin-meter-top"><span><i class="fa-solid fa-children"></i> Students</span><b><span id="dash-student-active">—</span> of <span id="dash-student-total">—</span> online</b></div>
+              <div class="admin-meter" role="img" id="meter-students-wrap"><i id="meter-students"></i></div>
+            </div>
+          </div>
         </div>
-        <div id="admin-user-overview-content" class="admin-panel-body">
-          <div class="admin-empty-state">
-            <div class="admin-empty-icon">👤</div>
-            <p class="admin-empty-title">Loading users...</p>
-            <p class="admin-empty-desc">Registered teachers, students, and admins will appear here.</p>
+        <!-- User Overview -->
+        <div class="admin-panel admin-panel--users">
+          <div class="admin-panel-header">
+            <h2 class="admin-panel-title"><span class="admin-panel-icon pi-blue"><i class="fa-solid fa-user-group"></i></span>User overview</h2>
+            <a class="admin-panel-link" href="Admin_manage_user.html">View all</a>
+          </div>
+          <div class="admin-user-filters" id="admin-user-filters">
+            <button class="admin-chip active" data-role="all" type="button">All <span></span></button>
+            <button class="admin-chip" data-role="teacher" type="button">Teachers <span></span></button>
+            <button class="admin-chip" data-role="student" type="button">Students <span></span></button>
+            <button class="admin-chip" data-role="admin" type="button">Admins <span></span></button>
+          </div>
+          <div id="admin-user-overview-content" class="admin-panel-body">
+            <div class="admin-empty-state">
+              <div class="admin-empty-icon">👤</div>
+              <p class="admin-empty-title">Loading users...</p>
+              <p class="admin-empty-desc">Registered teachers, students, and admins will appear here.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -200,6 +240,10 @@
           var currentTime = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Singapore' });
           var school = window.schoolInfo || { name: 'Mamatid Elementary School', location: 'Cabuyao, Laguna' };
           greetingSub.textContent = currentDate + ' · ' + currentTime + ' · ' + school.name + (school.location ? ' · ' + school.location : '');
+          var heroSchool = document.getElementById('admin-hero-school');
+          var heroSub = document.getElementById('admin-hero-sub');
+          if (heroSchool) heroSchool.textContent = school.name || 'SPED ALM';
+          if (heroSub) heroSub.innerHTML = school.location ? '<i class="fa-solid fa-location-dot"></i> ' + escapeHtml(school.location) : '';
         }
         updateDateTime();
         setInterval(updateDateTime, 30000);
@@ -239,6 +283,22 @@
       });
     });
 
+    function setText(id, value) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = value;
+    }
+    function plural(n, word) { return n + ' ' + word + (n === 1 ? '' : 's'); }
+
+    // Online share as a meter: blue fill on a lighter-blue track.
+    function setMeter(id, part, whole) {
+      var fill = document.getElementById(id);
+      if (!fill) return;
+      var pct = whole > 0 ? Math.round(part / whole * 100) : 0;
+      fill.style.width = (part > 0 ? Math.max(4, pct) : 0) + '%';
+      var wrap = fill.parentNode;
+      if (wrap) wrap.setAttribute('aria-label', part + ' of ' + whole + ' online (' + pct + '%)');
+    }
+
     function updateDashboardStats() {
       fetch('ADMIN_BACKEND/admin_stats.php?_t=' + Date.now(), { cache: 'no-store' })
         .then(function (response) { return response.json(); })
@@ -247,25 +307,26 @@
           var activeTeachers = parseInt(stats.active_teachers  || 0);
           var totalStudents  = parseInt(stats.student_accounts || 0);
           var activeStudents = parseInt(stats.active_students  || 0);
+          var online = parseInt(stats.active_accounts || 0);
 
-          var totalUsersEl = document.getElementById('dashboard-total-users');
-          var teacherEl    = document.getElementById('dashboard-teacher-count');
-          var studentEl    = document.getElementById('dashboard-student-count');
+          setText('dashboard-total-users', stats.total_users || 0);
+          setText('dashboard-teacher-count', totalTeachers);
+          setText('dashboard-student-count', totalStudents);
 
-          if (totalUsersEl) totalUsersEl.textContent = stats.total_users || 0;
-          if (teacherEl)    teacherEl.textContent    = totalTeachers;
-          if (studentEl)    studentEl.textContent    = totalStudents;
-
-          var el = function(id) { return document.getElementById(id); };
-          if (el('dash-teacher-active'))   el('dash-teacher-active').textContent   = activeTeachers;
-          if (el('dash-teacher-inactive')) el('dash-teacher-inactive').textContent = totalTeachers - activeTeachers;
-          if (el('dash-student-active'))   el('dash-student-active').textContent   = activeStudents;
-          if (el('dash-student-inactive')) el('dash-student-inactive').textContent = totalStudents - activeStudents;
+          setText('kpi-online', online);
+          setText('kpi-online-sub', plural(activeTeachers, 'teacher') + ' · ' + plural(activeStudents, 'student'));
+          setText('dash-teacher-active', activeTeachers);
+          setText('dash-teacher-total', totalTeachers);
+          setText('dash-student-active', activeStudents);
+          setText('dash-student-total', totalStudents);
+          setMeter('meter-teachers', activeTeachers, totalTeachers);
+          setMeter('meter-students', activeStudents, totalStudents);
 
           var totalAct = parseInt(stats.total_activities || 0);
           var pubAct   = parseInt(stats.published_activities || 0);
-          if (el('dashboard-total-activities')) el('dashboard-total-activities').textContent = totalAct;
-          if (el('dashboard-activities-sub'))   el('dashboard-activities-sub').textContent   = pubAct + ' published';
+          setText('dashboard-total-activities', totalAct);
+          setText('dashboard-activities-sub', pubAct + ' published · ' + plural(Math.max(0, totalAct - pubAct), 'draft'));
+          setText('kpi-enrolled', parseInt(stats.students || 0));
         })
         .catch(function () {
           // ignore stats failure
@@ -287,61 +348,83 @@
         });
     }
 
+    // "Online" = seen within the last 2 minutes (the portal_guard.js
+    // heartbeat), same as Manage Users — not the stored `status` flag, which
+    // only changes on login/logout. MySQL datetimes are UTC with no marker,
+    // so 'Z' is appended before parsing.
+    function lastSeenMs(user) {
+      return user.last_seen ? new Date(user.last_seen.replace(' ', 'T') + 'Z').getTime() : 0;
+    }
+    function isOnline(user) { return !!user.last_seen && (Date.now() - lastSeenMs(user)) < 2 * 60 * 1000; }
+    function timeAgo(ms) {
+      var diff = Math.max(0, Date.now() - ms) / 1000;
+      if (diff < 60) return 'just now';
+      if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+      if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+      if (diff < 86400 * 30) return Math.floor(diff / 86400) + 'd ago';
+      return new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    var ROLE_STYLE = { admin: '#8b5cf6', teacher: '#3b82f6', student: '#10b981' };
+    var USERS_SHOWN = 8;
+    var _users = [], _userRole = 'all';
+
     function displayUserOverview(users) {
+      _users = Array.isArray(users) ? users : [];
+      renderUserOverview();
+    }
+
+    function renderUserOverview() {
       var container = document.getElementById('admin-user-overview-content');
       if (!container) return;
 
-      if (!users || users.length === 0) {
-        container.innerHTML = '<div class="admin-empty-state"><div class="admin-empty-icon">👤</div><p class="admin-empty-title">No users yet</p><p class="admin-empty-desc">Registered teachers, students, and admins will appear here.</p></div>';
-        return;
-      }
-
-      var displayUsers = users;
-      var html = '<div style="display: flex; flex-direction: column; gap: 12px;">';
-
-      displayUsers.forEach(function (user) {
-        var initials = (user.first_name ? user.first_name.charAt(0) : '') + (user.last_name ? user.last_name.charAt(0) : '');
-        var fullName = escapeHtml(((user.first_name || '') + ' ' + (user.last_name || '')).trim() || user.admin_email);
-        var email = escapeHtml(user.admin_email || '—');
-        var roleColor = user.role === 'admin' ? '#8b5cf6' : user.role === 'teacher' ? '#3b82f6' : '#10b981';
-        var roleLabel = escapeHtml(user.role.charAt(0).toUpperCase() + user.role.slice(1));
-        // Matches Manage Users: "active" means currently online (seen
-        // within the last 2 minutes via the portal_guard.js heartbeat),
-        // not the stored `status` flag — that one only changes on
-        // login/explicit logout and stays "active" long after someone
-        // has closed the tab. MySQL datetime strings are UTC with no
-        // timezone marker, so 'Z' is appended before parsing.
-        var isActive = !!user.last_seen &&
-          (Date.now() - new Date(user.last_seen.replace(' ', 'T') + 'Z').getTime()) < 2 * 60 * 1000;
-        var statusColor = isActive ? '#16a34a' : '#9ca3af';
-        var statusLabel = isActive ? 'Active' : 'Inactive';
-
-        var avatarInner = user.profile_photo
-          ? '<img src="' + user.profile_photo + '" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:50%;" onerror="this.parentNode.style.background=\'' + roleColor + '\';this.parentNode.textContent=\'' + initials + '\';" />'
-          : initials;
-        var avatarBg = user.profile_photo ? 'transparent' : roleColor;
-
-        html += '<div style="display:flex;align-items:center;padding:10px;background:#f9fafb;border-radius:8px;border-left:3px solid ' + roleColor + ';">'
-          + '<div style="position:relative;width:40px;height:40px;flex-shrink:0;margin-right:12px;">'
-          + '<div style="width:40px;height:40px;border-radius:50%;background:' + avatarBg + ';color:white;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:12px;overflow:hidden;">'
-          + avatarInner
-          + '</div>'
-          + '<span title="' + statusLabel + '" style="position:absolute;bottom:0;right:0;width:11px;height:11px;border-radius:50%;background:' + statusColor + ';border:2px solid #f9fafb;"></span>'
-          + '</div>'
-          + '<div style="flex:1;min-width:0;">'
-          + '<div style="font-weight:600;font-size:14px;color:#1f2937;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + fullName + '</div>'
-          + '<div style="font-size:12px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + email + '</div>'
-          + '</div>'
-          + '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">'
-          + '<span style="font-size:11px;background:' + roleColor + '20;color:' + roleColor + ';padding:4px 8px;border-radius:4px;white-space:nowrap;">' + roleLabel + '</span>'
-          + '<span style="font-size:10px;color:' + statusColor + ';font-weight:600;white-space:nowrap;">' + statusLabel + '</span>'
-          + '</div>'
-          + '</div>';
+      // chip counts
+      document.querySelectorAll('#admin-user-filters .admin-chip').forEach(function (chip) {
+        var role = chip.getAttribute('data-role');
+        var n = role === 'all' ? _users.length : _users.filter(function (u) { return u.role === role; }).length;
+        chip.querySelector('span').textContent = n;
+        chip.classList.toggle('active', role === _userRole);
       });
 
-      html += '</div>';
-      container.innerHTML = html;
+      var list = _users.filter(function (u) { return _userRole === 'all' || u.role === _userRole; });
+      if (!list.length) {
+        container.innerHTML = '<div class="admin-empty-state"><div class="admin-empty-icon">👤</div><p class="admin-empty-title">No users here yet</p><p class="admin-empty-desc">Registered teachers, students, and admins will appear here.</p></div>';
+        return;
+      }
+      // Who's online first, then most recently seen.
+      list = list.slice().sort(function (a, b) {
+        return (isOnline(b) - isOnline(a)) || (lastSeenMs(b) - lastSeenMs(a));
+      });
+
+      container.innerHTML = list.slice(0, USERS_SHOWN).map(function (user) {
+        var initials = escapeHtml(((user.first_name || '').charAt(0) + (user.last_name || '').charAt(0)).toUpperCase() || '?');
+        var fullName = escapeHtml(((user.first_name || '') + ' ' + (user.last_name || '')).trim() || user.admin_email);
+        var color = ROLE_STYLE[user.role] || '#64748b';
+        var role = escapeHtml((user.role || 'user').charAt(0).toUpperCase() + (user.role || 'user').slice(1));
+        var online = isOnline(user);
+        var seen = online ? 'Online now' : (user.last_seen ? 'Seen ' + timeAgo(lastSeenMs(user)) : 'Never signed in');
+        var avatar = user.profile_photo
+          ? '<img src="' + escapeHtml(user.profile_photo) + '" alt="" onerror="this.remove()" />'
+          : '';
+        return '<div class="admin-user-row">'
+          + '<div class="admin-user-av" style="background:' + color + ';">' + initials + avatar
+          + '<span class="admin-user-presence' + (online ? ' is-online' : '') + '" title="' + (online ? 'Online' : 'Offline') + '"></span></div>'
+          + '<div class="admin-user-meta"><div class="admin-user-nm">' + fullName + '</div>'
+          + '<div class="admin-user-em">' + escapeHtml(user.admin_email || '—') + '</div></div>'
+          + '<div class="admin-user-side"><span class="admin-role-pill role-' + escapeHtml(user.role || '') + '">' + role + '</span>'
+          + '<span class="admin-user-seen' + (online ? ' is-online' : '') + '">' + seen + '</span></div>'
+          + '</div>';
+      }).join('') + (list.length > USERS_SHOWN
+        ? '<a class="admin-more-link" href="Admin_manage_user.html">View all ' + list.length + ' users →</a>'
+        : '');
     }
+
+    document.addEventListener('click', function (e) {
+      var chip = e.target.closest && e.target.closest('#admin-user-filters .admin-chip');
+      if (!chip) return;
+      _userRole = chip.getAttribute('data-role');
+      renderUserOverview();
+    });
 
     function loadRecentActivities() {
       fetch('ADMIN_BACKEND/admin_get_recent_activities.php?_t=' + Date.now(), { cache: 'no-store' })
@@ -365,6 +448,16 @@
       });
     }
 
+    var ACTIVITY_STYLE = {
+      'Create Activity':    { icon: 'fa-file-circle-plus', cls: 'ra-blue',   verb: 'created an activity' },
+      'Complete Activity':  { icon: 'fa-circle-check',     cls: 'ra-green',  verb: 'completed an activity' },
+      'Save Draft':         { icon: 'fa-floppy-disk',      cls: 'ra-amber',  verb: 'saved a draft' },
+      'Material Uploaded':  { icon: 'fa-paperclip',        cls: 'ra-teal',   verb: 'uploaded a material' },
+      'Material Deleted':   { icon: 'fa-trash-can',        cls: 'ra-red',    verb: 'deleted a material' },
+      'Unpublish Activity': { icon: 'fa-eye-slash',        cls: 'ra-orange', verb: 'unpublished an activity' },
+      'Delete Draft':       { icon: 'fa-trash-can',        cls: 'ra-red',    verb: 'deleted a draft' }
+    };
+
     function displayRecentActivities(activities) {
       var container = document.getElementById('admin-recent-activities-content');
       if (!container) return;
@@ -374,108 +467,24 @@
         return;
       }
 
-      var html = '<div style="display: flex; flex-direction: column; gap: 15px;">';
-
-      activities.forEach(function (activity) {
-        var icon, bgColor, statusBgColor, statusTextColor, statusBadge;
-        
-        // Determine icon and colors based on activity type
-        if (activity.type === 'Edit User') {
-          icon = '✏️';
-          bgColor = '#f0f9ff';
-          statusBgColor = '#e0f2fe';
-          statusTextColor = '#0369a1';
-          statusBadge = 'User Updated';
-        } else if (activity.type === 'Add User') {
-          icon = '➕';
-          bgColor = '#fffbeb';
-          statusBgColor = '#fef3c7';
-          statusTextColor = '#b45309';
-          statusBadge = 'User Added';
-        } else if (activity.type === 'Create Activity') {
-          icon = '📝';
-          bgColor = '#f0fdf4';
-          statusBgColor = '#dbeafe';
-          statusTextColor = '#059669';
-          statusBadge = 'Activity Created';
-        } else if (activity.type === 'Complete Activity') {
-          icon = '✅';
-          bgColor = '#faf5ff';
-          statusBgColor = '#e9d5ff';
-          statusTextColor = '#7c3aed';
-          statusBadge = 'Activity Completed';
-        } else if (activity.type === 'Save Draft') {
-          icon = '💾';
-          bgColor = '#fffbeb';
-          statusBgColor = '#fef3c7';
-          statusTextColor = '#d97706';
-          statusBadge = 'Draft Saved';
-        } else if (activity.type === 'Material Uploaded') {
-          icon = '📎';
-          bgColor = '#f0fdfa';
-          statusBgColor = '#ccfbf1';
-          statusTextColor = '#0f766e';
-          statusBadge = 'Material Uploaded';
-        } else if (activity.type === 'Material Deleted') {
-          icon = '🗑️';
-          bgColor = '#fef2f2';
-          statusBgColor = '#fee2e2';
-          statusTextColor = '#b91c1c';
-          statusBadge = 'Material Deleted';
-        } else if (activity.type === 'Unpublish Activity') {
-          icon = '📤';
-          bgColor = '#fff7ed';
-          statusBgColor = '#ffedd5';
-          statusTextColor = '#c2410c';
-          statusBadge = 'Unpublished';
-        } else if (activity.type === 'Delete Draft') {
-          icon = '🗑️';
-          bgColor = '#fef2f2';
-          statusBgColor = '#fee2e2';
-          statusTextColor = '#b91c1c';
-          statusBadge = 'Draft Deleted';
-        } else {
-          icon = '📌';
-          bgColor = '#f3f4f6';
-          statusBgColor = '#e5e7eb';
-          statusTextColor = '#374151';
-          statusBadge = 'Activity';
-        }
-        
-        var userTypeDisplay = (activity.user_type || 'user').charAt(0).toUpperCase() + (activity.user_type || 'user').slice(1);
-        
+      container.innerHTML = activities.map(function (activity) {
+        var st = ACTIVITY_STYLE[activity.type] || { icon: 'fa-thumbtack', cls: 'ra-gray', verb: String(activity.type || 'activity').toLowerCase() };
+        // "Material: Fractions" / "Activity: Match the Pictures - Score: 80%" -> just the thing itself
+        var detail = String(activity.action_detail || '').replace(/^(Activity|Material):\s*/, '');
         // MySQL datetime strings are UTC but carry no timezone marker, so
         // appending 'Z' keeps the Date constructor from treating them as
         // already being in the browser's local time (PHT, off by 8 hours).
-        var date = new Date(activity.created_at.replace(' ', 'T') + 'Z');
-        var formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-
-        html += `
-          <div style="display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
-            <div style="width: 36px; height: 36px; background: ${bgColor}; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">
-              ${icon}
-            </div>
-            <div style="flex: 1; min-width: 0;">
-              <div style="font-weight: 600; font-size: 14px; color: #1f2937;">
-                ${escapeHtml(activity.type)}
-              </div>
-              ${activity.action_detail ? `<div style="font-size: 12.5px; color: #374151; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(activity.action_detail)}</div>` : ''}
-              <div style="font-size: 12px; color: #6b7280; margin-top: 2px;">
-                ${escapeHtml(userTypeDisplay)} • ${escapeHtml(activity.user_name || 'Unknown')}
-              </div>
-              <div style="font-size: 11px; color: #9ca3af; margin-top: 4px;">
-                ${formattedDate}
-              </div>
-            </div>
-            <span style="font-size: 11px; background: ${statusBgColor}; color: ${statusTextColor}; padding: 4px 8px; border-radius: 4px; white-space: nowrap; flex-shrink: 0; font-weight: 500;">
-              ${statusBadge}
-            </span>
-          </div>
-        `;
-      });
-
-      html += '</div>';
-      container.innerHTML = html;
+        var ms = new Date(String(activity.created_at).replace(' ', 'T') + 'Z').getTime();
+        var full = new Date(ms).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+        var who = (activity.user_type ? activity.user_type.charAt(0).toUpperCase() + activity.user_type.slice(1) + ' · ' : '');
+        return '<div class="admin-act-row">'
+          + '<span class="admin-act-ico ' + st.cls + '"><i class="fa-solid ' + st.icon + '"></i></span>'
+          + '<div class="admin-act-main">'
+          + '<div class="admin-act-line"><b>' + escapeHtml(activity.user_name || 'Someone') + '</b> ' + escapeHtml(st.verb) + '</div>'
+          + (detail ? '<div class="admin-act-detail">' + escapeHtml(detail) + '</div>' : '')
+          + '<div class="admin-act-meta">' + escapeHtml(who) + '<span title="' + escapeHtml(full) + '">' + timeAgo(ms) + '</span></div>'
+          + '</div></div>';
+      }).join('');
     }
   </script>
 <script>(function(){var _s=document.createElement('style');_s.textContent='.admin-notif-badge{display:none}';document.head.appendChild(_s);fetch('ADMIN_BACKEND/admin_notif_count.php').then(function(r){return r.json();}).then(function(d){if(d&&d.unread>0){var _b=document.querySelector('.admin-notif-badge');if(_b)_b.style.display='block';}}).catch(function(){});})();</script>

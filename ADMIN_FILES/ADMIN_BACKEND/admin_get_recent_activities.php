@@ -30,9 +30,14 @@ $conn->query($createTableSql);
 // matching row today can only mean that account was since permanently deleted, never a
 // legacy/unsynced case. Safe to hide unmatched rows here (not safe in Activity Library,
 // where old teacher_accounts rows can predate admin_accounts syncing).
+// The two tables were created with different collations (unicode_ci vs
+// general_ci), and comparing their email columns as-is fails outright with
+// "Illegal mix of collations" — the panel then silently showed nothing.
+// CONVERT first, so the COLLATE stays valid whatever charset a server's
+// copy of the table ended up with.
 $result = $conn->query("SELECT log.id, log.activity_type, log.user_type, log.user_name, log.user_email, log.action_detail, log.created_at
                         FROM admin_activities log
-                        INNER JOIN admin_accounts aa ON aa.admin_email = log.user_email AND aa.is_deleted = 0
+                        INNER JOIN admin_accounts aa ON aa.admin_email = CONVERT(log.user_email USING utf8mb4) COLLATE utf8mb4_general_ci AND aa.is_deleted = 0
                         WHERE log.activity_type IN ('Create Activity', 'Complete Activity', 'Save Draft', 'Material Uploaded', 'Material Deleted', 'Unpublish Activity', 'Delete Draft')
                         ORDER BY log.created_at DESC
                         LIMIT 20");

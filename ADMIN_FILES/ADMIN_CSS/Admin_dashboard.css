@@ -253,98 +253,203 @@ body {
     box-shadow: var(--shadow-md);
 }
 
-/* ===== STAT CARDS ===== */
-.admin-stats-grid {
+/* ===== OVERVIEW BANNER (school + KPI tiles) ===== */
+.admin-hero {
+  position: relative;
+  overflow: hidden;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  grid-template-columns: minmax(240px, 1fr) minmax(0, 2.3fr);
+  align-items: center;
+  gap: 22px;
+  padding: 24px 26px;
+  border-radius: 20px;
+  color: #fff;
+  background: linear-gradient(130deg, #1E3A8A 0%, #3730A3 55%, #6366F1 100%);
+  box-shadow: 0 14px 30px rgba(55, 48, 163, .22);
 }
+.admin-hero::before,
+.admin-hero::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .08);
+  pointer-events: none;
+}
+.admin-hero::before { width: 260px; height: 260px; top: -120px; left: 16%; }
+.admin-hero::after  { width: 180px; height: 180px; bottom: -110px; right: -40px; }
 
-.admin-stat-card {
-  background: #ffffff;
-  border-radius: 18px;
-  padding: 28px 24px;
+.admin-hero-left {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
-  gap: 20px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  gap: 16px;
+  min-width: 0;
 }
-
-.admin-stat-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
+.admin-hero-logo {
+  flex: none;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: #fff;
+  padding: 4px;
+  object-fit: contain;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, .25);
+}
+.admin-hero-text { min-width: 0; }
+.admin-hero-kicker {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .75);
+}
+.admin-hero-title {
+  font-family: 'Nunito', sans-serif;
   font-size: 22px;
+  font-weight: 900;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+.admin-hero-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .15);
+  font-size: 12px;
+}
+.admin-hero-sub:empty { display: none; }
+
+/* KPI tiles — value beside the icon, label + context underneath */
+.admin-kpis {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.admin-kpi {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 10px;
+  align-items: center;
+  min-width: 0;
+  padding: 14px;
+  border-radius: 16px;
+  background: #fff;
+  color: #1a1a2e;
+  text-decoration: none;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, .12);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.admin-kpi:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(15, 23, 42, .18); }
+.admin-kpi:focus-visible { outline: 3px solid #FDE68A; outline-offset: 2px; }
+.admin-kpi-icon {
+  grid-column: 1;
+  grid-row: 1;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  font-size: 15px;
 }
-
-.admin-stat-icon--blue   { background: #eef2fb; }
-.admin-stat-icon--orange { background: #fff5e6; }
-.admin-stat-icon--green  { background: #edfaf3; }
-
-.admin-stat-number {
+.kpi-blue   .admin-kpi-icon { background: #DBEAFE; color: #1D4ED8; }
+.kpi-green  .admin-kpi-icon { background: #DCFCE7; color: #15803D; }
+.kpi-violet .admin-kpi-icon { background: #EDE9FE; color: #6D28D9; }
+.kpi-amber  .admin-kpi-icon { background: #FEF3C7; color: #B45309; }
+.admin-kpi-value {
+  grid-column: 2;
+  grid-row: 1;
   font-family: 'Nunito', sans-serif;
-  font-size: 36px;
+  font-size: 26px;
   font-weight: 900;
-  color: #030303;
-  line-height: 1;
-  margin-bottom: 4px;
+  line-height: 1.1;
+  color: #0f172a;
 }
+.admin-kpi-label,
+.admin-kpi-sub { grid-column: 1 / -1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.admin-kpi-label { margin-top: 9px; font-size: 12.5px; font-weight: 600; color: #334155; }
+.admin-kpi-sub { margin-top: 2px; font-size: 11.5px; color: #64748b; }
 
-.admin-stat-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #0c0c0c;
+/* ===== QUICK ACTIONS ===== */
+.admin-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
 }
-
-.admin-stat-sub {
-  font-size: 12px;
-  color: #bbb;
-  margin-top: 3px;
-}
-
-.admin-stat-breakdown {
+.admin-qa {
   display: flex;
-  flex-direction: row;
-  gap: 16px;
-  margin-top: 6px;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 13px 15px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid #E2E8F0;
+  color: #1a1a2e;
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .05);
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
 }
-
-.admin-stat-breakdown span {
-  font-size: 12px;
-  color: #888;
+.admin-qa:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(15, 23, 42, .10); border-color: #C7D2FE; }
+.admin-qa:focus-visible { outline: 3px solid #A5B4FC; outline-offset: 2px; }
+.admin-qa-icon {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  color: #fff;
 }
+.qa-blue   { background: linear-gradient(160deg, #60A5FA, #2563EB); }
+.qa-violet { background: linear-gradient(160deg, #A78BFA, #7C3AED); }
+.qa-amber  { background: linear-gradient(160deg, #FFB020, #F97316); }
+.qa-teal   { background: linear-gradient(160deg, #2DD4BF, #0D9488); }
+.admin-qa-text { display: flex; flex-direction: column; min-width: 0; }
+.admin-qa-text b { font-size: 13.5px; font-weight: 700; }
+.admin-qa-text small { font-size: 11.5px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ===== PANELS ===== */
 .admin-panels-grid {
   display: grid;
-  grid-template-columns: 1fr 0.65fr;
+  grid-template-columns: minmax(0, 1fr) 380px;
   gap: 20px;
-  flex: 1;
-  min-height: 0;
+  align-items: start;
+}
+.admin-side-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
 }
 
 .admin-panel {
   background: #ffffff;
   border-radius: 18px;
-  padding: 26px 24px;
+  padding: 22px 22px;
+  border: 1px solid #E8EDF6;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   display: flex;
   flex-direction: column;
-  min-height: 280px;
+  min-width: 0;
 }
 
 /* Scrollable panel content area */
 .admin-panel-body {
-  flex: 1;
-  min-height: 0;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #dde3f0 transparent;
 }
+.admin-panel--activity .admin-panel-body { max-height: 560px; }
+.admin-panel--users .admin-panel-body { max-height: 470px; }
 .admin-panel-body::-webkit-scrollbar { width: 4px; }
 .admin-panel-body::-webkit-scrollbar-track { background: transparent; }
 .admin-panel-body::-webkit-scrollbar-thumb { background: #dde3f0; border-radius: 10px; }
@@ -354,26 +459,199 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
 .admin-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-family: 'Nunito', sans-serif;
   font-size: 17px;
   font-weight: 900;
   color: #1a1a2e;
 }
+.admin-panel-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+.pi-violet { background: #EDE9FE; color: #6D28D9; }
+.pi-green  { background: #DCFCE7; color: #15803D; }
+.pi-blue   { background: #DBEAFE; color: #1D4ED8; }
 
 .admin-panel-link {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1D4ED8;
+  text-decoration: none;
+  background: #DBEAFE;
+  padding: 6px 14px;
+  border-radius: 999px;
+  white-space: nowrap;
+  transition: background .15s, color .15s;
+}
+.admin-panel-link:hover { background: #2563EB; color: #fff; }
+
+/* Recent activities timeline */
+.admin-act-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid #F1F5F9;
+}
+.admin-act-row:last-child { border-bottom: none; }
+.admin-act-ico {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+.ra-blue   { background: #DBEAFE; color: #1D4ED8; }
+.ra-green  { background: #DCFCE7; color: #15803D; }
+.ra-amber  { background: #FEF3C7; color: #B45309; }
+.ra-teal   { background: #CCFBF1; color: #0F766E; }
+.ra-red    { background: #FEE2E2; color: #B91C1C; }
+.ra-orange { background: #FFEDD5; color: #C2410C; }
+.ra-gray   { background: #F1F5F9; color: #475569; }
+.admin-act-main { min-width: 0; flex: 1; }
+.admin-act-line { font-size: 13.5px; color: #334155; line-height: 1.35; }
+.admin-act-line b { color: #0f172a; font-weight: 700; }
+.admin-act-detail {
+  margin-top: 2px;
   font-size: 13px;
   font-weight: 600;
-  color: #1a3a8f;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.admin-act-meta { margin-top: 3px; font-size: 11.5px; color: #94a3b8; }
+
+/* Who's online */
+.admin-live-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #15803D;
+  background: #DCFCE7;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.admin-live-dot::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22C55E;
+  animation: adminLive 1.6s ease-in-out infinite;
+}
+@keyframes adminLive { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+.admin-meters { display: flex; flex-direction: column; gap: 14px; }
+.admin-meter-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 13px;
+  color: #475569;
+  margin-bottom: 6px;
+}
+.admin-meter-top span i { color: #64748b; margin-right: 4px; }
+.admin-meter-top b { color: #0f172a; font-weight: 700; font-size: 12.5px; white-space: nowrap; }
+.admin-meter { height: 8px; border-radius: 999px; background: #DBEAFE; overflow: hidden; }
+.admin-meter i { display: block; height: 100%; width: 0; border-radius: 999px; background: #2563EB; transition: width .45s ease; }
+
+/* User overview */
+.admin-user-filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.admin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid #E2E8F0;
+  background: #F8FAFC;
+  color: #475569;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.admin-chip span { font-size: 11px; color: #94a3b8; font-weight: 700; }
+.admin-chip:hover { border-color: #C7D2FE; }
+.admin-chip.active { background: #1E3A8A; border-color: #1E3A8A; color: #fff; }
+.admin-chip.active span { color: #C7D2FE; }
+
+.admin-user-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid #F1F5F9;
+}
+.admin-user-row:last-of-type { border-bottom: none; }
+.admin-user-av {
+  position: relative;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.admin-user-av img { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.admin-user-presence {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #CBD5E1;
+  border: 2px solid #fff;
+}
+.admin-user-presence.is-online { background: #22C55E; }
+.admin-user-meta { flex: 1; min-width: 0; }
+.admin-user-nm { font-size: 13.5px; font-weight: 600; color: #1f2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.admin-user-em { font-size: 12px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.admin-user-side { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex: none; }
+.admin-role-pill { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: #F1F5F9; color: #475569; }
+.admin-role-pill.role-admin   { background: #EDE9FE; color: #6D28D9; }
+.admin-role-pill.role-teacher { background: #DBEAFE; color: #1D4ED8; }
+.admin-role-pill.role-student { background: #DCFCE7; color: #15803D; }
+.admin-user-seen { font-size: 11px; color: #94a3b8; white-space: nowrap; }
+.admin-user-seen.is-online { color: #15803D; font-weight: 700; }
+.admin-more-link {
+  display: block;
+  margin-top: 10px;
+  padding: 9px;
+  border-radius: 10px;
+  background: #F8FAFC;
+  text-align: center;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #1D4ED8;
   text-decoration: none;
 }
-
-.admin-panel-link:hover {
-  text-decoration: underline;
-}
+.admin-more-link:hover { background: #EEF2FF; }
 
 /* Empty state */
 .admin-empty-state {
@@ -425,15 +703,17 @@ body {
 }
 
 /* ===== RESPONSIVE ===== */
+@media (max-width: 1300px) {
+  /* KPI tiles drop under the school name before they'd get cramped */
+  .admin-hero { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 1100px) {
+  .admin-panels-grid { grid-template-columns: 1fr; }
+  .admin-quick-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 @media (max-width: 1024px) {
-  .admin-stats-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  .admin-panels-grid {
-    grid-template-columns: 1fr;
-  }
-
   .admin-main {
     padding: 24px 20px;
   }
@@ -492,97 +772,30 @@ body {
     overflow-y: unset;
     overflow-x: hidden;
     padding: 20px 16px;
+    gap: 18px;
   }
 
-  /* Single full-width column for every stat card. Status Overview holds a
-     lot more nested content (two breakdown rows per role) than the other
-     two cards, so a 2-column layout always left one row unbalanced —
-     either Status Overview alone next to an empty gap, or squeezed into
-     a half-width column. Stacking all three keeps every row the same
-     width and leaves clean, even gaps between them and the panels below. */
-  .admin-stats-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
+  /* Grid/flex children default to min-width:auto and would refuse to shrink
+     below their content on a phone, pushing the page past the screen edge. */
+  .admin-hero, .admin-kpis, .admin-quick-actions, .admin-panels-grid, .admin-panel { min-width: 0; }
 
-  .admin-panels-grid {
-    grid-template-columns: 1fr;
-  }
+  .admin-hero { padding: 16px; gap: 14px; border-radius: 18px; }
+  .admin-hero-logo { width: 52px; height: 52px; }
+  .admin-hero-title { font-size: 18px; }
+  .admin-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .admin-kpi { padding: 11px; border-radius: 14px; }
+  .admin-kpi-icon { width: 30px; height: 30px; font-size: 13px; border-radius: 9px; }
+  .admin-kpi-value { font-size: 22px; }
 
-  /* Grid items (.admin-panel, .admin-stat-card) default to min-width:auto,
-     so a row inside with a non-shrinking badge/pill (flex-shrink:0) set its
-     own intrinsic minimum width — wider than the phone viewport — and
-     pushed the WHOLE panel past the screen edge instead of the badge just
-     wrapping to a new line within it. This is why "View", status badges,
-     etc. looked cut off: it wasn't those elements overflowing on their
-     own, it was their grid-item ancestor refusing to shrink to the
-     viewport at all. The same default also applies one level up, on the
-     grid CONTAINERS themselves as flex children of .admin-main — without
-     resetting it there too, the grid could still refuse to shrink below
-     its content's min-content width and bleed past the screen edge. */
-  .admin-stats-grid,
-  .admin-panels-grid {
-    min-width: 0;
-  }
+  .admin-quick-actions { gap: 10px; }
+  .admin-qa { padding: 10px; gap: 9px; border-radius: 14px; }
+  .admin-qa-icon { width: 34px; height: 34px; font-size: 14px; border-radius: 11px; }
+  .admin-qa-text b { font-size: 12px; }
+  .admin-qa-text small { display: none; }
 
-  .admin-panel,
-  .admin-stat-card {
-    min-width: 0;
-    overflow-x: hidden;
-  }
-
-  .admin-panel {
-    min-height: 0;
-  }
-
-  .admin-panel-body {
-    overflow-x: hidden;
-    flex: 0 1 auto;
-    max-height: 280px;
-  }
-
-  .admin-stat-body {
-    min-width: 0;
-    flex: 1;
-  }
-
-  .admin-stat-card {
-    padding: 16px 14px;
-    gap: 12px;
-  }
-
-  .admin-stat-icon {
-    width: 44px;
-    height: 44px;
-    font-size: 18px;
-    border-radius: 12px;
-  }
-
-  .admin-stat-number {
-    font-size: 24px;
-  }
-
-  .admin-stat-label {
-    font-size: 12px;
-  }
-
-  .admin-stat-sub {
-    font-size: 11px;
-  }
-
-  .admin-panel-header {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .admin-panel-link {
-    flex-shrink: 0;
-  }
-
-  .admin-stat-breakdown {
-    flex-wrap: wrap;
-    gap: 10px;
-  }
+  .admin-panel { padding: 16px; }
+  .admin-panel--activity .admin-panel-body,
+  .admin-panel--users .admin-panel-body { max-height: 380px; }
 
   .admin-topbar {
     flex-direction: column;
@@ -612,33 +825,10 @@ body {
 }
 
 @media (max-width: 480px) {
-  /* Keeps padding within the 12-16px range on the smallest phones so the
-     card grid below always has room to sit inside the viewport. */
+  /* Keeps padding within the 12-16px range on the smallest phones. */
   .admin-main {
     padding-left: 12px;
     padding-right: 12px;
-  }
-
-  /* Still 2 columns here (not collapsed back to 1) — sized to match, same
-     as Activity Library's stat cards stay 2-up all the way down to phone
-     widths instead of stacking. */
-  .admin-stat-card {
-    padding: 14px 12px;
-    gap: 10px;
-  }
-
-  .admin-stat-icon {
-    width: 40px;
-    height: 40px;
-    font-size: 16px;
-  }
-
-  .admin-stat-number {
-    font-size: 22px;
-  }
-
-  .admin-panel {
-    padding: 18px 16px;
   }
 
   .admin-nav-item {
