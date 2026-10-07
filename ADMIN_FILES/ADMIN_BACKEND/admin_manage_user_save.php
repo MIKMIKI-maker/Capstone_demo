@@ -190,7 +190,20 @@ function syncStudentRecord($adminAccountId, $studentName, $parentName, $accountS
     // activities/scores) is kept — the new teacher's enrollment re-uses it.
     // Moves made by the School Year tools enroll automatically instead
     // (see moveStudentToTeacher in school_year.php).
-    if ($ok && $assignedTeacherAdminId !== $previousAssignedTeacherAdminId) {
+    // Only a real move counts: the account's assigned_teacher_id can differ
+    // from before (e.g. it was never filled in) while the student record
+    // already belongs to that same teacher — marking it 'pending' then just
+    // hid the learner and all their records from their own teacher.
+    $alreadyWithTeacher = false;
+    if ($assignedTeacherAdminId > 0) {
+        $newTeacherId = teacherIdForAdmin($teacher_conn, (int)$assignedTeacherAdminId);
+        $cur = $teacher_conn->prepare("SELECT 1 FROM students WHERE admin_account_id = ? AND teacher_id = ? AND status <> 'pending' LIMIT 1");
+        $cur->bind_param("ii", $adminAccountId, $newTeacherId);
+        $cur->execute();
+        $alreadyWithTeacher = $newTeacherId > 0 && (bool)$cur->get_result()->fetch_assoc();
+        $cur->close();
+    }
+    if ($ok && $assignedTeacherAdminId !== $previousAssignedTeacherAdminId && !$alreadyWithTeacher) {
         $pending = $teacher_conn->prepare("UPDATE students SET status = 'pending' WHERE admin_account_id = ?");
         $pending->bind_param("i", $adminAccountId);
         $ok = $pending->execute();
