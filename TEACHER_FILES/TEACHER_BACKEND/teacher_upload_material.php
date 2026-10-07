@@ -6,6 +6,7 @@ requireActiveSchoolYearView();
 require_once __DIR__ . '/teacher_auth.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/cloudinary_upload.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/db.php';
+require_once __DIR__ . '/material_helpers.php';
 header('Content-Type: application/json');
 
 // Local-disk fallback for plain XAMPP dev, where no Cloudinary account is
@@ -51,6 +52,8 @@ $grading_period = isset($_POST['grading_period']) ? trim($_POST['grading_period'
 $title          = isset($_POST['title'])          ? trim($_POST['title'])            : '';
 $description    = isset($_POST['description'])    ? trim($_POST['description'])      : '';
 $link_url       = isset($_POST['link_url'])       ? trim($_POST['link_url'])         : '';
+// 'activity' = the student submits work back for this material; anything else is a plain file/link to view.
+$material_kind  = (isset($_POST['material_kind']) && $_POST['material_kind'] === 'activity') ? 'activity' : 'file';
 
 if (!$teacher_id || !$student_id || !$title) {
     echo json_encode(['success' => false, 'message' => 'Missing required fields']);
@@ -65,7 +68,8 @@ if (!$hasFile && !$hasLink) {
     exit;
 }
 
-if ($hasLink && !filter_var($link_url, FILTER_VALIDATE_URL)) {
+// FILTER_VALIDATE_URL alone also accepts javascript:/data: style URLs.
+if ($hasLink && (!filter_var($link_url, FILTER_VALIDATE_URL) || !preg_match('#^https?://#i', $link_url))) {
     echo json_encode(['success' => false, 'message' => 'Invalid URL provided.']);
     exit;
 }
@@ -135,32 +139,16 @@ if (!$conn) {
     exit;
 }
 
-$conn->query("CREATE TABLE IF NOT EXISTS teacher_uploaded_materials (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    teacher_id INT NOT NULL,
-    student_id INT NOT NULL,
-    grading_period VARCHAR(20) NOT NULL DEFAULT 'First',
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    file_name VARCHAR(255) NOT NULL DEFAULT '',
-    file_original_name VARCHAR(255) NOT NULL DEFAULT '',
-    file_type VARCHAR(100),
-    file_size INT,
-    link_url VARCHAR(500) DEFAULT NULL,
-    uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP
-)");
-
-// Add link_url column to existing tables that predate this change
-@$conn->query("ALTER TABLE teacher_uploaded_materials ADD COLUMN link_url VARCHAR(500) DEFAULT NULL");
+ensureMaterialSchema($conn);
 
 $stmt = $conn->prepare(
     "INSERT INTO teacher_uploaded_materials
-     (teacher_id, student_id, grading_period, title, description, file_name, file_original_name, file_type, file_size, link_url)
-     VALUES (?,?,?,?,?,?,?,?,?,?)"
+     (teacher_id, student_id, grading_period, title, description, file_name, file_original_name, file_type, file_size, link_url, material_kind)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?)"
 );
-$stmt->bind_param("iissssssis",
+$stmt->bind_param("iissssssiss",
     $teacher_id, $student_id, $grading_period, $title, $description,
-    $safeName, $origName, $fileMime, $fileSize, $link_url
+    $safeName, $origName, $fileMime, $fileSize, $link_url, $material_kind
 );
 $stmt->execute();
 $newId = $conn->insert_id;
@@ -201,8 +189,13 @@ if ($teacher_email_for_log) {
     }
 }
 
-$notif_title = 'New material uploaded';
-$notif_msg   = 'Your teacher added "' . $title . '"' . ($description ? ': ' . $description : '') . ' to your materials.';
+if ($material_kind === 'activity') {
+    $notif_title = 'New activity to submit';
+    $notif_msg   = 'Your teacher posted "' . $title . '"' . ($description ? ': ' . $description : '') . '. Open it in your materials and submit your work (photo, video or file).';
+} else {
+    $notif_title = 'New material uploaded';
+    $notif_msg   = 'Your teacher added "' . $title . '"' . ($description ? ': ' . $description : '') . ' to your materials.';
+}
 $nstmt = $conn->prepare("INSERT INTO student_notifications (teacher_id, student_id, title, message, notification_type) VALUES (?, ?, ?, ?, 'new_material')");
 if ($nstmt) { $nstmt->bind_param("iiss", $teacher_id, $student_id, $notif_title, $notif_msg); $nstmt->execute(); $nstmt->close(); }
 

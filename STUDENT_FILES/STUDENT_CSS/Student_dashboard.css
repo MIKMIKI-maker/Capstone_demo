@@ -445,6 +445,24 @@ body {
   transform: translateY(-1px);
 }
 
+/* "New since you last looked" counter on each tab (see refreshTabBadges) */
+.student-act-tab { position: relative; }
+.student-tab-new {
+  position: absolute; top: -9px; right: -9px;
+  min-width: 22px; height: 22px; padding: 0 6px;
+  border-radius: 999px; border: 2px solid #fff;
+  background: #ef4444; color: #fff;
+  font-family: var(--font-head); font-size: 12px; font-weight: 800; line-height: 18px; text-align: center;
+  box-shadow: 0 3px 8px rgba(239, 68, 68, .45);
+  pointer-events: none;
+}
+.student-tab-new--pop { animation: studentTabNewPop .55s cubic-bezier(.2, .9, .3, 1.4); }
+@keyframes studentTabNewPop {
+  0%   { transform: scale(.3); }
+  60%  { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
 /* The active (blue) tab */
 .student-act-tab.student-active {
   background: var(--blue);
@@ -486,6 +504,13 @@ body {
   transition: box-shadow .15s;
 }
 .student-act-row:hover { box-shadow: 0 3px 12px rgba(30,58,138,.10); }
+/* A row the student is seeing for the first time (while its tab is open) */
+.student-act-row--new { background: #fffbeb; border-color: #fde68a; box-shadow: 0 0 0 3px rgba(251, 191, 36, .22); }
+.student-act-row--new .student-act-row-title::before {
+  content: '✨ BAGO';
+  display: inline-block; margin-right: 6px; padding: 1px 8px; border-radius: 999px;
+  background: #f59e0b; color: #fff; font-size: 10.5px; font-weight: 800; vertical-align: 1px;
+}
 .student-act-row--purple { border-left: 4px solid #7c3aed; }
 .student-act-row--blue   { border-left: 4px solid #2563eb; }
 .student-act-row--green  { border-left: 4px solid #16a34a; }
@@ -511,6 +536,13 @@ body {
 .act-badge-new    { background: #fbbf24; color: #5c3d00; }
 .act-badge-due    { background: #ef4444; color: #fff; }
 .act-badge-closed { background: #9ca3af; color: #fff; }
+/* Uploaded "activity" materials: still to submit / already submitted */
+.act-badge-tosubmit  { background: #f3e8ff; color: #6b21a8; }
+.act-badge-submitted { background: #dcfce7; color: #166534; }
+/* Uploaded-material rows open their own page — the whole row is the target */
+.student-act-row--clickable { cursor: pointer; transition: box-shadow .15s, transform .1s; }
+.student-act-row--clickable:hover { transform: translateY(-1px); }
+.student-act-row--clickable:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
 .student-act-row-btn {
   flex-shrink: 0; padding: 7px 14px; border-radius: 10px;
   background: #22c55e; color: #fff; font-weight: 700; font-size: 13px;

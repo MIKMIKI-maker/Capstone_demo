@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../TEACHER_FILES/TEACHER_BACKEND/db.php';
+require_once __DIR__ . '/../../TEACHER_FILES/TEACHER_BACKEND/material_helpers.php';
 require_once __DIR__ . '/student_auth.php';
 header('Content-Type: application/json');
 header('Cache-Control: no-cache');
@@ -21,28 +22,17 @@ if (!$rec) {
 $student_id = (int)$rec['student_record_id'];
 $current_teacher_id = (int)$rec['teacher_id'];
 
-$conn->query("CREATE TABLE IF NOT EXISTS teacher_uploaded_materials (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    teacher_id INT NOT NULL,
-    student_id INT NOT NULL,
-    grading_period VARCHAR(20) NOT NULL DEFAULT 'First',
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    file_name VARCHAR(255) NOT NULL DEFAULT '',
-    file_original_name VARCHAR(255) NOT NULL DEFAULT '',
-    file_type VARCHAR(100),
-    file_size INT,
-    link_url VARCHAR(500) DEFAULT NULL,
-    uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP
-)");
+ensureMaterialSchema($conn);
 
-@$conn->query("ALTER TABLE teacher_uploaded_materials ADD COLUMN link_url VARCHAR(500) DEFAULT NULL");
-
+// submission_count lets the list show "📤 Magpasa" vs "✅ Naipasa" for
+// 'activity' materials without opening each one.
 $stmt = $conn->prepare(
-    "SELECT id, grading_period, title, description, file_name, file_original_name, file_type, file_size, link_url, uploaded_at
-     FROM teacher_uploaded_materials
-     WHERE student_id = ? AND teacher_id = ?
-     ORDER BY grading_period ASC, uploaded_at DESC"
+    "SELECT m.id, m.grading_period, m.title, m.description, m.file_name, m.file_original_name, m.file_type, m.file_size,
+            m.link_url, m.material_kind, m.uploaded_at,
+            (SELECT COUNT(*) FROM material_submissions ms WHERE ms.material_id = m.id AND ms.student_id = m.student_id) AS submission_count
+     FROM teacher_uploaded_materials m
+     WHERE m.student_id = ? AND m.teacher_id = ?
+     ORDER BY m.grading_period ASC, m.uploaded_at DESC"
 );
 $stmt->bind_param("ii", $student_id, $current_teacher_id);
 $stmt->execute();

@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="student" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <!-- One uploaded material (opened from the Uploaded Materials lists),
+       and for an "activity" material, the panel where the student submits
+       their work. Always fetched fresh, same as My Materials. -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>SPED ALM - Material</title>
+  <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
+  <link href="STUDENT_CSS/Student_mymaterials.css?v=10" rel="stylesheet" />
+  <link href="STUDENT_CSS/Student_material.css?v=1" rel="stylesheet" />
+  <link href="STUDENT_CSS/student_responsive.css?v=8" rel="stylesheet" />
+  <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
+  <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
+  <link href="../ASSETS/vendor/fontawesome/css/all.min.css" rel="stylesheet" />
+  <script src="../ASSETS/vendor/js/confetti.browser.min.js"></script>
+  <script src="../ASSETS/student_portal.js?v=18" defer></script>
+  <script src="../ASSETS/school_year_switcher.js?v=9" data-picker="label" defer></script>
+</head>
+
+<body>
+<div id="spedLoading" style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 60%,#2563eb 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .5s ease;pointer-events:all;">
+  <img src="../ASSETS/logo_loading.png" alt="SPED ALM" onerror="this.style.display='none'" style="width:88px;height:88px;animation:spedLdPulse 2s ease-in-out infinite;">
+  <p style="color:#fff;font-family:'Poppins',sans-serif;font-size:22px;font-weight:700;margin:0;letter-spacing:1px;text-shadow:0 2px 8px rgba(0,0,0,.2);">SPED ALM</p>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite 0s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .18s;"></span>
+    <span style="width:13px;height:13px;border-radius:50%;background:#93c5fd;display:inline-block;animation:spedLdBounce 1.3s ease-in-out infinite .36s;"></span>
+  </div>
+  <p style="color:rgba(255,255,255,.65);font-family:'Poppins',sans-serif;font-size:13px;font-weight:400;margin:0;">Loading, please wait...</p>
+</div>
+<style>
+@keyframes spedLdBounce{0%,80%,100%{transform:translateY(0);opacity:.5}40%{transform:translateY(-16px);opacity:1}}
+@keyframes spedLdPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+</style>
+<script>
+(function(){
+  function hideLoader(){
+    var e=document.getElementById('spedLoading');
+    if(!e) return;
+    e.style.opacity='0';
+    e.style.pointerEvents='none';
+    setTimeout(function(){ if(e.parentNode) e.parentNode.removeChild(e); }, 520);
+  }
+  if(document.readyState==='complete'){ setTimeout(hideLoader,200); }
+  else { window.addEventListener('load', function(){ setTimeout(hideLoader,200); }); }
+})();
+</script>
+  <!-- SIDEBAR -->
+  <aside class="student-sidebar">
+    <div class="student-sidebar-logo">
+      <img alt="SPED ALM Logo" class="student-sidebar-logo-img" src="../ASSETS/logo.png" />
+      <div class="student-sidebar-logo-text">
+        <span class="student-sidebar-title">SPED ALM</span>
+        <span class="student-sidebar-sub">Student Portal</span>
+      </div>
+    </div>
+    <nav class="student-sidebar-nav">
+      <a class="student-nav-item" href="Student_dashboard.html">
+        <i>🏠</i>
+        <span>Dashboard</span>
+      </a>
+      <a class="student-nav-item student-active" href="Student_mymaterials.html">
+        <i>📚</i>
+        <span>My Materials</span>
+        <i class="student-nav-arrow">›</i>
+      </a>
+      <a class="student-nav-item" href="Student_progress.html">
+        <i>⭐</i>
+        <span>My Progress</span>
+      </a>
+      <a class="student-nav-item" href="Student_settings.html">
+        <i>⚙️</i>
+        <span>Settings</span>
+      </a>
+    </nav>
+    <div class="student-sidebar-footer">
+      <div class="student-sidebar-user">
+        <div class="student-user-avatar" id="sidebarInitials">S</div>
+        <div class="student-user-info">
+          <span class="student-user-name" id="sidebarName">Student</span>
+          <span class="student-user-role" id="sidebarRole">Student</span>
+        </div>
+      </div>
+      <a class="student-signout-btn" href="#" onclick="var _id=sessionStorage.getItem('student_id');fetch('../ADMIN_FILES/ADMIN_BACKEND/logout.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'admin_id='+encodeURIComponent(_id||'')}).finally(function(){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html';});return false;">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        <span>Sign Out</span>
+      </a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="student-main">
+    <a class="mat-back-btn" id="matBackBtn" href="Student_dashboard.html">← Bumalik</a>
+    <header class="student-page-header">
+      <div class="student-page-headline">
+        <span class="student-page-mascot" id="matMascot">📎</span>
+        <div>
+          <h1 class="student-page-title" id="matPageTitle">Material</h1>
+          <p class="student-page-sub" id="matPageSub">Mula sa iyong teacher <span class="student-sub-star">⭐</span></p>
+        </div>
+      </div>
+    </header>
+
+    <div class="mat-wrap" id="matWrap">
+      <div class="mat-card mat-empty"><div class="mat-empty-icon">⏳</div><div class="mat-empty-title">Binubuksan…</div></div>
+    </div>
+  </main>
+
+  <div class="mat-zoom" id="matZoom" onclick="this.classList.remove('show')"><img id="matZoomImg" alt="" /></div>
+  <div class="mat-confirm" id="matConfirm">
+    <div class="mat-confirm-box" role="dialog" aria-modal="true" aria-labelledby="matConfirmText">
+      <div class="mat-confirm-icon">🗑️</div>
+      <p class="mat-confirm-text" id="matConfirmText">Alisin ang file na ito?</p>
+      <div class="mat-confirm-actions">
+        <button class="mat-btn mat-btn--ghost" id="matConfirmNo" type="button">Huwag</button>
+        <button class="mat-btn mat-btn--green" id="matConfirmYes" type="button" style="background:#ef4444;box-shadow:0 4px 0 #b91c1c;">Oo, alisin</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    var materialId = parseInt(new URLSearchParams(location.search).get('id') || '0', 10);
+    var LIMITS = { max_video_mb: 25, max_file_mb: 10, max_files: 10 };
+    var state = { material: null, submissions: [], queue: [], sending: false };
+
+    // Where "← Bumalik" goes: the list page that opened this one.
+    var ret = sessionStorage.getItem('stu_material_return') || '';
+    if (ret.indexOf(location.origin + '/') === 0 && /\/STUDENT_FILES\/Student_(dashboard|mymaterials|notif)\.html([?#]|$)/.test(ret)) {
+      document.getElementById('matBackBtn').href = ret;
+    }
+
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+    function isHttp(u) { return /^https?:\/\//i.test(String(u || '')); }
+    // Stored values are a Cloudinary URL, or a bare local filename (XAMPP).
+    function fileUrl(stored, folder) {
+      return isHttp(stored) ? stored : '../TEACHER_FILES/uploads/' + folder + '/' + encodeURIComponent(stored || '');
+    }
+    // Cloudinary can hand any browser a format it can show (e.g. iPhone HEIC
+    // photos, MOV videos); local files are shown as they are.
+    function displayUrl(url, kind) {
+      if (/res\.cloudinary\.com\/[^/]+\/image\/upload\//.test(url) && kind === 'image') return url.replace('/image/upload/', '/image/upload/f_auto,q_auto/');
+      if (/res\.cloudinary\.com\/[^/]+\/video\/upload\//.test(url) && kind === 'video') return url.replace('/video/upload/', '/video/upload/f_auto,q_auto/');
+      return url;
+    }
+    function kindOf(mime, url) {
+      mime = String(mime || '').toLowerCase();
+      if (mime.indexOf('image/') === 0) {
+        // HEIC only displays in Safari unless Cloudinary converts it.
+        if (/hei[cf]/.test(mime) && !/res\.cloudinary\.com/.test(url || '')) return 'file';
+        return 'image';
+      }
+      if (mime.indexOf('video/') === 0) return 'video';
+      if (mime.indexOf('audio/') === 0) return 'audio';
+      if (mime.indexOf('pdf') >= 0) return 'pdf';
+      return 'file';
+    }
+    function fileIcon(mime) {
+      mime = String(mime || '');
+      if (mime.indexOf('pdf') >= 0) return '📕';
+      if (mime.indexOf('image') >= 0) return '🖼️';
+      if (mime.indexOf('video') >= 0) return '🎬';
+      if (mime.indexOf('audio') >= 0) return '🎵';
+      if (mime.indexOf('presentation') >= 0 || mime.indexOf('powerpoint') >= 0) return '📊';
+      if (mime.indexOf('word') >= 0 || mime.indexOf('document') >= 0) return '📝';
+      return '📄';
+    }
+    function sizeText(bytes) {
+      bytes = +bytes || 0;
+      if (!bytes) return '';
+      var kb = bytes / 1024;
+      return kb >= 1024 ? (kb / 1024).toFixed(1) + ' MB' : Math.max(1, Math.round(kb)) + ' KB';
+    }
+    function dateText(ts) {
+      if (!ts) return '';
+      // MySQL "YYYY-MM-DD HH:MM:SS" is UTC with no marker (same rule as the other pages).
+      var d = new Date(String(ts).replace(' ', 'T') + 'Z');
+      if (isNaN(d)) return '';
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' · ' +
+             d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    }
+    function youTubeId(url) {
+      var m = String(url || '').match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+      return m ? m[1] : null;
+    }
+
+    function showError(icon, title, sub) {
+      document.getElementById('matWrap').innerHTML =
+        '<div class="mat-card mat-empty"><div class="mat-empty-icon">' + icon + '</div>' +
+        '<div class="mat-empty-title">' + esc(title) + '</div><div class="mat-empty-sub">' + esc(sub) + '</div>' +
+        '<div class="mat-actions" style="justify-content:center;"><a class="mat-btn mat-btn--blue" href="' + esc(document.getElementById('matBackBtn').getAttribute('href')) + '">← Bumalik</a></div></div>';
+    }
+
+    /* ── What the teacher posted ───────────────────────────── */
+    function renderPreview(m) {
+      if (m.link_url) {
+        if (!isHttp(m.link_url)) return '<div class="mat-filebox"><span class="mat-big-icon">🔗</span><div><div class="mat-filebox-name">' + esc(m.link_url) + '</div></div></div>';
+        var yt = youTubeId(m.link_url);
+        if (yt) {
+          return '<div class="mat-preview mat-preview--yt"><iframe src="https://www.youtube-nocookie.com/embed/' + yt + '?rel=0" title="' + esc(m.title) + '" ' +
+            'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>' +
+            '<div class="mat-actions"><a class="mat-btn mat-btn--ghost" href="' + esc(m.link_url) + '" target="_blank" rel="noopener">↗ Buksan sa YouTube</a></div>';
+        }
+        var host = '';
+        try { host = new URL(m.link_url).hostname.replace(/^www\./, ''); } catch (e) {}
+        return '<div class="mat-filebox"><span class="mat-big-icon">🔗</span><div style="min-width:0;"><div class="mat-filebox-name">' + esc(host || 'Link') + '</div>' +
+          '<div class="mat-filebox-sub" style="word-break:break-all;">' + esc(m.link_url) + '</div></div></div>' +
+          '<div class="mat-actions"><a class="mat-btn mat-btn--green" href="' + esc(m.link_url) + '" target="_blank" rel="noopener">🔗 Buksan ang link ↗</a></div>';
+      }
+      var url = fileUrl(m.file_name, 'materials');
+      var kind = kindOf(m.file_type, url);
+      var name = m.file_original_name || m.title || 'file';
+      var body;
+      if (kind === 'image') body = '<div class="mat-preview"><img src="' + esc(displayUrl(url, 'image')) + '" alt="' + esc(m.title) + '" data-zoom="1" /></div>';
+      else if (kind === 'video') body = '<div class="mat-preview"><video src="' + esc(displayUrl(url, 'video')) + '#t=0.1" controls playsinline preload="metadata"></video></div>';
+      else if (kind === 'audio') body = '<div class="mat-preview mat-preview--audio"><span class="mat-big-icon">🎵</span><audio src="' + esc(url) + '" controls preload="metadata"></audio></div>';
+      else if (kind === 'pdf') body = '<div class="mat-preview"><iframe src="' + esc(url) + '" title="' + esc(m.title) + '"></iframe></div>' +
+        '<p class="mat-hint">Hindi lumabas ang PDF? I-tap ang "Buksan" sa ibaba.</p>';
+      else body = '<div class="mat-filebox"><span class="mat-big-icon">' + fileIcon(m.file_type) + '</span><div style="min-width:0;"><div class="mat-filebox-name">' + esc(name) + '</div>' +
+        '<div class="mat-filebox-sub">' + esc(sizeText(m.file_size)) + '</div></div></div>';
+      return body + '<div class="mat-actions">' +
+        '<a class="mat-btn mat-btn--green" href="' + esc(url) + '" target="_blank" rel="noopener">📂 Buksan</a>' +
+        '<a class="mat-btn mat-btn--ghost" href="' + esc(url) + '" download="' + esc(name) + '">⬇ I-download</a></div>';
+    }
+
+    /* ── What the student submitted ────────────────────────── */
+    function submissionCard(s) {
+      var url = fileUrl(s.file_name, 'submissions');
+      var kind = kindOf(s.file_type, url);
+      var prev;
+      if (kind === 'image') prev = '<img src="' + esc(displayUrl(url, 'image')) + '" alt="" data-zoom="1" loading="lazy" />';
+      else if (kind === 'video') prev = '<video src="' + esc(displayUrl(url, 'video')) + '#t=0.1" controls playsinline preload="metadata"></video>';
+      else if (kind === 'audio') prev = '<audio src="' + esc(url) + '" controls preload="metadata"></audio>';
+      else prev = fileIcon(s.file_type);
+      return '<div class="mat-sub" data-id="' + (+s.id) + '">' +
+        '<div class="mat-sub-prev">' + prev + '</div>' +
+        '<div class="mat-sub-body">' +
+          '<div class="mat-sub-name" title="' + esc(s.file_original_name) + '">' + esc(s.file_original_name || 'file') + '</div>' +
+          '<div class="mat-sub-meta">' + esc([sizeText(s.file_size), dateText(s.submitted_at)].filter(Boolean).join(' · ')) + '</div>' +
+          (s.caption ? '<div class="mat-sub-cap">💬 ' + esc(s.caption) + '</div>' : '') +
+          '<div class="mat-sub-actions"><a href="' + esc(url) + '" target="_blank" rel="noopener">👁 Tingnan</a>' +
+            '<button type="button" data-remove="' + (+s.id) + '">🗑 Alisin</button></div>' +
+        '</div></div>';
+    }
+
+    function renderSubmitPanel() {
+      var n = state.submissions.length;
+      var status = n
+        ? '<span class="mat-status mat-status--done">✅ Naipasa na · ' + n + ' file' + (n > 1 ? 's' : '') + '</span>'
+        : '<span class="mat-status mat-status--none">⏳ Hindi pa naipapasa</span>';
+      return '<section class="mat-card mat-submit" id="matSubmit">' +
+        '<div class="mat-section-title">📤 Ipasa ang Iyong Gawa ' + status + '</div>' +
+        '<p class="mat-submit-help">Kumuha ng litrato o video ng iyong gawa, o pumili ng file, tapos pindutin ang <b>Ipasa</b>.</p>' +
+        '<p class="mat-submit-limits">🎬 Video: hanggang ' + LIMITS.max_video_mb + ' MB · 📷📄 Litrato at iba pang file: hanggang ' + LIMITS.max_file_mb + ' MB · Hanggang ' + LIMITS.max_files + ' file</p>' +
+        '<div class="mat-drop" id="matDrop" role="button" tabindex="0" aria-label="Pumili ng litrato, video o file na ipapasa">' +
+          '<div class="mat-drop-icons" aria-hidden="true">📷🎬📄</div>' +
+          '<div class="mat-drop-title">I-tap para pumili ng file</div>' +
+          '<div class="mat-drop-sub">Litrato, video, audio, PDF, Word o PowerPoint</div>' +
+        '</div>' +
+        '<input type="file" id="matFileInput" multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.ppt,.pptx" style="display:none;" />' +
+        '<div class="mat-queue" id="matQueue"></div>' +
+        '<label class="mat-caption-label" for="matCaption">💬 Mensahe para kay Teacher <span style="font-weight:600;color:#94a3b8;">(opsyonal)</span></label>' +
+        '<textarea class="mat-caption" id="matCaption" maxlength="500" placeholder="Hal. Ito po ang ginawa ko."></textarea>' +
+        '<div class="mat-send-row"><button class="mat-btn mat-btn--green mat-send-btn" id="matSendBtn" type="button" disabled>📤 Ipasa</button>' +
+          '<span class="mat-send-msg" id="matSendMsg"></span></div>' +
+        (n ? '<div class="mat-subs-title">📁 Mga naipasa mo</div><div class="mat-subs" id="matSubs">' + state.submissions.map(submissionCard).join('') + '</div>' : '') +
+      '</section>';
+    }
+
+    function render() {
+      var m = state.material;
+      var isAct = m.material_kind === 'activity';
+      document.title = 'SPED ALM - ' + m.title;
+      document.getElementById('matMascot').textContent = isAct ? '📝' : '📎';
+      document.getElementById('matPageTitle').textContent = isAct ? 'Gawain' : 'Material';
+      document.getElementById('matPageSub').innerHTML = isAct
+        ? 'Tingnan, gawin, at ipasa ang iyong gawa <span class="student-sub-star">⭐</span>'
+        : 'Mula sa iyong teacher <span class="student-sub-star">⭐</span>';
+      var meta = [];
+      if (state.teacherName) meta.push('👩‍🏫 Teacher ' + esc(state.teacherName));
+      if (m.uploaded_at) meta.push('📅 ' + esc(dateText(m.uploaded_at)));
+      document.getElementById('matWrap').innerHTML =
+        '<section class="mat-card">' +
+          '<span class="mat-kind ' + (isAct ? 'mat-kind--activity">📝 ACTIVITY · Magpasa ng gawa' : 'mat-kind--file">📄 MATERIAL') + '</span>' +
+          '<h2 class="mat-title">' + esc(m.title) + '</h2>' +
+          (meta.length ? '<div class="mat-meta">' + meta.map(function (x) { return '<span>' + x + '</span>'; }).join('') + '</div>' : '') +
+          (m.description ? '<div class="mat-note"><span class="mat-note-label">💬 MULA KAY TEACHER</span>' + esc(m.description) + '</div>' : '') +
+        '</section>' +
+        '<section class="mat-card"><div class="mat-section-title">' + (m.link_url ? '🔗 Link' : fileIcon(m.file_type) + ' ' + (isAct ? 'Gawain' : 'Material')) + '</div>' +
+          renderPreview(m) + '</section>' +
+        (isAct ? renderSubmitPanel() : '');
+      if (isAct) bindSubmitPanel();
+    }
+
+    /* ── Picking files ─────────────────────────────────────── */
+    function limitFor(file) {
+      return (/^video\//.test(file.type) ? LIMITS.max_video_mb : LIMITS.max_file_mb) * 1024 * 1024;
+    }
+    function renderQueue() {
+      var q = document.getElementById('matQueue');
+      if (!q) return;
+      q.innerHTML = state.queue.map(function (it, i) {
+        var f = it.file, bad = it.error;
+        var thumb = it.preview
+          ? (/^video\//.test(f.type) ? '<video src="' + it.preview + '" muted></video>' : '<img src="' + it.preview + '" alt="" />')
+          : fileIcon(f.type);
+        return '<div class="mat-qitem' + (bad ? ' mat-qitem--bad' : '') + (it.uploading ? ' mat-qitem--uploading' : '') + '" data-q="' + i + '">' +
+          '<div class="mat-qthumb">' + thumb + '</div>' +
+          '<div class="mat-qinfo"><div class="mat-qname">' + esc(f.name) + '</div>' +
+            '<div class="mat-qsub' + (bad ? ' mat-qsub--bad' : '') + '">' + esc(bad || (sizeText(f.size) + (it.uploading ? ' · Ipinapasa…' : ' · Handa nang ipasa'))) + '</div>' +
+            '<div class="mat-qbar"><i style="width:' + (it.progress || 0) + '%"></i></div></div>' +
+          (it.uploading ? '' : '<button class="mat-qremove" type="button" data-unqueue="' + i + '" aria-label="Alisin sa listahan">✕</button>') +
+        '</div>';
+      }).join('');
+      var ready = state.queue.filter(function (it) { return !it.error; }).length;
+      var btn = document.getElementById('matSendBtn');
+      if (btn) {
+        btn.disabled = state.sending || !ready;
+        btn.textContent = state.sending ? '⏳ Ipinapasa…' : (ready > 1 ? '📤 Ipasa (' + ready + ' file)' : '📤 Ipasa');
+      }
+    }
+    function addFiles(list) {
+      var room = LIMITS.max_files - state.submissions.length - state.queue.filter(function (it) { return !it.error; }).length;
+      Array.prototype.forEach.call(list || [], function (f) {
+        var it = { file: f, progress: 0 };
+        if (f.size > limitFor(f)) it.error = 'Masyadong malaki (' + sizeText(f.size) + '). Hanggang ' + (/^video\//.test(f.type) ? LIMITS.max_video_mb : LIMITS.max_file_mb) + ' MB lang.';
+        else if (room <= 0) it.error = 'Hanggang ' + LIMITS.max_files + ' file lang ang puwedeng ipasa.';
+        else room--;
+        if (!it.error && /^(image|video)\//.test(f.type) && !/hei[cf]/i.test(f.type)) {
+          try { it.preview = URL.createObjectURL(f); } catch (e) {}
+        }
+        state.queue.push(it);
+      });
+      document.getElementById('matSendMsg').textContent = '';
+      renderQueue();
+    }
+    function dropQueueItem(i) {
+      var it = state.queue[i];
+      if (it && it.preview) { try { URL.revokeObjectURL(it.preview); } catch (e) {} }
+      state.queue.splice(i, 1);
+      renderQueue();
+    }
+
+    /* ── Sending (one file per request, with a progress bar) ── */
+    function uploadOne(it, caption) {
+      return new Promise(function (resolve) {
+        var fd = new FormData();
+        fd.append('material_id', materialId);
+        fd.append('caption', caption);
+        fd.append('file', it.file);
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', 'STUDENT_BACKEND/student_submit_material.php');
+        xhr.upload.onprogress = function (e) {
+          if (!e.lengthComputable) return;
+          it.progress = Math.round(e.loaded / e.total * 100);
+          var bar = document.querySelector('.mat-qitem[data-q="' + state.queue.indexOf(it) + '"] .mat-qbar i');
+          if (bar) bar.style.width = it.progress + '%';
+        };
+        xhr.onload = function () {
+          var d = null;
+          try { d = JSON.parse(xhr.responseText); } catch (e) {}
+          if (d && d.success && d.submission) resolve({ ok: true, submission: d.submission });
+          else resolve({ ok: false, message: (d && d.message) || (xhr.status === 413 ? 'Masyadong malaki ang file.' : 'Hindi naipasa. Subukan ulit.') });
+        };
+        xhr.onerror = function () { resolve({ ok: false, message: 'Walang koneksyon. Subukan ulit.' }); };
+        xhr.send(fd);
+      });
+    }
+    function sendAll() {
+      if (state.sending) return;
+      var todo = state.queue.filter(function (it) { return !it.error; });
+      if (!todo.length) return;
+      var caption = (document.getElementById('matCaption').value || '').trim();
+      state.sending = true;
+      todo.forEach(function (it) { it.uploading = true; });
+      renderQueue();
+      var sent = 0, firstEver = state.submissions.length === 0, failed = [];
+      todo.reduce(function (p, it) {
+        return p.then(function () {
+          return uploadOne(it, caption).then(function (res) {
+            it.uploading = false;
+            if (res.ok) {
+              sent++;
+              state.submissions.push(res.submission);
+              if (it.preview) { try { URL.revokeObjectURL(it.preview); } catch (e) {} }
+              state.queue.splice(state.queue.indexOf(it), 1);
+            } else {
+              it.error = res.message;
+              failed.push(res.message);
+            }
+            renderQueue();
+          });
+        });
+      }, Promise.resolve()).then(function () {
+        state.sending = false;
+        render();
+        renderQueue();
+        if (!sent && caption) document.getElementById('matCaption').value = caption;
+        if (sent) {
+          if (window.showToast) window.showToast(firstEver ? 'Naipasa na ang iyong gawa! 🎉' : 'Naidagdag ang file! ✅', 'success');
+          if (firstEver && window.confetti) confetti({ particleCount: 140, spread: 90, origin: { y: 0.6 } });
+        }
+        if (failed.length) {
+          document.getElementById('matSendMsg').textContent = '⚠️ ' + failed[0];
+          if (window.showToast) window.showToast(failed[0], 'error');
+        }
+      });
+    }
+
+    /* ── Removing a submitted file ─────────────────────────── */
+    function confirmBox(text) {
+      return new Promise(function (resolve) {
+        var box = document.getElementById('matConfirm');
+        // A leftover "Naipasa!" toast would sit on top of the question.
+        Array.prototype.forEach.call(document.querySelectorAll('.student-toast'), function (t) { t.remove(); });
+        document.getElementById('matConfirmText').textContent = text;
+        box.classList.add('show');
+        function done(v) {
+          box.classList.remove('show');
+          document.getElementById('matConfirmYes').onclick = null;
+          document.getElementById('matConfirmNo').onclick = null;
+          resolve(v);
+        }
+        document.getElementById('matConfirmYes').onclick = function () { done(true); };
+        document.getElementById('matConfirmNo').onclick = function () { done(false); };
+        document.getElementById('matConfirmNo').focus();
+      });
+    }
+    function removeSubmission(id) {
+      if (state.sending) return; // the list re-renders when the upload finishes
+      var s = state.submissions.filter(function (x) { return +x.id === id; })[0];
+      if (!s) return;
+      confirmBox('Alisin ang "' + (s.file_original_name || 'file') + '"?').then(function (ok) {
+        if (!ok) return;
+        if (window.showActionLoading) window.showActionLoading();
+        fetch('STUDENT_BACKEND/student_delete_material_submission.php', { method: 'POST', body: new URLSearchParams({ submission_id: id }) })
+          .then(function (r) { return r.json(); })
+          .then(function (d) {
+            if (!d || !d.success) throw new Error((d && d.message) || 'Hindi naalis ang file.');
+            state.submissions = state.submissions.filter(function (x) { return +x.id !== id; });
+            var caption = (document.getElementById('matCaption') || {}).value || '';
+            render();
+            renderQueue();
+            if (caption) document.getElementById('matCaption').value = caption;
+            if (window.showToast) window.showToast('Naalis ang file.', 'success');
+          })
+          .catch(function (e) { if (window.showToast) window.showToast(e.message || 'Hindi naalis ang file.', 'error'); });
+      });
+    }
+
+    function bindSubmitPanel() {
+      var drop = document.getElementById('matDrop'), input = document.getElementById('matFileInput');
+      drop.onclick = function () { if (!state.sending) input.click(); };
+      drop.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); drop.click(); } };
+      input.onchange = function () { addFiles(input.files); input.value = ''; };
+      drop.ondragover = function (e) { e.preventDefault(); drop.classList.add('mat-drop--over'); };
+      drop.ondragleave = function () { drop.classList.remove('mat-drop--over'); };
+      drop.ondrop = function (e) { e.preventDefault(); drop.classList.remove('mat-drop--over'); if (!state.sending) addFiles(e.dataTransfer.files); };
+      document.getElementById('matSendBtn').onclick = sendAll;
+      renderQueue();
+    }
+
+    // One delegated listener for the dynamic bits (zoom, queue ✕, remove).
+    document.getElementById('matWrap').addEventListener('click', function (e) {
+      var t = e.target;
+      if (t.getAttribute && t.getAttribute('data-zoom')) {
+        document.getElementById('matZoomImg').src = t.src;
+        document.getElementById('matZoom').classList.add('show');
+        return;
+      }
+      var uq = t.closest && t.closest('[data-unqueue]');
+      if (uq) { dropQueueItem(+uq.getAttribute('data-unqueue')); return; }
+      var rm = t.closest && t.closest('[data-remove]');
+      if (rm) removeSubmission(+rm.getAttribute('data-remove'));
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') document.getElementById('matZoom').classList.remove('show');
+    });
+    // Leaving mid-upload would silently drop the rest of the files.
+    window.addEventListener('beforeunload', function (e) {
+      if (state.sending) { e.preventDefault(); e.returnValue = ''; }
+    });
+
+    /* ── Sidebar profile (same as the other student pages) ── */
+    (function () {
+      var sp = {};
+      try { sp = JSON.parse(localStorage.getItem('student_profile') || '{}'); } catch (e) {}
+      var parts = (sessionStorage.getItem('student_name') || '').trim().split(/\s+/);
+      var first = (sp.firstName || parts[0] || '').trim(), last = (sp.lastName || parts.slice(1).join(' ') || '').trim();
+      document.getElementById('sidebarName').textContent = [first, last].filter(Boolean).join(' ') || 'Student';
+      var grade = sp.grade || sessionStorage.getItem('student_grade') || '', cond = sp.condition || sessionStorage.getItem('student_condition') || '';
+      document.getElementById('sidebarRole').textContent = [grade, cond].filter(Boolean).join(' — ') || 'Student';
+      var av = document.getElementById('sidebarInitials');
+      if (av) {
+        if (sp.photo) { av.innerHTML = '<img src="' + esc(sp.photo) + '" style="width:100%;height:100%;object-fit:cover;display:block;" />'; av.classList.add('has-photo'); }
+        else av.textContent = ((first[0] || 'S') + (last[0] || '')).toUpperCase();
+      }
+    })();
+
+    if (!materialId) { showError('🔎', 'Walang napiling material', 'Bumalik at pumili ng material.'); return; }
+    fetch('STUDENT_BACKEND/student_get_material.php?id=' + materialId + '&_t=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.success) { showError('🔎', 'Hindi mahanap ang material', 'Baka inalis na ito ng iyong teacher.'); return; }
+        state.material = d.material;
+        state.submissions = d.submissions || [];
+        state.teacherName = d.teacher_name || '';
+        if (d.limits) LIMITS = d.limits;
+        render();
+        // Opened = seen: it no longer counts as new on the dashboard's tab.
+        fetch('STUDENT_BACKEND/student_seen_items.php', { method: 'POST', body: new URLSearchParams({ type: 'mat', ids: String(materialId) }) }).catch(function () {});
+      })
+      .catch(function () { showError('📡', 'Walang koneksyon', 'Subukan ulit mamaya.'); });
+  })();
+  </script>
+<script>(function(){var _id=sessionStorage.getItem('student_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>
+</body>
+
+</html>

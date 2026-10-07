@@ -176,6 +176,23 @@
           <!-- Selected students -->
           <div id="uploadForStudents" style="background:#eff6ff;border-radius:9px;padding:10px 14px;font-size:13px;color:#1e3a8a;font-weight:600;line-height:1.5;"></div>
 
+          <!-- Material kind: view-only file, or an activity the student submits work for -->
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:5px;">Material Type <span style="color:#ef4444">*</span></label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <button id="uploadKindFile" onclick="setMaterialKind('file')" type="button" class="iep-kind-opt"
+                style="text-align:left;padding:11px 12px;border-radius:10px;cursor:pointer;font-family:'Poppins',sans-serif;transition:.15s;">
+                <span style="display:block;font-size:13px;font-weight:700;">📄 File lang</span>
+                <span style="display:block;font-size:11px;font-weight:500;margin-top:3px;line-height:1.35;">Babasahin o panonoorin lang ng student.</span>
+              </button>
+              <button id="uploadKindActivity" onclick="setMaterialKind('activity')" type="button" class="iep-kind-opt"
+                style="text-align:left;padding:11px 12px;border-radius:10px;cursor:pointer;font-family:'Poppins',sans-serif;transition:.15s;">
+                <span style="display:block;font-size:13px;font-weight:700;">📝 Activity</span>
+                <span style="display:block;font-size:11px;font-weight:500;margin-top:3px;line-height:1.35;">Magpapasa ang student ng litrato, video o file.</span>
+              </button>
+            </div>
+          </div>
+
           <!-- Upload type toggle -->
           <div>
             <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:5px;">Upload Type</label>
@@ -382,6 +399,24 @@
             window.location.href = 'Teacher_activies.html';
         }
 
+        // 'file' = the student just views it; 'activity' = the student opens
+        // it and submits work back (photos/videos/files) from their portal.
+        var currentMaterialKind = 'file';
+        function setMaterialKind(kind) {
+            currentMaterialKind = kind === 'activity' ? 'activity' : 'file';
+            [['uploadKindFile', 'file'], ['uploadKindActivity', 'activity']].forEach(function (p) {
+                var el = document.getElementById(p[0]);
+                var on = currentMaterialKind === p[1];
+                el.style.border = on ? '2px solid #1d4ed8' : '1.5px solid #cbd5e1';
+                el.style.background = on ? '#eff6ff' : '#f8fafc';
+                el.style.color = on ? '#1e3a8a' : '#64748b';
+                el.setAttribute('aria-pressed', on ? 'true' : 'false');
+            });
+            document.getElementById('uploadDesc').placeholder = currentMaterialKind === 'activity'
+                ? 'Instructions for the student, e.g. "Kunan ng video ang sarili habang nagbabasa."'
+                : 'Brief note for the student...';
+        }
+
         function setUploadType(type) {
             currentUploadType = type;
             document.getElementById('uploadFileWrap').style.display = type === 'file' ? '' : 'none';
@@ -411,6 +446,7 @@
             document.getElementById('uploadFile').value = '';
             document.getElementById('uploadLinkUrl').value = '';
             setUploadType('file');
+            setMaterialKind('file');
             var msg = document.getElementById('uploadMsg');
             msg.style.display = 'none'; msg.textContent = '';
             document.getElementById('uploadSubmitBtn').disabled = false;
@@ -459,6 +495,7 @@
                 fd.append('grading_period', 'First');
                 fd.append('title', title);
                 fd.append('description', desc);
+                fd.append('material_kind', currentMaterialKind);
                 if (currentUploadType === 'file') {
                     fd.append('file', document.getElementById('uploadFile').files[0]);
                 } else {
@@ -473,7 +510,7 @@
                     var failed = results.filter(function(d) { return !d.success; });
                     if (!failed.length) {
                         closeUploadModal();
-                        showIepToast('Material uploaded successfully' + (selectedLearnerIds.length > 1 ? ' to ' + selectedLearnerIds.length + ' students!' : '!'), 'success');
+                        showIepToast((currentMaterialKind === 'activity' ? 'Activity posted' : 'Material uploaded successfully') + (selectedLearnerIds.length > 1 ? ' to ' + selectedLearnerIds.length + ' students!' : '!'), 'success');
                     } else {
                         msg.textContent = 'Upload failed: ' + (failed[0].message || 'Unknown error');
                         msg.style.display = 'block';

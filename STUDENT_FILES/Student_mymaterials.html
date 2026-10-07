@@ -333,8 +333,21 @@
       return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
     }
 
+    // Every uploaded material opens on its own page (Student_material.html)
+    // — where an "activity" material is also where the work gets submitted.
+    function openMaterial(id) {
+      sessionStorage.setItem('stu_material_return', window.location.href);
+      window.location.href = 'Student_material.html?id=' + encodeURIComponent(id);
+    }
+    function materialCardKey(e, id) {
+      if (e.target !== e.currentTarget) return; // keys on the Download button stay with it
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openMaterial(id); }
+    }
+
     function renderFileCard(file) {
       var isLink = file.link_url && file.link_url.length > 0;
+      var isActivity = file.material_kind === 'activity';
+      var submitted = (+file.submission_count || 0) > 0;
       var mime = file.file_type || '';
       var isImage = !isLink && mime.indexOf('image') >= 0;
       var icon = isLink ? '🔗' : '📄';
@@ -345,6 +358,7 @@
         else if (mime.indexOf('video') >= 0) icon = '🎬';
         else if (mime.indexOf('audio') >= 0) icon = '🎵';
       }
+      if (isActivity) icon = '📝';
       // Files uploaded after the Cloudinary migration store a full URL in
       // file_name; older entries are still a bare local filename.
       var rawUrl = isLink ? file.link_url
@@ -357,26 +371,34 @@
             var sizeText = sizeKB > 1024 ? (sizeKB / 1024).toFixed(1) + ' MB' : sizeKB + ' KB';
             return esc(file.file_original_name) + (sizeKB ? ' &middot; ' + sizeText : '');
           })();
-      return '<div style="display:flex;align-items:center;gap:14px;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:14px;padding:14px 16px;margin-bottom:10px;">' +
+      var kindBadge = !isActivity ? ''
+        : submitted
+          ? '<span style="display:inline-block;margin-bottom:4px;background:#dcfce7;color:#166534;font-size:11px;font-weight:800;padding:2px 9px;border-radius:20px;">✅ ACTIVITY · NAIPASA NA</span>'
+          : '<span style="display:inline-block;margin-bottom:4px;background:#f3e8ff;color:#6b21a8;font-size:11px;font-weight:800;padding:2px 9px;border-radius:20px;">📝 ACTIVITY · MAGPASA NG GAWA</span>';
+      var openLabel = isActivity ? (submitted ? 'Tingnan ▶' : 'Magpasa ▶') : 'Buksan ▶';
+      var id = +file.id;
+      return '<div class="student-file-card" role="button" tabindex="0" onclick="openMaterial(' + id + ')" onkeydown="materialCardKey(event, ' + id + ')"' +
+          ' style="display:flex;align-items:center;gap:14px;background:' + (isActivity ? '#faf5ff' : '#f0fdf4') + ';border:1.5px solid ' + (isActivity ? '#e9d5ff' : '#bbf7d0') + ';border-radius:14px;padding:14px 16px;margin-bottom:10px;cursor:pointer;">' +
         '<div style="font-size:32px;flex-shrink:0;">' + icon + '</div>' +
         '<div style="flex:1;min-width:0;">' +
-          '<div style="font-weight:700;font-size:14px;color:#14532d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(file.title) + '</div>' +
-          (file.description ? '<div style="font-size:12px;color:#166534;margin-top:2px;">' + esc(file.description) + '</div>' : '') +
-          '<div style="font-size:11px;color:#4ade80;margin-top:4px;">' + subText + '</div>' +
+          kindBadge +
+          '<div style="font-weight:700;font-size:14px;color:' + (isActivity ? '#581c87' : '#14532d') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(file.title) + '</div>' +
+          (file.description ? '<div style="font-size:12px;color:' + (isActivity ? '#6b21a8' : '#166534') + ';margin-top:2px;">' + esc(file.description) + '</div>' : '') +
+          '<div style="font-size:11px;color:' + (isActivity ? '#a855f7' : '#4ade80') + ';margin-top:4px;">' + subText + '</div>' +
         '</div>' +
         '<div style="display:flex;gap:8px;flex-shrink:0;">' +
-          (isLink ? '' : isImage
+          (isLink || isActivity ? '' : isImage
             // Pictures download as a PDF instead of the raw image — a plain
             // <a download> can't transform the file, so this goes through
             // canvas+jsPDF instead. Falls back to the original file if the
             // image is cross-origin without CORS headers (canvas can't read
             // pixels from it, so no PDF can be built from it either).
-            ? '<button type="button" onclick="downloadImageAsPdf(\'' + escJs(rawUrl) + '\', \'' + escJs((file.file_original_name || file.title || 'download').replace(/\.[^.\/]+$/, '')) + '\')" style="padding:8px 14px;background:#fff;color:#16a34a;border:1.5px solid #16a34a;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">⬇ Download PDF</button>'
+            ? '<button type="button" onclick="event.stopPropagation();downloadImageAsPdf(\'' + escJs(rawUrl) + '\', \'' + escJs((file.file_original_name || file.title || 'download').replace(/\.[^.\/]+$/, '')) + '\')" style="padding:8px 14px;background:#fff;color:#16a34a;border:1.5px solid #16a34a;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">⬇ Download PDF</button>'
             // download works reliably for same-origin uploads; a cross-origin
             // (Cloudinary) URL still opens/saves per the browser's own rules —
             // not something this attribute can force across origins.
-            : '<a href="' + url + '" download="' + esc(file.file_original_name || file.title) + '" style="padding:8px 14px;background:#fff;color:#16a34a;border:1.5px solid #16a34a;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">⬇ Download</a>') +
-          '<a href="' + url + '" target="_blank" rel="noopener" style="padding:8px 16px;background:#16a34a;color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">' + (isLink ? 'Open 🔗' : 'Open 📂') + '</a>' +
+            : '<a href="' + url + '" onclick="event.stopPropagation();" download="' + esc(file.file_original_name || file.title) + '" style="padding:8px 14px;background:#fff;color:#16a34a;border:1.5px solid #16a34a;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">⬇ Download</a>') +
+          '<span style="padding:8px 16px;background:' + (isActivity ? '#7c3aed' : '#16a34a') + ';color:#fff;border-radius:8px;font-size:13px;font-weight:600;">' + openLabel + '</span>' +
         '</div>' +
       '</div>';
     }

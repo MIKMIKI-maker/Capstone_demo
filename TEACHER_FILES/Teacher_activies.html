@@ -528,8 +528,13 @@
                 if (a._isUpload) {
                     // Files uploaded after the Cloudinary migration store a full
                     // URL in file_name; older entries are still a bare local filename.
-                    var _uploadUrl = a.file_name.indexOf('http') === 0 ? a.file_name : 'uploads/materials/' + a.file_name;
-                    actions = '<a class="btn-edit" href="' + esc(_uploadUrl) + '" target="_blank" rel="noopener" title="Open" style="display:inline-flex;align-items:center;gap:5px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> <span class="btn-label">Open</span></a>'
+                    // A posted link has no file at all — open the link itself.
+                    var _uploadUrl = a.link_url ? (/^https?:\/\//i.test(a.link_url) ? a.link_url : '#')
+                        : (a.file_name.indexOf('http') === 0 ? a.file_name : 'uploads/materials/' + a.file_name);
+                    actions = (a.material_kind === 'activity'
+                                ? '<button class="btn-edit" onclick="openMaterialSubmissions(' + a.upload_id + ')" type="button" title="Submissions"><i class="fa-solid fa-inbox"></i> <span class="btn-label">Submissions (' + a.submission_count + ')</span></button>'
+                                : '')
+                            + '<a class="btn-edit" href="' + esc(_uploadUrl) + '" target="_blank" rel="noopener" title="Open" style="display:inline-flex;align-items:center;gap:5px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> <span class="btn-label">Open</span></a>'
                             + '<button class="btn-delete" data-sy-write onclick="deleteUpload(' + a.upload_id + ')" type="button" title="Delete"><i class="fa-solid fa-trash"></i> <span class="btn-label">Delete</span></button>';
                 } else if (a.status === 'draft' && a._isLocal && !a.db_activity_id) {
                     actions = '<button class="btn-edit" data-sy-write onclick="editDraft(\'' + esc(a.id) + '\',\'' + esc(a.templateFile) + '\')" type="button" title="Edit">'
@@ -580,7 +585,7 @@
                     : formatLearnerNames(a.learner);
 
                 var _typeIcons = {Matching:'🔗',Sorting:'🗂️',Sequencing:'🔢',LetterID:'🔤',PictureLabeling:'🏷️',WrittenResponse:'✏️',CheckOrX:'✅',Tracing:'✍️',Upload:'📎'};
-                var _fallbackIcon = _typeIcons[a.type] || '🖼️';
+                var _fallbackIcon = (a._isUpload && a.material_kind === 'activity') ? '📝' : (_typeIcons[a.type] || '🖼️');
                 var _tbInner = a.thumbnail
                     ? '<img src="'+esc(a.thumbnail)+'" style="width:44px;height:44px;object-fit:contain;background:#f8fafc;border-radius:8px;flex:none;" />'
                     : '<div style="width:44px;height:44px;border-radius:8px;background:#eef2f8;display:flex;align-items:center;justify-content:center;font-size:22px;flex:none;">'+_fallbackIcon+'</div>';
@@ -590,7 +595,9 @@
                 var _tb = '<div class="act-thumb-hover" data-thumb="'+esc(a.thumbnail||'')+'" data-title="'+esc(a.title)+'" data-type="'+esc(a.type)+'" data-icon="'+esc(_fallbackIcon)+'">'+_tbInner+'</div>';
                 return '<tr>'
                     + '<td class="teacher-activity-title"><div style="display:flex;align-items:center;gap:10px;">'+_tb+'<span>'+esc(a.title)+'</span></div></td>'
-                    + '<td>' + esc(a.type) + '</td>'
+                    + '<td>' + esc(a.type) + (a._isUpload && a.material_kind === 'activity'
+                        ? ' <span style="display:inline-block;margin-left:4px;padding:2px 8px;border-radius:20px;background:#f3e8ff;color:#6b21a8;font-size:11px;font-weight:700;white-space:nowrap;">📝 Activity</span>'
+                        : '') + '</td>'
                     + '<td>' + learnerCell + '</td>'
                     + '<td class="date-cell">' + dateStr + '</td>'
                     + '<td>' + statusBadge + '</td>'
@@ -831,7 +838,10 @@
                             _isLocal:            false,
                             _isUpload:           true,
                             file_name:           u.file_name,
-                            file_original_name:  u.file_original_name || u.file_name
+                            file_original_name:  u.file_original_name || u.file_name,
+                            link_url:            u.link_url || '',
+                            material_kind:       u.material_kind === 'activity' ? 'activity' : 'file',
+                            submission_count:    +u.submission_count || 0
                         };
                     });
                     allActivities = allActivities.concat(uploads);
@@ -841,7 +851,7 @@
         }
 
         function deleteUpload(uploadId) {
-            showConfirmModal('Delete this uploaded file? It will no longer be visible to the student.').then(function (ok) {
+            showConfirmModal('Delete this uploaded file? It will no longer be visible to the student, and anything the student submitted for it is deleted too.').then(function (ok) {
                 if (!ok) return;
                 window.showActionLoading();
                 var _tid = sessionStorage.getItem('teacher_id') || '';
@@ -857,6 +867,110 @@
                     })
                     .catch(function() { window.showToast('Network error. Could not delete file.', 'error'); loadActivities(); });
             });
+        }
+
+        /* ── Submissions for an uploaded "activity" material ──
+           One upload row = one student (uploads are saved per learner), so
+           this lists that student's submitted files with inline previews. */
+        function _subsEnsureModal() {
+            var ov = document.getElementById('matSubsOverlay');
+            if (ov) return ov;
+            var st = document.createElement('style');
+            st.textContent =
+                '#matSubsOverlay{position:fixed;inset:0;z-index:10000;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;padding:16px;}' +
+                '#matSubsOverlay.show{display:flex;}' +
+                '.msubs-box{background:#fff;border-radius:18px;width:min(860px,100%);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.3);font-family:"Poppins",sans-serif;}' +
+                '.msubs-head{display:flex;align-items:flex-start;gap:12px;padding:20px 22px 14px;border-bottom:1px solid #eef2f8;}' +
+                '.msubs-title{margin:0;font-size:17px;font-weight:700;color:#1e3a8a;}' +
+                '.msubs-sub{margin:4px 0 0;font-size:13px;color:#64748b;}' +
+                '.msubs-close{margin-left:auto;background:none;border:none;font-size:24px;line-height:1;cursor:pointer;color:#64748b;}' +
+                '.msubs-body{padding:18px 22px;overflow-y:auto;}' +
+                '.msubs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;}' +
+                '.msubs-card{border:1.5px solid #e2e8f0;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;background:#fff;}' +
+                '.msubs-prev{height:150px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:44px;overflow:hidden;}' +
+                '.msubs-prev img{width:100%;height:100%;object-fit:cover;}' +
+                '.msubs-prev video{width:100%;height:100%;background:#000;}' +
+                '.msubs-prev audio{width:92%;}' +
+                '.msubs-info{padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px;flex:1;}' +
+                '.msubs-name{font-size:13px;font-weight:700;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}' +
+                '.msubs-meta{font-size:12px;color:#64748b;}' +
+                '.msubs-cap{font-size:12.5px;color:#334155;background:#f8fafc;border-radius:8px;padding:6px 8px;white-space:pre-wrap;word-break:break-word;}' +
+                '.msubs-actions{display:flex;gap:8px;margin-top:auto;padding-top:6px;}' +
+                '.msubs-actions a{flex:1;text-align:center;padding:7px 8px;border-radius:8px;font-size:12.5px;font-weight:600;text-decoration:none;border:1.5px solid #cbd5e1;color:#1e3a8a;}' +
+                '.msubs-empty{text-align:center;padding:36px 12px;color:#64748b;}' +
+                '.msubs-empty b{display:block;font-size:40px;margin-bottom:8px;}';
+            document.head.appendChild(st);
+            ov = document.createElement('div');
+            ov.id = 'matSubsOverlay';
+            ov.innerHTML = '<div class="msubs-box" role="dialog" aria-modal="true" aria-labelledby="msubsTitle">' +
+                '<div class="msubs-head"><div><h3 class="msubs-title" id="msubsTitle">📥 Submissions</h3><p class="msubs-sub" id="msubsSub"></p></div>' +
+                '<button class="msubs-close" type="button" aria-label="Close" onclick="closeMaterialSubmissions()">&times;</button></div>' +
+                '<div class="msubs-body" id="msubsBody"></div></div>';
+            ov.addEventListener('click', function (e) { if (e.target === ov) closeMaterialSubmissions(); });
+            document.body.appendChild(ov);
+            document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeMaterialSubmissions(); });
+            return ov;
+        }
+        function closeMaterialSubmissions() {
+            var ov = document.getElementById('matSubsOverlay');
+            if (!ov) return;
+            ov.classList.remove('show');
+            // stop any video/audio that was playing
+            ov.querySelectorAll('video,audio').forEach(function (m) { try { m.pause(); } catch (e) {} });
+        }
+        function _subsSize(b) {
+            b = +b || 0;
+            if (!b) return '';
+            var kb = b / 1024;
+            return kb >= 1024 ? (kb / 1024).toFixed(1) + ' MB' : Math.max(1, Math.round(kb)) + ' KB';
+        }
+        function _subsCard(s) {
+            var stored = s.file_name || '';
+            var url = /^https?:\/\//i.test(stored) ? stored : 'uploads/submissions/' + encodeURIComponent(stored);
+            var mime = String(s.file_type || '').toLowerCase();
+            var cloud = /res\.cloudinary\.com/.test(url);
+            var prev;
+            if (mime.indexOf('image/') === 0 && (cloud || !/hei[cf]/.test(mime))) {
+                prev = '<img src="' + esc(cloud ? url.replace('/image/upload/', '/image/upload/f_auto,q_auto/') : url) + '" alt="" loading="lazy" />';
+            } else if (mime.indexOf('video/') === 0) {
+                prev = '<video src="' + esc(cloud ? url.replace('/video/upload/', '/video/upload/f_auto,q_auto/') : url) + '#t=0.1" controls playsinline preload="metadata"></video>';
+            } else if (mime.indexOf('audio/') === 0) {
+                prev = '<audio src="' + esc(url) + '" controls preload="metadata"></audio>';
+            } else {
+                prev = mime.indexOf('pdf') >= 0 ? '📕' : (mime.indexOf('presentation') >= 0 || mime.indexOf('powerpoint') >= 0) ? '📊' : (mime.indexOf('word') >= 0 || mime.indexOf('document') >= 0) ? '📝' : '📄';
+            }
+            return '<div class="msubs-card"><div class="msubs-prev">' + prev + '</div><div class="msubs-info">' +
+                '<div class="msubs-name" title="' + esc(s.file_original_name) + '">' + esc(s.file_original_name || 'file') + '</div>' +
+                '<div class="msubs-meta">' + esc([_subsSize(s.file_size), s.submitted_at ? formatDate(s.submitted_at) : ''].filter(Boolean).join(' · ')) + '</div>' +
+                (s.caption ? '<div class="msubs-cap">💬 ' + esc(s.caption) + '</div>' : '') +
+                '<div class="msubs-actions"><a href="' + esc(url) + '" target="_blank" rel="noopener">↗ Open</a>' +
+                '<a href="' + esc(url) + '" download="' + esc(s.file_original_name || 'submission') + '">⬇ Download</a></div>' +
+                '</div></div>';
+        }
+        function openMaterialSubmissions(materialId) {
+            var ov = _subsEnsureModal();
+            document.getElementById('msubsTitle').textContent = '📥 Submissions';
+            document.getElementById('msubsSub').textContent = 'Loading…';
+            document.getElementById('msubsBody').innerHTML = '<div class="msubs-empty">Loading…</div>';
+            ov.classList.add('show');
+            fetch('TEACHER_BACKEND/teacher_material_submissions.php?material_id=' + encodeURIComponent(materialId) + '&_t=' + Date.now(), { cache: 'no-store' })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d || !d.success) throw new Error((d && d.message) || 'Could not load submissions.');
+                    var m = d.material || {}, subs = d.submissions || [];
+                    var who = m.student_name || 'the student';
+                    document.getElementById('msubsTitle').textContent = '📥 ' + (m.title || 'Submissions');
+                    document.getElementById('msubsSub').textContent = subs.length
+                        ? who + ' submitted ' + subs.length + ' file' + (subs.length > 1 ? 's' : '') + '.'
+                        : 'Activity for ' + who;
+                    document.getElementById('msubsBody').innerHTML = subs.length
+                        ? '<div class="msubs-grid">' + subs.map(_subsCard).join('') + '</div>'
+                        : '<div class="msubs-empty"><b>📭</b>' + esc(who) + ' has not submitted anything yet.</div>';
+                })
+                .catch(function (e) {
+                    document.getElementById('msubsSub').textContent = '';
+                    document.getElementById('msubsBody').innerHTML = '<div class="msubs-empty"><b>⚠️</b>' + esc(e.message || 'Could not load submissions.') + '</div>';
+                });
         }
 
         function viewActivity(id) { window.location.href = 'Teacher_reviewact.html?id=' + id; }

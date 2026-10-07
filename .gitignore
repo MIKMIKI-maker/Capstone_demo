@@ -7,3 +7,8 @@ ADMIN_FILES/ADMIN_BACKEND/cloudinary_local.php
 # stays tracked so a fresh checkout still has it.
 TEACHER_FILES/uploads/materials/*
 !TEACHER_FILES/uploads/materials/.htaccess
+
+# Files students submit for "activity" materials (local-disk fallback) — same
+# rule as the materials folder above.
+TEACHER_FILES/uploads/submissions/*
+!TEACHER_FILES/uploads/submissions/.htaccess

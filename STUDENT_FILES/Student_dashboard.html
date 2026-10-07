@@ -17,7 +17,7 @@
   <title>SPED ALM - Student Dashboard</title>
   <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
 
-  <link href="STUDENT_CSS/Student_dashboard.css?v=22" rel="stylesheet" />
+  <link href="STUDENT_CSS/Student_dashboard.css?v=24" rel="stylesheet" />
   <link href="STUDENT_CSS/student_responsive.css?v=9" rel="stylesheet" />
   <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
   <!-- Fredoka = the rounded game font from the design -->
@@ -182,9 +182,9 @@
       <div class="student-activities-header">
         <div class="student-act-tabs">
           <button class="student-act-tab student-active" onclick="switchTab(this, 'today')" type="button">Today's
-            Activities</button>
-          <button class="student-act-tab" onclick="switchTab(this, 'materials')" type="button">Uploaded Materials</button>
-          <button class="student-act-tab" onclick="switchTab(this, 'completed')" type="button">✅ Completed</button>
+            Activities<span class="student-tab-new" id="tabNew-act" style="display:none;"></span></button>
+          <button class="student-act-tab" onclick="switchTab(this, 'materials')" type="button">Uploaded Materials<span class="student-tab-new" id="tabNew-mat" style="display:none;"></span></button>
+          <button class="student-act-tab" onclick="switchTab(this, 'completed')" type="button">✅ Completed<span class="student-tab-new" id="tabNew-done" style="display:none;"></span></button>
         </div>
         <span class="student-act-done" id="student-act-done-count">0/0 done</span>
       </div>
@@ -240,7 +240,7 @@
         var btn = locked
           ? '<button class="student-act-row-btn student-act-row-btn--locked" type="button" disabled title="Tapusin muna ang naunang activity">🔒 Locked</button>'
           : '<button class="student-act-row-btn" type="button" onclick="startActivity(\'' + escD(act.id) + '\',\'' + escD(act.type) + '\')">▶ Start</button>';
-        return '<div class="student-act-row student-act-row--' + color + (locked ? ' student-act-row--locked' : '') + '">' +
+        return '<div class="student-act-row student-act-row--' + color + (locked ? ' student-act-row--locked' : '') + '" data-seen="act:' + escD(act.id) + '">' +
           '<div class="student-act-row-thumb act-thumb-hover" data-thumb="' + escD(act.thumbnail || '') + '" data-title="' + escD(act.title) + '" data-type="' + escD(act.type) + '" data-icon="' + escD(getEmojiD(act.type)) + '">' + thumb + '</div>' +
           '<div class="student-act-row-info">' +
             '<div class="student-act-row-title">' + escD(act.title) + '</div>' +
@@ -362,6 +362,7 @@
         document.getElementById('student-act-done-count').textContent = doneCount + '/' + materials.length + ' done';
         updateProgressBanner(doneCount, materials.length);
         renderCompletedActivities(materials);
+        refreshTabBadges();
       }
 
       /* ── Completed Activities: own container on the dashboard, always
@@ -376,7 +377,7 @@
           ? 'Completed ' + new Date(act.assessment_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
           : '';
         var sub = [act.type, scoreText, doneText].filter(Boolean).join(' · ');
-        return '<div class="student-act-row student-act-row--' + color + '">' +
+        return '<div class="student-act-row student-act-row--' + color + '" data-seen="done:' + escD(act.id) + '">' +
           '<div class="student-act-row-thumb act-thumb-hover" data-thumb="' + escD(act.thumbnail || '') + '" data-title="' + escD(act.title) + '" data-type="' + escD(act.type) + '" data-icon="' + escD(getEmojiD(act.type)) + '">' + thumb + '</div>' +
           '<div class="student-act-row-info">' +
             '<div class="student-act-row-title">' + escD(act.title) + '</div>' +
@@ -390,6 +391,7 @@
         var panel = document.getElementById('student-panel-completed');
         if (!panel) return;
         var completed = materials.filter(function(a) { return a.progress_status === 'completed'; });
+        dashboardCompletedActivities = completed;
         if (!completed.length) {
           panel.innerHTML = '<div class="student-act-empty"><div class="student-act-empty-icon">🎯</div>' +
             '<p class="student-act-empty-title">No completed activities yet</p>' +
@@ -432,21 +434,50 @@
         return '📄';
       }
 
+      // Plain words instead of a raw MIME type like "image/webp".
+      function getFileKindLabel(mime, isLink) {
+        if (isLink) return 'Link';
+        mime = mime || '';
+        if (mime.indexOf('pdf') >= 0) return 'PDF';
+        if (mime.indexOf('image') >= 0) return 'Larawan';
+        if (mime.indexOf('video') >= 0) return 'Video';
+        if (mime.indexOf('audio') >= 0) return 'Audio';
+        if (mime.indexOf('presentation') >= 0 || mime.indexOf('powerpoint') >= 0) return 'PowerPoint';
+        if (mime.indexOf('word') >= 0 || mime.indexOf('document') >= 0) return 'Word';
+        return 'File';
+      }
+
+      // Every uploaded material opens on its own page (Student_material.html)
+      // — where an "activity" material is also where the work gets submitted.
+      function openMaterial(id) {
+        sessionStorage.setItem('stu_material_return', window.location.href);
+        window.location.href = 'Student_material.html?id=' + encodeURIComponent(id);
+      }
+      function materialRowKey(e, id) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openMaterial(id); }
+      }
+
       function renderMaterialRow(file, idx) {
         var color = COLOR_CYCLE[idx % COLOR_CYCLE.length];
         var isLink = !!(file.link_url && file.link_url.length);
-        var url = isLink ? file.link_url
-          : (file.file_name && file.file_name.indexOf('http') === 0 ? file.file_name : '../TEACHER_FILES/uploads/materials/' + file.file_name);
+        var isActivity = file.material_kind === 'activity';
+        var submitted = (+file.submission_count || 0) > 0;
         var sizeKB = file.file_size ? Math.round(file.file_size / 1024) : 0;
         var sizeText = sizeKB > 1024 ? (sizeKB / 1024).toFixed(1) + ' MB' : (sizeKB ? sizeKB + ' KB' : '');
-        var sub = isLink ? 'Link' : [file.file_type || 'File', sizeText].filter(Boolean).join(' · ');
-        return '<div class="student-act-row student-act-row--' + color + '">' +
-          '<div class="student-act-row-thumb"><span style="font-size:30px;line-height:1;">' + getFileEmoji(file.file_type, isLink) + '</span></div>' +
+        var sub = (isActivity ? 'Activity · ' : '') + [getFileKindLabel(file.file_type, isLink), isLink ? '' : sizeText].filter(Boolean).join(' · ');
+        var badge = !isActivity ? ''
+          : submitted ? '<span class="student-act-row-badge act-badge-submitted">✅ Naipasa</span>'
+          : '<span class="student-act-row-badge act-badge-tosubmit">📝 Magpasa</span>';
+        var open = 'openMaterial(' + (+file.id) + ')';
+        return '<div class="student-act-row student-act-row--' + color + ' student-act-row--clickable" role="button" tabindex="0" data-seen="mat:' + (+file.id) + '"' +
+            ' onclick="' + open + '" onkeydown="materialRowKey(event, ' + (+file.id) + ')">' +
+          '<div class="student-act-row-thumb"><span style="font-size:30px;line-height:1;">' + (isActivity ? '📝' : getFileEmoji(file.file_type, isLink)) + '</span></div>' +
           '<div class="student-act-row-info">' +
             '<div class="student-act-row-title">' + escD(file.title) + '</div>' +
             '<div class="student-act-row-sub">' + escD(sub) + '</div>' +
           '</div>' +
-          '<a class="student-act-row-btn" href="' + escD(url) + '" target="_blank" rel="noopener">▶ Open</a>' +
+          badge +
+          '<button class="student-act-row-btn" type="button">▶ Open</button>' +
           '</div>';
       }
 
@@ -470,6 +501,89 @@
         renderAllDashboardMaterials();
         _ttdMaterialsReady = true;
         maybeShowThingsToDo();
+        refreshTabBadges();
+      }
+
+      /* ── "New" number badges on the three tabs ──
+         Each tab shows how many of its items the student hasn't seen yet
+         (remembered server-side in student_seen_items, so it's the same on
+         any device). Opening a tab marks what's in it as seen; its number and
+         the ✨ BAGO tags stay until the student moves to another tab, so they
+         can still spot what was new. */
+      var TAB_SEEN_TYPE = { today: 'act', materials: 'mat', completed: 'done' };
+      var _activeTab = 'today';
+      var _seen = null;              // { act: {id: 1}, mat: {...}, done: {...} } once loaded
+      var _seenFirstTime = false;
+      var _seenNow = { act: {}, mat: {}, done: {} };   // new items shown in the open tab this visit
+      var dashboardCompletedActivities = [];
+
+      function loadSeenItems() {
+        fetch('STUDENT_BACKEND/student_seen_items.php?_t=' + Date.now(), { cache: 'no-store' })
+          .then(function (r) { return r.json(); })
+          .then(function (d) {
+            if (!d || !d.success) return;
+            _seen = { act: {}, mat: {}, done: {} };
+            ['act', 'mat', 'done'].forEach(function (t) {
+              ((d.seen && d.seen[t]) || []).forEach(function (id) { _seen[t][String(id)] = 1; });
+            });
+            _seenFirstTime = !!d.first_time;
+            refreshTabBadges();
+          })
+          .catch(function () {});
+      }
+      function markSeen(type, ids) {
+        if (!ids.length) return;
+        fetch('STUDENT_BACKEND/student_seen_items.php', {
+          method: 'POST', body: new URLSearchParams({ type: type, ids: ids.join(',') })
+        }).catch(function () {});
+      }
+      function setTabBadge(type, n) {
+        var el = document.getElementById('tabNew-' + type);
+        if (!el) return;
+        var prev = +el.getAttribute('data-n') || 0;
+        el.setAttribute('data-n', n);
+        el.textContent = n > 9 ? '9+' : String(n);
+        el.style.display = n > 0 ? '' : 'none';
+        el.setAttribute('aria-label', n + ' bago');
+        if (n > prev) {
+          el.classList.remove('student-tab-new--pop');
+          void el.offsetWidth; // restart the pop animation
+          el.classList.add('student-tab-new--pop');
+        }
+      }
+      function refreshTabBadges() {
+        // Needs the seen list and both data sources rendered at least once.
+        if (!_seen || !_ttdActivitiesReady || !_ttdMaterialsReady) return;
+        var ids = {
+          act:  dashboardActiveActivities.map(function (a) { return String(a.id); }),
+          mat:  dashboardUploadedFiles.map(function (f) { return String(f.id); }),
+          done: dashboardCompletedActivities.map(function (a) { return String(a.id); })
+        };
+        if (_seenFirstTime) {
+          // Nothing recorded yet: everything already here counts as seen, so
+          // only what gets added from now on shows up as new.
+          _seenFirstTime = false;
+          ['act', 'mat', 'done'].forEach(function (t) {
+            ids[t].forEach(function (id) { _seen[t][id] = 1; });
+            markSeen(t, ids[t]);
+          });
+          markSeen('init', ['0']);
+        }
+        var openType = TAB_SEEN_TYPE[_activeTab];
+        ['act', 'mat', 'done'].forEach(function (t) {
+          var unseen = ids[t].filter(function (id) { return !_seen[t][id]; });
+          if (t === openType && unseen.length) {
+            unseen.forEach(function (id) { _seen[t][id] = 1; _seenNow[t][id] = 1; });
+            markSeen(t, unseen);
+          }
+          var fresh = t === openType ? ids[t].filter(function (id) { return _seenNow[t][id]; }) : unseen;
+          setTabBadge(t, fresh.length);
+          var freshMap = {};
+          fresh.forEach(function (id) { freshMap[id] = 1; });
+          document.querySelectorAll('[data-seen^="' + t + ':"]').forEach(function (row) {
+            row.classList.toggle('student-act-row--new', !!freshMap[row.getAttribute('data-seen').slice(t.length + 1)]);
+          });
+        });
       }
 
       // "Things To Do" popup — appears once each time the dashboard loads,
@@ -706,10 +820,14 @@
       }
 
       function switchTab(btn, panel) {
+        // Leaving a tab: whatever was new there has now been seen.
+        _seenNow[TAB_SEEN_TYPE[_activeTab]] = {};
+        _activeTab = panel;
         document.querySelectorAll('.student-act-tab').forEach(function(t){ t.classList.remove('student-active'); });
         btn.classList.add('student-active');
         document.querySelectorAll('.student-act-panel').forEach(function(p){ p.style.display = 'none'; });
         document.getElementById('student-panel-' + panel).style.display = 'flex';
+        refreshTabBadges();
       }
 
       /* ── Hover preview popover for activity thumbnails ──
@@ -758,6 +876,7 @@
 
       document.addEventListener('visibilitychange', function(){ if (!document.hidden) loadDashboard(); });
       loadDashboard();
+      loadSeenItems();
       // Recheck enrollment while the dashboard remains open so assignments appear without
       // relogin. Deferred to DOMContentLoaded because student_portal.js loads with `defer`
       // — it may not have run yet at this point in parsing, so window.startAutoRefresh

@@ -6,6 +6,7 @@ requireActiveSchoolYearView();
 require_once __DIR__ . '/teacher_auth.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/cloudinary_upload.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/db.php';
+require_once __DIR__ . '/material_helpers.php';
 header('Content-Type: application/json');
 
 $upload_id  = isset($_POST['upload_id'])  ? intval($_POST['upload_id'])  : 0;
@@ -38,7 +39,21 @@ $del = $conn->prepare("DELETE FROM teacher_uploaded_materials WHERE id = ? AND t
 $del->bind_param("ii", $upload_id, $teacher_id);
 $del->execute();
 $del->close();
+
+// Anything the student submitted for it (an 'activity' material) goes too.
+ensureMaterialSchema($conn);
+$submittedFiles = [];
+$sq = $conn->prepare("SELECT file_name FROM material_submissions WHERE material_id = ? AND teacher_id = ?");
+if ($sq) {
+    $sq->bind_param("ii", $upload_id, $teacher_id);
+    $sq->execute();
+    $submittedFiles = array_column($sq->get_result()->fetch_all(MYSQLI_ASSOC), 'file_name');
+    $sq->close();
+}
+$sd = $conn->prepare("DELETE FROM material_submissions WHERE material_id = ? AND teacher_id = ?");
+if ($sd) { $sd->bind_param("ii", $upload_id, $teacher_id); $sd->execute(); $sd->close(); }
 $conn->close();
+foreach ($submittedFiles as $sf) deleteMaterialSubmissionFile($sf);
 
 if (strpos($row['file_name'], 'res.cloudinary.com') !== false) {
     cloudinaryDeleteByUrl($row['file_name']);
