@@ -7,6 +7,8 @@
 <script src="../../ASSETS/attempt_history.js?v=1"></script>
 <script src="../../ASSETS/missing_highlight.js?v=1"></script>
 <script src="../../ASSETS/activity_audio.js?v=2"></script>
+<script src="../../ASSETS/image_library/library_data.js?v=4"></script>
+<script src="../../ASSETS/image_library.js?v=6"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SPED ALM — Written Response Template Generator</title>
@@ -752,6 +754,11 @@ function initActivityTheme(){
       </div>
 
       <div class="wrt-card">
+        <div class="wrt-step">Image Library <span class="wrt-edit-link">(totoong litrato)</span></div>
+        <div id="wrtImageLibrary"></div>
+      </div>
+
+      <div class="wrt-card">
         <div class="wrt-step">2. Example Item <span class="wrt-edit-link">(shown to student, not scored)</span></div>
         <div class="wrt-example-box" id="wrtExampleEditor"></div>
       </div>
@@ -1072,7 +1079,12 @@ function initActivityTheme(){
   const SPACE_GAP = { Small:14, Medium:22, Large:32 };
 
   function makeExampleItem(){
-    return { img:null, imgType:"upload", emoji:"🍎", correct:"a", variations:"" };
+    return photoItem("mansanas", "a");
+  }
+  // Sample items use real photos from the built-in Image Library.
+  function photoItem(id, correct){
+    const p = ImageLibrary.photo(id, "en");
+    return { img:p.url, imgType:"library", emoji:"", name:p.name, libAnswer:correct, correct:correct, variations:"" };
   }
   function makeDefaultActivity(){
     return {
@@ -1082,12 +1094,19 @@ function initActivityTheme(){
       answerMode:"letter", // 'letter' | 'word' (sub-mode, only used when mode === 'written')
       example: makeExampleItem(),
       items:[
-        { img:null, imgType:"upload", emoji:"🐜", correct:"a", variations:"" },
-        { img:null, imgType:"upload", emoji:"🧊", correct:"i", variations:"" },
-        { img:null, imgType:"upload", emoji:"☂️", correct:"u", variations:"" },
-        { img:null, imgType:"upload", emoji:"🐘", correct:"e", variations:"" }
+        photoItem("langgam", "a"),
+        photoItem("yelo", "i"),
+        photoItem("payong", "u"),
+        photoItem("elepante", "e")
       ]
     };
+  }
+  // The answer a library photo implies for the current slide's mode.
+  function libraryAnswer(name, lang){
+    const mode = currentActivity().mode || "written";
+    if (mode === "sentence") return ImageLibrary.sentence(name, lang);
+    if (mode === "scramble" || currentActivity().answerMode === "word") return String(name || "").toLowerCase();
+    return ImageLibrary.firstLetter(name) || "a";
   }
   function makeBlankActivity(slideNumber){
     return {
@@ -1256,16 +1275,27 @@ function initActivityTheme(){
     const tabs = document.createElement("div"); tabs.className = "wrt-media-tabs";
     const tabUpload = document.createElement("button"); tabUpload.type="button"; tabUpload.textContent="Upload";
     const tabLink = document.createElement("button"); tabLink.type="button"; tabLink.textContent="Link";
-    (dataObj.imgType === "link" ? tabLink : tabUpload).classList.add("sel");
+    // Library pick also fills the correct answer for the current mode,
+    // unless the teacher already typed their own answer.
+    const tabLib = ImageLibrary.tabButton((url, photo, lang)=>{
+      const fresh = !dataObj.img || dataObj.emoji;
+      dataObj.img = url; dataObj.imgType = "library"; dataObj.emoji = ""; dataObj.name = photo.name;
+      if (fresh || !dataObj.correct || dataObj.correct === dataObj.libAnswer){
+        dataObj.correct = libraryAnswer(photo.name, lang);
+        dataObj.libAnswer = dataObj.correct;
+      }
+      onChange();
+    }, ()=> dataObj.name || "");
+    ({ link:tabLink, library:tabLib }[dataObj.imgType] || tabUpload).classList.add("sel");
     const linkInput = document.createElement("input");
     linkInput.type = "url"; linkInput.className = "wrt-link-input"; linkInput.placeholder = "Image URL";
     if (dataObj.imgType === "link"){ linkInput.classList.add("show"); linkInput.value = dataObj.img || ""; }
     tabUpload.addEventListener("click", ()=>{
-      tabUpload.classList.add("sel"); tabLink.classList.remove("sel"); linkInput.classList.remove("show");
+      tabUpload.classList.add("sel"); tabLink.classList.remove("sel"); tabLib.classList.remove("sel"); linkInput.classList.remove("show");
       inp.click();
     });
     tabLink.addEventListener("click", ()=>{
-      tabLink.classList.add("sel"); tabUpload.classList.remove("sel"); linkInput.classList.add("show");
+      tabLink.classList.add("sel"); tabUpload.classList.remove("sel"); tabLib.classList.remove("sel"); linkInput.classList.add("show");
       linkInput.focus();
     });
     linkInput.addEventListener("input", e=>{
@@ -1273,7 +1303,7 @@ function initActivityTheme(){
       dataObj.img = url || null; dataObj.imgType = "link"; if (url) dataObj.emoji = "";
       onChange();
     });
-    tabs.appendChild(tabUpload); tabs.appendChild(tabLink);
+    tabs.appendChild(tabUpload); tabs.appendChild(tabLink); tabs.appendChild(tabLib);
     media.appendChild(tabs); media.appendChild(linkInput);
     return media;
   }
@@ -2454,7 +2484,7 @@ function initActivityTheme(){
   // thumbnail instead of the generic type icon everywhere.
   function _scanForDataImage(node, depth) {
     if (depth > 6 || node == null) return '';
-    if (typeof node === 'string') return node.indexOf('data:image') === 0 ? node : '';
+    if (typeof node === 'string') return (node.indexOf('data:image') === 0 || ImageLibrary.isLibraryImage(node)) ? node : '';
     if (Array.isArray(node)) {
       for (var i = 0; i < node.length; i++) {
         var r = _scanForDataImage(node[i], depth + 1);
@@ -2737,6 +2767,28 @@ function initActivityTheme(){
   renderSlideNav();
   loadDraftIfAny();
   loadPublishedForEditIfAny();
+
+  // Built-in real-photo library: a Quick Set fills the example (first
+  // photo) and the items, with answers matching the slide's current mode.
+  $("wrtImageLibrary").appendChild(ImageLibrary.launcher());
+  ImageLibrary.init({
+    template: "written",
+    isEditor: function(){ return !_stuMode && !document.body.classList.contains("wrt-preview-only"); },
+    applySet: function(set, lang){
+      // Letter sets switch to Letter/Sound mode; word sets to Custom Word mode
+      // (Word Scramble / Build the Sentence keep their own mode).
+      const activity = currentActivity();
+      if (set.answer === "letter"){ activity.mode = "written"; activity.answerMode = "letter"; }
+      else if (set.answer === "word" && (activity.mode || "written") === "written") activity.answerMode = "word";
+      const toItem = function(p){
+        const answer = libraryAnswer(p.name, lang);
+        return { img:p.url, imgType:"library", emoji:"", name:p.name, libAnswer:answer, correct:answer, variations:"" };
+      };
+      currentActivity().example = toItem(set.items[0]);
+      currentActivity().items = set.items.slice(1).map(toItem);
+      refreshSlideUI();
+    }
+  });
 
   /* ── STUDENT MODE ─────────────────────────────────────────── */
   (function () {

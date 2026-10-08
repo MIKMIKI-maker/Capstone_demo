@@ -7,6 +7,8 @@
 <script src="../../ASSETS/attempt_history.js?v=1"></script>
 <script src="../../ASSETS/missing_highlight.js?v=1"></script>
 <script src="../../ASSETS/activity_audio.js?v=2"></script>
+<script src="../../ASSETS/image_library/library_data.js?v=4"></script>
+<script src="../../ASSETS/image_library.js?v=6"></script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>SPED ALM — Picture Labeling Template Generator</title>
@@ -750,6 +752,11 @@ body.lbl-preview-only .lbl-exit-float{display:flex;}
     </div>
 
     <div class="lbl-card">
+      <div class="lbl-step">Image Library <span style="color:var(--purple);font-weight:700;text-transform:none;letter-spacing:0;">(totoong litrato)</span></div>
+      <div id="lblImageLibrary"></div>
+    </div>
+
+    <div class="lbl-card">
       <div class="lbl-step" id="lblItemsStepLabel">2. Picture Items <span style="color:var(--purple);font-weight:700;text-transform:none;letter-spacing:0;">(image + correct label)</span></div>
       <div id="lblItemsList"></div>
       <button class="lbl-add" id="lblAddItemBtn" type="button">+ Add Picture</button>
@@ -1080,12 +1087,17 @@ const SPACE_GAP = { Small:10, Medium:16, Large:24 };
 function makeItem(){
   return { id:'lbl_'+Date.now()+'_'+Math.random().toString(36).slice(2), imageData:null, imgType:'upload', label:'' };
 }
+// An item pre-filled with a real photo (and its name) from the Image Library.
+function makePhotoItem(url, label){
+  return Object.assign(makeItem(), { imageData:url, imgType:'library', label:label, libName:label });
+}
 function makeDefaultActivity(){
+  const photoItem = (id)=>{ const p = ImageLibrary.photo(id, 'en'); return makePhotoItem(p.url, p.name); };
   return {
     mode:"grid",
     title:"Picture Labeling",
     instruction:"Write the correct name of each picture.",
-    items:[ makeItem(), makeItem(), makeItem() ],
+    items:[ photoItem('aso'), photoItem('pusa'), photoItem('ibon') ],
     distractors:[],
     diagramImg:null, diagramImgType:"upload", hotspots:[]
   };
@@ -1403,7 +1415,7 @@ function renderItemsList(){
         <input type="file" accept="image/*" onchange="handleImg(event,'${item.id}')">
       </div>
       <div class="lbl-media-tabs">
-        <button type="button" class="${!isLink?'sel':''}" onclick="lbl_setImgType('${item.id}','upload')">Upload</button>
+        <button type="button" class="${(!isLink && item.imgType!=='library')?'sel':''}" onclick="lbl_setImgType('${item.id}','upload')">Upload</button>
         <button type="button" class="${isLink?'sel':''}" onclick="lbl_setImgType('${item.id}','link')">Link</button>
       </div>
       <input class="lbl-link-input ${isLink?'show':''}" type="url" placeholder="Image URL"
@@ -1411,6 +1423,15 @@ function renderItemsList(){
       <input class="lbl-side-name" type="text" placeholder="Correct label (e.g. Owl)"
         value="${item.label}" oninput="updateLabel('${item.id}',this.value)">
     `;
+    // Library pick also fills the label (unless the teacher typed their own).
+    const tabLib = ImageLibrary.tabButton(function(url, photo){
+      item.imageData = url; item.imgType = 'library';
+      if (!item.label || item.label === item.libName) item.label = photo.name;
+      item.libName = photo.name;
+      renderItemsList(); renderActivity();
+    }, function(){ return item.label || ''; });
+    if (item.imgType === 'library') tabLib.classList.add('sel');
+    d.querySelector('.lbl-media-tabs').appendChild(tabLib);
     c.appendChild(d);
   });
 }
@@ -2777,7 +2798,7 @@ $('lblPublishCancelBtn').addEventListener('click', closePublishModal);
 // generic type icon everywhere thumbnails are used.
 function _scanForDataImage(node, depth) {
   if (depth > 6 || node == null) return '';
-  if (typeof node === 'string') return node.indexOf('data:image') === 0 ? node : '';
+  if (typeof node === 'string') return (node.indexOf('data:image') === 0 || ImageLibrary.isLibraryImage(node)) ? node : '';
   if (Array.isArray(node)) {
     for (var i = 0; i < node.length; i++) {
       var r = _scanForDataImage(node[i], depth + 1);
@@ -3070,6 +3091,21 @@ renderActivity();
 renderSlideNav();
 loadDraftIfAny();
 loadPublishedForEditIfAny();
+
+// Built-in real-photo library: a Quick Set fills the slide's picture items
+// (with labels) plus a couple of word-bank distractors in one click.
+$('lblImageLibrary').appendChild(ImageLibrary.launcher());
+ImageLibrary.init({
+  template: 'labeling',
+  isEditor: function(){ return !_stuMode && !document.body.classList.contains('lbl-preview-only'); },
+  applySet: function(set){
+    const activity = currentActivity();
+    if (activity.mode === 'diagram') activity.mode = 'grid'; // Quick Sets are per-picture, not one diagram
+    activity.items = set.items.map(function(p){ return makePhotoItem(p.url, p.name); });
+    activity.distractors = (set.extras || []).map(function(p){ return p.name; });
+    refreshSlideUI();
+  }
+});
 
 /* ── STUDENT MODE (same pattern as other templates) ── */
 (function(){

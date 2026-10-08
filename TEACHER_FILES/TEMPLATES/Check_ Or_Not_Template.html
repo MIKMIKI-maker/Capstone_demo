@@ -7,6 +7,8 @@
 <script src="../../ASSETS/attempt_history.js?v=1"></script>
 <script src="../../ASSETS/missing_highlight.js?v=1"></script>
 <script src="../../ASSETS/activity_audio.js?v=2"></script>
+<script src="../../ASSETS/image_library/library_data.js?v=4"></script>
+<script src="../../ASSETS/image_library.js?v=6"></script>
 <script src="../../ASSETS/activity_demo.js?v=1"></script>
 <script src="../../ASSETS/activity_demos/checkornot.js?v=1"></script>
 <meta charset="UTF-8" />
@@ -707,6 +709,11 @@ function initActivityTheme(){
       </div>
 
       <div class="chk-card">
+        <div class="chk-step">Image Library <span class="chk-edit-link">(totoong litrato)</span></div>
+        <div id="chkImageLibrary"></div>
+      </div>
+
+      <div class="chk-card">
         <div class="chk-step">2. Items <span class="chk-edit-link">(picture + correct mark)</span></div>
         <div id="chkItems"></div>
         <button class="chk-add" id="chkAddItem" type="button">+ Add Item</button>
@@ -1022,10 +1029,13 @@ function initActivityTheme(){
     return { img:null, imgType:"upload", emoji:"🍽️", correct: correct !== undefined ? correct : true };
   }
   function makeDefaultActivity(){
+    // Sample items use real photos from the built-in Image Library.
+    const photoItem = (id, correct)=> ({ img:ImageLibrary.photo(id).url, imgType:"library", emoji:"", correct:correct });
     return {
       title:"Check or X",
-      instruction:"Put a check (✓) on the picture that shows eating/swallowing soup, and put an X if it is not.",
-      items:[ makeItem(true), makeItem(false), makeItem(true), makeItem(false), makeItem(true), makeItem(false) ]
+      instruction:"Put a check (✓) if the picture is a fruit, and put an X if it is not.",
+      items:[ photoItem("mansanas", true), photoItem("aso", false), photoItem("saging", true),
+              photoItem("lapis", false), photoItem("mangga", true), photoItem("baso", false) ]
     };
   }
   function makeBlankActivity(slideNumber){
@@ -1141,16 +1151,20 @@ function initActivityTheme(){
     const tabs = document.createElement("div"); tabs.className = "chk-media-tabs";
     const tabUpload = document.createElement("button"); tabUpload.type="button"; tabUpload.textContent="Upload";
     const tabLink = document.createElement("button"); tabLink.type="button"; tabLink.textContent="Link";
-    (it.imgType === "link" ? tabLink : tabUpload).classList.add("sel");
+    const tabLib = ImageLibrary.tabButton((url)=>{
+      it.img = url; it.imgType = "library"; it.emoji = "";
+      renderItems(); renderActivity();
+    });
+    ({ link:tabLink, library:tabLib }[it.imgType] || tabUpload).classList.add("sel");
     const linkInput = document.createElement("input");
     linkInput.type = "url"; linkInput.className = "chk-link-input"; linkInput.placeholder = "Image URL";
     if (it.imgType === "link"){ linkInput.classList.add("show"); linkInput.value = it.img || ""; }
     tabUpload.addEventListener("click", ()=>{
-      tabUpload.classList.add("sel"); tabLink.classList.remove("sel"); linkInput.classList.remove("show");
+      tabUpload.classList.add("sel"); tabLink.classList.remove("sel"); tabLib.classList.remove("sel"); linkInput.classList.remove("show");
       inp.click();
     });
     tabLink.addEventListener("click", ()=>{
-      tabLink.classList.add("sel"); tabUpload.classList.remove("sel"); linkInput.classList.add("show");
+      tabLink.classList.add("sel"); tabUpload.classList.remove("sel"); tabLib.classList.remove("sel"); linkInput.classList.add("show");
       linkInput.focus();
     });
     linkInput.addEventListener("input", e=>{
@@ -1158,7 +1172,7 @@ function initActivityTheme(){
       it.img = url || null; it.imgType = "link"; if (url) it.emoji = "";
       renderItems(); renderActivity();
     });
-    tabs.appendChild(tabUpload); tabs.appendChild(tabLink);
+    tabs.appendChild(tabUpload); tabs.appendChild(tabLink); tabs.appendChild(tabLib);
     media.appendChild(tabs); media.appendChild(linkInput);
     top.appendChild(media);
 
@@ -2034,7 +2048,7 @@ function initActivityTheme(){
   // thumbnail instead of the generic type icon everywhere.
   function _scanForDataImage(node, depth) {
     if (depth > 6 || node == null) return '';
-    if (typeof node === 'string') return node.indexOf('data:image') === 0 ? node : '';
+    if (typeof node === 'string') return (node.indexOf('data:image') === 0 || ImageLibrary.isLibraryImage(node)) ? node : '';
     if (Array.isArray(node)) {
       for (var i = 0; i < node.length; i++) {
         var r = _scanForDataImage(node[i], depth + 1);
@@ -2323,6 +2337,23 @@ function initActivityTheme(){
   renderSlideNav();
   loadDraftIfAny();
   loadPublishedForEditIfAny();
+
+  // Built-in real-photo library: a Quick Set fills the slide's title,
+  // instruction and items (with their correct ✓ / ✗) in one click.
+  $("chkImageLibrary").appendChild(ImageLibrary.launcher());
+  ImageLibrary.init({
+    template: "check",
+    isEditor: function(){ return !_stuMode && !document.body.classList.contains("chk-preview-only"); },
+    applySet: function(set){
+      const activity = currentActivity();
+      if (set.title) activity.title = set.title;
+      if (set.instruction) activity.instruction = set.instruction;
+      activity.items = set.items.map(function(p){
+        return { img:p.url, imgType:"library", emoji:"", correct:p.yes !== false };
+      });
+      refreshSlideUI();
+    }
+  });
 
   /* ── STUDENT MODE ─────────────────────────────────────────── */
   (function () {

@@ -7,6 +7,8 @@
 <script src="../../ASSETS/attempt_history.js?v=1"></script>
 <script src="../../ASSETS/missing_highlight.js?v=1"></script>
 <script src="../../ASSETS/activity_audio.js?v=2"></script>
+<script src="../../ASSETS/image_library/library_data.js?v=4"></script>
+<script src="../../ASSETS/image_library.js?v=6"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SPED ALM — Sorting Template Generator</title>
@@ -889,6 +891,11 @@ function initActivityTheme(){
       </div>
 
       <div class="srt-card">
+        <div class="srt-step">Image Library <span class="srt-edit-link">(totoong litrato)</span></div>
+        <div id="srtImageLibrary"></div>
+      </div>
+
+      <div class="srt-card">
         <div class="srt-step">2. Categories <span class="srt-edit-link">(at least 2)</span></div>
         <div id="srtCategories"></div>
         <button class="srt-add" id="srtAddCategory" type="button">+ Add Category</button>
@@ -1223,6 +1230,11 @@ function initActivityTheme(){
   // before this feature existed) is always treated as "bins" wherever mode is
   // read — see every `activity.mode || 'bins'` / `case 'bins': default:` below.
   function makeDefaultActivity(){
+    // Sample items use real photos from the built-in Image Library.
+    const photoItem = (id, category)=>{
+      const p = ImageLibrary.photo(id, "en");
+      return { img:p.url, imgType:"library", emoji:"", name:"", category:category };
+    };
     return {
       mode:"bins",
       title:"Sort the Pictures",
@@ -1232,12 +1244,8 @@ function initActivityTheme(){
         { icon:"", img:null, name:"Fruits" }
       ],
       items:[
-        { img:null, emoji:"🐶", name:"", category:0 },
-        { img:null, emoji:"🐱", name:"", category:0 },
-        { img:null, emoji:"🐘", name:"", category:0 },
-        { img:null, emoji:"🍎", name:"", category:1 },
-        { img:null, emoji:"🍌", name:"", category:1 },
-        { img:null, emoji:"🍇", name:"", category:1 }
+        photoItem("aso", 0), photoItem("pusa", 0), photoItem("manok", 0),
+        photoItem("mansanas", 1), photoItem("saging", 1), photoItem("ubas", 1)
       ]
     };
   }
@@ -1385,16 +1393,20 @@ function initActivityTheme(){
       const tabs = document.createElement("div"); tabs.className = "srt-media-tabs";
       const tabUpload = document.createElement("button"); tabUpload.type = "button"; tabUpload.textContent = "Upload";
       const tabLink = document.createElement("button"); tabLink.type = "button"; tabLink.textContent = "Link";
-      (cat.imgType === "link" ? tabLink : tabUpload).classList.add("sel");
+      const tabLib = ImageLibrary.tabButton((url)=>{
+        categories[i].img = url; categories[i].imgType = "library";
+        renderCategories(); renderActivity();
+      }, ()=> cat.name || "");
+      ({ link:tabLink, library:tabLib }[cat.imgType] || tabUpload).classList.add("sel");
       const linkInput = document.createElement("input");
       linkInput.type = "url"; linkInput.className = "srt-link-input"; linkInput.placeholder = "Image URL";
       if (cat.imgType === "link"){ linkInput.classList.add("show"); linkInput.value = cat.img || ""; }
       tabUpload.addEventListener("click", ()=>{
-        tabUpload.classList.add("sel"); tabLink.classList.remove("sel"); linkInput.classList.remove("show");
+        tabUpload.classList.add("sel"); tabLink.classList.remove("sel"); tabLib.classList.remove("sel"); linkInput.classList.remove("show");
         fileInput.click();
       });
       tabLink.addEventListener("click", ()=>{
-        tabLink.classList.add("sel"); tabUpload.classList.remove("sel"); linkInput.classList.add("show");
+        tabLink.classList.add("sel"); tabUpload.classList.remove("sel"); tabLib.classList.remove("sel"); linkInput.classList.add("show");
         linkInput.focus();
       });
       linkInput.addEventListener("input", e=>{
@@ -1402,7 +1414,7 @@ function initActivityTheme(){
         categories[i].img = url || null; categories[i].imgType = "link";
         renderCategories(); renderActivity();
       });
-      tabs.appendChild(tabUpload); tabs.appendChild(tabLink);
+      tabs.appendChild(tabUpload); tabs.appendChild(tabLink); tabs.appendChild(tabLib);
       media.appendChild(tabs); media.appendChild(linkInput);
 
       if (cat.img || cat.icon) {
@@ -1495,16 +1507,23 @@ function initActivityTheme(){
       const tabs = document.createElement("div"); tabs.className = "srt-media-tabs";
       const tabUpload = document.createElement("button"); tabUpload.type = "button"; tabUpload.textContent = "Upload";
       const tabLink = document.createElement("button"); tabLink.type = "button"; tabLink.textContent = "Link";
-      (item.imgType === "link" ? tabLink : tabUpload).classList.add("sel");
+      const tabLib = ImageLibrary.tabButton((url, photo)=>{
+        item.img = url; item.imgType = "library"; item.emoji = "";
+        // Follow the new photo's name unless the teacher typed their own.
+        if (!item.name || item.name === item.libName) item.name = photo.name;
+        item.libName = photo.name;
+        renderItems(); renderActivity();
+      }, ()=> item.name || "");
+      ({ link:tabLink, library:tabLib }[item.imgType] || tabUpload).classList.add("sel");
       const linkInput = document.createElement("input");
       linkInput.type = "url"; linkInput.className = "srt-link-input"; linkInput.placeholder = "Image URL";
       if (item.imgType === "link"){ linkInput.classList.add("show"); linkInput.value = item.img || ""; }
       tabUpload.addEventListener("click", ()=>{
-        tabUpload.classList.add("sel"); tabLink.classList.remove("sel"); linkInput.classList.remove("show");
+        tabUpload.classList.add("sel"); tabLink.classList.remove("sel"); tabLib.classList.remove("sel"); linkInput.classList.remove("show");
         fileInput.click();
       });
       tabLink.addEventListener("click", ()=>{
-        tabLink.classList.add("sel"); tabUpload.classList.remove("sel"); linkInput.classList.add("show");
+        tabLink.classList.add("sel"); tabUpload.classList.remove("sel"); tabLib.classList.remove("sel"); linkInput.classList.add("show");
         linkInput.focus();
       });
       linkInput.addEventListener("input", e=>{
@@ -1512,7 +1531,7 @@ function initActivityTheme(){
         item.img = url || null; item.imgType = "link"; if (url) item.emoji = "";
         renderItems(); renderActivity();
       });
-      tabs.appendChild(tabUpload); tabs.appendChild(tabLink);
+      tabs.appendChild(tabUpload); tabs.appendChild(tabLink); tabs.appendChild(tabLib);
       media.appendChild(tabs); media.appendChild(linkInput);
       row.appendChild(media);
 
@@ -2896,7 +2915,7 @@ function initActivityTheme(){
   // thumbnail instead of the generic type icon everywhere.
   function _scanForDataImage(node, depth) {
     if (depth > 6 || node == null) return '';
-    if (typeof node === 'string') return node.indexOf('data:image') === 0 ? node : '';
+    if (typeof node === 'string') return (node.indexOf('data:image') === 0 || ImageLibrary.isLibraryImage(node)) ? node : '';
     if (Array.isArray(node)) {
       for (var i = 0; i < node.length; i++) {
         var r = _scanForDataImage(node[i], depth + 1);
@@ -3188,6 +3207,25 @@ function initActivityTheme(){
   renderSlideNav();
   loadDraftIfAny();
   loadPublishedForEditIfAny();
+
+  // Built-in real-photo library: Quick Sets fill the current slide's
+  // categories + items in one click; the intro pop-up is editor-only.
+  $("srtImageLibrary").appendChild(ImageLibrary.launcher());
+  ImageLibrary.init({
+    template: "sorting",
+    isEditor: function(){ return !_stuMode && !document.body.classList.contains("srt-preview-only"); },
+    applySet: function(set){
+      const activity = currentActivity();
+      activity.categories = set.groups.map(function(g){ return { icon:"", img:null, name:g.name }; });
+      activity.items = [];
+      set.groups.forEach(function(g, ci){
+        g.items.forEach(function(p){
+          activity.items.push({ img:p.url, imgType:"library", emoji:"", name:p.name, libName:p.name, category:ci });
+        });
+      });
+      refreshSlideUI();
+    }
+  });
 
   /* ── STUDENT MODE ─────────────────────────────────────────── */
   (function () {

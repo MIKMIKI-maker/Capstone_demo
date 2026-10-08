@@ -7,6 +7,8 @@
 <script src="../../ASSETS/attempt_history.js?v=1"></script>
 <script src="../../ASSETS/missing_highlight.js?v=1"></script>
 <script src="../../ASSETS/activity_audio.js?v=2"></script>
+<script src="../../ASSETS/image_library/library_data.js?v=4"></script>
+<script src="../../ASSETS/image_library.js?v=6"></script>
 <script src="../../ASSETS/activity_demo.js?v=1"></script>
 <script src="../../ASSETS/activity_demos/identification.js?v=1"></script>
 <meta charset="UTF-8" />
@@ -689,6 +691,11 @@ function initActivityTheme(){
       </div>
 
       <div class="bgl-card">
+        <div class="bgl-step">Image Library <span class="bgl-edit-link">(totoong litrato)</span></div>
+        <div id="bglImageLibrary"></div>
+      </div>
+
+      <div class="bgl-card">
         <div class="bgl-step">2. Items <span class="bgl-edit-link">(picture + correct letter)</span></div>
         <div id="bglItems"></div>
         <button class="bgl-add" id="bglAddItem" type="button">+ Add Item</button>
@@ -998,14 +1005,19 @@ function initActivityTheme(){
 
   // One "activity" = one set of picture/letter items shown together.
   function makeDefaultActivity(){
+    // Sample items use real photos from the built-in Image Library.
+    const photoItem = (id, correct, distractors)=>{
+      const p = ImageLibrary.photo(id, "en");
+      return { img:p.url, imgType:"library", emoji:"", name:p.name, libName:p.name, correct:correct, distractors:distractors };
+    };
     return {
       title:"Color the Correct Beginning Letter",
       instruction:"Tap the correct beginning letter of each picture.",
       items:[
-        { img:null, imgType:"upload", emoji:"🐊", correct:"a", distractors:["e","i"] },
-        { img:null, imgType:"upload", emoji:"🐘", correct:"e", distractors:["a","i"] },
-        { img:null, imgType:"upload", emoji:"🍆", correct:"e", distractors:["a","i"] },
-        { img:null, imgType:"upload", emoji:"🥑", correct:"a", distractors:["e","i"] }
+        photoItem("mansanas", "a", ["e","i"]),
+        photoItem("elepante", "e", ["a","i"]),
+        photoItem("itlog", "e", ["a","i"]),
+        photoItem("langgam", "a", ["e","i"])
       ]
     };
   }
@@ -1132,16 +1144,28 @@ function initActivityTheme(){
     const tabs = document.createElement("div"); tabs.className = "bgl-media-tabs";
     const tabUpload = document.createElement("button"); tabUpload.type="button"; tabUpload.textContent="Upload";
     const tabLink = document.createElement("button"); tabLink.type="button"; tabLink.textContent="Link";
-    (it.imgType === "link" ? tabLink : tabUpload).classList.add("sel");
+    // Library pick also fills the name and the correct beginning letter
+    // (unless the teacher typed their own name).
+    const tabLib = ImageLibrary.tabButton((url, photo)=>{
+      it.img = url; it.imgType = "library"; it.emoji = "";
+      if (!it.name || it.name === it.libName){
+        it.name = photo.name;
+        const letter = ImageLibrary.firstLetter(photo.name);
+        if (letter){ it.correct = letter; it.distractors = randomDistractors(letter); }
+      }
+      it.libName = photo.name;
+      renderItems(); renderActivity();
+    }, ()=> it.name || "");
+    ({ link:tabLink, library:tabLib }[it.imgType] || tabUpload).classList.add("sel");
     const linkInput = document.createElement("input");
     linkInput.type = "url"; linkInput.className = "bgl-link-input"; linkInput.placeholder = "Image URL";
     if (it.imgType === "link"){ linkInput.classList.add("show"); linkInput.value = it.img || ""; }
     tabUpload.addEventListener("click", ()=>{
-      tabUpload.classList.add("sel"); tabLink.classList.remove("sel"); linkInput.classList.remove("show");
+      tabUpload.classList.add("sel"); tabLink.classList.remove("sel"); tabLib.classList.remove("sel"); linkInput.classList.remove("show");
       inp.click();
     });
     tabLink.addEventListener("click", ()=>{
-      tabLink.classList.add("sel"); tabUpload.classList.remove("sel"); linkInput.classList.add("show");
+      tabLink.classList.add("sel"); tabUpload.classList.remove("sel"); tabLib.classList.remove("sel"); linkInput.classList.add("show");
       linkInput.focus();
     });
     linkInput.addEventListener("input", e=>{
@@ -1149,7 +1173,7 @@ function initActivityTheme(){
       it.img = url || null; it.imgType = "link"; if (url) it.emoji = "";
       renderItems(); renderActivity();
     });
-    tabs.appendChild(tabUpload); tabs.appendChild(tabLink);
+    tabs.appendChild(tabUpload); tabs.appendChild(tabLink); tabs.appendChild(tabLib);
     media.appendChild(tabs); media.appendChild(linkInput);
     top.appendChild(media);
 
@@ -2016,7 +2040,7 @@ function initActivityTheme(){
   // thumbnail instead of the generic type icon everywhere.
   function _scanForDataImage(node, depth) {
     if (depth > 6 || node == null) return '';
-    if (typeof node === 'string') return node.indexOf('data:image') === 0 ? node : '';
+    if (typeof node === 'string') return (node.indexOf('data:image') === 0 || ImageLibrary.isLibraryImage(node)) ? node : '';
     if (Array.isArray(node)) {
       for (var i = 0; i < node.length; i++) {
         var r = _scanForDataImage(node[i], depth + 1);
@@ -2304,6 +2328,23 @@ function initActivityTheme(){
   renderSlideNav();
   loadDraftIfAny();
   loadPublishedForEditIfAny();
+
+  // Built-in real-photo library: Quick Sets fill the current slide's items
+  // (with the right beginning letters) in one click; the intro pop-up is
+  // editor-only.
+  $("bglImageLibrary").appendChild(ImageLibrary.launcher());
+  ImageLibrary.init({
+    template: "identification",
+    isEditor: function(){ return !_stuMode && !document.body.classList.contains("bgl-preview-only"); },
+    applySet: function(set){
+      currentActivity().items = set.items.map(function(p){
+        const letter = ImageLibrary.firstLetter(p.name) || "a";
+        return { img:p.url, imgType:"library", emoji:"", name:p.name, libName:p.name,
+                 correct:letter, distractors:randomDistractors(letter) };
+      });
+      refreshSlideUI();
+    }
+  });
 
   /* ── STUDENT MODE ─────────────────────────────────────────── */
   (function () {
