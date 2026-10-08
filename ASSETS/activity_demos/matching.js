@@ -1,4 +1,4 @@
-/* "Paano Sagutan?" demos for Matching_Type_Template.html — one per
+/* "How to Answer" demos for Matching_Type_Template.html — one per
  * Activity Type. Drawn on ActivityDemo's 320×180 canvas; image paths are
  * relative to TEACHER_FILES/TEMPLATES/ (where the template runs). */
 (function () {
@@ -50,11 +50,11 @@
           '72%,100%{left:276px;top:170px;opacity:0;}');
       return {
         duration: 4.8,
-        say: 'Pindutin ang larawan at i-drag ang guhit papunta sa katugma nito!',
+        say: 'Press a picture and drag a line to its match!',
         steps: [
-          { icon: '👆', text: 'Pindutin ang larawan', from: 8, to: 22 },
-          { icon: '✏️', text: 'I-drag ang guhit', from: 22, to: 56 },
-          { icon: '✅', text: 'Bitawan sa katugma', from: 56, to: 90 }
+          { icon: '👆', text: 'Press a picture', from: 8, to: 22 },
+          { icon: '✏️', text: 'Drag the line', from: 22, to: 56 },
+          { icon: '✅', text: 'Let go on its match', from: 56, to: 90 }
         ],
         stage: k.stage(html)
       };
@@ -104,11 +104,11 @@
           '68%,100%{left:250px;top:165px;opacity:0;}');
       return {
         duration: 5.2,
-        say: 'I-tap ang dalawang nakataob na card. Hanapin ang magkatugma!',
+        say: 'Tap two cards to turn them over. Find the pairs that match!',
         steps: [
-          { icon: '👆', text: 'I-tap ang isang card', from: 8, to: 30 },
-          { icon: '👆', text: 'I-tap pa ang isa', from: 36, to: 55 },
-          { icon: '🎉', text: 'Magkatugma? Panalo!', from: 56, to: 90 }
+          { icon: '👆', text: 'Tap one card', from: 8, to: 30 },
+          { icon: '👆', text: 'Tap another card', from: 36, to: 55 },
+          { icon: '🎉', text: 'A match? You win!', from: 56, to: 90 }
         ],
         stage: k.stage(html)
       };
@@ -146,11 +146,11 @@
           '68%,100%{left:250px;top:165px;opacity:0;}');
       return {
         duration: 4.8,
-        say: 'I-tap ang larawan, tapos i-tap ang katugma nito!',
+        say: 'Tap a picture, then tap its match!',
         steps: [
-          { icon: '👆', text: 'I-tap ang larawan', from: 8, to: 30 },
-          { icon: '👆', text: 'I-tap ang katugma', from: 36, to: 50 },
-          { icon: '✅', text: 'Magkapareha na!', from: 50, to: 90 }
+          { icon: '👆', text: 'Tap a picture', from: 8, to: 30 },
+          { icon: '👆', text: 'Tap its match', from: 36, to: 50 },
+          { icon: '✅', text: 'They match!', from: 50, to: 90 }
         ],
         stage: k.stage(html)
       };

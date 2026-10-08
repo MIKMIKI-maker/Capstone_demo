@@ -6,7 +6,9 @@
 <script src="../../ASSETS/print_options.js?v=7"></script>
 <script src="../../ASSETS/attempt_history.js?v=1"></script>
 <script src="../../ASSETS/missing_highlight.js?v=1"></script>
-<script src="../../ASSETS/activity_audio.js?v=2"></script>
+<script src="../../ASSETS/activity_audio.js?v=3"></script>
+<script src="../../ASSETS/activity_demo.js?v=2"></script>
+<script src="../../ASSETS/activity_demos/tracing.js?v=2"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SPED ALM — Tracing Template Generator</title>
@@ -3258,27 +3260,8 @@ function initActivityTheme(){
       // "Letters & Numbers" traces a curved dotted line; "Shapes & Lines"
       // traces a dotted outline, so the demo branches on the slide's saved
       // mode instead of always showing the letter-arc path.
-      function stuDemoForTrace(mode) {
-        if (mode === 'shapes') {
-          return '<style>'
-            + '@keyframes stuShapeMove{0%,8%{left:14px;top:6px;opacity:1;}25%{left:194px;top:6px;}50%{left:194px;top:46px;}75%{left:14px;top:46px;}92%,96%{left:14px;top:6px;opacity:1;}100%{left:14px;top:6px;opacity:0;}}'
-            + '</style>'
-            + '<div style="position:relative;width:220px;height:60px;margin:2px 0;">'
-            + '<svg width="220" height="60" viewBox="0 0 220 60" style="position:absolute;left:0;top:0;"><path d="M20,10 L200,10 L200,50 L20,50 Z" stroke="#fde68a" stroke-width="4" stroke-dasharray="8,8" fill="none" stroke-linecap="round"/></svg>'
-            + '<div style="position:absolute;font-size:28px;animation:stuShapeMove 2.8s ease-in-out infinite;">✏️</div>'
-            + '</div>'
-            + '<p style="color:#e2e8f0;font-size:14px;margin:0;font-weight:700;">👉 Sundan ang tuldok-tuldok na hugis!</p>';
-        }
-        return '<style>'
-          + '@keyframes stuTraceMove{0%,10%{left:14px;top:34px;opacity:1;}30%{left:70px;top:6px;}50%{left:104px;top:0px;}70%{left:138px;top:6px;}85%,90%{left:194px;top:34px;opacity:1;}96%,100%{left:194px;top:34px;opacity:0;}}'
-          + '</style>'
-          + '<div style="position:relative;width:220px;height:60px;margin:2px 0;">'
-          + '<svg width="220" height="60" viewBox="0 0 220 60" style="position:absolute;left:0;top:0;"><path d="M20,44 Q110,4 200,44" stroke="#fde68a" stroke-width="4" stroke-dasharray="8,8" fill="none" stroke-linecap="round"/></svg>'
-          + '<div style="position:absolute;font-size:28px;animation:stuTraceMove 2.6s ease-in-out infinite;">✏️</div>'
-          + '</div>'
-          + '<p style="color:#e2e8f0;font-size:14px;margin:0;font-weight:700;">👉 Sundan ang tuldok-tuldok na guhit!</p>';
-      }
-      var demoHTML = stuDemoForTrace((state.activities[0] && state.activities[0].mode) || 'letters');
+      // Animated how-to: ASSETS/activity_demos/tracing.js (one demo per Activity Type).
+      var stuDemo = window.ActivityDemo ? ActivityDemo.get('tracing', (state.activities[0] && state.activities[0].mode) || 'letters') : null;
 
       var splash = document.createElement('div');
       splash.id = 'stuSplash';
@@ -3313,16 +3296,7 @@ function initActivityTheme(){
         if (fs.requestFullscreen) fs.requestFullscreen().catch(function(){});
         else if (fs.webkitRequestFullscreen) fs.webkitRequestFullscreen();
         splash.remove();
-        var stuDemoOverlay = document.createElement('div');
-        stuDemoOverlay.id = 'stuDemoOverlay';
-        stuDemoOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.94);display:flex;align-items:center;justify-content:center;z-index:100000;padding:24px;text-align:center;';
-        stuDemoOverlay.innerHTML = '<div style="background:#1e293b;border:3px solid #fbbf24;border-radius:28px;padding:40px 64px;display:flex;flex-direction:column;align-items:center;gap:22px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.5);">'
-          + '<p style="color:#facc15;font-size:23px;font-weight:800;letter-spacing:.6px;margin:0;text-transform:uppercase;">📖 Paano Sagutan</p>'
-          + '<div style="transform:scale(1.3);margin:14px 0;">' + demoHTML + '</div>'
-          + '<button id="stuDemoOkBtn" style="margin-top:10px;background:#22c55e;color:#fff;border:none;padding:18px 60px;border-radius:18px;font-family:Fredoka,Poppins,sans-serif;font-size:24px;font-weight:700;cursor:pointer;box-shadow:0 5px 0 #15803d;">Nakuha ko! ▶</button>'
-          + '</div>';
-        document.body.appendChild(stuDemoOverlay);
-        document.getElementById('stuDemoOkBtn').addEventListener('click', function() { stuDemoOverlay.remove(); });
+        if (stuDemo) ActivityDemo.show(stuDemo);
         if (window.finishStudentLaunch) window.finishStudentLaunch();
         initActivityTheme();
 

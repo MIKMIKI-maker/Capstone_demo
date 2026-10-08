@@ -1,4 +1,4 @@
-/* "Paano Sagutan?" demo for Sequencing_Type_Template.html (it has a single
+/* "How to Answer" demo for Sequencing_Type_Template.html (it has a single
  * Activity Type). Drawn on ActivityDemo's 320×180 canvas; image paths are
  * relative to TEACHER_FILES/TEMPLATES/ (where the template runs). */
 (function () {
@@ -63,9 +63,9 @@
       // "Check answers" (right under step 3) at 51%.
       var C = 52;
       var html =
-        card(22, 2, 'DEMO_ASSETS/applysoap.jpg', 'Sabunin', 26, C) +
-        card(120, 3, 'DEMO_ASSETS/rinsehands.jpg', 'Banlawan', 38, C) +
-        card(218, 1, 'DEMO_ASSETS/wethands.jpg', 'Basain', 12, C) +
+        card(22, 2, 'DEMO_ASSETS/applysoap.jpg', 'Soap', 26, C) +
+        card(120, 3, 'DEMO_ASSETS/rinsehands.jpg', 'Rinse', 38, C) +
+        card(218, 1, 'DEMO_ASSETS/wethands.jpg', 'Wet', 12, C) +
         // Check button: one soft "ping" when its turn comes, then pressed.
         '<div class="' + k.name('chk') + '" style="' + k.kf('chk',
           '0%,40%{transform:none;' + glow(0.55, 0) + '}' +
@@ -102,11 +102,11 @@
           '63%,100%{left:228px;top:170px;opacity:0;}');
       return {
         duration: 5.5,
-        say: 'I-tap ang mga larawan sa tamang ayos: 1, 2, 3!',
+        say: 'Tap the pictures in the right order: 1, 2, 3!',
         steps: [
-          { icon: '👆', text: 'I-tap ang unang gawin', from: 4, to: 20 },
-          { icon: '🔢', text: 'I-tap ang susunod', from: 20, to: 44 },
-          { icon: '✅', text: 'I-tap ang Check', from: 44, to: 90 }
+          { icon: '👆', text: 'Tap what comes first', from: 4, to: 20 },
+          { icon: '🔢', text: 'Tap what comes next', from: 20, to: 44 },
+          { icon: '✅', text: 'Tap Check', from: 44, to: 90 }
         ],
         stage: k.stage(html)
       };

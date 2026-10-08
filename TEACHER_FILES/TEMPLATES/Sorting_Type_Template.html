@@ -6,7 +6,9 @@
 <script src="../../ASSETS/print_options.js?v=7"></script>
 <script src="../../ASSETS/attempt_history.js?v=1"></script>
 <script src="../../ASSETS/missing_highlight.js?v=1"></script>
-<script src="../../ASSETS/activity_audio.js?v=2"></script>
+<script src="../../ASSETS/activity_audio.js?v=3"></script>
+<script src="../../ASSETS/activity_demo.js?v=2"></script>
+<script src="../../ASSETS/activity_demos/sorting.js?v=1"></script>
 <script src="../../ASSETS/image_library/library_data.js?v=4"></script>
 <script src="../../ASSETS/image_library.js?v=6"></script>
 <meta charset="UTF-8" />
@@ -3297,48 +3299,8 @@ function initActivityTheme(){
       // Activity Type ("Sort into Bins", "Odd One Out", "Yes/No Sort") has
       // its own mechanic, so the demo branches on the slide's saved mode
       // instead of always showing the drag-into-bin animation.
-      function stuDemoForSort(mode) {
-        if (mode === 'oddoneout') {
-          return '<style>'
-            + '@keyframes stuOddPick{0%,35%{transform:scale(1);box-shadow:0 4px 0 rgba(0,0,0,.15);}45%,80%{transform:scale(1.12);box-shadow:0 0 0 4px #16a34a;}92%,100%{transform:scale(1);box-shadow:0 4px 0 rgba(0,0,0,.15);}}'
-            + '@keyframes stuOddHand{0%,25%{top:-10px;}38%{top:4px;}50%,92%{top:-10px;}100%{top:-10px;}}'
-            + '</style>'
-            + '<div style="position:relative;display:flex;align-items:center;justify-content:center;gap:10px;margin:2px 0;">'
-            + '<img src="MATCHING/Dog.jpg" style="width:54px;height:54px;object-fit:cover;border-radius:12px;border:3px solid #fff;box-shadow:0 4px 0 rgba(0,0,0,.15);">'
-            + '<img src="MATCHING/Dog.jpg" style="width:54px;height:54px;object-fit:cover;border-radius:12px;border:3px solid #fff;box-shadow:0 4px 0 rgba(0,0,0,.15);">'
-            + '<img src="MATCHING/Car.jpg" style="position:relative;width:54px;height:54px;object-fit:cover;border-radius:12px;border:3px solid #fff;animation:stuOddPick 2.6s ease-in-out infinite;">'
-            + '<div style="position:absolute;right:10px;top:-10px;font-size:26px;animation:stuOddHand 2.6s ease-in-out infinite;">👆</div>'
-            + '</div>'
-            + '<p style="color:#e2e8f0;font-size:14px;margin:0;font-weight:700;">👉 Piliin ang larawang naiiba sa lahat!</p>';
-        }
-        if (mode === 'yesno') {
-          return '<style>'
-            + '@keyframes stuYesBox{0%,40%{opacity:1;}45%,100%{opacity:0;}}'
-            + '@keyframes stuYesMark{0%,40%{opacity:0;transform:scale(.6);}50%{opacity:1;transform:scale(1.15);}60%,90%{opacity:1;transform:scale(1);}96%,100%{opacity:0;transform:scale(1);}}'
-            + '@keyframes stuYesHand{0%,25%{transform:translateY(0);}38%{transform:translateY(14px);}50%,90%{transform:translateY(0);}}'
-            + '</style>'
-            + '<div style="position:relative;display:flex;align-items:center;justify-content:center;gap:14px;margin:2px 0;">'
-            + '<img src="MATCHING/Fish.jpg" style="width:60px;height:60px;object-fit:cover;border-radius:14px;border:3px solid #fff;box-shadow:0 4px 0 rgba(0,0,0,.15);">'
-            + '<div style="position:relative;width:64px;height:64px;background:#fff;border-radius:14px;box-shadow:0 4px 0 rgba(0,0,0,.15);">'
-            + '<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px;animation:stuYesBox 2.4s ease-in-out infinite;">☐</span>'
-            + '<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:30px;animation:stuYesMark 2.4s ease-in-out infinite;">✅</span>'
-            + '</div>'
-            + '<div style="position:absolute;right:6px;top:2px;font-size:26px;animation:stuYesHand 2.4s ease-in-out infinite;">👆</div>'
-            + '</div>'
-            + '<p style="color:#e2e8f0;font-size:14px;margin:0;font-weight:700;">👉 Tingnan ang larawan, pumili ng Oo o Hindi!</p>';
-        }
-        return '<style>'
-          + '@keyframes stuSortMove{0%,15%{top:0px;opacity:1;}50%,65%{top:56px;opacity:1;}78%{top:56px;opacity:0;}79%{top:0px;opacity:0;}100%{top:0px;opacity:1;}}'
-          + '@keyframes stuSortHand{0%,15%{top:-6px;opacity:1;}50%,65%{top:50px;opacity:1;}78%,100%{top:50px;opacity:0;}}'
-          + '</style>'
-          + '<div style="position:relative;width:220px;height:100px;margin:2px 0;">'
-          + '<div style="position:absolute;left:40px;bottom:0;width:140px;height:40px;background:rgba(255,255,255,.18);border:3px dashed #93c5fd;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#dbeafe;font-weight:700;">🐾 Animals</div>'
-          + '<img src="MATCHING/Dog.jpg" style="position:absolute;left:75px;top:0;width:44px;height:44px;object-fit:cover;border-radius:10px;border:3px solid #fff;box-shadow:0 4px 0 rgba(0,0,0,.15);animation:stuSortMove 2.6s ease-in-out infinite;">'
-          + '<div style="position:absolute;left:96px;top:-6px;font-size:26px;animation:stuSortHand 2.6s ease-in-out infinite;">👆</div>'
-          + '</div>'
-          + '<p style="color:#e2e8f0;font-size:14px;margin:0;font-weight:700;">👉 I-drag ang bawat larawan sa tamang grupo!</p>';
-      }
-      var demoHTML = stuDemoForSort((state.activities[0] && state.activities[0].mode) || 'bins');
+      // Animated how-to: ASSETS/activity_demos/sorting.js (one demo per Activity Type).
+      var stuDemo = window.ActivityDemo ? ActivityDemo.get('sorting', (state.activities[0] && state.activities[0].mode) || 'bins') : null;
 
       var splash = document.createElement('div');
       splash.id = 'stuSplash';
@@ -3373,16 +3335,7 @@ function initActivityTheme(){
         if (fs.requestFullscreen) fs.requestFullscreen().catch(function(){});
         else if (fs.webkitRequestFullscreen) fs.webkitRequestFullscreen();
         splash.remove();
-        var stuDemoOverlay = document.createElement('div');
-        stuDemoOverlay.id = 'stuDemoOverlay';
-        stuDemoOverlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.94);display:flex;align-items:center;justify-content:center;z-index:100000;padding:24px;text-align:center;';
-        stuDemoOverlay.innerHTML = '<div style="background:#1e293b;border:3px solid #fbbf24;border-radius:28px;padding:40px 64px;display:flex;flex-direction:column;align-items:center;gap:22px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.5);">'
-          + '<p style="color:#facc15;font-size:23px;font-weight:800;letter-spacing:.6px;margin:0;text-transform:uppercase;">📖 Paano Sagutan</p>'
-          + '<div style="transform:scale(1.3);margin:14px 0;">' + demoHTML + '</div>'
-          + '<button id="stuDemoOkBtn" style="margin-top:10px;background:#22c55e;color:#fff;border:none;padding:18px 60px;border-radius:18px;font-family:Fredoka,Poppins,sans-serif;font-size:24px;font-weight:700;cursor:pointer;box-shadow:0 5px 0 #15803d;">Nakuha ko! ▶</button>'
-          + '</div>';
-        document.body.appendChild(stuDemoOverlay);
-        document.getElementById('stuDemoOkBtn').addEventListener('click', function() { stuDemoOverlay.remove(); });
+        if (stuDemo) ActivityDemo.show(stuDemo);
         if (window.finishStudentLaunch) window.finishStudentLaunch();
         initActivityTheme();
 

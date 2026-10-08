@@ -1,4 +1,4 @@
-/* "Paano Sagutan?" demos for Tracing_Template.html — one per Activity Type
+/* "How to Answer" demos for Tracing_Template.html — one per Activity Type
  * (Letters & Numbers / Shapes & Lines). Drawn on ActivityDemo's 320×180
  * canvas.
  *
@@ -133,11 +133,11 @@
           '70%,100%{left:290px;top:192px;opacity:0;}');
       return {
         duration: 5.4,
-        say: 'Gamit ang daliri, sundan ang tuldok-tuldok na letra, tapos pindutin ang Check!',
+        say: 'Use your finger to trace the dotted letter, then tap Check!',
         steps: [
-          { icon: '🔠', text: 'Sundan ang malaki', from: 8, to: 35 },
-          { icon: '🔡', text: 'Sundan ang maliit', from: 37, to: 53 },
-          { icon: '✅', text: 'Pindutin ang Check', from: 55, to: 90 }
+          { icon: '🔠', text: 'Trace the big letter', from: 8, to: 35 },
+          { icon: '🔡', text: 'Trace the small letter', from: 37, to: 53 },
+          { icon: '✅', text: 'Tap Check', from: 55, to: 90 }
         ],
         stage: k.stage(html)
       };
@@ -205,11 +205,11 @@
           '</g></svg></div>';
       return {
         duration: 5.4,
-        say: 'Gamit ang lapis, sundan ang tuldok-tuldok na hugis at guhit sa papel!',
+        say: 'Use a pencil to trace the dotted shape and line on the paper!',
         steps: [
-          { icon: '⭕', text: 'Sundan ang hugis', from: 8, to: 41 },
-          { icon: '〰️', text: 'Sundan ang guhit', from: 43, to: 64 },
-          { icon: '🌟', text: 'Galing! Tapos na!', from: 65, to: 90 }
+          { icon: '⭕', text: 'Trace the shape', from: 8, to: 41 },
+          { icon: '〰️', text: 'Trace the line', from: 43, to: 64 },
+          { icon: '🌟', text: 'Great job! All done!', from: 65, to: 90 }
         ],
         stage: k.stage(html)
       };

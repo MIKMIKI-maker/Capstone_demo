@@ -1,4 +1,4 @@
-/* "Paano Sagutan?" demo for Identification_Template.html (Beginning
+/* "How to Answer" demo for Identification_Template.html (Beginning
  * Letter/Sound ID). Drawn on ActivityDemo's 320×180 canvas; image paths are
  * relative to TEACHER_FILES/TEMPLATES/ (where the template runs). */
 (function () {
@@ -110,11 +110,11 @@
 
       return {
         duration: 5.4,
-        say: 'I-tap ang unang letra ng bawat larawan, tapos pindutin ang Check!',
+        say: 'Tap the first letter of each picture, then tap Check!',
         steps: [
-          { icon: '👀', text: 'Tingnan ang larawan', from: 3, to: 20 },
-          { icon: '👆', text: 'I-tap ang unang letra', from: 20, to: 44 },
-          { icon: '✅', text: 'Pindutin ang Check', from: 44, to: 90 }
+          { icon: '👀', text: 'Look at the picture', from: 3, to: 20 },
+          { icon: '👆', text: 'Tap the first letter', from: 20, to: 44 },
+          { icon: '✅', text: 'Tap Check', from: 44, to: 90 }
         ],
         stage: k.stage(html)
       };

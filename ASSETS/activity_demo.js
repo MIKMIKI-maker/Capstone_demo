@@ -1,9 +1,9 @@
 /* ─────────────────────────────────────────────────────────────
- * Activity Demo — the "📖 Paano Sagutan?" how-to overlay shown to a
+ * Activity Demo — the "📖 How to Answer" how-to overlay shown to a
  * student right before an activity starts. Shared by every template.
  *
  * The frame (header, animated stage, synced step chips, read-aloud,
- * big "Nakuha ko!" button) lives here; each template's animations live in
+ * big "Got it!" button) lives here; each template's animations live in
  * ASSETS/activity_demos/<template>.js and register themselves:
  *
  *   ActivityDemo.register('matching', {
@@ -71,6 +71,43 @@
           mid + '%{opacity:1;transform:scale(1.2);}' +
           Math.min(100, from + 9) + '%,' + to + '%{opacity:1;transform:scale(1);}' +
           z + '%,100%{opacity:0;transform:scale(1);}') + '">' + sym + '</div>';
+      },
+      // Idle → "picked" at t% (held until 88%, reset by 93%). on/off are
+      // CSS declarations, e.g. border + background.
+      pick: function (t, on, off) {
+        return k.kf('pk' + (++uid),
+          '0%,' + (t - 0.5) + '%{' + off + 'transform:none;}' +
+          t + '%{' + on + 'transform:scale(.92);}' +
+          (t + 4) + '%,88%{' + on + 'transform:none;}' +
+          '93%,100%{' + off + 'transform:none;}');
+      },
+      // Slide from (x0,y0) to (x1,y1) between t0% and t1% (a drag), held
+      // until 88%, then fades and jumps back for the next loop.
+      move: function (x0, y0, x1, y1, t0, t1) {
+        var a = 'left:' + x0 + 'px;top:' + y0 + 'px;', b = 'left:' + x1 + 'px;top:' + y1 + 'px;';
+        return a + 'z-index:4;' + k.kf('mv' + (++uid),
+          '0%,' + t0 + '%{' + a + 'opacity:1;}' +
+          t1 + '%,88%{' + b + 'opacity:1;}' +
+          '92%{' + b + 'opacity:0;}93%{' + a + 'opacity:0;}100%{' + a + 'opacity:1;}');
+      },
+      // Something that pops in at t% and stays until 88% (a typed letter…).
+      appear: function (t) {
+        return k.kf('ap' + (++uid),
+          '0%,' + (t - 0.5) + '%{opacity:0;transform:scale(.5);}' + t + '%{opacity:1;transform:scale(1.2);}' +
+          (t + 4) + '%,88%{opacity:1;transform:none;}92%,100%{opacity:0;transform:none;}');
+      },
+      // A picture tile at (x, y).
+      tile: function (x, y, w, h, src, style) {
+        return '<div class="ad-tile" style="left:' + x + 'px;top:' + y + 'px;width:' + w + 'px;height:' + h + 'px;' + (style || '') + '"><img src="' + src + '" alt=""></div>';
+      },
+      // The green "✓ Check answers" button, pressed at `at`%, with its ripple.
+      check: function (x, y, w, at, label) {
+        var G = '#1f9d44';
+        return '<div class="ad-check" style="left:' + x + 'px;top:' + y + 'px;width:' + w + 'px;' + k.kf('ck' + (++uid),
+          '0%,' + (at - 2) + '%{transform:none;box-shadow:0 4px 0 ' + G + ';}' +
+          at + '%,' + (at + 2) + '%{transform:translateY(3px);box-shadow:0 1px 0 ' + G + ';}' +
+          (at + 4) + '%,100%{transform:none;box-shadow:0 4px 0 ' + G + ';}') + '">' + (label || '✓ Check answers') + '</div>' +
+          k.ripple(x + w / 2, y + 15, at);
       },
       // Final stage HTML with the collected CSS in front of it.
       stage: function (html) { return '<style>' + css.join('') + '</style>' + html; }
@@ -157,6 +194,8 @@
         'border:4px solid rgba(99,102,241,.85);background:rgba(99,102,241,.12);opacity:0;pointer-events:none;}' +
       '.ad-canvas .ad-badge{position:absolute;z-index:6;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;color:#fff;font-size:17px;font-weight:800;' +
         'display:flex;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:0 4px 10px rgba(15,23,42,.25);opacity:0;}' +
+      '.ad-canvas .ad-check{position:absolute;z-index:2;height:30px;border-radius:12px;background:#2fbf57;color:#fff;font-size:12px;font-weight:700;' +
+        'display:flex;align-items:center;justify-content:center;white-space:nowrap;}' +
       '.ad-canvas .ad-badge-ok{background:#22c55e;}.ad-canvas .ad-badge-no{background:#ef4444;}.ad-canvas .ad-badge-star{background:#f59e0b;}' +
 
       '@media (max-width:480px){' +
@@ -245,11 +284,11 @@
       '<div class="ad-card">' +
         '<div class="ad-head">' +
           '<div class="ad-icon" aria-hidden="true">' + esc(demo.icon || '📖') + '</div>' +
-          '<div class="ad-titles"><h2 class="ad-title" id="adTitle">' + esc(demo.title || 'Paano Sagutan?') + '</h2>' +
-            '<p class="ad-sub">' + esc(demo.subtitle || 'Panoorin muna, tapos ikaw naman! 👀') + '</p></div>' +
-          (window.speechSynthesis ? '<button type="button" class="ad-speak" title="Pakinggan (Read aloud)" aria-label="Read the instructions aloud">🔊</button>' : '') +
+          '<div class="ad-titles"><h2 class="ad-title" id="adTitle">' + esc(demo.title || 'How to Answer') + '</h2>' +
+            '<p class="ad-sub">' + esc(demo.subtitle || "Watch first, then it's your turn! 👀") + '</p></div>' +
+          (window.speechSynthesis ? '<button type="button" class="ad-speak" title="Listen" aria-label="Read the instructions aloud">🔊</button>' : '') +
         '</div>' +
-        '<div class="ad-stage" aria-hidden="true"><span class="ad-watch">👀 Panoorin</span>' +
+        '<div class="ad-stage" aria-hidden="true"><span class="ad-watch">👀 Watch</span>' +
           '<div class="ad-fit"><div class="ad-canvas">' + (demo.stage || '') + '</div></div>' +
           '<div class="ad-progress"><i></i></div>' +
         '</div>' +
@@ -259,7 +298,7 @@
             '<span class="ad-step-txt">' + esc(s.text) + '</span></li>';
         }).join('') + '</ol>' : '') +
         '<p class="ad-say">👉 ' + esc(demo.say || '') + '</p>' +
-        '<div class="ad-actions"><button type="button" class="ad-go" id="stuDemoOkBtn">' + esc(demo.button || 'Nakuha ko! ▶') + '</button></div>' +
+        '<div class="ad-actions"><button type="button" class="ad-go" id="stuDemoOkBtn">' + esc(demo.button || 'Got it! ▶') + '</button></div>' +
       '</div>';
     document.body.appendChild(ov);
 

@@ -1,4 +1,4 @@
-/* "Paano Sagutan?" demo for Check_ Or_Not_Template.html (Check or X).
+/* "How to Answer" demo for Check_ Or_Not_Template.html (Check or X).
  * Drawn on ActivityDemo's 320×180 canvas; image paths are relative to
  * TEACHER_FILES/TEMPLATES/ (where the template runs). */
 (function () {
@@ -89,11 +89,11 @@
       return {
         duration: 5.5,
         // "tsek" / "ekis" keep the sentence clear when read aloud, too.
-        say: 'Sa bawat larawan, pindutin ang tsek ✓ kung oo, at ekis ✗ kung hindi!',
+        say: 'For each picture, tap the check ✓ for yes, or the ✗ for no!',
         steps: [
-          { icon: '✅', text: 'I-tap ang ✓ kung oo', from: 6, to: 25 },
-          { icon: '❌', text: 'I-tap ang ✗ kung hindi', from: 25, to: 46 },
-          { icon: '🎉', text: 'I-tap ang Check', from: 46, to: 90 }
+          { icon: '✅', text: 'Tap ✓ for yes', from: 6, to: 25 },
+          { icon: '❌', text: 'Tap ✗ for no', from: 25, to: 46 },
+          { icon: '🎉', text: 'Tap Check', from: 46, to: 90 }
         ],
         stage: k.stage(html)
       };

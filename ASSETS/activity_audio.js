@@ -4,8 +4,10 @@
  *  • Read-aloud: a big 🗣️ button reads the slide's title + instruction
  *    with the browser's built-in voice, and (if Voice is on) the
  *    instruction is read automatically whenever a new slide appears.
- *  • Voice feedback: says "Magaling!" / "Subukan ulit!" with the score
+ *  • Voice feedback: says "Good job!" / "Let's try again!" with the score
  *    popup (hooked into each template's playActivitySound).
+ *  • Everything is spoken in English with an English voice, even on
+ *    devices that also have a Filipino voice installed.
  *  • Volume control: a ⚙️ panel with separate sliders for sound effects
  *    and background music, plus a Voice on/off switch. Saved per browser.
  *
@@ -40,9 +42,9 @@
   function refreshVoices() { try { voices = synth ? synth.getVoices() : []; } catch (e) { voices = []; } }
   if (synth) { refreshVoices(); try { synth.addEventListener('voiceschanged', refreshVoices); } catch (e) {} }
 
-  function pickVoice(lang) {
+  function pickVoice() {
     if (!voices.length) refreshVoices();
-    var pref = lang === 'fil' ? ['fil', 'tl'] : ['en-PH', 'en-US', 'en-GB', 'en'];
+    var pref = ['en-PH', 'en-US', 'en-GB', 'en'];
     for (var i = 0; i < pref.length; i++) {
       for (var j = 0; j < voices.length; j++) {
         if (voices[j].lang && voices[j].lang.toLowerCase().indexOf(pref[i].toLowerCase()) === 0) return voices[j];
@@ -50,7 +52,6 @@
     }
     return null;
   }
-  function hasFilipinoVoice() { return !!pickVoice('fil'); }
 
   // Lower the background music while the voice is talking so it's clear.
   function duckMusic(on) {
@@ -71,8 +72,8 @@
     try {
       synth.cancel();
       var u = new SpeechSynthesisUtterance(text);
-      var v = pickVoice(opts.lang === 'en' ? 'en' : 'fil') || pickVoice('en');
-      if (v) { u.voice = v; u.lang = v.lang; }
+      var v = pickVoice();
+      if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = 'en-US'; }
       u.rate = opts.rate || 0.9;   // a little slower for young learners
       u.pitch = 1.1;
       u.volume = 1;
@@ -84,17 +85,13 @@
   function stopSpeaking() { try { if (synth) synth.cancel(); } catch (e) {} duckMusic(false); setReadBtnActive(false); }
 
   /* ── Score voice ─────────────────────────────────────────── */
-  var CHEERS = {
-    fil: { perfect: 'Ang galing mo! Perpekto!', good: 'Magaling! Pasado ka!', tryagain: 'Subukan ulit. Kaya mo yan!' },
-    en:  { perfect: 'Perfect! Amazing job!',     good: 'Good job! You passed!', tryagain: "Let's try again. You can do it!" }
-  };
+  var CHEERS = { perfect: 'Perfect! Amazing job!', good: 'Good job! You passed!', tryagain: "Let's try again. You can do it!" };
   function cheer(tier) {
     // Only while a student is playing (mount() ran) — not in the teacher's editor preview.
     if (!settings.voice || !readBtn) return;
-    var lang = hasFilipinoVoice() ? 'fil' : 'en';
-    var line = (CHEERS[lang][tier] || CHEERS[lang].tryagain);
+    var line = CHEERS[tier] || CHEERS.tryagain;
     // Let the chime play first, then talk over the end of it.
-    setTimeout(function () { speak(line, { lang: lang, rate: 0.95 }); }, 450);
+    setTimeout(function () { speak(line, { rate: 0.95 }); }, 450);
   }
 
   /* ── UI ──────────────────────────────────────────────────── */
@@ -112,7 +109,7 @@
   }
   function readSlide() {
     if (synth && synth.speaking) { stopSpeaking(); return; }
-    speak(slideText() || 'Walang instruction sa slide na ito.');
+    speak(slideText() || 'There are no instructions on this slide.');
   }
 
   function setReadBtnActive(on) {
@@ -180,7 +177,7 @@
     music.addEventListener('input', function () { settings.music = music.value / 100; save('music', settings.music); applyMusic(); paint(); });
     voice.addEventListener('click', function () {
       settings.voice = !settings.voice; save('voice', settings.voice); paint();
-      if (settings.voice) speak(hasFilipinoVoice() ? 'Naka-on na ang boses.' : 'Voice is on.'); else stopSpeaking();
+      if (settings.voice) speak('Voice is on.'); else stopSpeaking();
     });
     paint();
 
@@ -217,7 +214,7 @@
     readBtn.type = 'button';
     readBtn.className = 'aa-fab aa-read';
     readBtn.textContent = '🗣️';
-    readBtn.title = 'Basahin nang malakas (Read aloud)';
+    readBtn.title = 'Read aloud';
     readBtn.setAttribute('aria-label', 'Read the instructions aloud');
     readBtn.onclick = readSlide;
     if (!synth) readBtn.style.display = 'none';
