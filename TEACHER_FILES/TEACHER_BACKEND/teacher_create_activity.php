@@ -136,12 +136,23 @@ if ($stmt->execute()) {
 
     // Insert activity_assignments for each selected student.
     if (!empty($assigned_student_ids)) {
-        $asStmt = $teacher_conn->prepare("INSERT IGNORE INTO activity_assignments (activity_id, student_id, term_name) VALUES (?, ?, ?)");
+        // Older databases (imported dumps) have a required teacher_id column
+        // with a foreign key. Leaving it out made INSERT IGNORE silently skip
+        // every row, so the activity was published but no student got it.
+        $tcol = $teacher_conn->query("SHOW COLUMNS FROM activity_assignments LIKE 'teacher_id'");
+        $hasTeacherCol = $tcol && $tcol->num_rows > 0;
+        $asStmt = $hasTeacherCol
+            ? $teacher_conn->prepare("INSERT IGNORE INTO activity_assignments (activity_id, student_id, term_name, teacher_id) VALUES (?, ?, ?, ?)")
+            : $teacher_conn->prepare("INSERT IGNORE INTO activity_assignments (activity_id, student_id, term_name) VALUES (?, ?, ?)");
         if ($asStmt) {
             foreach ($assigned_student_ids as $sid) {
                 $sid = intval($sid);
                 if ($sid > 0) {
-                    $asStmt->bind_param("iis", $activity_id, $sid, $term_name);
+                    if ($hasTeacherCol) {
+                        $asStmt->bind_param("iisi", $activity_id, $sid, $term_name, $teacher_id);
+                    } else {
+                        $asStmt->bind_param("iis", $activity_id, $sid, $term_name);
+                    }
                     $asStmt->execute();
                 }
             }
