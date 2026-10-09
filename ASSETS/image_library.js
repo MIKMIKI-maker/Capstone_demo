@@ -222,9 +222,15 @@
       var use = el("button", "iml-use", "Gamitin ang set na ito"); use.type = "button";
       use.addEventListener("click", function () {
         if (!cfg.applySet) return;
-        if (!confirm("Papalitan nito ang laman ng kasalukuyang slide. Ituloy?")) return;
-        cfg.applySet(resolveSet(s), setLang(s));
-        hide();
+        var message = "Papalitan nito ang laman ng kasalukuyang slide. Ituloy?";
+        var ask = window.appConfirm
+          ? window.appConfirm(message, { title: "Gamitin ang set na ito?", okText: "Gamitin", cancelText: "Huwag" })
+          : Promise.resolve(confirm(message));
+        ask.then(function (ok) {
+          if (!ok) return;
+          cfg.applySet(resolveSet(s), setLang(s));
+          hide();
+        });
       });
       card.appendChild(use);
       wrap.appendChild(card);

@@ -343,7 +343,42 @@
     });
   }
 
+  // The sidebar and greetings show the name (and photo) saved in the Admin's
+  // Settings > Profile instead of a fixed "Admin". Pages that greet the Admin
+  // by name listen for the "adminprofile" event, or read sessionStorage
+  // admin_name / admin_first_name on their next load.
+  function loadAdminProfile() {
+    if (!document.querySelector('.admin-sidebar-user')) return;
+    fetch('ADMIN_BACKEND/admin_get_profile.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (!d || !d.success) return;
+        var first = (d.first_name || '').trim();
+        var full = (first + ' ' + (d.last_name || '').trim()).trim();
+        var profile = { first_name: first || 'Admin', full_name: full || 'Admin', photo: d.profile_photo || '' };
+        try {
+          sessionStorage.setItem('admin_name', profile.full_name);
+          sessionStorage.setItem('admin_first_name', profile.first_name);
+        } catch (e) {}
+        document.querySelectorAll('.admin-sidebar-user .admin-user-name').forEach(function (el) {
+          el.textContent = profile.full_name;
+          el.title = profile.full_name;
+        });
+        if (profile.photo) {
+          document.querySelectorAll('.admin-sidebar-user img.admin-user-avatar').forEach(function (img) {
+            img.src = profile.photo;
+            img.alt = profile.full_name;
+            img.style.objectFit = 'cover';
+          });
+        }
+        window.adminProfile = profile;
+        document.dispatchEvent(new CustomEvent('adminprofile', { detail: profile }));
+      })
+      .catch(function () {});
+  }
+
   function start() {
+    loadAdminProfile();
     applyNotificationStyle();
     applySidebarToggleStyle();
     setupSidebarToggle();

@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
 <script src="../../ASSETS/portal_guard.js?v=2" data-portal-role="teacher,student" data-status-path="../../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../../ADMIN_FILES/login_screen.html?session=expired"></script>
+<script src="../../ASSETS/app_dialog.js?v=1"></script>
 <script src="../../ASSETS/teacher_portal.js?v=17"></script>
 <script src="../../ASSETS/print_options.js?v=7"></script>
 <script src="../../ASSETS/attempt_history.js?v=1"></script>
 <script src="../../ASSETS/missing_highlight.js?v=1"></script>
 <script src="../../ASSETS/activity_audio.js?v=3"></script>
 <script src="../../ASSETS/image_library/library_data.js?v=4"></script>
-<script src="../../ASSETS/image_library.js?v=6"></script>
+<script src="../../ASSETS/image_library.js?v=7"></script>
 <script src="../../ASSETS/activity_demo.js?v=2"></script>
 <script src="../../ASSETS/activity_demos/checkornot.js?v=2"></script>
 <meta charset="UTF-8" />
@@ -1892,7 +1893,10 @@ function initActivityTheme(){
   }
 
   function resetActivity(){
-    if (!confirm("Ibalik sa simula ang buong activity na ito? Mawawala lahat ng ginawa mong pagbabago.")) return;
+    appConfirm("Ibalik sa simula ang buong activity na ito? Mawawala lahat ng ginawa mong pagbabago.", { title: "I-reset ang activity?", okText: "I-reset", cancelText: "Huwag", danger: true })
+      .then(function (ok) { if (ok) doResetActivity(); });
+  }
+  function doResetActivity(){
     state.activities = [ makeDefaultActivity() ];
     state.currentIndex = 0;
     Object.assign(state, structuredClone(DEFAULT_DESIGN));

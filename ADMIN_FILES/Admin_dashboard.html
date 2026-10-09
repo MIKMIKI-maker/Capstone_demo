@@ -13,7 +13,7 @@
   <link href="ADMIN_CSS/admin_responsive.css" rel="stylesheet" />
   <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
   <link href="../ASSETS/vendor/fontawesome/css/all.min.css" rel="stylesheet" />
-  <script src="../ASSETS/admin_portal.js?v=14"></script>
+  <script src="../ASSETS/admin_portal.js?v=15"></script>
   <script src="../ASSETS/school_info.js?v=1"></script>
 </head>
 
@@ -218,13 +218,20 @@
   <!-- Help button -->
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      var greetingEl = document.getElementById('admin-greeting');
-      if (greetingEl) {
-        var _name = (sessionStorage.getItem('admin_name') || 'Admin').split(' ')[0];
+      // First name from the Admin's profile (Settings > Profile), filled in
+      // by admin_portal.js once it loads — until then, the last one seen.
+      function renderGreeting() {
+        var greetingEl = document.getElementById('admin-greeting');
+        if (!greetingEl) return;
+        var _name = (window.adminProfile && window.adminProfile.first_name)
+          || sessionStorage.getItem('admin_first_name')
+          || (sessionStorage.getItem('admin_name') || 'Admin').split(' ')[0];
         var _hour = parseInt(new Date().toLocaleString('en-US', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Asia/Singapore' }), 10);
         var _tod = _hour < 12 ? 'morning' : _hour < 17 ? 'afternoon' : 'evening';
         greetingEl.textContent = 'Good ' + _tod + ', ' + _name + '! 👋';
       }
+      renderGreeting();
+      document.addEventListener('adminprofile', renderGreeting);
 
       var greetingSub = document.getElementById('admin-greeting-sub');
       if (greetingSub) {
