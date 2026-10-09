@@ -257,6 +257,9 @@ body {
 .admin-hero {
   position: relative;
   overflow: hidden;
+  /* .admin-main is a full-height flex column: without this the banner
+     shrinks to fit the screen and its overflow:hidden cuts off the numbers. */
+  flex-shrink: 0;
   display: grid;
   grid-template-columns: minmax(240px, 1fr) minmax(0, 2.3fr);
   align-items: center;
