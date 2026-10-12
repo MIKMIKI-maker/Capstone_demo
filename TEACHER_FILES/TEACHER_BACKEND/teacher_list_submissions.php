@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/teacher_auth.php';
+require_once __DIR__ . '/snapshot_helpers.php';
 
 header('Content-Type: application/json');
 
@@ -61,6 +62,15 @@ $rows = $stmt->get_result();
 
 $students = [];
 while ($row = $rows->fetch_assoc()) {
+    // Pictures of each try ("slide-try" => url), found through the run id
+    // the submission's attempt history carries.
+    $snapshots = [];
+    $ah = json_decode((string)$row['attempt_history_json'], true);
+    if (is_array($ah)) {
+        $runs = [];
+        foreach ($ah as $sl) { if (is_array($sl) && !empty($sl['run'])) $runs[$sl['run']] = true; }
+        foreach (array_keys($runs) as $run) $snapshots += loadSnapshots($conn, (int)$row['student_id'], $run);
+    }
     $students[] = [
         'student_id'       => (int)$row['student_id'],
         'student_name'     => $row['student_name'],
@@ -72,6 +82,7 @@ while ($row = $rows->fetch_assoc()) {
         'scaffold_used'    => (int)$row['scaffold_used'],
         'answers_json'     => $row['answers_json'],
         'attempt_history_json' => $row['attempt_history_json'],
+        'snapshots'        => (object)$snapshots,
         'assistance_level' => $row['assistance_level'],
         'teacher_note'     => $row['teacher_note'],
         'finalized_score'  => $row['finalized_score'] !== null ? (int)$row['finalized_score'] : null,

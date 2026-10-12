@@ -12,3 +12,7 @@ TEACHER_FILES/uploads/materials/*
 # rule as the materials folder above.
 TEACHER_FILES/uploads/submissions/*
 !TEACHER_FILES/uploads/submissions/.htaccess
+
+# Pictures of each activity try (local-disk fallback) — same rule as above.
+TEACHER_FILES/uploads/snapshots/*
+!TEACHER_FILES/uploads/snapshots/.htaccess

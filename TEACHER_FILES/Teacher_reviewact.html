@@ -118,6 +118,27 @@
     .rv-save-btn:disabled { background:#93c5fd; cursor:not-allowed; }
     .rv-readonly .rv-assist-card { cursor:not-allowed; opacity:.6; }
     .rv-notes:disabled, .rv-final-input:disabled { background:#f1f5f9; color:#64748b; cursor:not-allowed; }
+
+    /* Every take, side by side: a picture of the activity per try */
+    .rv-snaps { background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:10px 12px; }
+    .rv-snaps-title { font-size:12px; font-weight:700; color:#1e3a8a; margin-bottom:6px; }
+    .rv-snaps-title span { font-weight:500; color:#64748b; }
+    .rv-snap-slide { font-size:11px; font-weight:700; color:#475569; margin:8px 0 4px; }
+    .rv-snap-row { display:flex; gap:10px; overflow-x:auto; padding:2px 2px 8px; scroll-snap-type:x proximity; }
+    .rv-snap { flex:0 0 210px; scroll-snap-align:start; background:#fff; border:1.5px solid #e2e8f0; border-radius:12px; overflow:hidden; }
+    .rv-snap.is-final { border:2px solid #2563eb; }
+    .rv-snap-head { display:flex; align-items:center; justify-content:space-between; gap:6px; padding:6px 10px; font-size:11.5px; font-weight:700; color:#475569; border-bottom:1px solid #eef2f7; }
+    .rv-snap.is-final .rv-snap-head { color:#1d4ed8; background:#eff6ff; }
+    .rv-snap-score { padding:2px 8px; border-radius:999px; background:#fef2f2; color:#b91c1c; font-size:12px; }
+    .rv-snap-score.pass { background:#f0fdf4; color:#15803d; }
+    .rv-snap-img { display:block; width:100%; height:140px; object-fit:contain; background:#f1f5f9; cursor:zoom-in; border:0; padding:0; }
+    .rv-snap-img img { width:100%; height:100%; object-fit:contain; display:block; }
+    .rv-snap-none { height:140px; display:flex; align-items:center; justify-content:center; text-align:center; padding:0 14px; font-size:11.5px; color:#94a3b8; background:#f8fafc; }
+    .rv-snap-arrow { flex:none; align-self:center; color:#94a3b8; font-size:16px; }
+    #rvSnapViewer { position:fixed; inset:0; z-index:10050; display:none; align-items:center; justify-content:center; flex-direction:column; gap:10px; padding:20px; background:rgba(15,23,42,.85); cursor:zoom-out; }
+    #rvSnapViewer.show { display:flex; }
+    #rvSnapViewer img { max-width:min(1100px,100%); max-height:calc(100vh - 90px); border-radius:12px; background:#fff; box-shadow:0 20px 50px rgba(0,0,0,.45); }
+    #rvSnapViewer div { color:#fff; font-size:14px; font-weight:700; }
   </style>
 </head>
 <body>
@@ -231,8 +252,10 @@
     <div id="modalAttemptHistory" style="display:none;margin:0 0 10px;"></div>
     <div id="modalNeedsReviewBanner" style="display:none;margin:0 0 14px;"></div>
 
-    <!-- Per-item table -->
-    <div style="overflow-x:auto;margin-bottom:20px;">
+    <!-- Per-item table — hidden for now at the teacher's request (the
+         pictures of every take show the answers). To bring it back, remove
+         display:none below. -->
+    <div style="display:none;overflow-x:auto;margin-bottom:20px;">
       <table class="rv-tbl">
         <thead><tr><th>#</th><th>Item</th><th>Student Answer</th><th>Correct Answer</th><th>Result</th></tr></thead>
         <tbody id="modalItemRows"></tbody>
@@ -472,6 +495,49 @@ function renderCards(list, containerId, hasSubmission) {
 /* ── Modal ── */
 var _assistMap = { 'Full Physical Prompt':'ac-fpp','Verbal Cueing':'ac-vc','Minimal Assistance':'ac-ma','Independent':'ac-ind' };
 
+// A stored snapshot is a Cloudinary URL or a path from the site root
+// (local XAMPP), and this page lives in TEACHER_FILES/.
+function snapshotSrc(u) {
+  if (typeof u !== 'string' || !u) return '';
+  if (/^https:\/\//i.test(u)) return u;
+  return /^TEACHER_FILES\/uploads\/snapshots\/[a-f0-9]+\.jpg$/.test(u) ? '../' + u : '';
+}
+
+// One slide's takes as boxes: "Try 1 · 1/4" → … → "Submitted · 4/4".
+function snapshotRow(h, snaps, multiSlide) {
+  var tries = (h && h.attempts) || [];
+  if (!tries.length) return '';
+  var boxes = tries.map(function(a, i){
+    var isLast = i === tries.length - 1;
+    var label = isLast ? 'Submitted' : 'Try ' + (i + 1);
+    var src = snapshotSrc(snaps[h.slide + '-' + (a.n == null ? i : a.n)]);
+    var pass = a.total && a.correct / a.total >= 0.8;
+    var caption = (multiSlide ? 'Slide ' + h.slide + ' — ' : '') + label + ' · ' + a.correct + '/' + a.total;
+    return (i ? '<span class="rv-snap-arrow">→</span>' : '')
+      + '<div class="rv-snap' + (isLast ? ' is-final' : '') + '">'
+      + '<div class="rv-snap-head"><span>' + label + '</span><span class="rv-snap-score' + (pass ? ' pass' : '') + '">' + a.correct + '/' + a.total + '</span></div>'
+      + (src
+        ? '<button type="button" class="rv-snap-img" onclick="openSnapshot(this)" data-src="' + escAttr(src) + '" data-caption="' + escAttr(caption) + '"><img src="' + escAttr(src) + '" alt="' + escAttr(caption) + '" loading="lazy"></button>'
+        : '<div class="rv-snap-none">No picture for this take (taken before pictures were saved)</div>')
+      + '</div>';
+  }).join('');
+  return (multiSlide ? '<div class="rv-snap-slide">Slide ' + h.slide + '</div>' : '') + '<div class="rv-snap-row">' + boxes + '</div>';
+}
+
+function openSnapshot(btn) {
+  var v = document.getElementById('rvSnapViewer');
+  if (!v) {
+    v = document.createElement('div');
+    v.id = 'rvSnapViewer';
+    v.innerHTML = '<img alt=""><div></div>';
+    v.addEventListener('click', function(){ v.classList.remove('show'); });
+    document.body.appendChild(v);
+  }
+  v.querySelector('img').src = btn.getAttribute('data-src');
+  v.querySelector('div').textContent = btn.getAttribute('data-caption') + '  (tap to close)';
+  v.classList.add('show');
+}
+
 function openModal(s) {
   _currentSub = s;
   document.getElementById('modalStudentName').textContent = s.student_name || '—';
@@ -496,6 +562,15 @@ function openModal(s) {
   var hist = [];
   try { hist = JSON.parse(s.attempt_history_json || '[]') || []; } catch(e){ hist = []; }
   var multiSlide = hist.length > 1;
+  // Pictures of each take ("slide-try" => url), saved right after every
+  // "Check answers" — shown side by side when the submission has them.
+  var snaps = s.snapshots || {};
+  if (Object.keys(snaps).length) {
+    histEl.innerHTML = '<div class="rv-snaps">'
+      + '<div class="rv-snaps-title">📸 Every take <span>— tap a picture to enlarge it</span></div>'
+      + hist.map(function(h){ return snapshotRow(h, snaps, multiSlide); }).join('') + '</div>';
+    histEl.style.display = '';
+  } else {
   var histRows = hist.filter(function(h){ return h.attempts && h.attempts.length > 1; }).map(function(h){
     var chips = h.attempts.map(function(a, i){
       var isLast = i === h.attempts.length - 1;
@@ -515,6 +590,7 @@ function openModal(s) {
   } else {
     histEl.style.display = 'none';
     histEl.innerHTML = '';
+  }
   }
 
   // Suggest a score based on the attempt number. retake_count excludes the

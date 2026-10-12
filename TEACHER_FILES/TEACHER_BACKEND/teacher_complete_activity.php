@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/snapshot_helpers.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/db.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/admin_push_notification.php';
 require_once __DIR__ . '/../../STUDENT_FILES/STUDENT_BACKEND/student_auth.php';
@@ -42,9 +43,14 @@ if (is_array($ah)) {
         foreach (array_slice(is_array($slide) && is_array($slide['attempts'] ?? null) ? $slide['attempts'] : [], 0, 50) as $a) {
             if (!is_array($a)) continue;
             $c = (int)($a['correct'] ?? 0); $t = (int)($a['total'] ?? 0);
-            if ($t > 0) $tries[] = ['correct' => $c, 'total' => $t, 'percent' => (int)round($c / $t * 100)];
+            // n = the try's number within the run, which keys its snapshot
+            if ($t > 0) $tries[] = ['correct' => $c, 'total' => $t, 'percent' => (int)round($c / $t * 100), 'n' => max(0, (int)($a['n'] ?? 0))];
         }
-        $clean[] = ['slide' => $i + 1, 'attempts' => $tries];
+        $entry = ['slide' => $i + 1, 'attempts' => $tries];
+        // Run id ties these tries to their pictures (attempt_snapshots).
+        $run = is_array($slide) ? ($slide['run'] ?? '') : '';
+        if (is_string($run) && preg_match('/^[a-z0-9]{8,32}$/', $run)) $entry['run'] = $run;
+        $clean[] = $entry;
     }
     $attempt_history_json = json_encode($clean);
 }
@@ -131,6 +137,17 @@ if ($stmt->execute()) {
         $logStmt->close();
     }
     
+    // The pictures of the takes this submission replaces (a resubmission)
+    // stop being kept once it's saved — see snapshot_helpers.php.
+    $prevRuns = [];
+    $prev = $teacher_conn->prepare("SELECT attempt_history_json FROM activity_submissions WHERE student_id = ? AND activity_id = ?");
+    if ($prev) {
+        $prev->bind_param("ii", $student_id, $activity_id);
+        $prev->execute();
+        if ($pr = $prev->get_result()->fetch_assoc()) $prevRuns = snapshotRunsIn($pr['attempt_history_json']);
+        $prev->close();
+    }
+
     // Also upsert into activity_submissions so teacher can review item-by-item answers
     $subStmt = $teacher_conn->prepare(
         "INSERT INTO activity_submissions (teacher_id, student_id, activity_id, pub_id, score, total_items, retake_count, scaffold_used, struggled_items_json, attempt_history_json, answers_json)
@@ -139,7 +156,7 @@ if ($stmt->execute()) {
     );
     if ($subStmt) {
         $subStmt->bind_param("iiisiiiisss", $teacher_id, $student_id, $activity_id, $pub_id, $score, $total_items, $retake_count, $scaffold_used, $struggled_items_json, $attempt_history_json, $answers_json);
-        $subStmt->execute();
+        if ($subStmt->execute()) markSnapshotRuns($teacher_conn, $student_id, snapshotRunsIn($attempt_history_json), $prevRuns);
         $subStmt->close();
     }
 
