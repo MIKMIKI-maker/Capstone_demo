@@ -8,6 +8,7 @@
 <script src="../../ASSETS/attempt_history.js?v=4"></script>
 <script src="../../ASSETS/missing_highlight.js?v=1"></script>
 <script src="../../ASSETS/activity_audio.js?v=4"></script>
+<script src="../../ASSETS/image_shrink.js?v=1"></script>
 <script src="../../ASSETS/activity_demo.js?v=2"></script>
 <script src="../../ASSETS/activity_demos/math.js?v=1"></script>
 <meta charset="UTF-8" />
@@ -2356,7 +2357,7 @@ function initActivityTheme(){
     __publishBtn.disabled = true;
     _captureStageThumb(function(thumbSrc) {
     state.thumb = thumbSrc;
-    compressThumb(state.thumb, function(smallThumb) {
+    compressThumb(state.thumb, function(smallThumb) { state.thumb = smallThumb || null; // only the small copy is saved with the activity (the full PNG was 1–3 MB)
 
     if (_editingPub) {
       var acts = []; try { acts = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}
