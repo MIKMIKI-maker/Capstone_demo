@@ -36,7 +36,7 @@ $teacher_id = (int)$rec['teacher_id'];
 ensureMaterialSchema($conn);
 
 // Only the student's own file, on a material from their current teacher.
-$stmt = $conn->prepare("SELECT s.file_name FROM material_submissions s
+$stmt = $conn->prepare("SELECT s.file_name, m.is_graded FROM material_submissions s
     INNER JOIN teacher_uploaded_materials m ON m.id = s.material_id
     WHERE s.id = ? AND s.student_id = ? AND m.student_id = ? AND m.teacher_id = ?");
 $stmt->bind_param("iiii", $submission_id, $student_id, $student_id, $teacher_id);
@@ -45,6 +45,12 @@ $row = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 if (!$row) {
     echo json_encode(['success' => false, 'message' => 'File not found']);
+    $conn->close();
+    exit;
+}
+// Graded work is final — the grade must keep matching what was submitted.
+if (!empty($row['is_graded'])) {
+    echo json_encode(['success' => false, 'message' => 'Na-grade na ito ng teacher, kaya hindi na puwedeng burahin.']);
     $conn->close();
     exit;
 }

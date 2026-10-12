@@ -20,7 +20,8 @@ function ensureMaterialSchema($conn) {
     $checked = true;
     $meta = $conn->query("SELECT version FROM schema_meta WHERE component = 'materials'");
     $metaRow = $meta ? $meta->fetch_assoc() : null;
-    if ($metaRow && (int)$metaRow['version'] >= 1) return;
+    // 1: material kinds + submissions. 2: learning domain + grading.
+    if ($metaRow && (int)$metaRow['version'] >= 2) return;
 
     $conn->query("CREATE TABLE IF NOT EXISTS teacher_uploaded_materials (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -62,13 +63,48 @@ function ensureMaterialSchema($conn) {
         INDEX idx_teacher (teacher_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+    // v2: the learning domain chosen when uploading, and the teacher's
+    // grade for an 'activity' material — one row is one student's copy, so
+    // the grade lives on the row (same fields as activity_submissions).
+    $v2 = [
+        'domain'           => "VARCHAR(20) DEFAULT NULL",
+        'assistance_level' => "VARCHAR(50) DEFAULT NULL",
+        'teacher_note'     => "TEXT",
+        'final_score'      => "INT DEFAULT NULL",
+        'is_graded'        => "TINYINT(1) NOT NULL DEFAULT 0",
+        'graded_at'        => "DATETIME DEFAULT NULL",
+    ];
+    foreach ($v2 as $col => $def) {
+        $c = $conn->query("SHOW COLUMNS FROM teacher_uploaded_materials LIKE '$col'");
+        if ($c && $c->num_rows == 0) {
+            $conn->query("ALTER TABLE teacher_uploaded_materials ADD COLUMN $col $def");
+        }
+    }
+
     // Only mark it done once everything above really exists.
     $kind = $conn->query("SHOW COLUMNS FROM teacher_uploaded_materials LIKE 'material_kind'");
+    $graded = $conn->query("SHOW COLUMNS FROM teacher_uploaded_materials LIKE 'graded_at'");
     $subs = $conn->query("SHOW TABLES LIKE 'material_submissions'");
-    if ($kind && $kind->num_rows > 0 && $subs && $subs->num_rows > 0) {
+    if ($kind && $kind->num_rows > 0 && $graded && $graded->num_rows > 0 && $subs && $subs->num_rows > 0) {
         $conn->query("CREATE TABLE IF NOT EXISTS schema_meta (component VARCHAR(50) PRIMARY KEY, version INT NOT NULL)");
-        $conn->query("INSERT INTO schema_meta (component, version) VALUES ('materials', 1) ON DUPLICATE KEY UPDATE version = GREATEST(version, 1)");
+        $conn->query("INSERT INTO schema_meta (component, version) VALUES ('materials', 2) ON DUPLICATE KEY UPDATE version = GREATEST(version, 2)");
     }
+}
+
+// The Learning Domains offered when publishing an activity (stored the
+// same way, e.g. 'motor' = Fine Motor).
+const MATERIAL_DOMAINS = [
+    'cognitive'     => 'Cognitive',
+    'language'      => 'Language Development',
+    'communication' => 'Communication',
+    'motor'         => 'Fine Motor',
+    'social'        => 'Social & Emotional',
+    'self'          => 'Self-Help / Daily Living',
+    'aesthetic'     => 'Aesthetic & Creative',
+];
+function normalizeMaterialDomain($d) {
+    $d = is_string($d) ? strtolower(trim($d)) : '';
+    return array_key_exists($d, MATERIAL_DOMAINS) ? $d : null;
 }
 
 // What a student may submit, keyed by the MIME type PHP detects from the
@@ -149,7 +185,8 @@ function listMaterialSubmissions($conn, $material_id, $student_id) {
 // from their current teacher (the same rule the materials list uses).
 function loadStudentMaterial($conn, $material_id, $student_id, $teacher_id) {
     $stmt = $conn->prepare("SELECT id, teacher_id, student_id, grading_period, title, description, file_name, file_original_name,
-            file_type, file_size, link_url, material_kind, uploaded_at
+            file_type, file_size, link_url, material_kind, uploaded_at,
+            domain, assistance_level, teacher_note, final_score, is_graded, graded_at
         FROM teacher_uploaded_materials WHERE id = ? AND student_id = ? AND teacher_id = ?");
     if (!$stmt) return null;
     $stmt->bind_param("iii", $material_id, $student_id, $teacher_id);

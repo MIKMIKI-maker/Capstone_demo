@@ -194,6 +194,12 @@
             </div>
           </div>
 
+          <!-- Learning Domain: same choices as Publish Activity -->
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:5px;">🎯 Learning Domain <span style="color:#ef4444">*</span></label>
+            <div id="uploadDomains" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+          </div>
+
           <!-- Upload type toggle -->
           <div>
             <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:5px;">Upload Type</label>
@@ -400,6 +406,39 @@
             window.location.href = 'Teacher_activies.html';
         }
 
+        // Learning Domain of the material — the same list (and stored values)
+        // as the Publish Activity pop-up in the templates. Required.
+        var MATERIAL_DOMAINS = [
+            ['cognitive', 'Cognitive'], ['language', 'Language Development'], ['communication', 'Communication'],
+            ['motor', 'Fine Motor'], ['social', 'Social & Emotional'], ['self', 'Self-Help / Daily Living'],
+            ['aesthetic', 'Aesthetic & Creative']
+        ];
+        var currentDomain = '';
+        function setMaterialDomain(d) {
+            currentDomain = d;
+            document.querySelectorAll('#uploadDomains button').forEach(function (b) {
+                var on = b.getAttribute('data-domain') === d;
+                b.style.border = on ? '2px solid #1d4ed8' : '1.5px solid #cbd5e1';
+                b.style.background = on ? '#eff6ff' : '#f8fafc';
+                b.style.color = on ? '#1e3a8a' : '#475569';
+                b.setAttribute('aria-pressed', on ? 'true' : 'false');
+            });
+        }
+        (function buildDomainChoices() {
+            var wrap = document.getElementById('uploadDomains');
+            if (!wrap) return;
+            MATERIAL_DOMAINS.forEach(function (d) {
+                var b = document.createElement('button');
+                b.type = 'button';
+                b.setAttribute('data-domain', d[0]);
+                b.textContent = d[1];
+                b.style.cssText = "padding:7px 11px;border-radius:999px;cursor:pointer;font-family:'Poppins',sans-serif;font-size:12px;font-weight:600;transition:.15s;";
+                b.addEventListener('click', function () { setMaterialDomain(d[0]); });
+                wrap.appendChild(b);
+            });
+            setMaterialDomain('');
+        })();
+
         // 'file' = the student just views it; 'activity' = the student opens
         // it and submits work back (photos/videos/files) from their portal.
         var currentMaterialKind = 'file';
@@ -448,6 +487,7 @@
             document.getElementById('uploadLinkUrl').value = '';
             setUploadType('file');
             setMaterialKind('file');
+            setMaterialDomain('');
             var msg = document.getElementById('uploadMsg');
             msg.style.display = 'none'; msg.textContent = '';
             document.getElementById('uploadSubmitBtn').disabled = false;
@@ -469,6 +509,7 @@
             msg.style.display = 'none'; msg.textContent = '';
 
             if (!title) { msg.textContent = 'Please enter a title.'; msg.style.display = 'block'; return; }
+            if (!currentDomain) { msg.textContent = 'Please choose a Learning Domain.'; msg.style.display = 'block'; return; }
 
             var linkUrl = '';
             if (currentUploadType === 'file') {
@@ -497,6 +538,7 @@
                 fd.append('title', title);
                 fd.append('description', desc);
                 fd.append('material_kind', currentMaterialKind);
+                fd.append('domain', currentDomain);
                 if (currentUploadType === 'file') {
                     fd.append('file', document.getElementById('uploadFile').files[0]);
                 } else {

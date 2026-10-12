@@ -70,6 +70,12 @@ if ($material['material_kind'] !== 'activity') {
     $conn->close();
     exit;
 }
+// Graded work is final — the grade must keep matching what was submitted.
+if (!empty($material['is_graded'])) {
+    echo json_encode(['success' => false, 'message' => 'Na-grade na ito ng teacher, kaya hindi na puwedeng magpasa.']);
+    $conn->close();
+    exit;
+}
 
 $cnt = $conn->prepare("SELECT COUNT(*) AS n FROM material_submissions WHERE material_id = ? AND student_id = ?");
 $cnt->bind_param("ii", $material_id, $student_id);

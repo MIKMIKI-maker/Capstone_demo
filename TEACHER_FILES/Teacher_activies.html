@@ -533,7 +533,10 @@
                     var _uploadUrl = a.link_url ? (/^https?:\/\//i.test(a.link_url) ? a.link_url : '#')
                         : (a.file_name.indexOf('http') === 0 ? a.file_name : 'uploads/materials/' + a.file_name);
                     actions = (a.material_kind === 'activity'
-                                ? '<button class="btn-edit" onclick="openMaterialSubmissions(' + a.upload_id + ')" type="button" title="Submissions"><i class="fa-solid fa-inbox"></i> <span class="btn-label">Submissions (' + a.submission_count + ')</span></button>'
+                                // Graded → its score; submitted but not graded → a "To grade" nudge.
+                                ? '<button class="btn-edit" onclick="openMaterialSubmissions(' + a.upload_id + ')" type="button" title="Submissions"' +
+                                  (!a.is_graded && a.submission_count ? ' style="border-color:#f59e0b;color:#b45309;background:#fffbeb;"' : '') + '><i class="fa-solid fa-' + (a.is_graded ? 'star' : 'inbox') + '"></i> <span class="btn-label">' +
+                                  (a.is_graded ? 'Graded · ' + esc(a.final_score) + '%' : (a.submission_count ? 'To grade (' + a.submission_count + ')' : 'Submissions (0)')) + '</span></button>'
                                 : '')
                             + '<a class="btn-edit" href="' + esc(_uploadUrl) + '" target="_blank" rel="noopener" title="Open" style="display:inline-flex;align-items:center;gap:5px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> <span class="btn-label">Open</span></a>'
                             + '<button class="btn-delete" data-sy-write onclick="deleteUpload(' + a.upload_id + ')" type="button" title="Delete"><i class="fa-solid fa-trash"></i> <span class="btn-label">Delete</span></button>';
@@ -842,7 +845,9 @@
                             file_original_name:  u.file_original_name || u.file_name,
                             link_url:            u.link_url || '',
                             material_kind:       u.material_kind === 'activity' ? 'activity' : 'file',
-                            submission_count:    +u.submission_count || 0
+                            submission_count:    +u.submission_count || 0,
+                            is_graded:           +u.is_graded || 0,
+                            final_score:         u.final_score
                         };
                     });
                     allActivities = allActivities.concat(uploads);
@@ -899,7 +904,28 @@
                 '.msubs-actions{display:flex;gap:8px;margin-top:auto;padding-top:6px;}' +
                 '.msubs-actions a{flex:1;text-align:center;padding:7px 8px;border-radius:8px;font-size:12.5px;font-weight:600;text-decoration:none;border:1.5px solid #cbd5e1;color:#1e3a8a;}' +
                 '.msubs-empty{text-align:center;padding:36px 12px;color:#64748b;}' +
-                '.msubs-empty b{display:block;font-size:40px;margin-bottom:8px;}';
+                '.msubs-empty b{display:block;font-size:40px;margin-bottom:8px;}' +
+                /* Grading — same fields as Submission Review for activities */
+                '.mgr{margin-top:18px;border-top:1px solid #eef2f8;padding-top:16px;}' +
+                '.mgr-h{margin:0 0 10px;font-size:15px;font-weight:700;color:#1e3a8a;}' +
+                '.mgr-lbl{font-size:11.5px;font-weight:700;color:#475569;letter-spacing:.3px;text-transform:uppercase;margin:12px 0 6px;}' +
+                '.mgr-assist{display:grid;grid-template-columns:1fr 1fr;gap:8px;}' +
+                '.mgr-assist label{display:flex;align-items:center;gap:8px;padding:9px 11px;border-radius:10px;border:2px solid #e2e8f0;cursor:pointer;font-size:13px;color:#475569;}' +
+                '.mgr-assist label.sel{border-color:#1d4ed8;background:#eff6ff;color:#1d4ed8;font-weight:600;}' +
+                '.mgr-assist input{accent-color:#1d4ed8;}' +
+                '.mgr textarea{width:100%;min-height:70px;border:1.5px solid #e2e8f0;border-radius:10px;padding:9px 11px;font:inherit;font-size:13px;resize:vertical;box-sizing:border-box;}' +
+                '.mgr-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;}' +
+                '.mgr-row input{width:90px;border:1.5px solid #e2e8f0;border-radius:9px;padding:8px 10px;font:inherit;font-size:14px;font-weight:700;text-align:center;}' +
+                '.mgr-warn{margin-top:12px;font-size:12.5px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:9px;padding:8px 11px;}' +
+                '.mgr-save{margin-top:12px;width:100%;padding:12px;border:none;border-radius:11px;background:#1d4ed8;color:#fff;font:inherit;font-size:14px;font-weight:700;cursor:pointer;}' +
+                '.mgr-save:disabled{background:#93c5fd;cursor:not-allowed;}' +
+                '.mgr-done{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:12px 14px;font-size:13px;color:#14532d;}' +
+                '.mgr-done b{font-size:20px;}' +
+                '.mgr-done .mgr-note{flex-basis:100%;color:#334155;white-space:pre-wrap;}' +
+                '.mgr details{margin-top:10px;font-size:12px;color:#7f1d1d;}' +
+                '.mgr summary{cursor:pointer;font-weight:700;color:#1e3a8a;}' +
+                '.mgr table{width:100%;border-collapse:collapse;margin-top:6px;}' +
+                '.mgr td{border:1px solid #e2e8f0;padding:5px 7px;vertical-align:top;}';
             document.head.appendChild(st);
             ov = document.createElement('div');
             ov.id = 'matSubsOverlay';
@@ -948,6 +974,76 @@
                 '<a href="' + esc(url) + '" download="' + esc(s.file_original_name || 'submission') + '">⬇ Download</a></div>' +
                 '</div></div>';
         }
+        var MATERIAL_DOMAIN_NAMES = { cognitive: 'Cognitive', language: 'Language Development', communication: 'Communication',
+            motor: 'Fine Motor', social: 'Social & Emotional', self: 'Self-Help / Daily Living', aesthetic: 'Aesthetic & Creative' };
+        var MATERIAL_ASSIST = ['Full Physical Prompt', 'Verbal Cueing', 'Minimal Assistance', 'Independent'];
+
+        // Grading for an 'activity' material: assistance level, note and a
+        // final score — saved once, like Submission Review for activities.
+        function _subsGradeHtml(m) {
+            if (+m.is_graded) {
+                return '<div class="mgr"><h4 class="mgr-h">⭐ Grade</h4><div class="mgr-done">' +
+                    '<span>Final score: <b>' + esc(m.final_score) + '%</b></span>' +
+                    (m.assistance_level ? '<span>Assistance: <strong>' + esc(m.assistance_level) + '</strong></span>' : '') +
+                    (m.graded_at ? '<span>Graded ' + esc(formatDate(m.graded_at)) + '</span>' : '') +
+                    (m.teacher_note ? '<span class="mgr-note">📝 ' + esc(m.teacher_note) + '</span>' : '') +
+                    '</div></div>';
+            }
+            return '<div class="mgr"><h4 class="mgr-h">⭐ Grade this work</h4>' +
+                '<div class="mgr-lbl">Assistance Level</div><div class="mgr-assist" id="mgrAssist">' +
+                MATERIAL_ASSIST.map(function (a) { return '<label><input type="radio" name="mgrAssist" value="' + esc(a) + '"> ' + esc(a) + '</label>'; }).join('') +
+                '</div>' +
+                '<div class="mgr-lbl">Teacher&#39;s Note</div><textarea id="mgrNote" maxlength="2000" placeholder="Optional observation or feedback for this student..."></textarea>' +
+                '<div class="mgr-row"><strong style="font-size:13px;color:#1e293b;">Final Score (%):</strong>' +
+                '<input id="mgrScore" type="number" min="0" max="100" placeholder="—" /></div>' +
+                '<details><summary>📘 Non-Graded Rubric (DepEd assistance-level reference)</summary><table>' +
+                '<tr><td><b>P</b></td><td>Proficient — independently (IND) in 3 attempts without any assistance.</td></tr>' +
+                '<tr><td><b>AP</b></td><td>Approaching to Proficient — in 2 out of 3 trials with verbal cueing (VC).</td></tr>' +
+                '<tr><td><b>D</b></td><td>Developing — in 2 out of 3 trials with assistance (A).</td></tr>' +
+                '<tr><td><b>B</b></td><td>Beginning — in 2 out of 3 trials with full physical prompting (FPP) / full assistance (FA).</td></tr>' +
+                '<tr><td><b>NO/NA</b></td><td>Not Observed / Not Applicable — not able to perform the indicator stated.</td></tr>' +
+                '</table></details>' +
+                '<div class="mgr-warn">⚠️ Isang beses lang puwedeng mag-grade nito. Kapag na-save na, hindi na ito mababago, at hindi na rin makakapagpalit ng file ang student.</div>' +
+                '<button type="button" class="mgr-save" id="mgrSave" onclick="saveMaterialGrade(' + (+m.id) + ')">💾 Save Grade</button></div>';
+        }
+        function _subsBindGrade() {
+            var box = document.getElementById('mgrAssist');
+            if (!box) return;
+            box.addEventListener('change', function () {
+                box.querySelectorAll('label').forEach(function (l) { l.classList.toggle('sel', l.querySelector('input').checked); });
+            });
+        }
+        function saveMaterialGrade(materialId) {
+            var score = document.getElementById('mgrScore').value.trim();
+            if (score === '' || isNaN(+score) || +score < 0 || +score > 100 || Math.floor(+score) !== +score) {
+                window.showToast('Enter a final score from 0 to 100.', 'error');
+                return;
+            }
+            var picked = document.querySelector('#mgrAssist input:checked');
+            var btn = document.getElementById('mgrSave');
+            btn.disabled = true; btn.textContent = 'Saving…';
+            fetch('TEACHER_BACKEND/teacher_grade_material.php', {
+                method: 'POST',
+                body: new URLSearchParams({
+                    material_id: materialId,
+                    assistance_level: picked ? picked.value : '',
+                    teacher_note: document.getElementById('mgrNote').value.trim(),
+                    final_score: score
+                })
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d || !d.success) throw new Error((d && d.message) || 'Could not save the grade.');
+                    window.showToast('Grade saved!');
+                    openMaterialSubmissions(materialId);
+                    if (typeof loadUploads === 'function') loadUploads();
+                })
+                .catch(function (e) {
+                    btn.disabled = false; btn.textContent = '💾 Save Grade';
+                    window.showToast(e.message || 'Could not save the grade.', 'error');
+                });
+        }
+
         function openMaterialSubmissions(materialId) {
             var ov = _subsEnsureModal();
             document.getElementById('msubsTitle').textContent = '📥 Submissions';
@@ -961,12 +1057,14 @@
                     var m = d.material || {}, subs = d.submissions || [];
                     var who = m.student_name || 'the student';
                     document.getElementById('msubsTitle').textContent = '📥 ' + (m.title || 'Submissions');
-                    document.getElementById('msubsSub').textContent = subs.length
+                    var domain = MATERIAL_DOMAIN_NAMES[m.domain] ? '🎯 ' + MATERIAL_DOMAIN_NAMES[m.domain] + ' · ' : '';
+                    document.getElementById('msubsSub').textContent = domain + (subs.length
                         ? who + ' submitted ' + subs.length + ' file' + (subs.length > 1 ? 's' : '') + '.'
-                        : 'Activity for ' + who;
+                        : 'Activity for ' + who);
                     document.getElementById('msubsBody').innerHTML = subs.length
-                        ? '<div class="msubs-grid">' + subs.map(_subsCard).join('') + '</div>'
+                        ? '<div class="msubs-grid">' + subs.map(_subsCard).join('') + '</div>' + _subsGradeHtml(m)
                         : '<div class="msubs-empty"><b>📭</b>' + esc(who) + ' has not submitted anything yet.</div>';
+                    _subsBindGrade();
                 })
                 .catch(function (e) {
                     document.getElementById('msubsSub').textContent = '';

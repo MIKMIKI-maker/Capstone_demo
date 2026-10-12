@@ -25,7 +25,7 @@ ensureMaterialSchema($conn);
 $stmt = $conn->prepare("
     SELECT m.id, m.student_id, m.grading_period, m.title, m.description,
            m.file_name, m.file_original_name, m.file_type, m.file_size, m.uploaded_at,
-           m.link_url, m.material_kind,
+           m.link_url, m.material_kind, m.domain, m.is_graded, m.final_score,
            s.student_name,
            (SELECT COUNT(*) FROM material_submissions ms WHERE ms.material_id = m.id AND ms.student_id = m.student_id) AS submission_count,
            (SELECT MAX(ms.submitted_at) FROM material_submissions ms WHERE ms.material_id = m.id AND ms.student_id = m.student_id) AS last_submitted_at

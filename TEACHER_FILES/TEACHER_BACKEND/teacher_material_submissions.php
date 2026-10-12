@@ -23,7 +23,8 @@ if (!$conn) {
 }
 ensureMaterialSchema($conn);
 
-$stmt = $conn->prepare("SELECT m.id, m.student_id, m.title, m.description, m.material_kind, m.uploaded_at, s.student_name
+$stmt = $conn->prepare("SELECT m.id, m.student_id, m.title, m.description, m.material_kind, m.uploaded_at, s.student_name,
+        m.domain, m.assistance_level, m.teacher_note, m.final_score, m.is_graded, m.graded_at
     FROM teacher_uploaded_materials m
     LEFT JOIN students s ON s.id = m.student_id
     WHERE m.id = ? AND m.teacher_id = ?");

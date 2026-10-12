@@ -60,6 +60,13 @@ if (!$teacher_id || !$student_id || !$title) {
     exit;
 }
 
+// The Learning Domain, picked like when publishing an activity.
+$domain = normalizeMaterialDomain($_POST['domain'] ?? '');
+if ($domain === null) {
+    echo json_encode(['success' => false, 'message' => 'Please choose a Learning Domain.']);
+    exit;
+}
+
 $hasFile = isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK;
 $hasLink = !empty($link_url);
 
@@ -143,12 +150,12 @@ ensureMaterialSchema($conn);
 
 $stmt = $conn->prepare(
     "INSERT INTO teacher_uploaded_materials
-     (teacher_id, student_id, grading_period, title, description, file_name, file_original_name, file_type, file_size, link_url, material_kind)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?)"
+     (teacher_id, student_id, grading_period, title, description, file_name, file_original_name, file_type, file_size, link_url, material_kind, domain)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
 );
-$stmt->bind_param("iissssssiss",
+$stmt->bind_param("iissssssisss",
     $teacher_id, $student_id, $grading_period, $title, $description,
-    $safeName, $origName, $fileMime, $fileSize, $link_url, $material_kind
+    $safeName, $origName, $fileMime, $fileSize, $link_url, $material_kind, $domain
 );
 $stmt->execute();
 $newId = $conn->insert_id;

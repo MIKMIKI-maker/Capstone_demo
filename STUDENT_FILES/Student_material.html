@@ -14,7 +14,7 @@
   <title>SPED ALM - Material</title>
   <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
   <link href="STUDENT_CSS/Student_mymaterials.css?v=10" rel="stylesheet" />
-  <link href="STUDENT_CSS/Student_material.css?v=1" rel="stylesheet" />
+  <link href="STUDENT_CSS/Student_material.css?v=2" rel="stylesheet" />
   <link href="STUDENT_CSS/student_responsive.css?v=8" rel="stylesheet" />
   <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
   <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
@@ -248,7 +248,7 @@
           '<div class="mat-sub-meta">' + esc([sizeText(s.file_size), dateText(s.submitted_at)].filter(Boolean).join(' · ')) + '</div>' +
           (s.caption ? '<div class="mat-sub-cap">💬 ' + esc(s.caption) + '</div>' : '') +
           '<div class="mat-sub-actions"><a href="' + esc(url) + '" target="_blank" rel="noopener">👁 Tingnan</a>' +
-            '<button type="button" data-remove="' + (+s.id) + '">🗑 Alisin</button></div>' +
+            (+state.material.is_graded ? '' : '<button type="button" data-remove="' + (+s.id) + '">🗑 Alisin</button>') + '</div>' +
         '</div></div>';
     }
 
@@ -276,6 +276,25 @@
       '</section>';
     }
 
+    // Once the teacher grades it, the work is final: show the grade and the
+    // files that were graded, with no more uploading or removing.
+    function renderGradedPanel() {
+      var m = state.material;
+      return '<section class="mat-card mat-grade">' +
+        '<div class="mat-section-title">⭐ Grade mula kay Teacher</div>' +
+        '<div class="mat-grade-row"><div class="mat-grade-score">' + (+m.final_score) + '<small>%</small></div>' +
+          '<div class="mat-grade-info">' +
+            (m.assistance_level ? '<div><b>Assistance:</b> ' + esc(m.assistance_level) + '</div>' : '') +
+            (m.graded_at ? '<div>📅 ' + esc(dateText(m.graded_at)) + '</div>' : '') +
+          '</div></div>' +
+        (m.teacher_note ? '<div class="mat-note"><span class="mat-note-label">📝 MENSAHE NI TEACHER</span>' + esc(m.teacher_note) + '</div>' : '') +
+      '</section>' +
+      (state.submissions.length
+        ? '<section class="mat-card"><div class="mat-section-title">📁 Mga naipasa mo</div><div class="mat-subs" id="matSubs">' +
+          state.submissions.map(submissionCard).join('') + '</div></section>'
+        : '');
+    }
+
     function render() {
       var m = state.material;
       var isAct = m.material_kind === 'activity';
@@ -297,8 +316,8 @@
         '</section>' +
         '<section class="mat-card"><div class="mat-section-title">' + (m.link_url ? '🔗 Link' : fileIcon(m.file_type) + ' ' + (isAct ? 'Gawain' : 'Material')) + '</div>' +
           renderPreview(m) + '</section>' +
-        (isAct ? renderSubmitPanel() : '');
-      if (isAct) bindSubmitPanel();
+        (isAct ? (+m.is_graded ? renderGradedPanel() : renderSubmitPanel()) : '');
+      if (isAct && !+m.is_graded) bindSubmitPanel();
     }
 
     /* ── Picking files ─────────────────────────────────────── */
