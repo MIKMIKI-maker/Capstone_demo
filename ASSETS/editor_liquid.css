@@ -1,0 +1,293 @@
+/* ─────────────────────────────────────────────────────────────
+ * Liquid glass — the activity editors (TEACHER_FILES/TEMPLATES/*).
+ * Generated for all 9 templates (prefixes chk, bgl, mtg, mth, lbl, seq, srt, trc, wrt), which share
+ * the same part names: -top, -card, -btn, -reminders, …
+ *
+ * Same "liquid glass" as the portal's notification bell (teacher_portal.js):
+ * frosted see-through white, a bright 1px edge, a glossy highlight from the
+ * top-left and soft layered shadows, over a soft colored page.
+ *
+ * Editor only: preview / student play mode (body.<prefix>-preview-only)
+ * is untouched, and so is the activity stage itself.
+ * Light on the device: the blur (the costly part) is only on the top bar
+ * and the panels; buttons get the gloss without blur.
+ * ───────────────────────────────────────────────────────────── */
+
+/* Page: soft color for the glass to show through */
+body:not([class*="-preview-only"]) {
+  background:
+    radial-gradient(1100px 620px at 4% -12%, rgba(99, 102, 241, .30), transparent 62%),
+    radial-gradient(900px 640px at 104% 4%, rgba(14, 165, 233, .26), transparent 60%),
+    radial-gradient(900px 700px at 46% 118%, rgba(236, 72, 153, .16), transparent 62%),
+    linear-gradient(180deg, #eef1ff 0%, #e8f2ff 100%);
+}
+
+/* Top bar — a glass strip */
+body:not([class*="-preview-only"]) .chk-top,
+body:not([class*="-preview-only"]) .bgl-top,
+body:not([class*="-preview-only"]) .mtg-top,
+body:not([class*="-preview-only"]) .mth-top,
+body:not([class*="-preview-only"]) .lbl-top,
+body:not([class*="-preview-only"]) .seq-top,
+body:not([class*="-preview-only"]) .srt-top,
+body:not([class*="-preview-only"]) .trc-top,
+body:not([class*="-preview-only"]) .wrt-top {
+  background:
+    radial-gradient(140% 120% at 12% -40%, rgba(255, 255, 255, .85), rgba(255, 255, 255, 0) 60%),
+    linear-gradient(135deg, rgba(255, 255, 255, .72), rgba(255, 255, 255, .42));
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+  backdrop-filter: blur(18px) saturate(170%);
+  border-bottom: 1px solid rgba(255, 255, 255, .75);
+  box-shadow: 0 10px 30px rgba(30, 58, 138, .10), inset 0 -1px 0 rgba(30, 58, 138, .06);
+}
+
+/* Panels (left column, Design & Settings, …) — frosted glass cards */
+body:not([class*="-preview-only"]) .chk-card,
+body:not([class*="-preview-only"]) .bgl-card,
+body:not([class*="-preview-only"]) .mtg-card,
+body:not([class*="-preview-only"]) .mth-card,
+body:not([class*="-preview-only"]) .lbl-card,
+body:not([class*="-preview-only"]) .seq-card,
+body:not([class*="-preview-only"]) .srt-card,
+body:not([class*="-preview-only"]) .trc-card,
+body:not([class*="-preview-only"]) .wrt-card {
+  background:
+    radial-gradient(130% 70% at 18% -8%, rgba(255, 255, 255, .80), rgba(255, 255, 255, 0) 58%),
+    linear-gradient(140deg, rgba(255, 255, 255, .74), rgba(255, 255, 255, .46));
+  -webkit-backdrop-filter: blur(16px) saturate(165%);
+  backdrop-filter: blur(16px) saturate(165%);
+  border: 1px solid rgba(255, 255, 255, .78);
+  border-radius: 22px;
+  box-shadow:
+    0 14px 34px rgba(30, 58, 138, .12),
+    0 3px 8px rgba(30, 58, 138, .07),
+    inset 0 1px 0 rgba(255, 255, 255, .95),
+    inset 0 -10px 18px -14px rgba(30, 58, 138, .22);
+}
+
+/* Accessibility reminders — a lilac-tinted glass strip */
+body:not([class*="-preview-only"]) .chk-reminders,
+body:not([class*="-preview-only"]) .bgl-reminders,
+body:not([class*="-preview-only"]) .mtg-reminders,
+body:not([class*="-preview-only"]) .mth-reminders,
+body:not([class*="-preview-only"]) .lbl-reminders,
+body:not([class*="-preview-only"]) .seq-reminders,
+body:not([class*="-preview-only"]) .srt-reminders,
+body:not([class*="-preview-only"]) .trc-reminders,
+body:not([class*="-preview-only"]) .wrt-reminders {
+  background:
+    radial-gradient(120% 90% at 10% -20%, rgba(255, 255, 255, .8), rgba(255, 255, 255, 0) 60%),
+    linear-gradient(140deg, rgba(246, 242, 254, .78), rgba(237, 233, 254, .5));
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, .8);
+  border-radius: 20px;
+  box-shadow: 0 10px 26px rgba(91, 33, 182, .10), inset 0 1px 0 rgba(255, 255, 255, .95);
+}
+
+/* Buttons — glossy pills that lift a little on hover */
+body:not([class*="-preview-only"]) .chk-btn,
+body:not([class*="-preview-only"]) .bgl-btn,
+body:not([class*="-preview-only"]) .mtg-btn,
+body:not([class*="-preview-only"]) .mth-btn,
+body:not([class*="-preview-only"]) .lbl-btn,
+body:not([class*="-preview-only"]) .seq-btn,
+body:not([class*="-preview-only"]) .srt-btn,
+body:not([class*="-preview-only"]) .trc-btn,
+body:not([class*="-preview-only"]) .wrt-btn {
+  border-radius: 999px;
+  transition: transform .25s cubic-bezier(.34, 1.56, .64, 1), box-shadow .25s ease, filter .15s ease;
+}
+body:not([class*="-preview-only"]) .chk-btn:hover,
+body:not([class*="-preview-only"]) .bgl-btn:hover,
+body:not([class*="-preview-only"]) .mtg-btn:hover,
+body:not([class*="-preview-only"]) .mth-btn:hover,
+body:not([class*="-preview-only"]) .lbl-btn:hover,
+body:not([class*="-preview-only"]) .seq-btn:hover,
+body:not([class*="-preview-only"]) .srt-btn:hover,
+body:not([class*="-preview-only"]) .trc-btn:hover,
+body:not([class*="-preview-only"]) .wrt-btn:hover {
+  transform: translateY(-2px);
+}
+body:not([class*="-preview-only"]) .chk-btn:active,
+body:not([class*="-preview-only"]) .bgl-btn:active,
+body:not([class*="-preview-only"]) .mtg-btn:active,
+body:not([class*="-preview-only"]) .mth-btn:active,
+body:not([class*="-preview-only"]) .lbl-btn:active,
+body:not([class*="-preview-only"]) .seq-btn:active,
+body:not([class*="-preview-only"]) .srt-btn:active,
+body:not([class*="-preview-only"]) .trc-btn:active,
+body:not([class*="-preview-only"]) .wrt-btn:active {
+  transform: translateY(1px) scale(.98);
+  transition-duration: .08s;
+}
+
+/* Plain buttons (Back, Download PDF, Preview, Save Draft) — clear glass */
+body:not([class*="-preview-only"]) .chk-btn--ghost,
+body:not([class*="-preview-only"]) .bgl-btn--ghost,
+body:not([class*="-preview-only"]) .mtg-btn--ghost,
+body:not([class*="-preview-only"]) .mth-btn--ghost,
+body:not([class*="-preview-only"]) .lbl-btn--ghost,
+body:not([class*="-preview-only"]) .seq-btn--ghost,
+body:not([class*="-preview-only"]) .srt-btn--ghost,
+body:not([class*="-preview-only"]) .trc-btn--ghost,
+body:not([class*="-preview-only"]) .wrt-btn--ghost {
+  background:
+    radial-gradient(120% 90% at 25% -10%, rgba(255, 255, 255, .95), rgba(255, 255, 255, 0) 60%),
+    linear-gradient(140deg, rgba(255, 255, 255, .78), rgba(255, 255, 255, .5));
+  border: 1px solid rgba(255, 255, 255, .9);
+  box-shadow: 0 8px 20px rgba(30, 58, 138, .14), 0 2px 5px rgba(30, 58, 138, .08), inset 0 1px 0 #fff;
+}
+body:not([class*="-preview-only"]) .chk-btn--ghost:hover,
+body:not([class*="-preview-only"]) .bgl-btn--ghost:hover,
+body:not([class*="-preview-only"]) .mtg-btn--ghost:hover,
+body:not([class*="-preview-only"]) .mth-btn--ghost:hover,
+body:not([class*="-preview-only"]) .lbl-btn--ghost:hover,
+body:not([class*="-preview-only"]) .seq-btn--ghost:hover,
+body:not([class*="-preview-only"]) .srt-btn--ghost:hover,
+body:not([class*="-preview-only"]) .trc-btn--ghost:hover,
+body:not([class*="-preview-only"]) .wrt-btn--ghost:hover {
+  box-shadow: 0 12px 26px rgba(30, 58, 138, .18), 0 3px 7px rgba(30, 58, 138, .10), inset 0 1px 0 #fff;
+}
+
+body:not([class*="-preview-only"]) .chk-btn--help,
+body:not([class*="-preview-only"]) .bgl-btn--help,
+body:not([class*="-preview-only"]) .mtg-btn--help,
+body:not([class*="-preview-only"]) .mth-btn--help,
+body:not([class*="-preview-only"]) .lbl-btn--help,
+body:not([class*="-preview-only"]) .seq-btn--help,
+body:not([class*="-preview-only"]) .srt-btn--help,
+body:not([class*="-preview-only"]) .trc-btn--help,
+body:not([class*="-preview-only"]) .wrt-btn--help {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, .55) 0%, rgba(255, 255, 255, .12) 48%, rgba(255, 255, 255, 0) 52%);
+  box-shadow: 0 10px 22px rgba(217, 164, 22, .38), inset 0 1px 0 rgba(255, 255, 255, .7), inset 0 -2px 0 rgba(0, 0, 0, .08);
+}
+
+body:not([class*="-preview-only"]) .chk-btn--print,
+body:not([class*="-preview-only"]) .bgl-btn--print,
+body:not([class*="-preview-only"]) .mtg-btn--print,
+body:not([class*="-preview-only"]) .mth-btn--print,
+body:not([class*="-preview-only"]) .lbl-btn--print,
+body:not([class*="-preview-only"]) .seq-btn--print,
+body:not([class*="-preview-only"]) .srt-btn--print,
+body:not([class*="-preview-only"]) .trc-btn--print,
+body:not([class*="-preview-only"]) .wrt-btn--print {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, .55) 0%, rgba(255, 255, 255, .12) 48%, rgba(255, 255, 255, 0) 52%);
+  box-shadow: 0 10px 22px rgba(217, 164, 22, .38), inset 0 1px 0 rgba(255, 255, 255, .7), inset 0 -2px 0 rgba(0, 0, 0, .08);
+}
+
+body:not([class*="-preview-only"]) .chk-btn--pub,
+body:not([class*="-preview-only"]) .bgl-btn--pub,
+body:not([class*="-preview-only"]) .mtg-btn--pub,
+body:not([class*="-preview-only"]) .mth-btn--pub,
+body:not([class*="-preview-only"]) .lbl-btn--pub,
+body:not([class*="-preview-only"]) .seq-btn--pub,
+body:not([class*="-preview-only"]) .srt-btn--pub,
+body:not([class*="-preview-only"]) .trc-btn--pub,
+body:not([class*="-preview-only"]) .wrt-btn--pub {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, .55) 0%, rgba(255, 255, 255, .12) 48%, rgba(255, 255, 255, 0) 52%);
+  box-shadow: 0 10px 22px rgba(22, 163, 74, .38), inset 0 1px 0 rgba(255, 255, 255, .7), inset 0 -2px 0 rgba(0, 0, 0, .08);
+}
+
+/* Activity-type choices — glass tiles; the chosen one (.sel) keeps the
+   template's own purple/blue highlight and gets a soft glow on top */
+body:not([class*="-preview-only"]) .chk-mode-btn:not(.sel),
+body:not([class*="-preview-only"]) .bgl-mode-btn:not(.sel),
+body:not([class*="-preview-only"]) .mtg-mode-btn:not(.sel),
+body:not([class*="-preview-only"]) .mth-mode-btn:not(.sel),
+body:not([class*="-preview-only"]) .lbl-mode-btn:not(.sel),
+body:not([class*="-preview-only"]) .seq-mode-btn:not(.sel),
+body:not([class*="-preview-only"]) .srt-mode-btn:not(.sel),
+body:not([class*="-preview-only"]) .trc-mode-btn:not(.sel),
+body:not([class*="-preview-only"]) .wrt-mode-btn:not(.sel) {
+  background: linear-gradient(140deg, rgba(255, 255, 255, .8), rgba(255, 255, 255, .52));
+  border-color: rgba(255, 255, 255, .9);
+  box-shadow: 0 6px 16px rgba(30, 58, 138, .08), inset 0 1px 0 #fff;
+}
+body:not([class*="-preview-only"]) .chk-mode-btn.sel,
+body:not([class*="-preview-only"]) .bgl-mode-btn.sel,
+body:not([class*="-preview-only"]) .mtg-mode-btn.sel,
+body:not([class*="-preview-only"]) .mth-mode-btn.sel,
+body:not([class*="-preview-only"]) .lbl-mode-btn.sel,
+body:not([class*="-preview-only"]) .seq-mode-btn.sel,
+body:not([class*="-preview-only"]) .srt-mode-btn.sel,
+body:not([class*="-preview-only"]) .trc-mode-btn.sel,
+body:not([class*="-preview-only"]) .wrt-mode-btn.sel {
+  box-shadow: 0 0 0 3px rgba(123, 110, 240, .16), 0 8px 18px rgba(91, 33, 182, .14), inset 0 1px 0 #fff;
+}
+
+/* No see-through effects available, or the device asks for less
+   transparency: same layout, solid surfaces (always readable). */
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+body:not([class*="-preview-only"]) .chk-top,
+body:not([class*="-preview-only"]) .bgl-top,
+body:not([class*="-preview-only"]) .mtg-top,
+body:not([class*="-preview-only"]) .mth-top,
+body:not([class*="-preview-only"]) .lbl-top,
+body:not([class*="-preview-only"]) .seq-top,
+body:not([class*="-preview-only"]) .srt-top,
+body:not([class*="-preview-only"]) .trc-top,
+body:not([class*="-preview-only"]) .wrt-top,
+body:not([class*="-preview-only"]) .chk-card,
+body:not([class*="-preview-only"]) .bgl-card,
+body:not([class*="-preview-only"]) .mtg-card,
+body:not([class*="-preview-only"]) .mth-card,
+body:not([class*="-preview-only"]) .lbl-card,
+body:not([class*="-preview-only"]) .seq-card,
+body:not([class*="-preview-only"]) .srt-card,
+body:not([class*="-preview-only"]) .trc-card,
+body:not([class*="-preview-only"]) .wrt-card,
+body:not([class*="-preview-only"]) .chk-reminders,
+body:not([class*="-preview-only"]) .bgl-reminders,
+body:not([class*="-preview-only"]) .mtg-reminders,
+body:not([class*="-preview-only"]) .mth-reminders,
+body:not([class*="-preview-only"]) .lbl-reminders,
+body:not([class*="-preview-only"]) .seq-reminders,
+body:not([class*="-preview-only"]) .srt-reminders,
+body:not([class*="-preview-only"]) .trc-reminders,
+body:not([class*="-preview-only"]) .wrt-reminders { background: rgba(255, 255, 255, .94); }
+}
+@media (prefers-reduced-transparency: reduce) {
+body:not([class*="-preview-only"]) .chk-top,
+body:not([class*="-preview-only"]) .bgl-top,
+body:not([class*="-preview-only"]) .mtg-top,
+body:not([class*="-preview-only"]) .mth-top,
+body:not([class*="-preview-only"]) .lbl-top,
+body:not([class*="-preview-only"]) .seq-top,
+body:not([class*="-preview-only"]) .srt-top,
+body:not([class*="-preview-only"]) .trc-top,
+body:not([class*="-preview-only"]) .wrt-top,
+body:not([class*="-preview-only"]) .chk-card,
+body:not([class*="-preview-only"]) .bgl-card,
+body:not([class*="-preview-only"]) .mtg-card,
+body:not([class*="-preview-only"]) .mth-card,
+body:not([class*="-preview-only"]) .lbl-card,
+body:not([class*="-preview-only"]) .seq-card,
+body:not([class*="-preview-only"]) .srt-card,
+body:not([class*="-preview-only"]) .trc-card,
+body:not([class*="-preview-only"]) .wrt-card,
+body:not([class*="-preview-only"]) .chk-reminders,
+body:not([class*="-preview-only"]) .bgl-reminders,
+body:not([class*="-preview-only"]) .mtg-reminders,
+body:not([class*="-preview-only"]) .mth-reminders,
+body:not([class*="-preview-only"]) .lbl-reminders,
+body:not([class*="-preview-only"]) .seq-reminders,
+body:not([class*="-preview-only"]) .srt-reminders,
+body:not([class*="-preview-only"]) .trc-reminders,
+body:not([class*="-preview-only"]) .wrt-reminders {
+    background: #fff;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+body:not([class*="-preview-only"]) .chk-btn,
+body:not([class*="-preview-only"]) .bgl-btn,
+body:not([class*="-preview-only"]) .mtg-btn,
+body:not([class*="-preview-only"]) .mth-btn,
+body:not([class*="-preview-only"]) .lbl-btn,
+body:not([class*="-preview-only"]) .seq-btn,
+body:not([class*="-preview-only"]) .srt-btn,
+body:not([class*="-preview-only"]) .trc-btn,
+body:not([class*="-preview-only"]) .wrt-btn { transition: none; }
+}
