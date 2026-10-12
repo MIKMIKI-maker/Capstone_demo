@@ -106,6 +106,17 @@
       ".iml-launch{display:flex;flex-direction:column;gap:8px;}",
       ".iml-launch p{margin:0;font-size:13px;color:#475569;line-height:1.4;}",
       ".iml-launch-btn{cursor:pointer;border:none;background:linear-gradient(135deg,#2f6fed,#7b6ef0);color:#fff;border-radius:12px;padding:10px;font:inherit;font-weight:800;font-size:14px;}",
+      ".iml-rnd{margin-top:4px;padding:10px;border-radius:12px;background:#fff7ed;border:1.5px solid #fed7aa;}",
+      ".iml-body > .iml-rnd{margin:0 0 12px;}",
+      ".iml-rnd-title{font-size:13px;font-weight:800;color:#9a3412;margin-bottom:6px;}",
+      ".iml-rnd-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}",
+      ".iml-rnd-btn{cursor:pointer;border:none;border-radius:10px;padding:7px 4px;font:inherit;color:#fff;display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.15;width:100%;background:linear-gradient(135deg,#f59e0b,#f97316);}",
+      ".iml-rnd-btn b{font-size:13px;font-weight:800;}",
+      ".iml-rnd-btn span{font-size:10.5px;font-weight:600;opacity:.95;}",
+      ".iml-rnd-l1{background:linear-gradient(135deg,#22c55e,#16a34a);}",
+      ".iml-rnd-l2{background:linear-gradient(135deg,#f59e0b,#f97316);}",
+      ".iml-rnd-l3{background:linear-gradient(135deg,#ef4444,#dc2626);}",
+      ".iml-rnd-btn:hover{filter:brightness(1.06);}",
       ".iml-intro{background:#fff;border-radius:18px;width:min(440px,100%);padding:22px;box-shadow:0 24px 60px rgba(15,23,42,.3);color:#1e293b;text-align:center;}",
       ".iml-intro h2{margin:0 0 6px;font-size:20px;font-weight:800;}",
       ".iml-intro p{margin:0 0 14px;font-size:14px;line-height:1.5;color:#475569;}",
@@ -199,6 +210,7 @@
   function renderSets() {
     els.body.appendChild(el("div", "iml-hint",
       "Isang click lang: papalitan ng Quick Set ang laman ng kasalukuyang slide. Puwede mo pa rin itong i-edit pagkatapos."));
+    els.body.appendChild(fillRandom(el("div", "iml-rnd")));   // re-rendered each time, so not kept in randomHolders
     var wrap = el("div", "iml-sets");
     sets().forEach(function (s) {
       var card = el("div", "iml-set");
@@ -254,6 +266,163 @@
       pairs: s.pairs ? s.pairs.map(function (pr) { return pr.map(item); }) : null,
       extras: s.extras ? s.extras.map(item) : null
     };
+  }
+
+  /* ---------------- 🎲 random set ----------------
+   * The panel's "quick creation" request: one click fills the slide with a
+   * random set of real photos, in the same shape as this template's Quick
+   * Sets, so the template's own applySet handles it. Each click gives a
+   * different set. Items mostly come from ONE familiar category (all
+   * animals, all fruits…) to keep a slide simple for level-1 learners. */
+  var CHECK_Q = {
+    hayop:     { fil: "Hayop ba ito?",              en: "Is it an animal?" },
+    prutas:    { fil: "Prutas ba ito?",             en: "Is it a fruit?" },
+    gulay:     { fil: "Gulay ba ito?",              en: "Is it a vegetable?" },
+    paaralan:  { fil: "Gamit ba ito sa paaralan?",  en: "Is it used in school?" },
+    bahay:     { fil: "Gamit ba ito sa bahay?",     en: "Is it used at home?" },
+    pagkain:   { fil: "Pagkain o inumin ba ito?",   en: "Is it food or a drink?" },
+    kalikasan: { fil: "Bahagi ba ito ng kalikasan?", en: "Is it part of nature?" },
+    pansarili: { fil: "Pansariling gamit ba ito?",  en: "Is it a personal thing?" },
+    laruan:    { fil: "Laruan o sasakyan ba ito?",  en: "Is it a toy or a vehicle?" }
+  };
+  function shuffle(a) {
+    a = a.slice();
+    for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; }
+    return a;
+  }
+  function idsIn(cat) { return DATA.photos.filter(function (p) { return p.cat === cat; }).map(function (p) { return p.id; }); }
+  function catsWith(n) { return shuffle(DATA.categories.filter(function (c) { return idsIn(c.id).length >= n; })); }
+  // Photos whose names (in the current language) start with different
+  // letters — for the beginning-letter templates.
+  function distinctLetters(n) {
+    var seen = {}, out = [];
+    shuffle(DATA.photos).forEach(function (p) {
+      var l = firstLetterOf(p[lang()] || p.fil);
+      if (out.length < n && l && !seen[l]) { seen[l] = true; out.push(p.id); }
+    });
+    return out;
+  }
+
+  function firstLetterOf(word) {
+    var m = String(word || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().match(/[a-z]/);
+    return m ? m[0] : "";
+  }
+
+  // Level 1 / 2 / 3 — like the templates' Easy → Medium → Hard slides:
+  // more pictures per level, and at Level 3 more mixing between categories.
+  var LEVELS = [
+    { n: 1, fil: "Level 1 · Madali",     en: "Level 1 · Easy",   tip: "Kaunting litrato, iisang kategorya" },
+    { n: 2, fil: "Level 2 · Katamtaman", en: "Level 2 · Medium", tip: "Mas maraming litrato" },
+    { n: 3, fil: "Level 3 · Mahirap",    en: "Level 3 · Hard",   tip: "Pinakamaraming litrato, halo-halong kategorya" }
+  ];
+  function byLevel(level, l1, l2, l3) { return level === 1 ? l1 : level === 2 ? l2 : l3; }
+  // Sequencing's sets are fixed sequences, so it has no levels.
+  function hasLevels() { return cfg.template !== "sequencing"; }
+
+  function randomSet(level) {
+    level = level === 1 || level === 3 ? level : 2;
+    var c, ids, n, tag = { fil: " (Level " + level + ")", en: " (Level " + level + ")" };
+    function named(fil, en) { return { fil: "Random: " + fil + tag.fil, en: "Random: " + en + tag.en }; }
+    switch (cfg.template) {
+      case "matching":
+        n = byLevel(level, 3, 4, 5);
+        if (level === 3) {
+          ids = shuffle(DATA.photos.map(function (p) { return p.id; })).slice(0, n);
+          c = { fil: "Halo-halo", en: "Mixed" };
+        } else {
+          c = catsWith(n)[0]; if (!c) return null; ids = shuffle(idsIn(c.id)).slice(0, n);
+        }
+        return Object.assign({ id: "random",
+          title: { fil: "Pagtapatin ang Magkapareho", en: "Match the Same Pictures" },
+          instruction: { fil: "Pagdugtungin ng linya ang magkaparehong larawan.", en: "Draw a line to match the same pictures." },
+          pairs: ids.map(function (id) { return [id, id]; }) }, named(c.fil, c.en));
+      case "sorting":
+        var per = byLevel(level, 2, 3, 3);
+        var gs = catsWith(per).slice(0, byLevel(level, 2, 2, 3));
+        if (gs.length < 2) return null;
+        return Object.assign({ id: "random",
+          groups: gs.map(function (g) { return { fil: g.fil, en: g.en, items: shuffle(idsIn(g.id)).slice(0, per) }; }) },
+          named(gs.map(function (g) { return g.fil; }).join(", "), gs.map(function (g) { return g.en; }).join(", ")));
+      case "labeling":
+        n = byLevel(level, 3, 4, 5);
+        var ex = byLevel(level, 0, 1, 2);
+        c = catsWith(n + ex)[0]; if (!c) return null; ids = shuffle(idsIn(c.id));
+        return Object.assign({ id: "random", items: ids.slice(0, n), extras: ids.slice(n, n + ex) }, named(c.fil, c.en));
+      case "check":
+        n = byLevel(level, 2, 3, 4);   // this many ✓ and this many ✗
+        c = catsWith(n)[0]; if (!c) return null;
+        var yes = shuffle(idsIn(c.id)).slice(0, n);
+        var no = shuffle(DATA.photos.filter(function (p) { return p.cat !== c.id; }).map(function (p) { return p.id; })).slice(0, n);
+        var q = CHECK_Q[c.id] || { fil: c.fil + " ba ito?", en: "Is it in " + c.en + "?" };
+        return Object.assign({ id: "random", title: q,
+          instruction: { fil: "Lagyan ng tsek (✓) kung oo, at ekis (✗) kung hindi.", en: "Put a check (✓) if yes, and an X if not." },
+          items: shuffle(yes.map(function (id) { return { id: id, yes: true }; }).concat(no.map(function (id) { return { id: id, yes: false }; }))) },
+          named(q.fil, q.en));
+      case "identification":
+        return Object.assign({ id: "random", items: distinctLetters(byLevel(level, 3, 4, 5)) }, named("Unang Letra", "Beginning Letters"));
+      case "written":
+        return Object.assign({ id: "random", answer: "letter", items: distinctLetters(byLevel(level, 3, 4, 5)) }, named("Unang Letra", "Beginning Letters"));
+      default:
+        // Sequencing (and anything else with Quick Sets): the order of a
+        // sequence carries meaning, so pick one of the ready-made sets.
+        var all = sets();
+        return all.length ? all[Math.floor(Math.random() * all.length)] : null;
+    }
+  }
+
+  function applyRandom(level) {
+    if (!cfg.applySet) return;
+    // A category with too few photos for a level (e.g. after the library
+    // data is edited) must not break the page — just say so.
+    var s = null;
+    try { s = randomSet(level); } catch (e) { s = null; }
+    var ok = s && ((s.pairs && s.pairs.length) || (s.groups && s.groups.length && s.groups.every(function (g) { return g.items.length; })) ||
+      (s.items && s.items.length));
+    if (!ok) {
+      var msg = "Walang sapat na litrato sa library para sa level na ito. Subukan ang ibang level.";
+      if (window.showToast) window.showToast(msg, "error"); else alert(msg);
+      return;
+    }
+    var message = "Papalitan nito ng random na mga larawan ang laman ng kasalukuyang slide. Ituloy?";
+    var ask = window.appConfirm
+      ? window.appConfirm(message, { title: "🎲 Random na set" + (hasLevels() ? " — Level " + level : "") + "?", okText: "Ituloy", cancelText: "Huwag" })
+      : Promise.resolve(confirm(message));
+    ask.then(function (ok) {
+      if (!ok) return;
+      cfg.applySet(resolveSet(s), setLang(s));
+      if (root) hide();
+    });
+  }
+
+  // "🎲 Random na set" + one button per level (or a single button for
+  // templates without levels). Filled again by init(), because templates
+  // build the side card with launcher() just before calling init().
+  var randomHolders = [];
+  function fillRandom(holder) {
+    holder.innerHTML = "";
+    holder.appendChild(el("div", "iml-rnd-title", "🎲 Random na set"));
+    if (!hasLevels()) {
+      var one = el("button", "iml-rnd-btn", "Pumili ng random na set"); one.type = "button";
+      one.addEventListener("click", function () { applyRandom(2); });
+      holder.appendChild(one);
+      return holder;
+    }
+    var row = el("div", "iml-rnd-row");
+    LEVELS.forEach(function (L) {
+      var b = el("button", "iml-rnd-btn iml-rnd-l" + L.n); b.type = "button";
+      b.appendChild(el("b", null, "Level " + L.n));
+      b.appendChild(el("span", null, L.fil.split(" · ")[1]));
+      b.title = L.tip + " — i-click ulit para sa ibang set.";
+      b.addEventListener("click", function () { applyRandom(L.n); });
+      row.appendChild(b);
+    });
+    holder.appendChild(row);
+    return holder;
+  }
+  function randomBox() {
+    var h = el("div", "iml-rnd");
+    randomHolders.push(h);
+    return fillRandom(h);
   }
 
   function renderPhotos() {
@@ -386,6 +555,7 @@
   window.ImageLibrary = {
     init: function (opts) {
       cfg = Object.assign(cfg, opts || {});
+      randomHolders.forEach(fillRandom);   // now the template is known
       if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { setTimeout(maybeIntro, 900); });
       else setTimeout(maybeIntro, 900);
     },
@@ -410,6 +580,7 @@
       var b = el("button", "iml-launch-btn", "📷 Buksan ang Image Library"); b.type = "button";
       b.addEventListener("click", function () { open({}); });
       w.appendChild(newBadge(b));
+      w.appendChild(randomBox());
       return w;
     },
     isLibraryImage: function (src) { return typeof src === "string" && src.indexOf("/image_library/photos/") !== -1; },
