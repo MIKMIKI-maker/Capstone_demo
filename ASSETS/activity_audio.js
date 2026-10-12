@@ -203,6 +203,66 @@
     [title, instr].forEach(function (n) { if (n) obs.observe(n, { childList: true, characterData: true, subtree: true }); });
   }
 
+  /* ── Tap-to-hear: tapping a picture or word says its name ──
+   * "Dog" for a picture of a dog. Image Library photos have an English
+   * name in IMAGE_LIBRARY_DATA, so a library photo is always named in
+   * English; other pictures use their alt text or the label on their card,
+   * and word/letter tiles say their text. Buttons (Check answers, Try
+   * Again…) are skipped. Only while Voice is on. */
+  var libNames = null;
+  function libraryName(src) {
+    var data = window.IMAGE_LIBRARY_DATA;
+    if (!data || !src || src.indexOf('/image_library/photos/') === -1) return '';
+    if (!libNames) {
+      libNames = {};
+      (data.photos || []).forEach(function (p) { libNames[String(p.file).split('/').pop()] = p.en || p.fil; });
+    }
+    return libNames[decodeURIComponent(src.split('?')[0].split('/').pop())] || '';
+  }
+  function shortText(node) {
+    var t = (node && (node.innerText || node.textContent) || '').replace(/\s+/g, ' ').trim();
+    return t.length && t.length <= 30 ? t : '';
+  }
+  var CONTROL_WORDS = /check|try again|retake|submit|next|previous|back|exit|start|hint|clear|undo|reset/i;
+  function tapName(target, stage) {
+    var stageW = stage.offsetWidth || 1;
+    var title = el('Title'), instr = el('Instr');
+    if ((title && title.contains(target)) || (instr && instr.contains(target))) return '';
+    var btn = target.closest('button');
+    if (btn && CONTROL_WORDS.test(btn.textContent || '')) return '';
+    // The item "card": the biggest ancestor (inside the stage, narrower than
+    // most of it) that still holds just one picture — so its label comes along.
+    var card = null;
+    for (var n = target; n && n !== stage; n = n.parentElement) {
+      var imgs = n.tagName === 'IMG' ? 1 : n.querySelectorAll('img').length;
+      if (imgs > 1 || n.offsetWidth > stageW * 0.6) break;
+      if (imgs === 1) card = n;
+    }
+    if (card) {
+      var img = card.tagName === 'IMG' ? card : card.querySelector('img');
+      return libraryName(img.getAttribute('src')) || (img.getAttribute('alt') || '').trim() || shortText(card);
+    }
+    // A word or letter tile with no picture.
+    for (n = target; n && n !== stage; n = n.parentElement) {
+      if (n.offsetWidth > stageW * 0.4) break;
+      var t = shortText(n);
+      if (t && !CONTROL_WORDS.test(t)) return t;
+    }
+    return '';
+  }
+  var lastTap = { text: '', at: 0 };
+  function onStageTap(e) {
+    if (!settings.voice || !synth) return;
+    var stage = e.target.closest && e.target.closest('[id$="Stage"]');
+    if (!stage || !/^[a-z]{3}Stage$/.test(stage.id)) return;
+    var name = tapName(e.target, stage).replace(/^[✀-➿-☀-⛿\uD83C-􏰀-\uDFFF\s✓✗✔✘]+/, '').trim();
+    if (!name) return;
+    var now = Date.now();
+    if (name === lastTap.text && now - lastTap.at < 700) return;   // one tap, one word
+    lastTap = { text: name, at: now };
+    speak(name, { rate: 0.85 });
+  }
+
   // Called from initActivityTheme() — i.e. after a real tap, so audio is allowed.
   function mount() {
     if (readBtn) return;
@@ -232,6 +292,9 @@
     buildPanel();
     applyMusic();
     watchSlides();
+    // pointerdown (not click) so drag-to-match items speak too; passive,
+    // so it never gets in the way of the activity's own handlers.
+    document.addEventListener('pointerdown', onStageTap, { capture: true, passive: true });
 
     // Read the first slide once the "how to answer" demo is dismissed.
     lastAutoRead = slideText();
