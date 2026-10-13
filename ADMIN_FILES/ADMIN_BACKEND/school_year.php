@@ -448,3 +448,94 @@ function loadClassesForSchoolYear(mysqli $conn, int $sy): array {
 
     return ['classes' => array_values($classes), 'teachers' => $teachers, 'sections' => SCHOOL_SECTIONS];
 }
+
+/* ── End-of-year recommendations and progress summary ────────────────────
+ * A teacher marks each learner for the next School Year (My Learners), and
+ * the Admin sees that plus the learner's progress in the Set as Active
+ * steps. The Admin still makes the final choice there. */
+
+// Same 80% mastery target as Goals & Targets on the progress pages.
+const LEARNER_GOAL_TARGET = 80;
+const LEARNER_RECOMMENDATIONS = ['continue', 'move', 'graduate'];
+// Same Learning Domain keys as student_get_progress.php's skills breakdown.
+const LEARNER_SKILL_DOMAINS = [
+    'cognitive' => 'Cognitive', 'communication' => 'Communication', 'motor' => 'Fine Motor',
+    'social' => 'Social Skills', 'self' => 'Self Help', 'language' => 'Language Development',
+    'aesthetic' => 'Aesthetic & Creative',
+];
+
+// Created on first use, so no schema version bump is needed.
+function ensureLearnerRecommendationSchema(mysqli $conn): void {
+    $conn->query("CREATE TABLE IF NOT EXISTS learner_recommendations (
+        id               INT AUTO_INCREMENT PRIMARY KEY,
+        school_year_id   INT NOT NULL,
+        student_admin_id INT NOT NULL,
+        recommendation   VARCHAR(20) NOT NULL,
+        note             VARCHAR(500) NULL,
+        teacher_admin_id INT NOT NULL,
+        updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uniq_rec (school_year_id, student_admin_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+}
+
+/** [student_admin_id => ['recommendation', 'note', 'teacher_name']] for a S.Y. */
+function learnerRecommendations(mysqli $conn, int $sy): array {
+    ensureLearnerRecommendationSchema($conn);
+    $out = [];
+    $res = $conn->query("SELECT r.student_admin_id, r.recommendation, r.note, CONCAT(t.first_name, ' ', t.last_name) AS teacher_name
+        FROM learner_recommendations r LEFT JOIN admin_accounts t ON t.id = r.teacher_admin_id
+        WHERE r.school_year_id = $sy");
+    while ($res && ($row = $res->fetch_assoc())) {
+        $out[(int)$row['student_admin_id']] = [
+            'recommendation' => $row['recommendation'],
+            'note' => (string)($row['note'] ?? ''),
+            'teacher_name' => trim((string)$row['teacher_name']),
+        ];
+    }
+    return $out;
+}
+
+/**
+ * Each learner's results in a S.Y.: [student_admin_id => ['avg', 'done',
+ * 'skills_met', 'skills_total', 'below' => [domain names under target]]].
+ * A finalized score wins over the auto score, as on the progress pages.
+ */
+function learnerProgressSummaries(mysqli $conn, int $sy): array {
+    $res = $conn->query("SELECT s.admin_account_id AS sid, ta.subject,
+            CASE WHEN sub.is_finalized = 1 AND sub.finalized_score IS NOT NULL THEN sub.finalized_score ELSE lp.score END AS score
+        FROM learner_progress lp
+        INNER JOIN students s ON s.id = lp.student_id
+        INNER JOIN teacher_activities ta ON ta.id = lp.activity_id AND ta.school_year_id = $sy
+        LEFT JOIN activity_submissions sub ON sub.student_id = lp.student_id AND sub.activity_id = lp.activity_id AND sub.teacher_id = lp.teacher_id
+        WHERE s.admin_account_id IS NOT NULL AND lp.score IS NOT NULL");
+    $acc = [];
+    while ($res && ($row = $res->fetch_assoc())) {
+        $sid = (int)$row['sid'];
+        $score = (float)$row['score'];
+        if (!isset($acc[$sid])) $acc[$sid] = ['sum' => 0, 'n' => 0, 'skills' => []];
+        $acc[$sid]['sum'] += $score;
+        $acc[$sid]['n']++;
+        $subject = strtolower((string)$row['subject']);
+        foreach (LEARNER_SKILL_DOMAINS as $key => $name) {
+            if (strpos($subject, $key) !== false) {
+                $acc[$sid]['skills'][$name][] = $score;
+                break;
+            }
+        }
+    }
+    $out = [];
+    foreach ($acc as $sid => $a) {
+        $below = [];
+        foreach ($a['skills'] as $name => $scores) {
+            if (array_sum($scores) / count($scores) < LEARNER_GOAL_TARGET) $below[] = $name;
+        }
+        $out[$sid] = [
+            'avg' => (int)round($a['sum'] / $a['n']),
+            'done' => $a['n'],
+            'skills_total' => count($a['skills']),
+            'skills_met' => count($a['skills']) - count($below),
+            'below' => $below,
+        ];
+    }
+    return $out;
+}

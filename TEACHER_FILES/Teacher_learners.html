@@ -15,6 +15,10 @@
     <link href="TEACHER_CSS/Teacher_learners.css?v=3" rel="stylesheet" />
     <link href="TEACHER_CSS/teacher_theme.css?v=2" rel="stylesheet" />
     <link href="TEACHER_CSS/teacher_responsive.css?v=76" rel="stylesheet" />
+<style>
+    .teacher-rec-select { font-family: inherit; font-size: 12px; padding: 6px 8px; border: 1.5px solid #e2e8f0; border-radius: 8px; background: #fff; color: #1e293b; max-width: 180px; cursor: pointer; }
+    .teacher-rec-select:disabled { opacity: .55; cursor: not-allowed; }
+</style>
 </head>
 
 <body>
@@ -144,6 +148,7 @@
                             <th>Contact</th>
                             <th>Email</th>
                             <th>Status</th>
+                            <th title="Your recommendation for next School Year — the Admin sees it when starting the new School Year">Next S.Y.</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -320,7 +325,8 @@
             // Skip a tick while the enroll modal is open, so it can't reset
             // the in-progress enrollment form underneath it.
             window.startAutoRefresh(function () { loadLearners(); loadStats(); }, 5000, function () {
-                return !document.getElementById('teacher-addModal').classList.contains('hidden');
+                var picking = document.activeElement && document.activeElement.classList.contains('teacher-rec-select');
+                return picking || !document.getElementById('teacher-addModal').classList.contains('hidden');
             });
         });
 
@@ -346,17 +352,46 @@
         }
 
         /* ── Learners table ── */
+        // Your end-of-year recommendation per learner ({ <student id>: { recommendation } }).
+        var learnerRecs = {};
+        var REC_OPTIONS = [
+            ['', '— Select —'],
+            ['continue', '✅ Continue in class'],
+            ['move', '➡️ Move to another class'],
+            ['graduate', '🎓 Ready to graduate']
+        ];
         function loadLearners() {
-            fetch('TEACHER_BACKEND/teacher_list_learners.php?teacher_id=' + TEACHER_ID + '&_t=' + Date.now(), { cache: 'no-store' })
+            var list = fetch('TEACHER_BACKEND/teacher_list_learners.php?teacher_id=' + TEACHER_ID + '&_t=' + Date.now(), { cache: 'no-store' })
+                .then(function(r) { return r.json(); });
+            var recs = fetch('TEACHER_BACKEND/teacher_learner_recommendations.php?_t=' + Date.now(), { cache: 'no-store' })
                 .then(function(r) { return r.json(); })
-                .then(function(data) { allStudents = data; renderTable(data); })
+                .then(function(d) { return (d && d.success && d.recommendations) || {}; })
+                .catch(function() { return {}; });
+            Promise.all([list, recs])
+                .then(function(res) { learnerRecs = res[1]; allStudents = res[0]; filterTable(); })
                 .catch(function(){});
+        }
+
+        function saveRecommendation(studentId, value, select) {
+            var fd = new FormData();
+            fd.append('student_id', studentId);
+            fd.append('recommendation', value);
+            select.disabled = true;
+            fetch('TEACHER_BACKEND/teacher_learner_recommendations.php', { method: 'POST', body: fd })
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    select.disabled = false;
+                    if (!d.success) { window.showToast(d.message || 'Could not save.', 'error', 4000); select.value = (learnerRecs[studentId] || {}).recommendation || ''; return; }
+                    if (value) learnerRecs[studentId] = { recommendation: value }; else delete learnerRecs[studentId];
+                    window.showToast(value ? 'Recommendation saved — the Admin will see it when starting the new School Year.' : 'Recommendation cleared.', 'success', 3500);
+                })
+                .catch(function() { select.disabled = false; window.showToast('Network error. Please try again.', 'error', 4000); });
         }
 
         function renderTable(students) {
             var tbody = document.querySelector('#teacher-learnersTable tbody');
             if (!students || !students.length) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:28px;color:#94A3B8;">No students enrolled yet</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:28px;color:#94A3B8;">No students enrolled yet</td></tr>';
                 return;
             }
             tbody.innerHTML = students.map(function(s) {
@@ -370,6 +405,9 @@
                     + '<td data-label="Contact">' + escHtml(s.parent_phone || '—') + '</td>'
                     + '<td data-label="Email">' + (s.parent_email ? '<a href="mailto:' + escHtml(s.parent_email) + '" style="color:#2563EB;text-decoration:none;font-size:12px;">' + escHtml(s.parent_email) + '</a>' : '<span style="color:#94A3B8;">—</span>') + '</td>'
                     + '<td data-label="Status"><span class="' + badgeCls + '">' + statusTxt + '</span></td>'
+                    + '<td data-label="Next S.Y."><select class="teacher-rec-select" data-sy-write aria-label="Next School Year for ' + escHtml(s.name) + '" onchange="saveRecommendation(' + s.id + ', this.value, this)">'
+                    +   REC_OPTIONS.map(function(o) { var cur = (learnerRecs[s.id] || {}).recommendation || ''; return '<option value="' + o[0] + '"' + (o[0] === cur ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('')
+                    + '</select></td>'
                     + '<td data-label="Actions"><button class="btn-view" onclick="viewProgress(' + s.id + ')" type="button">View Progress</button></td>'
                     + '</tr>';
             }).join('');

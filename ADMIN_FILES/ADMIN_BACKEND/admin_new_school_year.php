@@ -72,6 +72,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             'target' => ['id' => (int)$target['id'], 'name' => $target['name'],
                          'start_date' => $target['start_date'], 'end_date' => $target['end_date']],
             'target_classes' => $targetClasses,
+            // This year's results and each teacher's recommendation, shown
+            // next to every learner so the Admin has a basis for the choice.
+            'learner_progress' => (object)learnerProgressSummaries($conn, $activeId),
+            'learner_recommendations' => (object)learnerRecommendations($conn, $activeId),
+            'goal_target' => LEARNER_GOAL_TARGET,
             'suggested' => ['name' => $target['name'], 'start_date' => $target['start_date'], 'end_date' => $target['end_date']],
         ] + loadClassesForSchoolYear($conn, $activeId));
         exit;

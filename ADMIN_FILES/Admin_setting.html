@@ -967,6 +967,8 @@
     var _wiz = null;
     var WIZ_CREATE_STEPS = ['School Year'];
     var WIZ_ACTIVATE_STEPS = ['Classes', 'Students', 'Review'];
+    // The teacher's end-of-year recommendation (My Learners).
+    var WIZ_REC_LABELS = { 'continue': '✅ Continue in class', 'move': '➡️ Move to another class', 'graduate': '🎓 Ready to graduate' };
     var WIZ_EXITS = ['Graduated', 'Transferred', 'Dropped'];
 
     (function () {
@@ -985,7 +987,12 @@
         + '.sy-wiz-foot{justify-content:space-between!important;}'
         + '.sy-review{border:1px solid #e2e8f0;border-radius:12px;padding:12px 16px;margin-bottom:12px;font-size:13px;color:#334155;}'
         + '.sy-review h4{font-size:13.5px;margin:0 0 8px;color:#1e293b;}'
-        + '.sy-review li{margin:3px 0;}';
+        + '.sy-review li{margin:3px 0;}'
+        + '.sy-wiz-who{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1;}'
+        + '.sy-wiz-info{display:flex;flex-wrap:wrap;gap:4px;}'
+        + '.sy-chip{font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:20px;background:#f1f5f9;color:#475569;white-space:nowrap;}'
+        + '.sy-chip.good{background:#dcfce7;color:#166534;}.sy-chip.warn{background:#fef3c7;color:#92400e;}.sy-chip.none{background:#f8fafc;color:#94a3b8;}'
+        + '.sy-chip.rec{background:#ede9fe;color:#5b21b6;}';
       document.head.appendChild(s);
     })();
 
@@ -1043,12 +1050,19 @@
             c.students.forEach(function (st) {
               var row = { student_admin_id: st.student_admin_id, name: st.name, from: c.section_name + ' – ' + c.teacher_name,
                 from_key: 'c' + c.id, action: 'continue', class_key: 'c' + c.id, exit_reason: 'Graduated', checked: false };
+              var rec = (data.learner_recommendations || {})[st.student_admin_id];
+              row.rec = rec || null;
               if (earlierClass[st.student_admin_id]) {
                 row.class_key = earlierClass[st.student_admin_id];
                 row.action = row.class_key === row.from_key ? 'continue' : 'move';
               } else if (st.exit_reason) {
                 row.action = 'exit';
                 row.exit_reason = st.exit_reason;
+              } else if (rec && rec.recommendation === 'graduate') {
+                // The teacher's call is the starting point; "move" can't name a
+                // class, so it stays on Stay with the badge as a reminder.
+                row.action = 'exit';
+                row.exit_reason = 'Graduated';
               }
               if (row.action !== 'exit' && !_wiz.classes.some(function (k) { return k.key === row.class_key; })) {
                 row.class_key = _wiz.classes.length ? _wiz.classes[0].key : '';
@@ -1140,6 +1154,29 @@
         + '<button type="button" class="sy-input" style="width:auto;margin-top:8px;cursor:pointer;" onclick="wizAddClass()"><i class="fa-solid fa-plus"></i> Add class</button>';
     }
 
+    // Progress this S.Y. and the teacher's recommendation, under the name.
+    function wizLearnerInfo(st) {
+      var d = _wiz.data, chips = [];
+      var pr = (d.learner_progress || {})[st.student_admin_id];
+      var target = d.goal_target || 80;
+      if (pr) {
+        chips.push('<span class="sy-chip ' + (pr.avg >= target ? 'good' : 'warn') + '" title="Average score this School Year">Avg ' + pr.avg + '%</span>');
+        chips.push('<span class="sy-chip" title="Activities with a score">' + pr.done + ' activit' + (pr.done === 1 ? 'y' : 'ies') + '</span>');
+        if (pr.skills_total) {
+          chips.push('<span class="sy-chip ' + (pr.skills_met === pr.skills_total ? 'good' : 'warn') + '" title="'
+            + (pr.below.length ? 'Below ' + target + '%: ' + escSy(pr.below.join(', ')) : 'All skill areas at ' + target + '% or more') + '">IEP goals ' + pr.skills_met + '/' + pr.skills_total + ' met</span>');
+        }
+      } else {
+        chips.push('<span class="sy-chip none">No scores yet</span>');
+      }
+      if (st.rec) {
+        chips.push('<span class="sy-chip rec" title="' + escSy((st.rec.teacher_name ? st.rec.teacher_name + ': ' : '') + (st.rec.note || '')) + '">Teacher: '
+          + (WIZ_REC_LABELS[st.rec.recommendation] || escSy(st.rec.recommendation)) + '</span>');
+      }
+      return '<div class="sy-wiz-info">' + chips.join('') + '</div>'
+        + (st.rec && st.rec.note ? '<div style="font-size:11px;color:#64748b;font-style:italic;">“' + escSy(st.rec.note) + '”</div>' : '');
+    }
+
     function wizPaneStudents() {
       var groups = [];
       _wiz.students.forEach(function (st, i) {
@@ -1165,14 +1202,15 @@
             var st = _wiz.students[i];
             return '<div class="sy-wiz-row sy-wiz-student st-' + st.action + '" data-name="' + escSy(st.name.toLowerCase()) + '">'
               + '<input type="checkbox" class="sy-wiz-check"' + (st.checked ? ' checked' : '') + ' onchange="_wiz.students[' + i + '].checked=this.checked;renderWizard()" aria-label="Select ' + escSy(st.name) + '" />'
-              + '<span class="sy-wiz-name">' + escSy(st.name) + '</span>'
+              + '<div class="sy-wiz-who"><span class="sy-wiz-name">' + escSy(st.name) + '</span>' + wizLearnerInfo(st) + '</div>'
               + '<select class="sy-input" aria-label="Next School Year for ' + escSy(st.name) + '" onchange="wizApply([' + i + '], this.value)">' + wizChoiceOptions(st.from_key, wizChoice(st)) + '</select>'
               + '</div>';
           }).join(''))
           + '</div>';
       }).join('') || '<p class="sy-hint">No enrolled students this School Year.</p>';
 
-      return '<p class="sy-hint">Everyone starts on <b>Stay</b> — only change the ones who move or leave. Use <b>Whole class…</b>, or tick students and use <b>Apply to selected…</b>, to change many at once.</p>'
+      var recCount = _wiz.students.filter(function (st) { return st.rec; }).length;
+      return '<p class="sy-hint">Everyone starts on <b>Stay</b>' + (recCount ? ', except learners the teacher marked <b>Ready to graduate</b> (' + recCount + ' learner(s) have a teacher recommendation — see the purple badge)' : '') + ' — only change the ones who move or leave. The green/yellow badges show each learner\'s average and how many IEP goal areas reached ' + (_wiz.data.goal_target || 80) + '% this year. Use <b>Whole class…</b>, or tick students and use <b>Apply to selected…</b>, to change many at once.</p>'
         + '<div class="sy-wiz-summary">'
         +   '<span>✅ <b>' + counts.continue + '</b> Stay</span><span>➡️ <b>' + counts.move + '</b> Move</span><span>🎓 <b>' + counts.exit + '</b> Exit</span>'
         +   '<input id="wiz-search" class="sy-input" type="search" placeholder="Search student..." value="' + escSy(_wiz.search) + '" oninput="_wiz.search=this.value;wizFilter()" />'
