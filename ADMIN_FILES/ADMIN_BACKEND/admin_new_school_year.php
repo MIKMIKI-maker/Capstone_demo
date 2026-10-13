@@ -1,11 +1,16 @@
 <?php
 /**
- * "Start New School Year" wizard (Admin Settings → School Year).
- * GET  → suggested name/dates and the Active S.Y.'s classes + students, so
- *        the wizard can offer to copy them.
- * POST (JSON body) → creates the S.Y., its classes, and each student's
+ * Moving to a new School Year (Admin Settings → School Year).
+ * "Start New School Year" only adds the S.Y. (admin_school_years.php
+ * action=add, Inactive). "Set as Active" on a S.Y. later than the Active one
+ * then runs the Classes → Students → Review steps against it (target_id /
+ * school_year_id below); going back to an earlier S.Y. is a plain activate.
+ * GET  [?target_id] → suggested name/dates (or that S.Y.'s), the Active S.Y.'s
+ *        classes + students to copy, and the target's earlier setup if any.
+ * POST (JSON body) → creates the S.Y. (or uses school_year_id, replacing its
+ *        earlier classes/enrollments), its classes, and each student's
  *        enrollment, then makes it the Active S.Y.:
- *   { name, start_date, end_date,
+ *   { school_year_id?, name, start_date, end_date,
  *     classes:  [{ key, section_name, teacher_admin_id }],
  *     students: [{ student_admin_id, action: "continue"|"move"|"exit",
  *                  class_key (continue/move), exit_reason (exit) }] }
@@ -29,8 +34,48 @@ if (!$conn) {
 
 $activeId = getActiveSchoolYearId($conn);
 
+/**
+ * A S.Y. already in the list that is later than the Active one: "Set as
+ * Active" on it runs the Classes/Students/Review steps for it instead of
+ * creating another S.Y. Returns its row, or null (with an error echoed).
+ */
+function loadTargetSchoolYear(mysqli $conn, int $targetId, int $activeId): ?array {
+    $stmt = $conn->prepare("SELECT t.id, t.name, t.start_date, t.end_date, t.is_active, a.start_date AS active_start
+        FROM school_years t JOIN school_years a ON a.id = ? WHERE t.id = ?");
+    $stmt->bind_param("ii", $activeId, $targetId);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!$row) {
+        echo json_encode(['success' => false, 'message' => 'School Year not found.']);
+        return null;
+    }
+    if ((int)$row['is_active'] === 1 || $row['start_date'] <= $row['active_start']) {
+        echo json_encode(['success' => false, 'message' => "S.Y. {$row['name']} is not a later School Year than the Active one."]);
+        return null;
+    }
+    return $row;
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     reconcileActiveEnrollments($conn);
+    $targetId = (int)($_GET['target_id'] ?? 0);
+    if ($targetId) {
+        $target = loadTargetSchoolYear($conn, $targetId, $activeId);
+        if (!$target) exit;
+        $current = $conn->query("SELECT name FROM school_years WHERE id = $activeId")->fetch_assoc();
+        // What was set up for that S.Y. before (if it was Active once), so
+        // the Admin starts from those choices instead of from scratch.
+        $targetClasses = loadClassesForSchoolYear($conn, $targetId)['classes'];
+        echo json_encode(['success' => true,
+            'current_name' => $current['name'],
+            'target' => ['id' => (int)$target['id'], 'name' => $target['name'],
+                         'start_date' => $target['start_date'], 'end_date' => $target['end_date']],
+            'target_classes' => $targetClasses,
+            'suggested' => ['name' => $target['name'], 'start_date' => $target['start_date'], 'end_date' => $target['end_date']],
+        ] + loadClassesForSchoolYear($conn, $activeId));
+        exit;
+    }
     $latest = $conn->query("SELECT name FROM school_years ORDER BY start_date DESC LIMIT 1")->fetch_assoc();
     $nextStart = (int)explode('-', $latest['name'])[1];
     $current = $conn->query("SELECT name FROM school_years WHERE id = $activeId")->fetch_assoc();
@@ -50,6 +95,15 @@ $input = json_decode(file_get_contents('php://input'), true);
 if (!is_array($input)) {
     echo json_encode(['success' => false, 'message' => 'Invalid request']);
     exit;
+}
+
+$targetId = (int)($input['school_year_id'] ?? 0);
+if ($targetId) {
+    $target = loadTargetSchoolYear($conn, $targetId, $activeId);
+    if (!$target) exit;
+    $input['name'] = $target['name'];
+    $input['start_date'] = $target['start_date'];
+    $input['end_date'] = $target['end_date'];
 }
 
 $name  = trim((string)($input['name'] ?? ''));
@@ -108,13 +162,20 @@ foreach ((array)($input['students'] ?? []) as $s) {
 
 $conn->begin_transaction();
 try {
-    $stmt = $conn->prepare("INSERT INTO school_years (name, start_date, end_date) VALUES (?, ?, ?)");
-    $stmt->bind_param("sss", $name, $start, $end);
-    if (!$stmt->execute()) {
-        throw new RuntimeException($conn->errno === 1062 ? "School Year $name already exists." : 'Could not create School Year.');
+    if ($targetId) {
+        // The choices made now replace whatever was set up for that S.Y. before.
+        $newId = $targetId;
+        $conn->query("DELETE FROM class_enrollments WHERE school_year_id = $newId");
+        $conn->query("DELETE FROM classes WHERE school_year_id = $newId");
+    } else {
+        $stmt = $conn->prepare("INSERT INTO school_years (name, start_date, end_date) VALUES (?, ?, ?)");
+        $stmt->bind_param("sss", $name, $start, $end);
+        if (!$stmt->execute()) {
+            throw new RuntimeException($conn->errno === 1062 ? "School Year $name already exists." : 'Could not create School Year.');
+        }
+        $newId = (int)$stmt->insert_id;
+        $stmt->close();
     }
-    $newId = (int)$stmt->insert_id;
-    $stmt->close();
 
     $classIds = [];
     $stmt = $conn->prepare("INSERT INTO classes (school_year_id, section_name, teacher_admin_id) VALUES (?, ?, ?)
@@ -128,12 +189,16 @@ try {
 
     $enroll = $conn->prepare("INSERT IGNORE INTO class_enrollments (school_year_id, class_id, student_admin_id) VALUES (?, ?, ?)");
     $markExit = $conn->prepare("UPDATE class_enrollments SET exit_reason = ? WHERE school_year_id = ? AND student_admin_id = ?");
+    // A student marked Exit in an earlier run of these steps who now stays.
+    $clearExit = $conn->prepare("UPDATE class_enrollments SET exit_reason = NULL WHERE school_year_id = ? AND student_admin_id = ?");
     $moved = 0; $exited = 0;
     foreach ($students as $s) {
         if ($s['action'] === 'enroll') {
             $classId = $classIds[$s['class_key']];
             $enroll->bind_param("iii", $newId, $classId, $s['id']);
             $enroll->execute();
+            $clearExit->bind_param("ii", $activeId, $s['id']);
+            $clearExit->execute();
             moveStudentToTeacher($conn, $s['id'], $classes[$s['class_key']]['teacher']);
             $moved++;
         } else {
@@ -145,6 +210,7 @@ try {
     }
     $enroll->close();
     $markExit->close();
+    $clearExit->close();
 
     $conn->query("UPDATE school_years SET is_active = (id = $newId)");
     seedGradingLocks($conn, $newId);

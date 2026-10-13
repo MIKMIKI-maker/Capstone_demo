@@ -702,11 +702,13 @@
       return months[parseInt(parts[1], 10) - 1] + ' ' + parseInt(parts[2], 10) + ', ' + parts[0];
     }
 
+    var _syYears = [];
     function loadSchoolYears() {
       fetch('ADMIN_BACKEND/school_year_view.php')
         .then(function (r) { return r.json(); })
         .then(function (data) {
           if (!data.success) throw new Error();
+          _syYears = data.years;
           renderSchoolYears(data.years);
           fillClassesYearSelect(data.years);
           // Suggest the S.Y. after the latest one in the Add form.
@@ -851,6 +853,11 @@
     }
 
     function activateSchoolYear(id, name) {
+      var target = _syYears.filter(function (y) { return Number(y.id) === Number(id); })[0];
+      var active = _syYears.filter(function (y) { return y.is_active; })[0];
+      // Moving forward: decide each class and student first (Stay / Move / Exit).
+      if (target && active && target.start_date > active.start_date) { openSyMoveWizard(id); return; }
+      // Going back to an earlier S.Y.: everyone returns to that year's classes.
       syConfirm({
         icon: 'fa-calendar-check', okLabel: 'Set as Active',
         title: 'Set S.Y. ' + name + ' as Active?',
@@ -952,11 +959,14 @@
       }).join('');
     }
 
-    /* ── "Start New School Year" wizard ──────────────────────────────── */
-    // Four steps, one screen each: School Year → Classes → Students → Review.
+    /* ── School Year wizard ───────────────────────────────────────────── */
+    // "Start New School Year" (mode 'create') only names the S.Y. and adds it
+    // as Inactive. "Set as Active" on a later S.Y. (mode 'activate') runs
+    // Classes → Students → Review for it, then makes it Active.
     // Each student has one choice: "continue" | "move:<class key>" | "exit:<reason>".
     var _wiz = null;
-    var WIZ_STEPS = ['School Year', 'Classes', 'Students', 'Review'];
+    var WIZ_CREATE_STEPS = ['School Year'];
+    var WIZ_ACTIVATE_STEPS = ['Classes', 'Students', 'Review'];
     var WIZ_EXITS = ['Graduated', 'Transferred', 'Dropped'];
 
     (function () {
@@ -984,21 +994,67 @@
         .then(function (r) { return r.json(); })
         .then(function (data) {
           if (!data.success) { showSyMsg(data.message || 'Could not load the wizard.', false); return; }
-          // New classes start as a copy of this year's; a student "continues"
-          // into the copy of the class they're in now (same key).
           _wiz = {
-            data: data, step: 1, collapsed: {}, search: '',
+            mode: 'create', steps: WIZ_CREATE_STEPS, data: data, step: 1, collapsed: {}, search: '',
             name: data.suggested.name, start_date: data.suggested.start_date, end_date: data.suggested.end_date,
-            classes: data.classes.map(function (c) {
-              return { key: 'c' + c.id, section_name: c.section_name, teacher_admin_id: c.teacher_admin_id };
-            }),
-            students: []
+            classes: [], students: []
           };
+          renderWizard();
+        })
+        .catch(function () { showSyMsg('Network error. Please try again.', false); });
+    }
+
+    // "Set as Active" on a S.Y. later than the Active one.
+    function openSyMoveWizard(targetId) {
+      fetch('ADMIN_BACKEND/admin_new_school_year.php?target_id=' + encodeURIComponent(targetId))
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data.success) { showSyMsg(data.message || 'Could not load the wizard.', false); return; }
+          _wiz = {
+            mode: 'activate', steps: WIZ_ACTIVATE_STEPS, data: data, step: 1, collapsed: {}, search: '',
+            target_id: data.target.id,
+            name: data.target.name, start_date: data.target.start_date, end_date: data.target.end_date,
+            classes: [], students: []
+          };
+          // Classes start as this year's, or as what was set up for that S.Y.
+          // before. A class with the same Section and Teacher as one now keeps
+          // its key, so a student in it shows as "Stay".
+          var sameAs = {};
+          data.classes.forEach(function (c) { sameAs[c.section_name + '|' + c.teacher_admin_id] = 'c' + c.id; });
+          var keyOfTarget = {};
+          if (data.target_classes && data.target_classes.length) {
+            _wiz.classes = data.target_classes.map(function (c) {
+              var key = sameAs[c.section_name + '|' + c.teacher_admin_id] || ('t' + c.id);
+              keyOfTarget[c.id] = key;
+              return { key: key, section_name: c.section_name, teacher_admin_id: c.teacher_admin_id };
+            });
+          } else {
+            _wiz.classes = data.classes.map(function (c) {
+              return { key: 'c' + c.id, section_name: c.section_name, teacher_admin_id: c.teacher_admin_id };
+            });
+          }
+          var earlierClass = {};
+          (data.target_classes || []).forEach(function (c) {
+            c.students.forEach(function (st) { earlierClass[st.student_admin_id] = keyOfTarget[c.id]; });
+          });
+          // Everyone in this year's classes; earlier choices (a class in that
+          // S.Y., or an Exit recorded here) are pre-selected.
           data.classes.forEach(function (c) {
             c.students.forEach(function (st) {
-              if (st.exit_reason) return;
-              _wiz.students.push({ student_admin_id: st.student_admin_id, name: st.name, from: c.section_name + ' – ' + c.teacher_name,
-                from_key: 'c' + c.id, action: 'continue', class_key: 'c' + c.id, exit_reason: 'Graduated', checked: false });
+              var row = { student_admin_id: st.student_admin_id, name: st.name, from: c.section_name + ' – ' + c.teacher_name,
+                from_key: 'c' + c.id, action: 'continue', class_key: 'c' + c.id, exit_reason: 'Graduated', checked: false };
+              if (earlierClass[st.student_admin_id]) {
+                row.class_key = earlierClass[st.student_admin_id];
+                row.action = row.class_key === row.from_key ? 'continue' : 'move';
+              } else if (st.exit_reason) {
+                row.action = 'exit';
+                row.exit_reason = st.exit_reason;
+              }
+              if (row.action !== 'exit' && !_wiz.classes.some(function (k) { return k.key === row.class_key; })) {
+                row.class_key = _wiz.classes.length ? _wiz.classes[0].key : '';
+                row.action = 'move';
+              }
+              _wiz.students.push(row);
             });
           });
           renderWizard();
@@ -1038,7 +1094,8 @@
     }
 
     function wizStepper() {
-      return '<div class="sy-steps">' + WIZ_STEPS.map(function (label, i) {
+      if (_wiz.steps.length < 2) return '';
+      return '<div class="sy-steps">' + _wiz.steps.map(function (label, i) {
         var n = i + 1;
         var cls = n === _wiz.step ? 'current' : (n < _wiz.step ? 'done' : '');
         var btn = '<button type="button" class="sy-step ' + cls + '"' + (n < _wiz.step ? ' onclick="wizGo(' + n + ')"' : ' disabled') + '>'
@@ -1048,7 +1105,10 @@
     }
 
     function wizPaneSchoolYear() {
-      return '<p class="sy-hint">Name the new School Year. Current: S.Y. ' + escSy(_wiz.data.current_name) + ', which becomes read-only history when you finish. Nothing is deleted.</p>'
+      var active = _syYears.filter(function (a) { return a.is_active; })[0] || {};
+      var later = _syYears.filter(function (y) { return !y.is_active && y.start_date > active.start_date; });
+      return '<p class="sy-hint">Add the next School Year. It is saved as <b>Inactive</b> — nothing changes for teachers or students yet. When classes are about to start, press its <b>Set as Active</b> to choose who stays, moves or exits. Current: S.Y. ' + escSy(_wiz.data.current_name) + '.</p>'
+        + (later.length ? '<p class="sy-hint" style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;color:#92400e;">S.Y. ' + later.map(function (y) { return escSy(y.name); }).join(', ') + ' is already in the list. To move students into it, close this and press its <b>Set as Active</b>.</p>' : '')
         + '<div class="sy-wiz-row" style="border:none;">'
         +   '<label style="font-size:12px;font-weight:600;">Name<input class="sy-input" value="' + escSy(_wiz.name) + '" placeholder="2027-2028" oninput="_wiz.name=this.value.trim()" /></label>'
         +   '<label style="font-size:12px;font-weight:600;">Start<input class="sy-input" type="date" value="' + escSy(_wiz.start_date) + '" onchange="_wiz.start_date=this.value" /></label>'
@@ -1066,7 +1126,8 @@
       var teacherOpts = function (sel) {
         return d.teachers.map(function (t) { return '<option value="' + t.id + '"' + (t.id === Number(sel) ? ' selected' : '') + '>' + escSy(t.name) + '</option>'; }).join('');
       };
-      return '<p class="sy-hint">These are copied from this year. Change a Section or Teacher, remove, or add classes. A teacher can have more than one class. <b>Changing a class\'s teacher here moves its whole class to that teacher.</b></p>'
+      var from = (_wiz.data.target_classes && _wiz.data.target_classes.length) ? 'These are the classes saved for S.Y. ' + escSy(_wiz.name) + ' before.' : 'These are copied from this year.';
+      return '<p class="sy-hint">' + from + ' Change a Section or Teacher, remove, or add classes. A teacher can have more than one class. <b>Changing a class\'s teacher here moves its whole class to that teacher.</b></p>'
         + (_wiz.classes.map(function (c, i) {
           var dup = wizDuplicateSections().indexOf(c.section_name) !== -1;
           return '<div class="sy-wiz-row">'
@@ -1132,7 +1193,7 @@
         var n = _wiz.students.filter(function (st) { return st.action !== 'exit' && st.class_key === c.key; }).length;
         return '<li>' + escSy(wizClassLabel(c)) + ' — <b>' + n + '</b> student(s)</li>';
       }).join('');
-      return '<p class="sy-hint">Check everything below. Use <b>Back</b> to change anything. Nothing happens until you press <b>Start School Year</b>.</p>'
+      return '<p class="sy-hint">Check everything below. Use <b>Back</b> to change anything. Nothing happens until you press <b>Set as Active</b>.</p>'
         + '<div class="sy-review"><h4><i class="fa-solid fa-calendar-days"></i> S.Y. ' + escSy(_wiz.name) + '</h4>'
         +   formatSyDate(_wiz.start_date) + ' – ' + formatSyDate(_wiz.end_date) + '. S.Y. ' + escSy(_wiz.data.current_name) + ' becomes read-only history.</div>'
         + '<div class="sy-review"><h4><i class="fa-solid fa-chalkboard-user"></i> ' + _wiz.classes.length + ' class(es)</h4><ul style="margin:0;padding-left:18px;">' + classList + '</ul></div>'
@@ -1152,19 +1213,23 @@
       var keepSearchFocus = sameStep && document.activeElement === document.getElementById('wiz-search');
       if (old) old.remove();
 
-      var pane = [wizPaneSchoolYear, wizPaneClasses, wizPaneStudents, wizPaneReview][_wiz.step - 1]();
-      var next = _wiz.step < 4
+      var stepName = _wiz.steps[_wiz.step - 1];
+      var pane = { 'School Year': wizPaneSchoolYear, 'Classes': wizPaneClasses, 'Students': wizPaneStudents, 'Review': wizPaneReview }[stepName]();
+      var last = _wiz.step === _wiz.steps.length;
+      var finishLabel = _wiz.mode === 'create' ? '<i class="fa-solid fa-plus"></i> Add School Year' : '<i class="fa-solid fa-check"></i> Set as Active';
+      var next = !last
         ? '<button type="button" class="admin-btn-signin" style="width:auto;padding:9px 20px;font-size:13px;" onclick="wizNext()">Next <i class="fa-solid fa-arrow-right"></i></button>'
-        : '<button type="button" class="admin-btn-signin" style="width:auto;padding:9px 20px;font-size:13px;" onclick="submitWizard()"><i class="fa-solid fa-check"></i> Start School Year</button>';
+        : '<button type="button" class="admin-btn-signin" style="width:auto;padding:9px 20px;font-size:13px;" onclick="submitWizard()">' + finishLabel + '</button>';
+      var title = _wiz.mode === 'create' ? 'Start New School Year' : 'Set S.Y. ' + escSy(_wiz.name) + ' as Active';
 
       var el = document.createElement('div');
       el.id = 'sy-wiz';
       el.className = 'sy-wiz-overlay';
       el.setAttribute('data-step', _wiz.step);
-      el.innerHTML = '<div class="sy-wiz" role="dialog" aria-modal="true" aria-label="Start New School Year">'
-        + '<h2 style="font-size:19px;margin:0;">Start New School Year</h2>'
+      el.innerHTML = '<div class="sy-wiz" role="dialog" aria-modal="true" aria-label="' + title + '">'
+        + '<h2 style="font-size:19px;margin:0;">' + title + '</h2>'
         + wizStepper()
-        + '<h3>' + _wiz.step + '. ' + WIZ_STEPS[_wiz.step - 1] + '</h3>'
+        + '<h3>' + (_wiz.steps.length > 1 ? _wiz.step + '. ' : '') + stepName + '</h3>'
         + '<div class="sy-wiz-pane">' + pane + '</div>'
         + '<div id="wiz-error" style="display:none;margin-top:14px;padding:10px 14px;border-radius:8px;background:#fee2e2;color:#991b1b;font-size:12.5px;"></div>'
         + '<div class="sy-wiz-foot">'
@@ -1177,7 +1242,7 @@
       document.body.appendChild(el);
       // Re-rendering replaces the overlay; keep the Admin's place in a long list.
       el.scrollTop = keepScroll;
-      if (_wiz.step === 3) wizFilter();
+      if (stepName === 'Students') wizFilter();
       if (keepSearchFocus) {
         var search = document.getElementById('wiz-search');
         search.focus();
@@ -1193,17 +1258,18 @@
 
     // Problems with a step, or '' when it's fine to move on.
     function wizCheckStep(step) {
-      if (step === 1) {
+      step = _wiz.steps[step - 1];
+      if (step === 'School Year') {
         var m = /^(\d{4})-(\d{4})$/.exec(_wiz.name);
         if (!m || Number(m[2]) !== Number(m[1]) + 1) return 'School Year must look like 2027-2028.';
         if (!_wiz.start_date || !_wiz.end_date || _wiz.end_date <= _wiz.start_date) return 'Please enter a start and end date (end must be after start).';
       }
-      if (step === 2) {
+      if (step === 'Classes') {
         var dups = wizDuplicateSections();
         if (dups.length) return dups.join(', ') + ' is used by more than one class. Each Section can only have one class per School Year — change or remove one.';
         if (!_wiz.classes.length && _wiz.students.length) return 'Add at least one class for the students to go to.';
       }
-      if (step === 3 && _wiz.students.some(function (st) { return st.action !== 'exit' && !wizClass(st.class_key); })) {
+      if (step === 'Students' && _wiz.students.some(function (st) { return st.action !== 'exit' && !wizClass(st.class_key); })) {
         return 'Every student who stays or moves needs a class.';
       }
       return '';
@@ -1286,7 +1352,26 @@
     }
 
     function submitWizard() {
+      if (_wiz.mode === 'create') {
+        var problem = wizCheckStep(_wiz.step);
+        if (problem) { wizError(problem); return; }
+        var params = new URLSearchParams();
+        params.append('action', 'add');
+        params.append('name', _wiz.name);
+        params.append('start_date', _wiz.start_date);
+        params.append('end_date', _wiz.end_date);
+        postSchoolYear(params)
+          .then(function (data) {
+            if (!data.success) { wizError(data.message || 'Could not add the School Year.'); return; }
+            closeWizard();
+            showSyMsg(data.message + ' Press its Set as Active when classes are about to start.', true);
+            loadSchoolYears();
+          })
+          .catch(function () { wizError('Network error. Please try again.'); });
+        return;
+      }
       var payload = {
+        school_year_id: _wiz.target_id,
         name: _wiz.name,
         start_date: _wiz.start_date,
         end_date: _wiz.end_date,
