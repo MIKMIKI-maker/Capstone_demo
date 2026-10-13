@@ -568,6 +568,7 @@
                     var _subDbId = a.db_activity_id || 0;
                     actions = (EDITABLE_TYPES[a.type] ? activityEditButton(a, 'editPublished(\'' + esc(a.id) + '\',\'' + esc(a.type) + '\')') : '')
                             + (_subDbId && a.status === 'published' ? '<button class="btn-edit" onclick="window.location.href=\'Teacher_reviewact.html?id='+_subDbId+'\'" type="button" title="View Submissions"><i class="fa-solid fa-eye"></i> <span class="btn-label">View Submissions</span></button>' : '')
+                            + (_subDbId && a.status === 'published' ? '<button class="btn-edit" data-sy-write onclick="openAddLearners(' + _subDbId + ')" type="button" title="Add Learners"><i class="fa-solid fa-user-plus"></i> <span class="btn-label">Add Learners</span></button>' : '')
                             + '<button class="btn-delete" data-sy-write onclick="deletePublished(\'' + esc(a.id) + '\')" type="button" title="Unpublish">'
                             + '<i class="fa-solid fa-trash"></i> <span class="btn-label">Unpublish</span></button>';
                 } else if (a.status === 'published' && !a._isLocal) {
@@ -575,6 +576,7 @@
                     // content_json now lives server-side too, so editing still works.
                     actions = (EDITABLE_TYPES[a.type] ? activityEditButton(a, 'editPublishedRemote(' + a.id + ',\'' + esc(a.type) + '\')') : '')
                             + '<button class="btn-edit" onclick="window.location.href=\'Teacher_reviewact.html?id='+a.id+'\'" type="button" title="View Submissions"><i class="fa-solid fa-eye"></i> <span class="btn-label">View Submissions</span></button>'
+                            + '<button class="btn-edit" data-sy-write onclick="openAddLearners(' + a.id + ')" type="button" title="Add Learners"><i class="fa-solid fa-user-plus"></i> <span class="btn-label">Add Learners</span></button>'
                             + '<button class="btn-delete" data-sy-write onclick="deleteBackendPublished(' + a.id + ')" type="button" title="Unpublish">'
                             + '<i class="fa-solid fa-trash"></i> <span class="btn-label">Unpublish</span></button>';
                 } else if (a.is_locked) {
@@ -1097,6 +1099,114 @@
         function levelChip(l) {
             var k = LEVEL_LOOK[l];
             return k ? ' <span title="' + (l === 'auto' ? 'Each learner gets their own random set at their level' : 'Activity level') + '" style="display:inline-block;margin-left:4px;padding:2px 8px;border-radius:20px;background:' + k[1] + ';color:' + k[2] + ';font-size:11px;font-weight:700;white-space:nowrap;">📶 ' + k[0] + '</span>' : '';
+        }
+
+        /* ── 👥 Add Learners — a learner forgotten when the activity was
+           published can be added afterwards, without making it again. ── */
+        function _alEnsureModal() {
+            var ov = document.getElementById('addLearnersOverlay');
+            if (ov) return ov;
+            var st = document.createElement('style');
+            st.textContent =
+                '#addLearnersOverlay{position:fixed;inset:0;z-index:10000;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;padding:16px;}' +
+                '#addLearnersOverlay.show{display:flex;}' +
+                '.al-box{background:#fff;border-radius:18px;width:min(460px,100%);max-height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.3);font-family:"Poppins",sans-serif;}' +
+                '.al-head{display:flex;align-items:flex-start;gap:12px;padding:20px 22px 12px;border-bottom:1px solid #eef2f8;}' +
+                '.al-title{margin:0;font-size:17px;font-weight:700;color:#1e3a8a;}' +
+                '.al-sub{margin:3px 0 0;font-size:12.5px;color:#64748b;}' +
+                '.al-close{margin-left:auto;background:none;border:none;font-size:24px;line-height:1;cursor:pointer;color:#64748b;}' +
+                '.al-body{padding:14px 22px;overflow-y:auto;}' +
+                '.al-lbl{font-size:11.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:#475569;margin:6px 0 8px;}' +
+                '.al-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}' +
+                '.al-chip{padding:5px 12px;border-radius:999px;background:#dcfce7;color:#166534;font-size:12.5px;font-weight:600;}' +
+                '.al-list{display:flex;flex-direction:column;gap:6px;}' +
+                '.al-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;border:1.5px solid #e2e8f0;cursor:pointer;font-size:13.5px;color:#1e293b;}' +
+                '.al-row:hover{border-color:#93c5fd;}' +
+                '.al-row.sel{border-color:#1d4ed8;background:#eff6ff;}' +
+                '.al-row input{accent-color:#1d4ed8;width:16px;height:16px;}' +
+                '.al-empty{font-size:13px;color:#64748b;padding:6px 0;}' +
+                '.al-foot{display:flex;gap:10px;padding:12px 22px 18px;border-top:1px solid #eef2f8;}' +
+                '.al-foot button{flex:1;padding:11px;border-radius:11px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;border:none;}' +
+                '.al-cancel{background:#f1f5f9;color:#475569;}' +
+                '.al-save{background:#1d4ed8;color:#fff;}' +
+                '.al-save:disabled{background:#93c5fd;cursor:not-allowed;}';
+            document.head.appendChild(st);
+            ov = document.createElement('div');
+            ov.id = 'addLearnersOverlay';
+            ov.innerHTML = '<div class="al-box" role="dialog" aria-modal="true" aria-labelledby="alTitle">' +
+                '<div class="al-head"><div><h3 class="al-title" id="alTitle">👥 Add Learners</h3><p class="al-sub" id="alSub"></p></div>' +
+                '<button class="al-close" type="button" aria-label="Close" onclick="closeAddLearners()">&times;</button></div>' +
+                '<div class="al-body" id="alBody"></div>' +
+                '<div class="al-foot"><button class="al-cancel" type="button" onclick="closeAddLearners()">Cancel</button>' +
+                '<button class="al-save" id="alSave" type="button" disabled>Add Selected Learners</button></div></div>';
+            ov.addEventListener('click', function (e) { if (e.target === ov) closeAddLearners(); });
+            document.body.appendChild(ov);
+            return ov;
+        }
+        function closeAddLearners() {
+            var ov = document.getElementById('addLearnersOverlay');
+            if (ov) ov.classList.remove('show');
+        }
+        function _alUpdateSave() {
+            var n = document.querySelectorAll('#alBody input[name="alPick"]:checked').length;
+            var btn = document.getElementById('alSave');
+            btn.disabled = !n;
+            btn.textContent = n ? 'Add ' + n + ' Selected Learner' + (n > 1 ? 's' : '') : 'Add Selected Learners';
+        }
+        function openAddLearners(activityId) {
+            var ov = _alEnsureModal();
+            document.getElementById('alSub').textContent = 'Loading…';
+            document.getElementById('alBody').innerHTML = '<div class="al-empty">Loading…</div>';
+            var save = document.getElementById('alSave');
+            save.disabled = true; save.textContent = 'Add Selected Learners';
+            save.onclick = function () { saveAddLearners(activityId); };
+            ov.classList.add('show');
+            fetch('TEACHER_BACKEND/teacher_activity_learners.php?activity_id=' + encodeURIComponent(activityId) + '&_t=' + Date.now(), { cache: 'no-store' })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d || !d.success) throw new Error((d && d.message) || 'Could not load learners.');
+                    document.getElementById('alSub').textContent = d.activity.title;
+                    var html = '<div class="al-lbl">Assigned learners</div>' +
+                        (d.assigned.length
+                            ? '<div class="al-chips">' + d.assigned.map(function (l) { return '<span class="al-chip">✓ ' + esc(l.name) + '</span>'; }).join('') + '</div>'
+                            : '<div class="al-empty">No learners yet.</div>') +
+                        '<div class="al-lbl">Add more learners</div>' +
+                        (d.available.length
+                            ? '<div class="al-list">' + d.available.map(function (l) {
+                                return '<label class="al-row"><input type="checkbox" name="alPick" value="' + (+l.id) + '"> ' + esc(l.name) + '</label>';
+                              }).join('') + '</div>'
+                            : '<div class="al-empty">Everyone in your class already has this activity.</div>');
+                    var body = document.getElementById('alBody');
+                    body.innerHTML = html;
+                    body.querySelectorAll('input[name="alPick"]').forEach(function (cb) {
+                        cb.addEventListener('change', function () { cb.closest('.al-row').classList.toggle('sel', cb.checked); _alUpdateSave(); });
+                    });
+                })
+                .catch(function (e) {
+                    document.getElementById('alSub').textContent = '';
+                    document.getElementById('alBody').innerHTML = '<div class="al-empty">⚠️ ' + esc(e.message) + '</div>';
+                });
+        }
+        function saveAddLearners(activityId) {
+            var ids = Array.prototype.map.call(document.querySelectorAll('#alBody input[name="alPick"]:checked'), function (cb) { return cb.value; });
+            if (!ids.length) return;
+            var btn = document.getElementById('alSave');
+            btn.disabled = true; btn.textContent = 'Adding…';
+            fetch('TEACHER_BACKEND/teacher_activity_learners.php', {
+                method: 'POST',
+                body: new URLSearchParams({ activity_id: activityId, student_ids: ids.join(',') })
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (!d || !d.success) throw new Error((d && d.message) || 'Could not add the learners.');
+                    window.showToast('Added ' + d.names.join(', ') + '!');
+                    closeAddLearners();
+                    if (typeof loadActivities === 'function') loadActivities();
+                })
+                .catch(function (e) {
+                    _alUpdateSave();
+                    window.showToast(e.message || 'Could not add the learners.', 'error');
+                });
         }
 
         function viewActivity(id) { window.location.href = 'Teacher_reviewact.html?id=' + id; }
