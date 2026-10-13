@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/db.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/admin_push_notification.php';
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/teacher_auth.php';
+require_once __DIR__ . '/student_level.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/school_year.php';
 
 header('Content-Type: application/json');
@@ -33,6 +34,10 @@ if (!in_array($term_name, ['First', 'Second', 'Third'], true)) {
 // Full activity content (slides/items/answer keys/design settings) so any
 // device can load it later — not just the browser that published it.
 $content_json = isset($_POST['content_json']) ? $_POST['content_json'] : null;
+// The Level picked in the Publish pop-up travels inside the content
+// (state.level: '1'/'2'/'3'/'auto'); keep a copy in `difficulty` for lists.
+$_contentLevel = activityLevelFromContent($content_json);
+if ($_contentLevel !== '') $difficulty = $_contentLevel;
 // Compressed (~160px) preview image, auto-derived client-side from the
 // activity's first uploaded picture — blank when it has none.
 $thumbnail = isset($_POST['thumbnail']) ? $_POST['thumbnail'] : null;

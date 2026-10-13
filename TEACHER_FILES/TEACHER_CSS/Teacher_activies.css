@@ -144,6 +144,25 @@ tbody tr:hover { background: #FAFBFF; }
     margin-bottom: 16px;
 }
 
+/* Level filter — sits at the end of the tab row */
+.level-filter {
+    margin-left: auto;
+    padding: 9px 16px;
+    border-radius: 30px;
+    border: 1.5px solid #E2E8F0;
+    background: var(--white);
+    font-family: 'Poppins', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+}
+.level-filter:focus { outline: none; border-color: #93c5fd; }
+@media (max-width: 640px) {
+    .activities-tabs { flex-wrap: wrap; }
+    .level-filter { margin-left: 0; }
+}
+
 .tab-btn {
     display: inline-flex;
     align-items: center;

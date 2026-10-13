@@ -7,6 +7,7 @@ header('Cache-Control: no-cache');
 
 require_once __DIR__ . '/../../TEACHER_FILES/TEACHER_BACKEND/db.php';
 require_once __DIR__ . '/student_auth.php';
+require_once __DIR__ . '/../../TEACHER_FILES/TEACHER_BACKEND/student_level.php';
 
 $student_admin_id = requireStudentSession();
 
@@ -47,6 +48,17 @@ $stmt->execute();
 $res = $stmt->get_result();
 $row = $res ? $res->fetch_assoc() : null;
 $stmt->close();
+
+// "Per student" activities build each learner's own random set at their
+// level (see ImageLibrary.personalize). The seed keeps a learner's set the
+// same on every reload and retake, while differing between learners.
+$personal = null;
+if ($row && activityLevelFromContent($row['content_json']) === 'auto') {
+    $personal = [
+        'level' => computeStudentLevel($conn, $student_record_id),
+        'seed'  => crc32($student_record_id . ':' . (int)$row['id']),
+    ];
+}
 $conn->close();
 
 if (!$row || !$row['content_json']) {
@@ -59,6 +71,7 @@ if ($content === null) {
     echo json_encode(['success' => false, 'message' => 'Saved content is corrupted']);
     exit;
 }
+if ($personal) $content['_personal'] = $personal;
 
 echo json_encode([
     'success'     => true,

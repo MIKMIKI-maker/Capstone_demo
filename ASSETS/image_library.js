@@ -46,7 +46,10 @@
       s.setItem(key, val);
     } catch (e) { return null; }
   }
-  function lang() { return store("local", "imglib_lang") === "en" ? "en" : "fil"; }
+  // forcedLang: while building a learner's own set, the language the teacher
+  // published in (not whatever this device last chose).
+  var forcedLang = null;
+  function lang() { return forcedLang || (store("local", "imglib_lang") === "en" ? "en" : "fil"); }
   function label(obj) { return obj[lang()] || obj.fil; }
   function photoUrl(p) { return new URL(p.file, BASE).pathname; }
   function sets() { return (DATA.sets && DATA.sets[cfg.template]) || []; }
@@ -283,11 +286,24 @@
     pagkain:   { fil: "Pagkain o inumin ba ito?",   en: "Is it food or a drink?" },
     kalikasan: { fil: "Bahagi ba ito ng kalikasan?", en: "Is it part of nature?" },
     pansarili: { fil: "Pansariling gamit ba ito?",  en: "Is it a personal thing?" },
-    laruan:    { fil: "Laruan o sasakyan ba ito?",  en: "Is it a toy or a vehicle?" }
+    laruan:    { fil: "Laruan o sasakyan ba ito?",  en: "Is it a toy or a vehicle?" },
+    bulaklak:  { fil: "Bulaklak ba ito?",           en: "Is it a flower?" }
   };
+  // rand(): Math.random, or a seeded generator while personalizing (so a
+  // learner gets the same set on every reload and retake).
+  var rand = Math.random;
+  function seeded(seed) {
+    var a = (seed >>> 0) || 1;
+    return function () {          // mulberry32
+      a = (a + 0x6D2B79F5) >>> 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
   function shuffle(a) {
     a = a.slice();
-    for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; }
+    for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(rand() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; }
     return a;
   }
   function idsIn(cat) { return DATA.photos.filter(function (p) { return p.cat === cat; }).map(function (p) { return p.id; }); }
@@ -361,12 +377,14 @@
       case "identification":
         return Object.assign({ id: "random", items: distinctLetters(byLevel(level, 3, 4, 5)) }, named("Unang Letra", "Beginning Letters"));
       case "written":
-        return Object.assign({ id: "random", answer: "letter", items: distinctLetters(byLevel(level, 3, 4, 5)) }, named("Unang Letra", "Beginning Letters"));
+        // Written Response turns the first picture into the worked example,
+        // so one extra keeps 3 / 4 / 5 actual questions per level.
+        return Object.assign({ id: "random", answer: "letter", items: distinctLetters(byLevel(level, 3, 4, 5) + 1) }, named("Unang Letra", "Beginning Letters"));
       default:
         // Sequencing (and anything else with Quick Sets): the order of a
         // sequence carries meaning, so pick one of the ready-made sets.
         var all = sets();
-        return all.length ? all[Math.floor(Math.random() * all.length)] : null;
+        return all.length ? all[Math.floor(rand() * all.length)] : null;
     }
   }
 
@@ -582,6 +600,34 @@
       w.appendChild(newBadge(b));
       w.appendChild(randomBox());
       return w;
+    },
+    // "Per student" activities (Level 🎲 in the Publish pop-up): replace every
+    // slide with this learner's own random set at their level. The server
+    // adds state._personal = { level, seed } for such activities (see
+    // student_get_activity_content.php). Returns true if it did anything.
+    personalize: function (state) {
+      var p = state && state._personal;
+      if (!state || state.level !== "auto" || !p || !cfg.applySet || !state.activities || !state.activities.length) return false;
+      var level = +p.level === 2 || +p.level === 3 ? +p.level : 1;
+      var keepIndex = state.currentIndex || 0, done = 0;
+      rand = seeded(+p.seed || 1);
+      forcedLang = state.levelLang === "en" || state.levelLang === "fil" ? state.levelLang : null;
+      try {
+        for (var i = 0; i < state.activities.length; i++) {
+          state.currentIndex = i;
+          var s = randomSet(level);
+          if (!s) continue;
+          cfg.applySet(resolveSet(s), setLang(s));
+          done++;
+        }
+      } catch (e) {
+        // A template that can't take a set keeps the teacher's own slides.
+      } finally {
+        rand = Math.random;
+        forcedLang = null;
+        state.currentIndex = keepIndex;
+      }
+      return done > 0;
     },
     isLibraryImage: function (src) { return typeof src === "string" && src.indexOf("/image_library/photos/") !== -1; },
     // First a–z letter of a word ("Itlog" → "i"), for beginning-letter templates.

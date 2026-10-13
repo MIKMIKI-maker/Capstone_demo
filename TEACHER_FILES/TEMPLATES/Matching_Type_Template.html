@@ -9,8 +9,9 @@
 <script src="../../ASSETS/missing_highlight.js?v=1"></script>
 <script src="../../ASSETS/activity_audio.js?v=4"></script>
 <script src="../../ASSETS/image_shrink.js?v=1"></script>
+<script src="../../ASSETS/activity_levels.js?v=1"></script>
 <script src="../../ASSETS/image_library/library_data.js?v=4"></script>
-<script src="../../ASSETS/image_library.js?v=10"></script>
+<script src="../../ASSETS/image_library.js?v=13"></script>
 <script src="../../ASSETS/activity_demo.js?v=2"></script>
 <script src="../../ASSETS/activity_demos/matching.js?v=2"></script>
 <meta charset="UTF-8" />
@@ -2901,6 +2902,8 @@ function initActivityTheme(){
       // Pre-load state but don't render yet — show splash first
       Object.assign(state, saved);
       state.currentIndex = 0;
+      // "🎲 Per student" activities: this learner's own random set at their level.
+      if (window.ImageLibrary && ImageLibrary.personalize) ImageLibrary.personalize(state);
 
       // Get pub metadata for splash info
       var pubs = [];

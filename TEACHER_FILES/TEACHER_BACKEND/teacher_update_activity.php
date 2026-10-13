@@ -78,6 +78,13 @@ if ($thumbnail !== null && $thumbnail !== '') {
 }
 
 if ($stmt->execute()) {
+    // Keep the list's copy of the Level (from state.level) in step with the content.
+    require_once __DIR__ . '/student_level.php';
+    $_lvl = activityLevelFromContent($content_json);
+    if ($_lvl !== '') {
+        $dl = $conn->prepare("UPDATE teacher_activities SET difficulty = ? WHERE id = ? AND teacher_id = ?");
+        if ($dl) { $dl->bind_param("sii", $_lvl, $activity_id, $teacher_id); $dl->execute(); $dl->close(); }
+    }
     if ($saveAsDraft) {
         // Stays locked/draft — it was already flipped to 'draft' the moment
         // Edit was clicked (see teacher_lock_activity.php), so there's

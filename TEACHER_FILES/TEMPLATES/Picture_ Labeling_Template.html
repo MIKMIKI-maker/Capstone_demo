@@ -9,10 +9,11 @@
 <script src="../../ASSETS/missing_highlight.js?v=1"></script>
 <script src="../../ASSETS/activity_audio.js?v=4"></script>
 <script src="../../ASSETS/image_shrink.js?v=1"></script>
+<script src="../../ASSETS/activity_levels.js?v=1"></script>
 <script src="../../ASSETS/activity_demo.js?v=2"></script>
 <script src="../../ASSETS/activity_demos/labeling.js?v=1"></script>
 <script src="../../ASSETS/image_library/library_data.js?v=4"></script>
-<script src="../../ASSETS/image_library.js?v=10"></script>
+<script src="../../ASSETS/image_library.js?v=13"></script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>SPED ALM — Picture Labeling Template Generator</title>
@@ -3148,6 +3149,8 @@ ImageLibrary.init({
     if (!saved) { if (window.finishStudentLaunch) window.finishStudentLaunch(); showNotAvailable(); return; }
     Object.assign(state, saved);
     state.currentIndex = 0;
+    // "🎲 Per student" activities: this learner's own random set at their level.
+    if (window.ImageLibrary && ImageLibrary.personalize) ImageLibrary.personalize(state);
 
     var pubs = [];
     try { pubs = JSON.parse(localStorage.getItem('published_activities') || '[]'); } catch(e){}

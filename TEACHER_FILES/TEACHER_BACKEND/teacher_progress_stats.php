@@ -3,6 +3,7 @@ error_reporting(0);
 ini_set('display_errors', 0);
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/teacher_auth.php';
+require_once __DIR__ . '/student_level.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/school_year.php';
 
 header('Content-Type: application/json');
@@ -270,6 +271,10 @@ if ($stmt) {
 
 usort($notes, function ($a, $b) { return strcmp($b['created_at'] ?? '', $a['created_at'] ?? ''); });
 $progress['notes'] = $notes;
+
+// The learner's current level for "🎲 Per student" activities (from their
+// last few scores — see student_level.php).
+$progress['learning_level'] = studentLevelInfo($conn, $student_id);
 
 echo json_encode($progress);
 $conn->close();

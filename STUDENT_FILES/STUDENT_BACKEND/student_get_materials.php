@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../TEACHER_FILES/TEACHER_BACKEND/db.php';
 require_once __DIR__ . '/student_auth.php';
+require_once __DIR__ . '/../../TEACHER_FILES/TEACHER_BACKEND/student_level.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/school_year.php';
 
 header('Content-Type: application/json');
@@ -70,11 +71,14 @@ while ($row = $result->fetch_assoc()) {
     $materials[] = $row;
 }
 $stmt->close();
+// The learner's own level, shown on "🎲 Per student" activities.
+$student_level = computeStudentLevel($conn, $student_record_id);
 $conn->close();
 
 echo json_encode([
     'success'    => true,
     'enrolled'   => true,
+    'student_level' => $student_level,
     'total'      => $total,
     'completed'  => $completed,
     'in_progress'=> $in_progress,
