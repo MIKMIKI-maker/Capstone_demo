@@ -256,7 +256,8 @@ body {
 .student-goal-row--focus { background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 12px 14px; margin: -2px -2px 16px; }
 .student-goal-focus-tag { font-size: 10.5px; font-weight: 700; color: #b91c1c; background: #fee2e2; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
 .student-goal-tips { margin: 10px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--ink); }
-.student-goal-tips li { margin-bottom: 4px; }
+.student-goal-tips li { margin-bottom: 4px; overflow-wrap: anywhere; }
+.student-goal-pic { width: 36px; height: 36px; object-fit: cover; border-radius: 8px; border: 1.5px solid #e2e8f0; background: #fff; vertical-align: middle; margin: 2px 2px; }
 .student-goal-tip-src { color: var(--ink-soft); font-size: 11px; }
 .student-goal-tip-generic { margin: 10px 0 0; font-size: 12.5px; color: var(--ink-soft); font-style: italic; }
 

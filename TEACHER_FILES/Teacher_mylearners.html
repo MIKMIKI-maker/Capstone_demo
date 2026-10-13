@@ -13,7 +13,7 @@
     <title>Learner Progress – SPED ALM</title>
     <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
     <link href="../ASSETS/vendor/fontawesome/css/all.min.css" rel="stylesheet" />
-    <link href="TEACHER_CSS/Teacher_mylearners.css?v=5" rel="stylesheet" />
+    <link href="TEACHER_CSS/Teacher_mylearners.css?v=6" rel="stylesheet" />
     <link href="TEACHER_CSS/teacher_theme.css?v=2" rel="stylesheet" />
     <link href="TEACHER_CSS/teacher_responsive.css?v=75" rel="stylesheet" />
     <script src="../ASSETS/vendor/js/chart.umd.min.js"></script>
@@ -639,6 +639,13 @@
             // Weakest first — that's the priority focus area to improve on.
             entries.sort((a, b) => skills[a] - skills[b]);
 
+            // Matching/Picture answers are pictures (data: URLs or photo paths):
+            // show them as thumbnails instead of their raw text.
+            function goalAnswerHtml(v) {
+                var s = String(v == null ? '' : v);
+                var isPic = s.indexOf('data:image') === 0 || /^https?:///i.test(s) || /.(png|jpe?g|gif|webp|svg)(?.*)?$/i.test(s);
+                return isPic ? '<img src="' + escHtml(s) + '" class="teacher-goal-pic" alt="picture">' : '"' + escHtml(s) + '"';
+            }
             list.innerHTML = entries.map(function(name, idx) {
                 const val = skills[name];
                 const pct = Math.min(100, Math.round((val / GOAL_TARGET) * 100));
@@ -650,7 +657,7 @@
                     const tips = goalImprovementTips(name, activities);
                     if (tips.length) {
                         tipsHtml = '<ul class="teacher-goal-tips">' + tips.map(function(t) {
-                            const detail = (t.thought && t.correct) ? (' — picked "' + escHtml(String(t.thought)) + '" instead of "' + escHtml(String(t.correct)) + '"') : '';
+                            const detail = (t.thought && t.correct) ? (' — picked ' + goalAnswerHtml(t.thought) + ' instead of ' + goalAnswerHtml(t.correct)) : '';
                             return '<li>' + escHtml(t.label) + detail + ' <span class="teacher-goal-tip-src">(' + escHtml(t.activity) + ')</span></li>';
                         }).join('') + '</ul>';
                     } else {

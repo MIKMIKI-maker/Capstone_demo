@@ -15,7 +15,7 @@
     <meta http-equiv="Expires" content="0" />
     <title>SPED ALM - My Progress</title>
     <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
-    <link href="STUDENT_CSS/Student_progress.css?v=31" rel="stylesheet" />
+    <link href="STUDENT_CSS/Student_progress.css?v=32" rel="stylesheet" />
     <link href="STUDENT_CSS/student_responsive.css?v=8" rel="stylesheet" />
     <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
     <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
@@ -397,7 +397,9 @@
     var _trendChart = null;
     function renderProgressTrend(activities, avgScore) {
         var statsEl = document.getElementById('trendStats');
-        var wrap = document.getElementById('trendLineChart').closest('.student-trend-chart-wrap');
+        // Looked up by the wrapper, not the canvas: with under 2 scores the canvas is
+        // replaced by a message, and a later refresh then found no canvas and crashed.
+        var wrap = document.querySelector('.student-trend-chart-wrap');
         var done = (activities || []).filter(function(a) { return a.assessment_date; });
         var chrono = done.slice().sort(function(a, b) { return new Date(a.assessment_date) - new Date(b.assessment_date); });
         var scoreOf = function(a) { return (a.is_finalized && a.finalized_score !== null) ? a.finalized_score : (a.score || 0); };
@@ -493,6 +495,13 @@
         // Weakest first — that's the priority focus area to improve on.
         entries.sort(function(a, b) { return skills[a] - skills[b]; });
 
+        // Matching/Picture answers are pictures (data: URLs or photo paths):
+        // show them as thumbnails instead of their raw text.
+        function goalAnswerHtml(v) {
+            var s = String(v == null ? '' : v);
+            var isPic = s.indexOf('data:image') === 0 || /^https?:///i.test(s) || /.(png|jpe?g|gif|webp|svg)(?.*)?$/i.test(s);
+            return isPic ? '<img src="' + escStr(s) + '" class="student-goal-pic" alt="picture">' : '"' + escStr(s) + '"';
+        }
         list.innerHTML = entries.map(function(name, idx) {
             var val = skills[name];
             var pct = Math.min(100, Math.round((val / GOAL_TARGET) * 100));
@@ -504,7 +513,7 @@
                 var tips = goalImprovementTips(name, activities);
                 if (tips.length) {
                     tipsHtml = '<ul class="student-goal-tips">' + tips.map(function(t) {
-                        var detail = (t.thought && t.correct) ? (' — picked "' + escStr(String(t.thought)) + '" instead of "' + escStr(String(t.correct)) + '"') : '';
+                        var detail = (t.thought && t.correct) ? (' — picked ' + goalAnswerHtml(t.thought) + ' instead of ' + goalAnswerHtml(t.correct)) : '';
                         return '<li>' + escStr(t.label) + detail + ' <span class="student-goal-tip-src">(' + escStr(t.activity) + ')</span></li>';
                     }).join('') + '</ul>';
                 } else {
