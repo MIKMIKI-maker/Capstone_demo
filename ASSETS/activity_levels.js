@@ -3,7 +3,7 @@
  *
  * Adds a "📶 Level" choice to the template's Publish pop-up, right under
  * Learning Domain (same option chips):
- *   Level 1 · Madali / Level 2 · Katamtaman / Level 3 · Mahirap
+ *   Level 1 / Level 2 / Level 3
  *   🎲 Per student — templates with the Image Library only: every learner
  *      gets their own random set at THEIR level, worked out from their
  *      recent scores (TEACHER_BACKEND/student_level.php), built by
@@ -18,9 +18,9 @@
   if (window.ActivityLevels) return;
 
   var LEVELS = [
-    { v: '1', label: 'Level 1 · Madali' },
-    { v: '2', label: 'Level 2 · Katamtaman' },
-    { v: '3', label: 'Level 3 · Mahirap' },
+    { v: '1', label: 'Level 1' },
+    { v: '2', label: 'Level 2' },
+    { v: '3', label: 'Level 3' },
     { v: 'auto', label: '🎲 Per student', personal: true }
   ];
 
@@ -28,7 +28,10 @@
   function tplState() {
     try { return typeof state !== 'undefined' ? state : null; } catch (e) { return null; }   // eslint-disable-line no-undef
   }
-  function canPersonalize() { return !!(window.ImageLibrary && window.ImageLibrary.personalize); }
+  function canPersonalize() {
+    var L = window.ImageLibrary;
+    return !!(L && L.personalize && (L.canPersonalize ? L.canPersonalize() : true));
+  }
 
   function setLevel(v) {
     var st = tplState();
@@ -87,11 +90,22 @@
       : 'Lahat ng in-assign na learner ay makakatanggap ng activity na ito.';
   }
 
-  // Show what the activity is set to (a new activity starts at Level 1).
+  // The Level picked on Generate Materials (per level / per student) for the
+  // chosen learners; a template that can't do "Per student" uses the lowest
+  // level among them instead.
+  function generateLevel() {
+    var g = null, min = null;
+    try { g = sessionStorage.getItem('gen_level'); min = sessionStorage.getItem('gen_level_min'); } catch (e) {}
+    if (g === 'auto' && !canPersonalize()) g = min;
+    return ['1', '2', '3', 'auto'].indexOf(String(g)) !== -1 ? String(g) : '1';
+  }
+
+  // Show what the activity is set to. A new activity starts at the level
+  // chosen on Generate Materials (Level 1 if none); an existing one keeps its own.
   function sync() {
     var st = tplState();
     if (!st) return;
-    if (['1', '2', '3', 'auto'].indexOf(String(st.level)) === -1 || (st.level === 'auto' && !canPersonalize())) setLevel('1');
+    if (['1', '2', '3', 'auto'].indexOf(String(st.level)) === -1 || (st.level === 'auto' && !canPersonalize())) setLevel(generateLevel());
     var radios = document.querySelectorAll('input[name="tplLevel"]');
     for (var i = 0; i < radios.length; i++) radios[i].checked = radios[i].value === String(st.level);
     hint();

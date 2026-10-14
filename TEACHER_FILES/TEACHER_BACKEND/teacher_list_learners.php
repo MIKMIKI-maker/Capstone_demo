@@ -2,6 +2,7 @@
 error_reporting(0);
 ini_set('display_errors', 0);
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/student_level.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/db.php';
 require_once __DIR__ . '/teacher_auth.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/school_year.php';
@@ -46,8 +47,13 @@ if ($result) {
             'status' => $row['status'],
             'age' => $row['age'],
             'grade_level' => $row['grade_level'],
-            'created_at' => $row['created_at']
+            'created_at' => $row['created_at'],
         ];
+        // Level for "per level / per student" generation (from recent scores).
+        $lv = studentLevelInfo($conn, (int)$row['id']);
+        $students[count($students) - 1]['level'] = $lv['level'];
+        $students[count($students) - 1]['level_average'] = $lv['average'];
+        $students[count($students) - 1]['level_based_on'] = $lv['based_on'];
     }
 }
 $stmt->close();

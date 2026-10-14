@@ -774,3 +774,12 @@ body {
 
 /* Toast now lives in ASSETS/teacher_portal.js (.teacher-toast, shared across
    every teacher page) — see showToast() there. */
+
+/* Learners by level — filter chips above the learner table */
+.iep-level-filter { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 16px 4px; }
+.iep-level-chip {
+    border: 1.5px solid #e2e8f0; background: #fff; color: #475569; border-radius: 999px;
+    padding: 6px 12px; font-family: 'Poppins', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.iep-level-chip b { margin-left: 4px; color: #1e3a8a; }
+.iep-level-chip.on { border-color: #1d4ed8; background: #eff6ff; color: #1d4ed8; }

@@ -4,9 +4,9 @@
 // as the learner does.
 //
 //   average of the last LEVEL_RECENT scored activities and graded materials
-//   below 60%  → Level 1 · Madali
-//   60–84%     → Level 2 · Katamtaman
-//   85% and up → Level 3 · Mahirap
+//   below 60%  → Level 1
+//   60–84%     → Level 2
+//   85% and up → Level 3
 //   no scores yet → Level 1 (start easy)
 //
 // A finalized activity counts with the teacher's final score.

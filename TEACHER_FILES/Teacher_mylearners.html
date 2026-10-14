@@ -454,7 +454,7 @@
             var lv = +info.level === 2 || +info.level === 3 ? +info.level : 1;
             var look = { 1: ['#dcfce7', '#166534', 'Madali'], 2: ['#ffedd5', '#9a3412', 'Katamtaman'], 3: ['#fee2e2', '#991b1b', 'Mahirap'] }[lv];
             badge.style.cssText = 'display:inline-flex;align-items:center;gap:4px;margin-left:10px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;vertical-align:middle;background:' + look[0] + ';color:' + look[1] + ';';
-            badge.textContent = '📶 Level ' + lv + ' · ' + look[2];
+            badge.textContent = '📶 Level ' + lv;
             badge.title = info.based_on
                 ? 'Average of the last ' + info.based_on + ' score' + (info.based_on > 1 ? 's' : '') + ': ' + info.average + '% (below 60% = Level 1, 60–84% = Level 2, 85%+ = Level 3)'
                 : 'No scores yet — starts at Level 1';

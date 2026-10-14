@@ -12,7 +12,7 @@
     <title>IEP Materials – SPED ALM</title>
     <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
     <link href="../ASSETS/vendor/fontawesome/css/all.min.css" rel="stylesheet" />
-    <link href="TEACHER_CSS/Teacher_IEP.css?v=7" rel="stylesheet" />
+    <link href="TEACHER_CSS/Teacher_IEP.css?v=8" rel="stylesheet" />
     <link href="TEACHER_CSS/teacher_theme.css?v=2" rel="stylesheet" />
     <link href="TEACHER_CSS/teacher_responsive.css?v=75" rel="stylesheet" />
 </head>
@@ -132,6 +132,8 @@
                         Select All
                     </label>
                 </div>
+                <!-- Learners by level (from their recent scores) -->
+                <div class="iep-level-filter" id="iepLevelFilter"></div>
                 <div class="iep-table-wrap">
                     <table class="iep-student-table">
                         <thead>
@@ -139,10 +141,11 @@
                                 <th style="width:48px;"></th>
                                 <th>Student Name</th>
                                 <th>Condition</th>
+                                <th>Level</th>
                             </tr>
                         </thead>
                         <tbody id="iep-student-tbody">
-                            <tr><td colspan="3" class="iep-st-empty">Loading learners...</td></tr>
+                            <tr><td colspan="4" class="iep-st-empty">Loading learners...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -297,23 +300,31 @@
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
                     allLearners = (data || []).map(function(s) {
-                        return { id: String(s.id), name: s.name, disability: s.disability || 'General' };
+                        return { id: String(s.id), name: s.name, disability: s.disability || 'General',
+                                 level: +s.level || 1, levelAvg: s.level_average, levelBasedOn: +s.level_based_on || 0 };
                     });
                     renderStudentTable();
                 }).catch(function(){
                     var tb = document.getElementById('iep-student-tbody');
-                    if (tb) tb.innerHTML = '<tr><td colspan="3" class="iep-st-empty">Could not load learners.</td></tr>';
+                    if (tb) tb.innerHTML = '<tr><td colspan="4" class="iep-st-empty">Could not load learners.</td></tr>';
                 });
         }
 
         function renderStudentTable() {
             var tbody = document.getElementById('iep-student-tbody');
             if (!tbody) return;
+            renderLevelFilter();
             if (!allLearners.length) {
-                tbody.innerHTML = '<tr><td colspan="3" class="iep-st-empty">No learners enrolled yet.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4" class="iep-st-empty">No learners enrolled yet.</td></tr>';
                 return;
             }
-            tbody.innerHTML = allLearners.map(function(s) {
+            var shown = visibleLearners();
+            if (!shown.length) {
+                tbody.innerHTML = '<tr><td colspan="4" class="iep-st-empty">No learners at this level.</td></tr>';
+                updateSelectAllState();
+                return;
+            }
+            tbody.innerHTML = shown.map(function(s) {
                 var checked = selectedLearnerIds.indexOf(s.id) >= 0;
                 var cond = (s.disability && s.disability !== 'General') ? s.disability : '—';
                 var badgeCls = cond !== '—' ? 'iep-cond-badge' : 'iep-cond-none';
@@ -321,9 +332,38 @@
                     + '<td class="iep-cb-cell"><input type="checkbox" value="' + escHtml(s.id) + '" ' + (checked ? 'checked' : '') + ' onclick="event.stopPropagation();toggleLearnerRow(\'' + s.id + '\')" style="accent-color:#2563eb;width:16px;height:16px;cursor:pointer;"></td>'
                     + '<td class="iep-st-name">' + escHtml(s.name) + '</td>'
                     + '<td><span class="' + badgeCls + '">' + escHtml(cond) + '</span></td>'
+                    + '<td>' + levelBadge(s) + '</td>'
                     + '</tr>';
             }).join('');
             updateSelectAllState();
+        }
+
+        /* ── Learners by level ("per level / per student" generation) ──
+           A learner's level comes from their last 5 scores
+           (TEACHER_BACKEND/student_level.php): <60% L1, 60–84% L2, 85%+ L3. */
+        var LEVEL_LOOK = { 1: ['Level 1', 'Madali', '#dcfce7', '#166534'], 2: ['Level 2', 'Katamtaman', '#ffedd5', '#9a3412'], 3: ['Level 3', 'Mahirap', '#fee2e2', '#991b1b'] };
+        var levelFilter = 0;   // 0 = all levels
+        function visibleLearners() {
+            return levelFilter ? allLearners.filter(function(s){ return s.level === levelFilter; }) : allLearners;
+        }
+        function levelBadge(s) {
+            var k = LEVEL_LOOK[s.level] || LEVEL_LOOK[1];
+            var tip = s.levelBasedOn ? 'Average of the last ' + s.levelBasedOn + ' scores: ' + s.levelAvg + '%' : 'No scores yet — starts at Level 1';
+            return '<span title="' + escHtml(tip) + '" style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:700;white-space:nowrap;background:' + k[2] + ';color:' + k[3] + ';">📶 ' + k[0] + '</span>';
+        }
+        function renderLevelFilter() {
+            var box = document.getElementById('iepLevelFilter');
+            if (!box) return;
+            var counts = { 1: 0, 2: 0, 3: 0 };
+            allLearners.forEach(function(s){ counts[s.level] = (counts[s.level] || 0) + 1; });
+            var chips = [[0, '📶 All levels', allLearners.length]].concat([1, 2, 3].map(function(l){ return [l, LEVEL_LOOK[l][0], counts[l]]; }));
+            box.innerHTML = chips.map(function(c){
+                return '<button type="button" class="iep-level-chip' + (levelFilter === c[0] ? ' on' : '') + '" onclick="setLevelFilter(' + c[0] + ')">' + escHtml(c[1]) + ' <b>' + c[2] + '</b></button>';
+            }).join('');
+        }
+        function setLevelFilter(l) {
+            levelFilter = l;
+            renderStudentTable();
         }
 
         function toggleLearnerRow(id) {
@@ -342,7 +382,10 @@
         }
 
         function toggleAllLearners(checked) {
-            selectedLearnerIds = checked ? allLearners.map(function(s){ return s.id; }) : [];
+            // Select All covers the learners being shown (e.g. all Level 1).
+            var shownIds = visibleLearners().map(function(s){ return s.id; });
+            if (checked) shownIds.forEach(function(id){ if (selectedLearnerIds.indexOf(id) < 0) selectedLearnerIds.push(id); });
+            else selectedLearnerIds = selectedLearnerIds.filter(function(id){ return shownIds.indexOf(id) < 0; });
             renderStudentTable();
             if (checked) document.getElementById('iepSelectAll').checked = true;
             updateSelectedBadge();
@@ -359,10 +402,11 @@
 
         function updateSelectAllState() {
             var cb = document.getElementById('iepSelectAll');
-            if (!cb || !allLearners.length) return;
-            var n = selectedLearnerIds.length;
-            cb.checked = n === allLearners.length;
-            cb.indeterminate = n > 0 && n < allLearners.length;
+            var shown = visibleLearners();
+            if (!cb || !shown.length) return;
+            var n = shown.filter(function(s){ return selectedLearnerIds.indexOf(s.id) >= 0; }).length;
+            cb.checked = n === shown.length;
+            cb.indeterminate = n > 0 && n < shown.length;
         }
 
         function setCondition() {
