@@ -6,8 +6,10 @@
  *    instruction is read automatically whenever a new slide appears.
  *  • Voice feedback: says "Good job!" / "Let's try again!" with the score
  *    popup (hooked into each template's playActivitySound).
- *  • Everything is spoken in English with an English voice, even on
- *    devices that also have a Filipino voice installed.
+ *  • Language: English (default) or Tagalog, chosen by the learner in the
+ *    ⚙️ panel or on the "How to Answer" card. Tagalog uses a Filipino
+ *    voice when the device has one; the praise, messages, demo text and
+ *    Image Library picture names follow the choice. Saved per browser.
  *  • Volume control: a ⚙️ panel with separate sliders for sound effects
  *    and background music, plus a Voice on/off switch. Saved per browser.
  *
@@ -35,6 +37,16 @@
   }
 
   var settings = { sfx: load('sfx', DEFAULTS.sfx), music: load('music', DEFAULTS.music), voice: load('voice', DEFAULTS.voice) };
+  // 'en' | 'fil'. `langChosen` = the learner picked one (vs. the default).
+  var langChosen = false;
+  settings.lang = (function () {
+    try {
+      var v = localStorage.getItem('spedalm_audio_lang');
+      if (v === 'en' || v === 'fil') { langChosen = true; return v; }
+    } catch (e) {}
+    return 'en';
+  })();
+  function T(en, fil) { return settings.lang === 'fil' ? fil : en; }
 
   /* ── Speech ─────────────────────────────────────────────── */
   var synth = window.speechSynthesis || null;
@@ -42,9 +54,9 @@
   function refreshVoices() { try { voices = synth ? synth.getVoices() : []; } catch (e) { voices = []; } }
   if (synth) { refreshVoices(); try { synth.addEventListener('voiceschanged', refreshVoices); } catch (e) {} }
 
-  function pickVoice() {
+  function pickVoice(lang) {
     if (!voices.length) refreshVoices();
-    var pref = ['en-PH', 'en-US', 'en-GB', 'en'];
+    var pref = lang === 'fil' ? ['fil', 'tl'] : ['en-PH', 'en-US', 'en-GB', 'en'];
     for (var i = 0; i < pref.length; i++) {
       for (var j = 0; j < voices.length; j++) {
         if (voices[j].lang && voices[j].lang.toLowerCase().indexOf(pref[i].toLowerCase()) === 0) return voices[j];
@@ -72,8 +84,11 @@
     try {
       synth.cancel();
       var u = new SpeechSynthesisUtterance(text);
-      var v = pickVoice();
-      if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = 'en-US'; }
+      // Tagalog: a Filipino voice if the device has one; otherwise the
+      // browser's own voice for fil-PH (or its default).
+      var lang = opts.lang || settings.lang;
+      var v = pickVoice(lang);
+      if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = lang === 'fil' ? 'fil-PH' : 'en-US'; }
       u.rate = opts.rate || 0.9;   // a little slower for young learners
       u.pitch = 1.1;
       u.volume = 1;
@@ -85,11 +100,15 @@
   function stopSpeaking() { try { if (synth) synth.cancel(); } catch (e) {} duckMusic(false); setReadBtnActive(false); }
 
   /* ── Score voice ─────────────────────────────────────────── */
-  var CHEERS = { perfect: 'Perfect! Amazing job!', good: 'Good job! You passed!', tryagain: "Let's try again. You can do it!" };
+  var CHEERS = {
+    en:  { perfect: 'Perfect! Amazing job!', good: 'Good job! You passed!', tryagain: "Let's try again. You can do it!" },
+    fil: { perfect: 'Ang galing mo! Perpekto!', good: 'Magaling! Pasado ka!', tryagain: 'Subukan ulit. Kaya mo yan!' }
+  };
   function cheer(tier) {
     // Only while a student is playing (mount() ran) — not in the teacher's editor preview.
     if (!settings.voice || !readBtn) return;
-    var line = CHEERS[tier] || CHEERS.tryagain;
+    var set = CHEERS[settings.lang] || CHEERS.en;
+    var line = set[tier] || set.tryagain;
     // Let the chime play first, then talk over the end of it.
     setTimeout(function () { speak(line, { rate: 0.95 }); }, 450);
   }
@@ -109,7 +128,7 @@
   }
   function readSlide() {
     if (synth && synth.speaking) { stopSpeaking(); return; }
-    speak(slideText() || 'There are no instructions on this slide.');
+    speak(slideText() || T('There are no instructions on this slide.', 'Walang instruction sa slide na ito.'));
   }
 
   function setReadBtnActive(on) {
@@ -138,7 +157,9 @@
       '.aa-switch{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;font-weight:700;}' +
       '.aa-toggle{border:none;border-radius:20px;padding:5px 14px;font-weight:700;font-size:12px;cursor:pointer;}' +
       '.aa-toggle.on{background:#22c55e;color:#fff;}.aa-toggle.off{background:#e2e8f0;color:#475569;}' +
-      '.aa-note{font-size:10.5px;color:#64748b;margin-top:8px;line-height:1.35;}';
+      '.aa-note{font-size:10.5px;color:#64748b;margin-top:8px;line-height:1.35;}' +
+      '.aa-lang{margin-top:10px;flex-wrap:wrap;gap:6px;}' +
+      '.aa-langs{display:inline-flex;gap:4px;}';
     document.head.appendChild(st);
   }
 
@@ -162,6 +183,8 @@
       '<div class="aa-row"><label>🔔 Sound effects <span id="aaSfxVal"></span></label><input type="range" min="0" max="100" step="5" id="aaSfx"></div>' +
       '<div class="aa-row"><label>🎵 Music <span id="aaMusicVal"></span></label><input type="range" min="0" max="100" step="5" id="aaMusic"></div>' +
       '<div class="aa-switch"><span>🗣️ Voice (read-aloud &amp; praise)</span><button type="button" class="aa-toggle" id="aaVoice"></button></div>' +
+      '<div class="aa-switch aa-lang"><span>🌐 Language / Wika</span><span class="aa-langs">' +
+        '<button type="button" class="aa-toggle" data-lang="en">English</button><button type="button" class="aa-toggle" data-lang="fil">Tagalog</button></span></div>' +
       (synth ? '' : '<div class="aa-note">⚠️ This browser has no built-in voice, so read-aloud is unavailable.</div>');
     document.body.appendChild(panel);
 
@@ -171,13 +194,20 @@
       music.value = Math.round(settings.music * 100); panel.querySelector('#aaMusicVal').textContent = music.value + '%';
       voice.textContent = settings.voice ? 'ON' : 'OFF';
       voice.className = 'aa-toggle ' + (settings.voice ? 'on' : 'off');
+      panel.querySelectorAll('[data-lang]').forEach(function (b) {
+        b.className = 'aa-toggle ' + (b.getAttribute('data-lang') === settings.lang ? 'on' : 'off');
+      });
     }
+    panel.querySelectorAll('[data-lang]').forEach(function (b) {
+      b.addEventListener('click', function () { setLang(b.getAttribute('data-lang')); paint(); });
+    });
+    window.addEventListener('activitylang', paint);
     sfx.addEventListener('input', function () { settings.sfx = sfx.value / 100; save('sfx', settings.sfx); paint(); });
     sfx.addEventListener('change', function () { if (typeof window.playDropSound === 'function') window.playDropSound(true); });
     music.addEventListener('input', function () { settings.music = music.value / 100; save('music', settings.music); applyMusic(); paint(); });
     voice.addEventListener('click', function () {
       settings.voice = !settings.voice; save('voice', settings.voice); paint();
-      if (settings.voice) speak('Voice is on.'); else stopSpeaking();
+      if (settings.voice) speak(T('Voice is on.', 'Naka-on na ang boses.')); else stopSpeaking();
     });
     paint();
 
@@ -215,9 +245,10 @@
     if (!data || !src || src.indexOf('/image_library/photos/') === -1) return '';
     if (!libNames) {
       libNames = {};
-      (data.photos || []).forEach(function (p) { libNames[String(p.file).split('/').pop()] = p.en || p.fil; });
+      (data.photos || []).forEach(function (p) { libNames[String(p.file).split('/').pop()] = p; });
     }
-    return libNames[decodeURIComponent(src.split('?')[0].split('/').pop())] || '';
+    var p = libNames[decodeURIComponent(src.split('?')[0].split('/').pop())];
+    return p ? (settings.lang === 'fil' ? (p.fil || p.en) : (p.en || p.fil)) : '';
   }
   function shortText(node) {
     var t = (node && (node.innerText || node.textContent) || '').replace(/\s+/g, ' ').trim();
@@ -255,6 +286,8 @@
     if (!settings.voice || !synth) return;
     var stage = e.target.closest && e.target.closest('[id$="Stage"]');
     if (!stage || !/^[a-z]{3}Stage$/.test(stage.id)) return;
+    // A video or sound player speaks for itself (Video & Audio template).
+    if (e.target.closest('[data-no-tts], video, iframe, audio')) return;
     var name = tapName(e.target, stage).replace(/^[✀-➿-☀-⛿\uD83C-􏰀-\uDFFF\s✓✗✔✘]+/, '').trim();
     if (!name) return;
     var now = Date.now();
@@ -313,7 +346,20 @@
 
   window.addEventListener('pagehide', stopSpeaking);
 
+  // Change the language everywhere: saved, and announced so the demo card
+  // and the ⚙️ panel can redraw (window 'activitylang' event).
+  function setLang(l) {
+    l = l === 'fil' ? 'fil' : 'en';
+    settings.lang = l; langChosen = true;
+    try { localStorage.setItem('spedalm_audio_lang', l); } catch (e) {}
+    try { window.dispatchEvent(new CustomEvent('activitylang', { detail: l })); } catch (e) {}
+    if (settings.voice) speak(T('English', 'Tagalog'));
+  }
+
   window.ActivityAudio = {
+    lang: function () { return settings.lang; },
+    langChosen: function () { return langChosen; },
+    setLang: setLang,
     sfxLevel: function () { return settings.sfx; },
     voiceOn: function () { return settings.voice; },
     musicVolume: function () { return settings.music * MUSIC_MAX; },

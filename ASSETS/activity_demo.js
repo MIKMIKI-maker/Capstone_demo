@@ -150,6 +150,9 @@
         'color:#fff;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,transform .1s;}' +
       '.ad-speak:hover{background:rgba(255,255,255,.3);}.ad-speak:active{transform:scale(.92);}' +
       '.ad-speak.ad-on{background:#fde68a;border-color:#fde68a;}' +
+      '.ad-lang{position:relative;z-index:1;flex:none;display:flex;border-radius:999px;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.55);overflow:hidden;}' +
+      '.ad-lang button{border:none;background:transparent;color:#fff;font:inherit;font-size:13px;font-weight:700;padding:7px 10px;cursor:pointer;}' +
+      '.ad-lang button.on{background:#fff;color:#4338ca;}' +
 
       '.ad-stage{position:relative;margin:-20px 18px 0;border-radius:22px;background-color:#f8fafc;' +
         'background-image:radial-gradient(#dbe3ee 1.2px,transparent 1.2px);background-size:16px 16px;border:2px solid #e2e8f0;' +
@@ -261,6 +264,92 @@
     } catch (e) {}
   }
 
+  /* ── English / Tagalog ─────────────────────────────────────────
+   * Demos are written in English; this table gives the Tagalog of every
+   * frame and demo text (say + steps). The language is the learner's
+   * choice in ActivityAudio (⚙️ panel, or the EN | TL switch on the card). */
+  var TAGALOG = {
+    "How to Answer": "Paano Sagutan?",
+    "Watch first, then it's your turn! 👀": "Panoorin muna, tapos ikaw naman! 👀",
+    "👀 Watch": "👀 Panoorin",
+    "Got it! ▶": "Nakuha ko! ▶",
+    "Listen": "Pakinggan",
+    "For each picture, tap the check ✓ for yes, or the ✗ for no!": "Sa bawat larawan, pindutin ang tsek ✓ kung oo, at ekis ✗ kung hindi!",
+    "Tap ✓ for yes": "I-tap ang ✓ kung oo",
+    "Tap ✗ for no": "I-tap ang ✗ kung hindi",
+    "Tap Check": "I-tap ang Check",
+    "Tap the first letter of each picture, then tap Check!": "I-tap ang unang letra ng bawat larawan, tapos pindutin ang Check!",
+    "Look at the picture": "Tingnan ang larawan",
+    "Tap the first letter": "I-tap ang unang letra",
+    "Press a picture and drag a line to its match!": "Pindutin ang larawan at i-drag ang guhit papunta sa katugma nito!",
+    "Press a picture": "Pindutin ang larawan",
+    "Drag the line": "I-drag ang guhit",
+    "Let go on its match": "Bitawan sa katugma",
+    "Tap two cards to turn them over. Find the pairs that match!": "I-tap ang dalawang nakataob na card. Hanapin ang magkatugma!",
+    "Tap one card": "I-tap ang isang card",
+    "Tap another card": "I-tap pa ang isa",
+    "A match? You win!": "Magkatugma? Panalo!",
+    "Tap a picture, then tap its match!": "I-tap ang larawan, tapos i-tap ang katugma nito!",
+    "Tap a picture": "I-tap ang larawan",
+    "Tap its match": "I-tap ang katugma",
+    "They match!": "Magkapareha na!",
+    "Tap the pictures in the right order: 1, 2, 3!": "I-tap ang mga larawan sa tamang ayos: 1, 2, 3!",
+    "Tap what comes first": "I-tap ang unang gawin",
+    "Tap what comes next": "I-tap ang susunod",
+    "Use your finger to trace the dotted letter, then tap Check!": "Gamit ang daliri, sundan ang tuldok-tuldok na letra, tapos pindutin ang Check!",
+    "Trace the big letter": "Sundan ang malaking letra",
+    "Trace the small letter": "Sundan ang maliit na letra",
+    "Use a pencil to trace the dotted shape and line on the paper!": "Gamit ang lapis, sundan ang tuldok-tuldok na hugis at guhit sa papel!",
+    "Trace the shape": "Sundan ang hugis",
+    "Trace the line": "Sundan ang guhit",
+    "Great job! All done!": "Galing! Tapos na!",
+    "Count the pictures, then tap the right number!": "Bilangin ang mga larawan, tapos i-tap ang tamang numero!",
+    "Count the pictures": "Bilangin ang mga larawan",
+    "Tap the answer": "I-tap ang sagot",
+    "Count the dots in the ten-frame, then tap the answer!": "Bilangin ang mga tuldok sa ten-frame, tapos i-tap ang sagot!",
+    "Count the dots": "Bilangin ang mga tuldok",
+    "Solve the problem, then tap the right answer!": "Sagutan ang problema, tapos i-tap ang tamang sagot!",
+    "Read the problem": "Basahin ang problema",
+    "Drag the numbers into order, from smallest to biggest!": "I-drag ang mga numero mula pinakamaliit hanggang pinakamalaki!",
+    "Drag a number": "I-drag ang numero",
+    "Smallest to biggest": "Maliit hanggang malaki",
+    "Drag each name under its matching picture!": "I-drag ang bawat pangalan sa ilalim ng katugmang larawan!",
+    "Drag a name": "I-drag ang pangalan",
+    "Drop it under its picture": "Ilagay sa ilalim ng larawan",
+    "Look at the picture, then type its name!": "Tingnan ang larawan, tapos i-type ang pangalan nito!",
+    "Type its name": "I-type ang pangalan",
+    "Drag the right name onto the dot in the picture!": "I-drag ang tamang pangalan sa tuldok sa larawan!",
+    "Find the dot": "Hanapin ang tuldok",
+    "Drag the name onto it": "I-drag ang pangalan dito",
+    "Drag each picture into the group where it belongs!": "I-drag ang bawat larawan sa tamang grupo!",
+    "Drag a picture": "I-drag ang larawan",
+    "Drop it in its group": "Ilagay sa tamang grupo",
+    "Find the picture that is different, and tap it!": "Hanapin ang larawang naiiba, at i-tap ito!",
+    "Look at every picture": "Tingnan ang lahat ng larawan",
+    "Tap the different one": "I-tap ang naiiba",
+    "Look at the picture, then tap Yes or No!": "Tingnan ang larawan, tapos i-tap ang Oo o Hindi!",
+    "Tap Yes or No": "I-tap ang Oo o Hindi",
+    "Look at the picture, then type your answer in the box!": "Tingnan ang larawan, tapos i-type ang sagot sa kahon!",
+    "Type the answer": "I-type ang sagot",
+    "Look at the picture, then type the first letter of its name!": "Tingnan ang larawan, tapos i-type ang unang letra ng pangalan nito!",
+    "Type the first letter": "I-type ang unang letra",
+    "Tap the letters in the right order to spell the word!": "I-tap ang mga letra sa tamang ayos para mabuo ang salita!",
+    "Tap the next letters": "I-tap ang susunod na mga letra",
+    "Tap the words in the right order to make a sentence!": "I-tap ang mga salita sa tamang ayos para mabuo ang pangungusap!",
+    "Tap the first word": "I-tap ang unang salita",
+    "Tap the next words": "I-tap ang susunod na mga salita",
+    "Watch the video, then tap the right picture!": "Panoorin ang video, tapos i-tap ang tamang larawan!",
+    "Tap ▶ to watch": "I-tap ang ▶ para manood",
+    "Tap the right picture": "I-tap ang tamang larawan",
+    "Press the sound button and listen, then tap the picture that made the sound!": "Pindutin ang tunog at makinig, tapos i-tap ang larawan na gumawa ng tunog!",
+    "Tap 🔊 to listen": "I-tap ang 🔊 para makinig"
+  };
+  function demoLang() {
+    if (window.ActivityAudio && ActivityAudio.lang) return ActivityAudio.lang();
+    try { return localStorage.getItem('spedalm_audio_lang') === 'fil' ? 'fil' : 'en'; } catch (e) { return 'en'; }
+  }
+  function tr(s) { return demoLang() === 'fil' && TAGALOG[s] ? TAGALOG[s] : s; }
+
   /* ── Show ──────────────────────────────────────────────────── */
   function show(demo, opts) {
     opts = opts || {};
@@ -284,21 +373,24 @@
       '<div class="ad-card">' +
         '<div class="ad-head">' +
           '<div class="ad-icon" aria-hidden="true">' + esc(demo.icon || '📖') + '</div>' +
-          '<div class="ad-titles"><h2 class="ad-title" id="adTitle">' + esc(demo.title || 'How to Answer') + '</h2>' +
-            '<p class="ad-sub">' + esc(demo.subtitle || "Watch first, then it's your turn! 👀") + '</p></div>' +
-          (window.speechSynthesis ? '<button type="button" class="ad-speak" title="Listen" aria-label="Read the instructions aloud">🔊</button>' : '') +
+          '<div class="ad-titles"><h2 class="ad-title" id="adTitle">' + esc(tr(demo.title || 'How to Answer')) + '</h2>' +
+            '<p class="ad-sub">' + esc(tr(demo.subtitle || "Watch first, then it's your turn! 👀")) + '</p></div>' +
+          '<div class="ad-lang" role="group" aria-label="Language">' +
+            '<button type="button" data-lang="en"' + (demoLang() === 'en' ? ' class="on"' : '') + '>EN</button>' +
+            '<button type="button" data-lang="fil"' + (demoLang() === 'fil' ? ' class="on"' : '') + '>TL</button></div>' +
+          (window.speechSynthesis ? '<button type="button" class="ad-speak" title="' + esc(tr('Listen')) + '" aria-label="Read the instructions aloud">🔊</button>' : '') +
         '</div>' +
-        '<div class="ad-stage" aria-hidden="true"><span class="ad-watch">👀 Watch</span>' +
+        '<div class="ad-stage" aria-hidden="true"><span class="ad-watch">' + esc(tr('👀 Watch')) + '</span>' +
           '<div class="ad-fit"><div class="ad-canvas">' + (demo.stage || '') + '</div></div>' +
           '<div class="ad-progress"><i></i></div>' +
         '</div>' +
         (steps.length ? '<ol class="ad-steps">' + steps.map(function (s, i) {
           return '<li class="ad-step ' + p + 's' + i + '"><span class="ad-num">' + (i + 1) + '</span>' +
             (s.icon ? '<span class="ad-step-ico" aria-hidden="true">' + esc(s.icon) + '</span>' : '') +
-            '<span class="ad-step-txt">' + esc(s.text) + '</span></li>';
+            '<span class="ad-step-txt">' + esc(tr(s.text)) + '</span></li>';
         }).join('') + '</ol>' : '') +
-        '<p class="ad-say">👉 ' + esc(demo.say || '') + '</p>' +
-        '<div class="ad-actions"><button type="button" class="ad-go" id="stuDemoOkBtn">' + esc(demo.button || 'Got it! ▶') + '</button></div>' +
+        '<p class="ad-say">👉 ' + esc(tr(demo.say || '')) + '</p>' +
+        '<div class="ad-actions"><button type="button" class="ad-go" id="stuDemoOkBtn">' + esc(tr(demo.button || 'Got it! ▶')) + '</button></div>' +
       '</div>';
     document.body.appendChild(ov);
 
@@ -320,8 +412,23 @@
     window.addEventListener('resize', layout);
 
     var speakBtn = ov.querySelector('.ad-speak');
-    var spoken = [demo.say].concat(steps.map(function (s) { return s.text; })).filter(Boolean).join('. ');
+    var spoken = [tr(demo.say)].concat(steps.map(function (s) { return tr(s.text); })).filter(Boolean).join('. ');
     if (speakBtn) speakBtn.addEventListener('click', function () { speak(spoken, speakBtn); });
+
+    ov.querySelectorAll('.ad-lang [data-lang]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var l = b.getAttribute('data-lang');
+        if (l === demoLang()) return;
+        if (window.ActivityAudio && ActivityAudio.setLang) ActivityAudio.setLang(l);
+        else { try { localStorage.setItem('spedalm_audio_lang', l); } catch (e) {} }
+        closed = true;
+        window.removeEventListener('resize', layout);
+        ov.remove();
+        var again = show(demo, Object.assign({}, opts, { autoSpeak: false }));
+        var sb = again && again.querySelector('.ad-speak');
+        if (sb) speak([tr(demo.say)].concat(steps.map(function (s) { return tr(s.text); })).filter(Boolean).join('. '), sb);
+      });
+    });
 
     var btn = ov.querySelector('#stuDemoOkBtn');
     var closed = false;
