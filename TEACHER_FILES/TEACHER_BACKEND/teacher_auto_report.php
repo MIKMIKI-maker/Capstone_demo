@@ -4,6 +4,7 @@ ini_set('display_errors', 0);
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/teacher_auth.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/school_year.php';
+require_once __DIR__ . '/material_helpers.php';
 
 header('Content-Type: application/json');
 header('Cache-Control: no-cache');
@@ -103,13 +104,13 @@ $progStmt = $conn->prepare("
           AND sub.is_finalized = 1
     WHERE lp.teacher_id = ? AND lp.activity_id IN ($syActivities)
 ");
+$progressByStudent = [];
+$progressByActivity = [];
 if ($progStmt) {
     $progStmt->bind_param("i", $teacher_id);
     $progStmt->execute();
     $progRows = $progStmt->get_result();
     if ($progRows) {
-        $progressByStudent = [];
-        $progressByActivity = [];
         while ($pr = $progRows->fetch_assoc()) {
             $sid = (int)$pr['student_id'];
             $aid = (int)$pr['activity_id'];
@@ -119,36 +120,64 @@ if ($progStmt) {
             if (!isset($progressByActivity[$aid])) $progressByActivity[$aid] = [];
             $progressByActivity[$aid][] = $sc;
         }
-        // Update student stats
-        foreach ($students as &$s) {
-            $sid = $s['student_id'];
-            if (!empty($progressByStudent[$sid])) {
-                $scores = $progressByStudent[$sid];
-                $avg = round(array_sum($scores) / count($scores), 1);
-                $s['total_attempts']  = count($scores);
-                $s['avg_score']       = $avg;
-                $s['highest_score']   = max($scores);
-                $s['lowest_score']    = min($scores);
-                $s['passed_count']    = count(array_filter($scores, function($sc){ return $sc >= 80; }));
-                $s['status']          = $avg >= 80 ? 'Passing' : ($avg >= 60 ? 'Needs Support' : 'At Risk');
-                $total_scores[]       = $avg;
-            }
-        }
-        unset($s);
-        // Update activity submission counts
-        foreach ($activities as &$a) {
-            $aid = $a['activity_id'];
-            if (!empty($progressByActivity[$aid])) {
-                $scores = $progressByActivity[$aid];
-                $a['submissions']  = count($scores);
-                $a['avg_score']    = round(array_sum($scores) / count($scores), 1);
-                $a['passed_count'] = count(array_filter($scores, function($sc){ return $sc >= 80; }));
-            }
-        }
-        unset($a);
     }
     $progStmt->close();
 }
+
+// Manual activities (uploaded 'activity' materials): a graded one counts
+// like a finalized activity — in each learner's average, the activity list
+// (one row per material title), skills (its Learning Domain), the trend and
+// the recent log.
+$matRows = materialActivityRows($conn, $teacher_id, $syId);
+$matGroups = [];
+foreach ($matRows as $m) {
+    $key = $m['title'] . '|' . $m['domain'];
+    if (!isset($matGroups[$key])) {
+        $matGroups[$key] = ['activity_id' => 0, 'is_material' => true, 'activity_title' => $m['title'] . ' (Manual)', 'activity_type' => 'Manual Activity',
+                            'submissions' => 0, 'avg_score' => 0, 'passed_count' => 0, 'created_at' => $m['uploaded_at'], 'scores' => []];
+    }
+    if ($m['graded']) {
+        $matGroups[$key]['scores'][] = $m['score'];
+        $progressByStudent[$m['student_id']][] = $m['score'];
+    }
+}
+foreach ($matGroups as $g) {
+    if ($g['scores']) {
+        $g['submissions']  = count($g['scores']);
+        $g['avg_score']    = round(array_sum($g['scores']) / count($g['scores']), 1);
+        $g['passed_count'] = count(array_filter($g['scores'], function($sc){ return $sc >= 80; }));
+    }
+    unset($g['scores']);
+    $activities[] = $g;
+}
+
+// Update student stats
+foreach ($students as &$s) {
+    $sid = $s['student_id'];
+    if (!empty($progressByStudent[$sid])) {
+        $scores = $progressByStudent[$sid];
+        $avg = round(array_sum($scores) / count($scores), 1);
+        $s['total_attempts']  = count($scores);
+        $s['avg_score']       = $avg;
+        $s['highest_score']   = max($scores);
+        $s['lowest_score']    = min($scores);
+        $s['passed_count']    = count(array_filter($scores, function($sc){ return $sc >= 80; }));
+        $s['status']          = $avg >= 80 ? 'Passing' : ($avg >= 60 ? 'Needs Support' : 'At Risk');
+        $total_scores[]       = $avg;
+    }
+}
+unset($s);
+// Update activity submission counts
+foreach ($activities as &$a) {
+    $aid = $a['activity_id'];
+    if (!empty($progressByActivity[$aid])) {
+        $scores = $progressByActivity[$aid];
+        $a['submissions']  = count($scores);
+        $a['avg_score']    = round(array_sum($scores) / count($scores), 1);
+        $a['passed_count'] = count(array_filter($scores, function($sc){ return $sc >= 80; }));
+    }
+}
+unset($a);
 
 // Assistance-level history — per-student, so "Needs Attention" can factor in
 // how much support a learner has needed lately, not just their score.
@@ -199,7 +228,7 @@ $skills_breakdown = [
 ];
 $skillStmt = $conn->prepare("
     SELECT COALESCE(ta.subject,'Other') AS subject,
-           ROUND(AVG(COALESCE(sub.finalized_score, lp.score)),1) AS avg_score
+           SUM(COALESCE(sub.finalized_score, lp.score)) AS total, COUNT(*) AS n
     FROM learner_progress lp
     LEFT JOIN teacher_activities ta ON ta.id = lp.activity_id
     LEFT JOIN activity_submissions sub
@@ -223,15 +252,20 @@ if ($skillStmt) {
         'language'      => 'Language Development',
         'aesthetic'     => 'Aesthetic & Creative',
     ];
-    while ($sk = $skillRows->fetch_assoc()) {
-        $subj = strtolower($sk['subject']);
+    $skillSum = []; $skillN = [];
+    $addSkill = function ($subject, $total, $n) use ($skillMap, &$skillSum, &$skillN) {
+        $subj = strtolower((string)$subject);
         foreach ($skillMap as $key => $skillName) {
             if (strpos($subj, $key) !== false) {
-                $skills_breakdown[$skillName] = (float)$sk['avg_score'];
+                $skillSum[$skillName] = ($skillSum[$skillName] ?? 0) + $total;
+                $skillN[$skillName]   = ($skillN[$skillName] ?? 0) + $n;
                 break;
             }
         }
-    }
+    };
+    while ($sk = $skillRows->fetch_assoc()) $addSkill($sk['subject'], (float)$sk['total'], (int)$sk['n']);
+    foreach ($matRows as $m) if ($m['graded']) $addSkill($m['domain'], $m['score'], 1);
+    foreach ($skillSum as $skillName => $sum) $skills_breakdown[$skillName] = round($sum / $skillN[$skillName], 1);
     $skillStmt->close();
 }
 
@@ -241,7 +275,7 @@ if ($skillStmt) {
 $progress_over_time = [];
 $potStmt = $conn->prepare("
     SELECT DATE(COALESCE(lp.assessment_date, lp.created_at)) AS day,
-           ROUND(AVG(COALESCE(sub.finalized_score, lp.score)), 1) AS avg_score
+           SUM(COALESCE(sub.finalized_score, lp.score)) AS total, COUNT(*) AS n
     FROM learner_progress lp
     LEFT JOIN activity_submissions sub
            ON sub.activity_id = lp.activity_id
@@ -256,9 +290,17 @@ if ($potStmt) {
     $potStmt->bind_param("i", $teacher_id);
     $potStmt->execute();
     $potRows = $potStmt->get_result();
+    $daySum = []; $dayN = [];
     while ($pt = $potRows->fetch_assoc()) {
-        $progress_over_time[] = ['date' => $pt['day'], 'avg_score' => (float)$pt['avg_score']];
+        $daySum[$pt['day']] = (float)$pt['total']; $dayN[$pt['day']] = (int)$pt['n'];
     }
+    foreach ($matRows as $m) {
+        if (!$m['graded'] || !$m['date']) continue;
+        $day = substr($m['date'], 0, 10);
+        $daySum[$day] = ($daySum[$day] ?? 0) + $m['score']; $dayN[$day] = ($dayN[$day] ?? 0) + 1;
+    }
+    ksort($daySum);
+    foreach ($daySum as $day => $sum) $progress_over_time[] = ['date' => $day, 'avg_score' => round($sum / $dayN[$day], 1)];
     $potStmt->close();
 }
 
@@ -282,6 +324,16 @@ if ($stmt3) {
     }
     $stmt3->close();
 }
+$namesById = [];
+foreach ($students as $s) $namesById[(int)$s['student_id']] = $s['student_name'];
+$cutoff = date('Y-m-d H:i:s', strtotime('-30 days'));
+foreach ($matRows as $m) {
+    if (!$m['graded'] || !$m['date'] || $m['date'] < $cutoff || !isset($namesById[$m['student_id']])) continue;
+    $recent_log[] = ['score' => $m['score'], 'assessment_date' => $m['date'], 'created_at' => $m['date'],
+                     'student_name' => $namesById[$m['student_id']], 'activity_title' => $m['title'], 'activity_type' => 'Manual Activity'];
+}
+usort($recent_log, function ($a, $b) { return strcmp($b['created_at'] ?? '', $a['created_at'] ?? ''); });
+$recent_log = array_slice($recent_log, 0, 20);
 $conn->close();
 
 echo json_encode([

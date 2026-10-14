@@ -508,8 +508,20 @@ function learnerProgressSummaries(mysqli $conn, int $sy): array {
         INNER JOIN teacher_activities ta ON ta.id = lp.activity_id AND ta.school_year_id = $sy
         LEFT JOIN activity_submissions sub ON sub.student_id = lp.student_id AND sub.activity_id = lp.activity_id AND sub.teacher_id = lp.teacher_id
         WHERE s.admin_account_id IS NOT NULL AND lp.score IS NOT NULL");
+    $rows = [];
+    while ($res && ($row = $res->fetch_assoc())) $rows[] = $row;
+    // Graded manual activities (uploaded 'activity' materials) of this S.Y.
+    $col = $conn->query("SHOW COLUMNS FROM teacher_uploaded_materials LIKE 'school_year_id'");
+    if ($col && $col->num_rows > 0) {
+        $m = $conn->query("SELECT s.admin_account_id AS sid, m.domain AS subject, m.final_score AS score
+            FROM teacher_uploaded_materials m
+            INNER JOIN students s ON s.id = m.student_id
+            WHERE m.school_year_id = $sy AND m.material_kind = 'activity' AND m.is_graded = 1
+              AND m.final_score IS NOT NULL AND s.admin_account_id IS NOT NULL");
+        while ($m && ($row = $m->fetch_assoc())) $rows[] = $row;
+    }
     $acc = [];
-    while ($res && ($row = $res->fetch_assoc())) {
+    foreach ($rows as $row) {
         $sid = (int)$row['sid'];
         $score = (float)$row['score'];
         if (!isset($acc[$sid])) $acc[$sid] = ['sum' => 0, 'n' => 0, 'skills' => []];

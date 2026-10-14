@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../TEACHER_FILES/TEACHER_BACKEND/db.php';
 require_once __DIR__ . '/student_auth.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/school_year.php';
+require_once __DIR__ . '/../../TEACHER_FILES/TEACHER_BACKEND/material_helpers.php';
 
 header('Content-Type: application/json');
 header('Cache-Control: no-cache');
@@ -77,6 +78,9 @@ $modeLabelsByType = [
     'WrittenResponse' => ['written' => 'Written Response', 'scramble' => 'Word Scramble', 'sentence' => 'Build the Sentence'],
     'PictureLabeling' => ['grid' => 'Label Each Picture', 'diagram' => 'Label the Picture', 'type' => 'Type the Label'],
     'Tracing'         => ['letters' => 'Letter & Number Tracing', 'shapes' => 'Shapes & Lines (print-only)'],
+    'MediaQuiz'       => ['video' => 'Watch & Answer', 'audio' => 'Listen & Answer'],
+    'VideoQuiz'       => ['video' => 'Video Learning'],
+    'AudioQuiz'       => ['audio' => 'Audio Learning'],
 ];
 
 $activities = [];
@@ -96,6 +100,24 @@ while ($r = $perf_result->fetch_assoc()) {
     $activities[] = $r;
 }
 $stmt3->close();
+
+// Manual activities (uploaded 'activity' materials): listed with the rest
+// once the teacher grades them, and counted in the totals below.
+$matRows = materialActivityRows($conn, $teacher_id, $syId, $student_record_id);
+$matScores = [];
+$matSubmitted = 0;
+foreach ($matRows as $m) {
+    if ($m['submitted']) $matSubmitted++;
+    if (!$m['graded']) continue;
+    $matScores[] = $m['score'];
+    $activities[] = [
+        'activity_id' => null, 'activity_title' => $m['title'], 'activity_type' => 'Manual Activity', 'subject' => $m['domain'],
+        'score' => $m['score'], 'assessment_date' => $m['date'], 'status_label' => 'Completed',
+        'retake_count' => 0, 'finalized_score' => $m['score'], 'is_finalized' => 1, 'assistance_level' => $m['assistance_level'],
+        'answers_json' => null, 'mode_label' => 'Manual Activity', 'struggled_items' => [], 'is_material' => true,
+    ];
+}
+usort($activities, function ($a, $b) { return strcmp($b['assessment_date'] ?? '', $a['assessment_date'] ?? ''); });
 
 // General teacher notes (student_notes table) — note_type/note_id let the
 // student portal target the right row (and the right delete query) when
@@ -131,9 +153,12 @@ usort($notes, function($a, $b) {
 
 $conn->close();
 
-$avg_score        = $stats['avg_score'] ? round(floatval($stats['avg_score'])) : 0;
-$total_assigned   = intval($total_row['total']);      // activities assigned to this student
-$total_completed  = intval($stats['total_submitted']); // of those, how many the student submitted
+$actCount         = intval($stats['total_submitted']);
+$scoreSum         = ($stats['avg_score'] ? floatval($stats['avg_score']) : 0) * $actCount + array_sum($matScores);
+$scoreN           = $actCount + count($matScores);
+$avg_score        = $scoreN ? round($scoreSum / $scoreN) : 0;
+$total_assigned   = intval($total_row['total']) + count($matRows);  // activities + manual activities given to this student
+$total_completed  = $actCount + $matSubmitted;                       // of those, how many the student turned in
 
 // Skills breakdown — average score per Learning Domain, keyed off each
 // activity's own `subject` (set by the teacher at publish time). Reuses

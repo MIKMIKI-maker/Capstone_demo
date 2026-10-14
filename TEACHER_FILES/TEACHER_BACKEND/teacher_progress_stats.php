@@ -5,6 +5,7 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/teacher_auth.php';
 require_once __DIR__ . '/student_level.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/school_year.php';
+require_once __DIR__ . '/material_helpers.php';
 
 header('Content-Type: application/json');
 
@@ -113,6 +114,19 @@ if ($stmt) {
     $progress['activities_completed'] = (int)($statsRow['cnt'] ?? 0);
     $progress['average_score']        = !empty($statsRow['avg_score']) ? round(floatval($statsRow['avg_score'])) : 0;
 }
+// Manual activities (uploaded 'activity' materials) count too: given = one
+// more to do, turned in = done, and a graded one adds its score.
+$matRows = materialActivityRows($conn, $teacher_id, $syId, $student_id);
+$matScores = [];
+foreach ($matRows as $m) if ($m['graded']) $matScores[] = $m['score'];
+if ($matRows) {
+    $actDone = $progress['activities_completed'];
+    $sum = $progress['average_score'] * $actDone + array_sum($matScores);
+    $n = $actDone + count($matScores);
+    $progress['total_activities']     += count($matRows);
+    $progress['activities_completed'] += count(array_filter($matRows, function ($m) { return $m['submitted']; }));
+    $progress['average_score']         = $n ? round($sum / $n) : 0;
+}
 $progress['overall_progress'] = $progress['total_activities'] > 0
     ? round(($progress['activities_completed'] / $progress['total_activities']) * 100)
     : 0;
@@ -177,9 +191,26 @@ if ($stmt) {
     $stmt->close();
 }
 
+// Graded manual activities in the history, newest first with the rest.
+foreach ($matRows as $m) {
+    if (!$m['graded']) continue;
+    $sc = $m['score'];
+    $progress['activities'][] = [
+        'id' => 'm' . $m['id'], 'name' => $m['title'], 'subject' => $m['domain'], 'date' => $m['date'],
+        'score' => $sc, 'score_color' => $sc >= 80 ? '#10b981' : ($sc >= 60 ? '#f59e0b' : ($sc > 0 ? '#ef4444' : '#CBD5E1')),
+        'status' => 'completed', 'assistance_level' => $m['assistance_level'], 'finalized_score' => $sc, 'is_finalized' => true,
+        'scaffold_used' => 0, 'struggled_items' => [], 'retake_count' => 0, 'attempt_history' => [], 'is_material' => true,
+        'activity_type' => 'Manual Activity',
+    ];
+}
+if ($matRows) {
+    usort($progress['activities'], function ($a, $b) { return strcmp($b['date'] ?? '', $a['date'] ?? ''); });
+    $progress['activities'] = array_slice($progress['activities'], 0, 15);
+}
+
 // ── Skills breakdown ──────────────────────────────────────────────────────────
 $stmt = safeQuery($conn,
-    "SELECT COALESCE(ta.subject,'Other') AS subject, AVG(lp.score) AS avg_score
+    "SELECT COALESCE(ta.subject,'Other') AS subject, SUM(lp.score) AS total, COUNT(*) AS n
      FROM learner_progress lp
      INNER JOIN teacher_activities ta ON lp.activity_id = ta.id
     WHERE lp.student_id = ? AND ta.school_year_id = $syId
@@ -196,16 +227,21 @@ if ($stmt) {
         'language'      => 'Language Development',
         'aesthetic'     => 'Aesthetic & Creative'
     ];
-    $r = $stmt->get_result();
-    while ($row = $r->fetch_assoc()) {
-        $subj = strtolower($row['subject']);
+    $skillSum = []; $skillN = [];
+    $addSkill = function ($subject, $total, $n) use ($skillMap, &$skillSum, &$skillN) {
+        $subj = strtolower((string)$subject);
         foreach ($skillMap as $key => $skillName) {
             if (strpos($subj, $key) !== false) {
-                $progress['skills'][$skillName] = round($row['avg_score']);
+                $skillSum[$skillName] = ($skillSum[$skillName] ?? 0) + $total;
+                $skillN[$skillName]   = ($skillN[$skillName] ?? 0) + $n;
                 break;
             }
         }
-    }
+    };
+    $r = $stmt->get_result();
+    while ($row = $r->fetch_assoc()) $addSkill($row['subject'], (float)$row['total'], (int)$row['n']);
+    foreach ($matRows as $m) if ($m['graded']) $addSkill($m['domain'], $m['score'], 1);
+    foreach ($skillSum as $skillName => $sum) $progress['skills'][$skillName] = round($sum / $skillN[$skillName]);
     $stmt->close();
 }
 

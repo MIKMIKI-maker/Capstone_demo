@@ -150,12 +150,13 @@ ensureMaterialSchema($conn);
 
 $stmt = $conn->prepare(
     "INSERT INTO teacher_uploaded_materials
-     (teacher_id, student_id, grading_period, title, description, file_name, file_original_name, file_type, file_size, link_url, material_kind, domain)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
+     (teacher_id, student_id, grading_period, title, description, file_name, file_original_name, file_type, file_size, link_url, material_kind, domain, school_year_id)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)"
 );
-$stmt->bind_param("iissssssisss",
+$materialSy = getActiveSchoolYearId($conn);
+$stmt->bind_param("iissssssisssi",
     $teacher_id, $student_id, $grading_period, $title, $description,
-    $safeName, $origName, $fileMime, $fileSize, $link_url, $material_kind, $domain
+    $safeName, $origName, $fileMime, $fileSize, $link_url, $material_kind, $domain, $materialSy
 );
 $stmt->execute();
 $newId = $conn->insert_id;

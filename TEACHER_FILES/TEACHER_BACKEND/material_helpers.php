@@ -21,7 +21,8 @@ function ensureMaterialSchema($conn) {
     $meta = $conn->query("SELECT version FROM schema_meta WHERE component = 'materials'");
     $metaRow = $meta ? $meta->fetch_assoc() : null;
     // 1: material kinds + submissions. 2: learning domain + grading.
-    if ($metaRow && (int)$metaRow['version'] >= 2) return;
+    // 3: school_year_id, so progress reports can count graded work per S.Y.
+    if ($metaRow && (int)$metaRow['version'] >= 3) return;
 
     $conn->query("CREATE TABLE IF NOT EXISTS teacher_uploaded_materials (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -81,14 +82,70 @@ function ensureMaterialSchema($conn) {
         }
     }
 
+    // v3: the School Year a material belongs to (older rows: the Active one,
+    // the same way activities were backfilled).
+    $c = $conn->query("SHOW COLUMNS FROM teacher_uploaded_materials LIKE 'school_year_id'");
+    if ($c && $c->num_rows == 0) {
+        $conn->query("ALTER TABLE teacher_uploaded_materials ADD COLUMN school_year_id INT NULL, ADD INDEX idx_mat_sy (school_year_id)");
+    }
+    // db.php can run this before the S.Y. helpers are loaded.
+    require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/school_year.php';
+    if (function_exists('getActiveSchoolYearId')) {
+        $sy = (int)getActiveSchoolYearId($conn);
+        if ($sy > 0) $conn->query("UPDATE teacher_uploaded_materials SET school_year_id = $sy WHERE school_year_id IS NULL");
+    }
+
     // Only mark it done once everything above really exists.
     $kind = $conn->query("SHOW COLUMNS FROM teacher_uploaded_materials LIKE 'material_kind'");
     $graded = $conn->query("SHOW COLUMNS FROM teacher_uploaded_materials LIKE 'graded_at'");
+    $syCol = $conn->query("SHOW COLUMNS FROM teacher_uploaded_materials LIKE 'school_year_id'");
     $subs = $conn->query("SHOW TABLES LIKE 'material_submissions'");
-    if ($kind && $kind->num_rows > 0 && $graded && $graded->num_rows > 0 && $subs && $subs->num_rows > 0) {
+    if ($kind && $kind->num_rows > 0 && $graded && $graded->num_rows > 0 && $syCol && $syCol->num_rows > 0
+        && $subs && $subs->num_rows > 0 && function_exists('getActiveSchoolYearId')) {
         $conn->query("CREATE TABLE IF NOT EXISTS schema_meta (component VARCHAR(50) PRIMARY KEY, version INT NOT NULL)");
-        $conn->query("INSERT INTO schema_meta (component, version) VALUES ('materials', 2) ON DUPLICATE KEY UPDATE version = GREATEST(version, 2)");
+        $conn->query("INSERT INTO schema_meta (component, version) VALUES ('materials', 3) ON DUPLICATE KEY UPDATE version = GREATEST(version, 3)");
     }
+}
+
+/* Manual activities (uploaded 'activity' materials) of one School Year, for
+ * the progress reports — one row per learner's copy: whether they turned in
+ * work, and the teacher's grade once it is graded (same 0–100 score and
+ * assistance level as a finalized activity). $studentId limits it to one learner. */
+function materialActivityRows($conn, $teacherId, $syId, $studentId = 0) {
+    ensureMaterialSchema($conn);
+    $sql = "SELECT m.id, m.student_id, m.title, m.domain, m.final_score, m.is_graded, m.graded_at, m.uploaded_at,
+                   m.assistance_level, m.teacher_note,
+                   (SELECT COUNT(*) FROM material_submissions ms WHERE ms.material_id = m.id AND ms.student_id = m.student_id) AS files
+            FROM teacher_uploaded_materials m
+            WHERE m.teacher_id = ? AND m.material_kind = 'activity' AND m.school_year_id = ?"
+         . ($studentId ? " AND m.student_id = ?" : "") . "
+            ORDER BY COALESCE(m.graded_at, m.uploaded_at) DESC";
+    $st = $conn->prepare($sql);
+    if (!$st) return [];
+    $teacherId = (int)$teacherId; $syId = (int)$syId; $studentId = (int)$studentId;
+    if ($studentId) $st->bind_param("iii", $teacherId, $syId, $studentId);
+    else $st->bind_param("ii", $teacherId, $syId);
+    $st->execute();
+    $res = $st->get_result();
+    $rows = [];
+    while ($r = $res->fetch_assoc()) {
+        $graded = !empty($r['is_graded']) && $r['final_score'] !== null;
+        $rows[] = [
+            'id'               => (int)$r['id'],
+            'student_id'       => (int)$r['student_id'],
+            'title'            => $r['title'],
+            'domain'           => $r['domain'] ?? '',
+            'submitted'        => (int)$r['files'] > 0 || $graded,
+            'graded'           => $graded,
+            'score'            => $graded ? (int)$r['final_score'] : null,
+            'date'             => $graded ? $r['graded_at'] : null,
+            'uploaded_at'      => $r['uploaded_at'],
+            'assistance_level' => $r['assistance_level'],
+            'teacher_note'     => $r['teacher_note'],
+        ];
+    }
+    $st->close();
+    return $rows;
 }
 
 // The Learning Domains offered when publishing an activity (stored the
