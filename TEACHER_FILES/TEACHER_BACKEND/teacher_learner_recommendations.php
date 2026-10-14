@@ -1,8 +1,8 @@
 <?php
 /**
  * The teacher's recommendation for each learner's next School Year
- * (My Learners): "continue" (stay), "move" (another class/teacher) or
- * "graduate". The Admin sees it — with the learner's progress — in the
+ * (My Learners): "continue" (stay), "move" (another class/teacher),
+ * "graduate" or "drop". The Admin sees it — with the learner's progress — in the
  * Set as Active steps and makes the final choice there.
  * GET  → { recommendations: { <students.id>: { recommendation, note } } } for the S.Y. being viewed
  * POST student_id, recommendation ('' clears it), note → saves it for the Active S.Y.

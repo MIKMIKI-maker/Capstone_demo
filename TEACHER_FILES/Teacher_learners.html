@@ -358,7 +358,8 @@
             ['', '— Select —'],
             ['continue', '✅ Continue in class'],
             ['move', '➡️ Move to another class'],
-            ['graduate', '🎓 Ready to graduate']
+            ['graduate', '🎓 Ready to graduate'],
+            ['drop', '🚪 Dropped']
         ];
         function loadLearners() {
             var list = fetch('TEACHER_BACKEND/teacher_list_learners.php?teacher_id=' + TEACHER_ID + '&_t=' + Date.now(), { cache: 'no-store' })

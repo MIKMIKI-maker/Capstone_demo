@@ -15,7 +15,7 @@
  *     students: [{ student_admin_id, action: "continue"|"move"|"exit",
  *                  class_key (continue/move), exit_reason (exit) }] }
  * "continue"/"move" put the student in that class and make its teacher the
- * student's teacher; "exit" (Graduated/Transferred/Dropped) records the
+ * student's teacher; "exit" (Graduated/Dropped) records the
  * reason on last year's enrollment and leaves the student unassigned.
  * Nothing is deleted, so last year stays viewable read-only.
  */
@@ -148,14 +148,14 @@ if ($dups) {
     exit;
 }
 
-$exitReasons = ['Graduated', 'Transferred', 'Dropped'];
+$exitReasons = ['Graduated', 'Dropped'];
 $students = [];
 foreach ((array)($input['students'] ?? []) as $s) {
     $sid = (int)($s['student_admin_id'] ?? 0);
     $action = (string)($s['action'] ?? '');
     if ($sid <= 0) continue;
     if ($action === 'exit') {
-        $reason = in_array($s['exit_reason'] ?? '', $exitReasons, true) ? $s['exit_reason'] : 'Transferred';
+        $reason = in_array($s['exit_reason'] ?? '', $exitReasons, true) ? $s['exit_reason'] : 'Dropped';
         $students[] = ['id' => $sid, 'action' => 'exit', 'reason' => $reason];
     } elseif (in_array($action, ['continue', 'move'], true) && isset($classes[(string)($s['class_key'] ?? '')])) {
         $students[] = ['id' => $sid, 'action' => 'enroll', 'class_key' => (string)$s['class_key']];

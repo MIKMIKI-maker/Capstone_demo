@@ -456,7 +456,7 @@ function loadClassesForSchoolYear(mysqli $conn, int $sy): array {
 
 // Same 80% mastery target as Goals & Targets on the progress pages.
 const LEARNER_GOAL_TARGET = 80;
-const LEARNER_RECOMMENDATIONS = ['continue', 'move', 'graduate'];
+const LEARNER_RECOMMENDATIONS = ['continue', 'move', 'graduate', 'drop'];
 // Same Learning Domain keys as student_get_progress.php's skills breakdown.
 const LEARNER_SKILL_DOMAINS = [
     'cognitive' => 'Cognitive', 'communication' => 'Communication', 'motor' => 'Fine Motor',

@@ -906,17 +906,32 @@
         + '.sy-wiz-row .sy-wiz-from{font-size:11.5px;color:#64748b;font-weight:400;display:block;}'
         + '.sy-wiz-x{flex:0 0 auto!important;min-width:0!important;background:none;border:none;color:#dc2626;cursor:pointer;font-size:15px;}'
         + '.sy-wiz-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;}'
-        + '.sy-wiz-row > .sy-wiz-check{flex:0 0 auto;min-width:0;width:16px;height:16px;}'
         + '.sy-wiz-summary{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:12.5px;color:#334155;}'
         + '.sy-wiz-summary input{flex:1;min-width:180px;margin-left:auto;}'
-        + '.sy-wiz-group{border:1px solid #e2e8f0;border-radius:12px;padding:4px 12px;margin-bottom:10px;}'
-        + '.sy-wiz-ghead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0;}'
-        + '.sy-wiz-ghead input[type=checkbox]{width:16px;height:16px;}'
-        + '.sy-wiz-toggle{flex:1;min-width:180px;text-align:left;background:none;border:none;font-family:inherit;font-size:13.5px;font-weight:700;color:#1e293b;cursor:pointer;padding:0;}'
+        + '.sy-wiz-group{border:1px solid #e2e8f0;border-radius:12px;padding:0 12px;margin-bottom:8px;}'
+        + '.sy-wiz-group.open{padding-bottom:6px;}'
+        + '.sy-wiz-ghead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%;padding:11px 0;background:none;border:none;font-family:inherit;text-align:left;cursor:pointer;color:#1e293b;}'
+        + '.sy-wiz-ghead > i{width:12px;color:#64748b;font-size:11px;}'
+        + '.sy-wiz-gname{flex:1;min-width:160px;font-size:13.5px;font-weight:700;}'
+        + '.sy-wiz-gsum{font-size:12px;font-weight:600;}'
+        + '.sy-sum-stay{color:#16a34a;}.sy-sum-move{color:#2563eb;}.sy-sum-exit{color:#dc2626;}'
+        + '.sy-wiz-gedit{font-size:12px;font-weight:600;color:#1e3a8a;border:1.5px solid #c7d2fe;border-radius:8px;padding:3px 12px;}'
+        + '.sy-wiz-gbar{display:flex;align-items:center;gap:8px;font-size:12px;color:#64748b;padding:2px 0 8px;}'
         + '.sy-wiz-count{color:#64748b;font-weight:500;}'
-        + '.sy-wiz-gaction{max-width:220px;}'
-        + '.sy-wiz-bulk{position:sticky;bottom:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#1e3a8a;color:#fff;border-radius:12px;padding:10px 14px;margin-top:12px;font-size:13px;}'
-        + '.sy-wiz-bulk select{max-width:260px;color:#1e293b;}';
+        + '.sy-wiz-gaction{max-width:240px;}'
+        + '.sy-wiz-review{border:1px solid #fde68a;background:#fffbeb;border-radius:12px;padding:0 12px 6px;margin-bottom:12px;}'
+        + '.sy-wiz-review-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:11px 0 6px;font-size:13.5px;font-weight:700;color:#92400e;}'
+        + '.sy-wiz-review-sub{font-size:11.5px;font-weight:500;color:#a16207;}'
+        + '.sy-wiz-review .sy-wiz-row{border-top-color:#fde68a;}'
+        + '.sy-wiz-row > .sy-wiz-ctl{flex:0 1 auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;}'
+        + '.sy-wiz-ctl select{width:auto;max-width:240px;}'
+        + '.sy-seg{display:inline-flex;border:1.5px solid #e2e8f0;border-radius:8px;overflow:hidden;background:#fff;}'
+        + '.sy-seg button{border:none;background:none;padding:6px 14px;font-family:inherit;font-size:12.5px;font-weight:600;color:#64748b;cursor:pointer;}'
+        + '.sy-seg button + button{border-left:1px solid #e2e8f0;}'
+        + '.sy-seg button:disabled{opacity:.4;cursor:not-allowed;}'
+        + '.sy-seg button.continue.on{background:#dcfce7;color:#166534;}'
+        + '.sy-seg button.move.on{background:#dbeafe;color:#1e40af;}'
+        + '.sy-seg button.exit.on{background:#fee2e2;color:#991b1b;}';
       document.head.appendChild(s);
     })();
 
@@ -968,8 +983,9 @@
     var WIZ_CREATE_STEPS = ['School Year'];
     var WIZ_ACTIVATE_STEPS = ['Classes', 'Students', 'Review'];
     // The teacher's end-of-year recommendation (My Learners).
-    var WIZ_REC_LABELS = { 'continue': '✅ Continue in class', 'move': '➡️ Move to another class', 'graduate': '🎓 Ready to graduate' };
-    var WIZ_EXITS = ['Graduated', 'Transferred', 'Dropped'];
+    var WIZ_REC_LABELS = { 'continue': '✅ Continue in class', 'move': '➡️ Move to another class', 'graduate': '🎓 Ready to graduate', 'drop': '🚪 Dropped' };
+    var WIZ_EXITS = ['Graduated', 'Dropped'];
+    var WIZ_EXIT_ICONS = { 'Graduated': '🎓', 'Dropped': '🚪' };
 
     (function () {
       var s = document.createElement('style');
@@ -1002,7 +1018,7 @@
         .then(function (data) {
           if (!data.success) { showSyMsg(data.message || 'Could not load the wizard.', false); return; }
           _wiz = {
-            mode: 'create', steps: WIZ_CREATE_STEPS, data: data, step: 1, collapsed: {}, search: '',
+            mode: 'create', steps: WIZ_CREATE_STEPS, data: data, step: 1, open: {}, search: '',
             name: data.suggested.name, start_date: data.suggested.start_date, end_date: data.suggested.end_date,
             classes: [], students: []
           };
@@ -1018,7 +1034,7 @@
         .then(function (data) {
           if (!data.success) { showSyMsg(data.message || 'Could not load the wizard.', false); return; }
           _wiz = {
-            mode: 'activate', steps: WIZ_ACTIVATE_STEPS, data: data, step: 1, collapsed: {}, search: '',
+            mode: 'activate', steps: WIZ_ACTIVATE_STEPS, data: data, step: 1, open: {}, search: '',
             target_id: data.target.id,
             name: data.target.name, start_date: data.target.start_date, end_date: data.target.end_date,
             classes: [], students: []
@@ -1049,7 +1065,7 @@
           data.classes.forEach(function (c) {
             c.students.forEach(function (st) {
               var row = { student_admin_id: st.student_admin_id, name: st.name, from: c.section_name + ' – ' + c.teacher_name,
-                from_key: 'c' + c.id, action: 'continue', class_key: 'c' + c.id, exit_reason: 'Graduated', checked: false };
+                from_key: 'c' + c.id, action: 'continue', class_key: 'c' + c.id, exit_reason: 'Graduated' };
               var rec = (data.learner_recommendations || {})[st.student_admin_id];
               row.rec = rec || null;
               if (earlierClass[st.student_admin_id]) {
@@ -1057,17 +1073,22 @@
                 row.action = row.class_key === row.from_key ? 'continue' : 'move';
               } else if (st.exit_reason) {
                 row.action = 'exit';
-                row.exit_reason = st.exit_reason;
-              } else if (rec && rec.recommendation === 'graduate') {
+                // An Exit saved before "Transferred" was removed shows as Dropped.
+                row.exit_reason = WIZ_EXITS.indexOf(st.exit_reason) !== -1 ? st.exit_reason : 'Dropped';
+              } else if (rec && (rec.recommendation === 'graduate' || rec.recommendation === 'drop')) {
                 // The teacher's call is the starting point; "move" can't name a
                 // class, so it stays on Stay with the badge as a reminder.
                 row.action = 'exit';
-                row.exit_reason = 'Graduated';
+                row.exit_reason = rec.recommendation === 'graduate' ? 'Graduated' : 'Dropped';
               }
               if (row.action !== 'exit' && !_wiz.classes.some(function (k) { return k.key === row.class_key; })) {
                 row.class_key = _wiz.classes.length ? _wiz.classes[0].key : '';
                 row.action = 'move';
               }
+              // Listed first under "To review": the teacher asked for something
+              // other than Stay, or an earlier choice wasn't Stay. Set once, so
+              // a row doesn't jump around while the Admin edits it.
+              row.review = (rec && rec.recommendation !== 'continue') || row.action !== 'continue';
               _wiz.students.push(row);
             });
           });
@@ -1087,23 +1108,18 @@
       return c.section_name + ' – ' + (t ? t.name : '?');
     }
     function wizClass(key) { return _wiz.classes.filter(function (c) { return c.key === key; })[0]; }
-    function wizChoice(st) {
-      return st.action === 'exit' ? 'exit:' + st.exit_reason : (st.action === 'move' ? 'move:' + st.class_key : 'continue');
-    }
 
-    // The single dropdown for one student, or (fromKey = null) for a group.
+    // The "Whole class" dropdown for the class whose key is fromKey.
     function wizChoiceOptions(fromKey, selected, placeholder) {
       var opt = function (value, label) {
         return '<option value="' + value + '"' + (value === selected ? ' selected' : '') + '>' + label + '</option>';
       };
       var html = placeholder ? '<option value="">' + placeholder + '</option>' : '';
-      var stay = fromKey ? wizClass(fromKey) : null;
-      if (!fromKey) html += opt('continue', '✅ Stay in their class');
-      else if (stay) html += opt('continue', '✅ Stay: ' + escSy(wizClassLabel(stay)));
+      if (wizClass(fromKey)) html += opt('continue', '✅ Stay');
       _wiz.classes.forEach(function (c) {
         if (c.key !== fromKey) html += opt('move:' + c.key, '➡️ Move to: ' + escSy(wizClassLabel(c)));
       });
-      WIZ_EXITS.forEach(function (r) { html += opt('exit:' + r, '🎓 Exit: ' + r); });
+      WIZ_EXITS.forEach(function (r) { html += opt('exit:' + r, WIZ_EXIT_ICONS[r] + ' Exit: ' + r); });
       return html;
     }
 
@@ -1154,73 +1170,118 @@
         + '<button type="button" class="sy-input" style="width:auto;margin-top:8px;cursor:pointer;" onclick="wizAddClass()"><i class="fa-solid fa-plus"></i> Add class</button>';
     }
 
-    // Progress this S.Y. and the teacher's recommendation, under the name.
+    // Average this S.Y. (activities and IEP goals in its tooltip) and the
+    // teacher's recommendation, under the name.
     function wizLearnerInfo(st) {
       var d = _wiz.data, chips = [];
       var pr = (d.learner_progress || {})[st.student_admin_id];
       var target = d.goal_target || 80;
       if (pr) {
-        chips.push('<span class="sy-chip ' + (pr.avg >= target ? 'good' : 'warn') + '" title="Average score this School Year">Avg ' + pr.avg + '%</span>');
-        chips.push('<span class="sy-chip" title="Activities with a score">' + pr.done + ' activit' + (pr.done === 1 ? 'y' : 'ies') + '</span>');
+        var tip = pr.done + ' activit' + (pr.done === 1 ? 'y' : 'ies') + ' with a score';
         if (pr.skills_total) {
-          chips.push('<span class="sy-chip ' + (pr.skills_met === pr.skills_total ? 'good' : 'warn') + '" title="'
-            + (pr.below.length ? 'Below ' + target + '%: ' + escSy(pr.below.join(', ')) : 'All skill areas at ' + target + '% or more') + '">IEP goals ' + pr.skills_met + '/' + pr.skills_total + ' met</span>');
+          tip += ' · IEP goals ' + pr.skills_met + '/' + pr.skills_total + ' met'
+            + (pr.below.length ? ' (below ' + target + '%: ' + pr.below.join(', ') + ')' : '');
         }
-      } else {
-        chips.push('<span class="sy-chip none">No scores yet</span>');
+        chips.push('<span class="sy-chip ' + (pr.avg >= target ? 'good' : 'warn') + '" title="' + escSy(tip) + '">Avg ' + pr.avg + '%'
+          + (pr.skills_total ? ' · Goals ' + pr.skills_met + '/' + pr.skills_total : '') + '</span>');
       }
       if (st.rec) {
         chips.push('<span class="sy-chip rec" title="' + escSy((st.rec.teacher_name ? st.rec.teacher_name + ': ' : '') + (st.rec.note || '')) + '">Teacher: '
           + (WIZ_REC_LABELS[st.rec.recommendation] || escSy(st.rec.recommendation)) + '</span>');
       }
-      return '<div class="sy-wiz-info">' + chips.join('') + '</div>'
+      return (chips.length ? '<div class="sy-wiz-info">' + chips.join('') + '</div>' : '')
         + (st.rec && st.rec.note ? '<div style="font-size:11px;color:#64748b;font-style:italic;">“' + escSy(st.rec.note) + '”</div>' : '');
     }
 
+    // One learner: Stay | Move | Exit, plus where to (Move) or why (Exit).
+    function wizStudentRow(i) {
+      var st = _wiz.students[i];
+      var others = _wiz.classes.filter(function (c) { return c.key !== st.from_key; });
+      var seg = function (action, label, value, disabled) {
+        return '<button type="button" class="' + action + (st.action === action ? ' on' : '') + '"' + (disabled ? ' disabled' : '')
+          + ' onclick="wizApply([' + i + '], \'' + value + '\')">' + label + '</button>';
+      };
+      var detail = '';
+      if (st.action === 'move') {
+        detail = '<select class="sy-input" aria-label="Move ' + escSy(st.name) + ' to" onchange="wizApply([' + i + '], \'move:\' + this.value)">'
+          + others.map(function (c) { return '<option value="' + c.key + '"' + (c.key === st.class_key ? ' selected' : '') + '>' + escSy(wizClassLabel(c)) + '</option>'; }).join('')
+          + '</select>';
+      } else if (st.action === 'exit') {
+        detail = '<select class="sy-input" aria-label="Why ' + escSy(st.name) + ' exits" onchange="wizApply([' + i + '], \'exit:\' + this.value)">'
+          + WIZ_EXITS.map(function (r) { return '<option value="' + r + '"' + (r === st.exit_reason ? ' selected' : '') + '>' + WIZ_EXIT_ICONS[r] + ' ' + r + '</option>'; }).join('')
+          + '</select>';
+      }
+      return '<div class="sy-wiz-row sy-wiz-student st-' + st.action + '">'
+        + '<div class="sy-wiz-who"><span class="sy-wiz-name">' + escSy(st.name) + '</span>' + wizLearnerInfo(st) + '</div>'
+        + '<div class="sy-wiz-ctl">'
+        +   '<div class="sy-seg" role="group" aria-label="Next School Year for ' + escSy(st.name) + '">'
+        +     seg('continue', 'Stay', 'continue', !wizClass(st.from_key))
+        +     seg('move', 'Move', 'move:' + (st.action === 'move' ? st.class_key : (others[0] ? others[0].key : '')), !others.length)
+        +     seg('exit', 'Exit', 'exit:' + st.exit_reason)
+        +   '</div>' + detail
+        + '</div></div>';
+    }
+
+    // "2 stay · 1 exit" for a class header.
+    function wizGroupSummary(idx) {
+      var n = { continue: 0, move: 0, exit: 0 };
+      idx.forEach(function (i) { n[_wiz.students[i].action]++; });
+      var parts = [];
+      if (n.continue) parts.push('<span class="sy-sum-stay">' + n.continue + ' stay</span>');
+      if (n.move) parts.push('<span class="sy-sum-move">' + n.move + ' moving</span>');
+      if (n.exit) parts.push('<span class="sy-sum-exit">' + n.exit + ' exit</span>');
+      return parts.join(' · ');
+    }
+
+    // Learners the teacher marked (or set before) come first; every class is
+    // folded to a one-line summary and opened only to change someone in it.
     function wizPaneStudents() {
+      var q = (_wiz.search || '').trim().toLowerCase();
+      var match = function (i) { return !q || _wiz.students[i].name.toLowerCase().indexOf(q) !== -1; };
       var groups = [];
+      var review = [];
+      var counts = { continue: 0, move: 0, exit: 0 };
       _wiz.students.forEach(function (st, i) {
         var g = groups.filter(function (g) { return g.key === st.from_key; })[0];
         if (!g) { g = { key: st.from_key, label: st.from, idx: [] }; groups.push(g); }
         g.idx.push(i);
+        if (st.review) review.push(i);
+        counts[st.action]++;
       });
-      var counts = { continue: 0, move: 0, exit: 0 };
-      var checkedIdx = [];
-      _wiz.students.forEach(function (st, i) { counts[st.action]++; if (st.checked) checkedIdx.push(i); });
 
-      var rows = groups.map(function (g) {
-        var allChecked = g.idx.every(function (i) { return _wiz.students[i].checked; });
-        var collapsed = !!_wiz.collapsed[g.key];
-        return '<div class="sy-wiz-group" data-group="' + g.key + '">'
-          + '<div class="sy-wiz-ghead">'
-          +   '<input type="checkbox"' + (allChecked ? ' checked' : '') + ' onchange="wizCheck(' + JSON.stringify(g.idx) + ', this.checked)" aria-label="Select whole class" />'
-          +   '<button type="button" class="sy-wiz-toggle" onclick="_wiz.collapsed[\'' + g.key + '\']=' + !collapsed + ';renderWizard()">'
-          +     '<i class="fa-solid fa-chevron-' + (collapsed ? 'right' : 'down') + '"></i> Now in ' + escSy(g.label) + ' <span class="sy-wiz-count">(' + g.idx.length + ')</span></button>'
-          +   '<select class="sy-input sy-wiz-gaction" aria-label="Whole class" onchange="if(this.value)wizApply(' + JSON.stringify(g.idx) + ', this.value)">' + wizChoiceOptions(null, '', 'Whole class…') + '</select>'
-          + '</div>'
-          + (collapsed ? '' : g.idx.map(function (i) {
-            var st = _wiz.students[i];
-            return '<div class="sy-wiz-row sy-wiz-student st-' + st.action + '" data-name="' + escSy(st.name.toLowerCase()) + '">'
-              + '<input type="checkbox" class="sy-wiz-check"' + (st.checked ? ' checked' : '') + ' onchange="_wiz.students[' + i + '].checked=this.checked;renderWizard()" aria-label="Select ' + escSy(st.name) + '" />'
-              + '<div class="sy-wiz-who"><span class="sy-wiz-name">' + escSy(st.name) + '</span>' + wizLearnerInfo(st) + '</div>'
-              + '<select class="sy-input" aria-label="Next School Year for ' + escSy(st.name) + '" onchange="wizApply([' + i + '], this.value)">' + wizChoiceOptions(st.from_key, wizChoice(st)) + '</select>'
-              + '</div>';
-          }).join(''))
+      var reviewShown = review.filter(match);
+      var reviewBox = reviewShown.length
+        ? '<div class="sy-wiz-review"><div class="sy-wiz-review-head"><i class="fa-solid fa-circle-exclamation"></i> To review <span class="sy-wiz-count">(' + reviewShown.length + ')</span>'
+          + '<span class="sy-wiz-review-sub">Teacher recommendation or an earlier choice</span></div>'
+          + reviewShown.map(wizStudentRow).join('') + '</div>'
+        : '';
+
+      var classes = groups.map(function (g) {
+        var shown = g.idx.filter(match);
+        if (q && !shown.length) return '';
+        var open = !!_wiz.open[g.key] || !!q;
+        return '<div class="sy-wiz-group' + (open ? ' open' : '') + '">'
+          + '<button type="button" class="sy-wiz-ghead" onclick="_wiz.open[\'' + g.key + '\']=' + !_wiz.open[g.key] + ';renderWizard()">'
+          +   '<i class="fa-solid fa-chevron-' + (open ? 'down' : 'right') + '"></i>'
+          +   '<span class="sy-wiz-gname">' + escSy(g.label) + '</span>'
+          +   '<span class="sy-wiz-gsum">' + wizGroupSummary(g.idx) + '</span>'
+          +   (q ? '' : '<span class="sy-wiz-gedit">' + (open ? 'Done' : 'Edit') + '</span>')
+          + '</button>'
+          + (open
+            ? (q ? '' : '<div class="sy-wiz-gbar">Whole class: <select class="sy-input sy-wiz-gaction" aria-label="Whole class" onchange="if(this.value)wizApply(' + JSON.stringify(g.idx) + ', this.value)">' + wizChoiceOptions(g.key, '', 'Choose…') + '</select></div>')
+              + shown.map(wizStudentRow).join('')
+            : '')
           + '</div>';
-      }).join('') || '<p class="sy-hint">No enrolled students this School Year.</p>';
+      }).join('');
 
-      var recCount = _wiz.students.filter(function (st) { return st.rec; }).length;
-      return '<p class="sy-hint">Everyone starts on <b>Stay</b>' + (recCount ? ', except learners the teacher marked <b>Ready to graduate</b> (' + recCount + ' learner(s) have a teacher recommendation — see the purple badge)' : '') + ' — only change the ones who move or leave. The green/yellow badges show each learner\'s average and how many IEP goal areas reached ' + (_wiz.data.goal_target || 80) + '% this year. Use <b>Whole class…</b>, or tick students and use <b>Apply to selected…</b>, to change many at once.</p>'
+      return '<p class="sy-hint">Everyone <b>stays</b> in their class unless you change them. Open a class with <b>Edit</b> to move or exit someone.</p>'
         + '<div class="sy-wiz-summary">'
-        +   '<span>✅ <b>' + counts.continue + '</b> Stay</span><span>➡️ <b>' + counts.move + '</b> Move</span><span>🎓 <b>' + counts.exit + '</b> Exit</span>'
-        +   '<input id="wiz-search" class="sy-input" type="search" placeholder="Search student..." value="' + escSy(_wiz.search) + '" oninput="_wiz.search=this.value;wizFilter()" />'
+        +   '<span>✅ <b>' + counts.continue + '</b> Stay</span><span>➡️ <b>' + counts.move + '</b> Move</span><span>🚪 <b>' + counts.exit + '</b> Exit</span>'
+        +   '<input id="wiz-search" class="sy-input" type="search" placeholder="Search student..." value="' + escSy(_wiz.search) + '" oninput="_wiz.search=this.value;renderWizard()" />'
         + '</div>'
-        + rows
-        + (checkedIdx.length
-          ? '<div class="sy-wiz-bulk"><b>' + checkedIdx.length + ' selected</b>'
-            + '<select class="sy-input" onchange="if(this.value)wizApply(' + JSON.stringify(checkedIdx) + ', this.value, true)">' + wizChoiceOptions(null, '', 'Apply to selected…') + '</select>'
-            + '<button type="button" class="sy-input" style="width:auto;cursor:pointer;" onclick="wizCheck(' + JSON.stringify(checkedIdx) + ', false)">Clear</button></div>'
-          : '');
+        + (_wiz.students.length
+          ? reviewBox + (classes || '<p class="sy-hint">No student matches “' + escSy(_wiz.search) + '”.</p>')
+          : '<p class="sy-hint">No enrolled students this School Year.</p>');
     }
 
     function wizPaneReview() {
@@ -1240,7 +1301,7 @@
         +   (moves.length ? '<div style="margin-top:8px;">➡️ <b>' + moves.length + '</b> move:</div><ul style="margin:4px 0 0;padding-left:18px;">'
               + moves.map(function (st) { return '<li>' + escSy(st.name) + ': ' + escSy(st.from) + ' → <b>' + escSy(wizClassLabel(wizClass(st.class_key))) + '</b></li>'; }).join('') + '</ul>' : '')
         +   (exits.length ? '<div style="margin-top:8px;">🎓 <b>' + exits.length + '</b> exit:</div><ul style="margin:4px 0 0;padding-left:18px;">'
-              + exits.map(function (st) { return '<li>' + escSy(st.name) + ' — ' + escSy(st.exit_reason) + '</li>'; }).join('') + '</ul>' : '')
+              + exits.map(function (st) { return '<li>' + escSy(st.name) + ' — ' + WIZ_EXIT_ICONS[st.exit_reason] + ' ' + escSy(st.exit_reason) + '</li>'; }).join('') + '</ul>' : '')
         + '</div>';
     }
 
@@ -1280,7 +1341,6 @@
       document.body.appendChild(el);
       // Re-rendering replaces the overlay; keep the Admin's place in a long list.
       el.scrollTop = keepScroll;
-      if (stepName === 'Students') wizFilter();
       if (keepSearchFocus) {
         var search = document.getElementById('wiz-search');
         search.focus();
@@ -1331,7 +1391,7 @@
       renderWizard();
     }
 
-    function wizApply(indexes, value, clearSelection) {
+    function wizApply(indexes, value) {
       indexes.forEach(function (i) {
         var st = _wiz.students[i];
         if (value === 'continue') {
@@ -1344,28 +1404,8 @@
           st.action = 'exit';
           st.exit_reason = value.slice(5);
         }
-        if (clearSelection) st.checked = false;
       });
       renderWizard();
-    }
-
-    function wizCheck(indexes, checked) {
-      indexes.forEach(function (i) { _wiz.students[i].checked = checked; });
-      renderWizard();
-    }
-
-    // Hides students (and empty classes) that don't match the search box.
-    function wizFilter() {
-      var q = (_wiz.search || '').trim().toLowerCase();
-      document.querySelectorAll('#sy-wiz .sy-wiz-group').forEach(function (g) {
-        var shown = 0;
-        g.querySelectorAll('.sy-wiz-student').forEach(function (row) {
-          var match = !q || row.getAttribute('data-name').indexOf(q) !== -1;
-          row.style.display = match ? '' : 'none';
-          if (match) shown++;
-        });
-        g.style.display = q && !shown && !_wiz.collapsed[g.getAttribute('data-group')] ? 'none' : '';
-      });
     }
 
     function wizAddClass() {
