@@ -16,3 +16,8 @@ TEACHER_FILES/uploads/submissions/*
 # Pictures of each activity try (local-disk fallback) — same rule as above.
 TEACHER_FILES/uploads/snapshots/*
 !TEACHER_FILES/uploads/snapshots/.htaccess
+
+# Videos and sounds teachers add to Video & Audio activities (local-disk
+# fallback) — same rule as above.
+TEACHER_FILES/uploads/media/*
+!TEACHER_FILES/uploads/media/.htaccess

@@ -9,6 +9,7 @@
  *
  * Then, from the template:
  *   ImageLibrary.init({ template:"sorting", isEditor:fn, applySet:fn })
+ *   (Video & Audio also passes mediaSet:fn(level, rand) — its own random set)
  *   ImageLibrary.tabButton(function(url, photo, lang){ ... })  // per item
  *   ImageLibrary.launcher()                                     // side card
  *
@@ -109,17 +110,23 @@
       ".iml-launch{display:flex;flex-direction:column;gap:8px;}",
       ".iml-launch p{margin:0;font-size:13px;color:#475569;line-height:1.4;}",
       ".iml-launch-btn{cursor:pointer;border:none;background:linear-gradient(135deg,#2f6fed,#7b6ef0);color:#fff;border-radius:12px;padding:10px;font:inherit;font-weight:800;font-size:14px;}",
-      ".iml-rnd{margin-top:4px;padding:10px;border-radius:12px;background:#fff7ed;border:1.5px solid #fed7aa;}",
+      ".iml-rnd{margin-top:6px;padding:12px;border-radius:14px;background:linear-gradient(180deg,#fff7ed,#ffedd5);border:1.5px solid #fdba74;}",
       ".iml-body > .iml-rnd{margin:0 0 12px;}",
-      ".iml-rnd-title{font-size:13px;font-weight:800;color:#9a3412;margin-bottom:6px;}",
-      ".iml-rnd-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}",
-      ".iml-rnd-btn{cursor:pointer;border:none;border-radius:10px;padding:7px 4px;font:inherit;color:#fff;display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.15;width:100%;background:linear-gradient(135deg,#f59e0b,#f97316);}",
-      ".iml-rnd-btn b{font-size:13px;font-weight:800;}",
-      ".iml-rnd-btn span{font-size:10.5px;font-weight:600;opacity:.95;}",
-      ".iml-rnd-l1{background:linear-gradient(135deg,#22c55e,#16a34a);}",
-      ".iml-rnd-l2{background:linear-gradient(135deg,#f59e0b,#f97316);}",
-      ".iml-rnd-l3{background:linear-gradient(135deg,#ef4444,#dc2626);}",
-      ".iml-rnd-btn:hover{filter:brightness(1.06);}",
+      ".iml-rnd-title{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:800;color:#9a3412;}",
+      ".iml-rnd-hint{font-size:11.5px;font-weight:600;color:#b45309;margin:3px 0 10px;line-height:1.35;}",
+      ".iml-rnd-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:8px;}",
+      ".iml-rnd-btn{cursor:pointer;border:none;border-radius:12px;padding:9px 6px 8px;min-height:54px;font:inherit;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;line-height:1.1;width:100%;"
+        + "background:linear-gradient(135deg,#f59e0b,#f97316);box-shadow:0 3px 0 rgba(0,0,0,.2),0 6px 12px rgba(234,88,12,.18);transition:transform .08s ease,box-shadow .08s ease,filter .12s ease;}",
+      ".iml-rnd-btn b{font-size:14px;font-weight:800;letter-spacing:.01em;white-space:nowrap;}",
+      ".iml-rnd-dots{display:flex;gap:4px;}",
+      ".iml-rnd-dots i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.38);}",
+      ".iml-rnd-dots i.on{background:#fff;}",
+      ".iml-rnd-l1{background:linear-gradient(135deg,#22c55e,#16a34a);box-shadow:0 3px 0 #15803d,0 6px 12px rgba(22,163,74,.2);}",
+      ".iml-rnd-l2{background:linear-gradient(135deg,#f59e0b,#f97316);box-shadow:0 3px 0 #c2410c,0 6px 12px rgba(234,88,12,.2);}",
+      ".iml-rnd-l3{background:linear-gradient(135deg,#ef4444,#dc2626);box-shadow:0 3px 0 #991b1b,0 6px 12px rgba(220,38,38,.2);}",
+      ".iml-rnd-btn:hover{filter:brightness(1.07);transform:translateY(-1px);}",
+      ".iml-rnd-btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.25);}",
+      ".iml-rnd-btn:focus-visible{outline:3px solid #fde68a;outline-offset:2px;}",
       ".iml-intro{background:#fff;border-radius:18px;width:min(440px,100%);padding:22px;box-shadow:0 24px 60px rgba(15,23,42,.3);color:#1e293b;text-align:center;}",
       ".iml-intro h2{margin:0 0 6px;font-size:20px;font-weight:800;}",
       ".iml-intro p{margin:0 0 14px;font-size:14px;line-height:1.5;color:#475569;}",
@@ -243,7 +250,7 @@
           : Promise.resolve(confirm(message));
         ask.then(function (ok) {
           if (!ok) return;
-          cfg.applySet(resolveSet(s), setLang(s));
+          cfg.applySet(s.raw ? s : resolveSet(s), setLang(s));
           hide();
         });
       });
@@ -267,7 +274,8 @@
       groups: s.groups ? s.groups.map(function (g) { return { name: g[L] || g.fil, items: g.items.map(item) }; }) : null,
       items: s.items ? s.items.map(item) : null,
       pairs: s.pairs ? s.pairs.map(function (pr) { return pr.map(item); }) : null,
-      extras: s.extras ? s.extras.map(item) : null
+      extras: s.extras ? s.extras.map(item) : null,
+      choices: s.choices || 0
     };
   }
 
@@ -327,9 +335,9 @@
   // Level 1 / 2 / 3 — like the templates' Easy → Medium → Hard slides:
   // more pictures per level, and at Level 3 more mixing between categories.
   var LEVELS = [
-    { n: 1, fil: "Level 1 · Madali",     en: "Level 1 · Easy",   tip: "Kaunting litrato, iisang kategorya" },
-    { n: 2, fil: "Level 2 · Katamtaman", en: "Level 2 · Medium", tip: "Mas maraming litrato" },
-    { n: 3, fil: "Level 3 · Mahirap",    en: "Level 3 · Hard",   tip: "Pinakamaraming litrato, halo-halong kategorya" }
+    { n: 1, fil: "Level 1", en: "Level 1",   tip: "Kaunting litrato, iisang kategorya" },
+    { n: 2, fil: "Level 2", en: "Level 2", tip: "Mas maraming litrato" },
+    { n: 3, fil: "Level 3", en: "Level 3",   tip: "Pinakamaraming litrato, halo-halong kategorya" }
   ];
   function byLevel(level, l1, l2, l3) { return level === 1 ? l1 : level === 2 ? l2 : l3; }
   // Sequencing's sets are fixed sequences, so it has no levels.
@@ -380,6 +388,10 @@
         // Written Response turns the first picture into the worked example,
         // so one extra keeps 3 / 4 / 5 actual questions per level.
         return Object.assign({ id: "random", answer: "letter", items: distinctLetters(byLevel(level, 3, 4, 5) + 1) }, named("Unang Letra", "Beginning Letters"));
+      case "media":
+        // Video & Audio builds its own set (clips of the slide's category,
+        // more choices per level) with this same seeded rand.
+        return cfg.mediaSet ? cfg.mediaSet(level, rand) : null;
       default:
         // Sequencing (and anything else with Quick Sets): the order of a
         // sequence carries meaning, so pick one of the ready-made sets.
@@ -394,7 +406,7 @@
     // data is edited) must not break the page — just say so.
     var s = null;
     try { s = randomSet(level); } catch (e) { s = null; }
-    var ok = s && ((s.pairs && s.pairs.length) || (s.groups && s.groups.length && s.groups.every(function (g) { return g.items.length; })) ||
+    var ok = s && ((s.raw && s.picks && s.picks.length) || (s.pairs && s.pairs.length) || (s.groups && s.groups.length && s.groups.every(function (g) { return g.items.length; })) ||
       (s.items && s.items.length));
     if (!ok) {
       var msg = "Walang sapat na litrato sa library para sa level na ito. Subukan ang ibang level.";
@@ -407,7 +419,7 @@
       : Promise.resolve(confirm(message));
     ask.then(function (ok) {
       if (!ok) return;
-      cfg.applySet(resolveSet(s), setLang(s));
+      cfg.applySet(s.raw ? s : resolveSet(s), setLang(s));
       if (root) hide();
     });
   }
@@ -416,20 +428,43 @@
   // templates without levels). Filled again by init(), because templates
   // build the side card with launcher() just before calling init().
   var randomHolders = [];
+  // Only the levels of the learners chosen on Generate Materials (a Level 3
+  // learner never needs the Level 1 / 2 sets); every level when editing an
+  // existing activity or draft, or when opened without Generate.
+  function offeredLevels() {
+    var q = new URLSearchParams(location.search);
+    if (q.get("edit_pub_id") || q.get("draft_id")) return [1, 2, 3];
+    var g = null, all = null;
+    try { g = sessionStorage.getItem("gen_level"); all = sessionStorage.getItem("gen_levels"); } catch (e) {}
+    if (g === "1" || g === "2" || g === "3") return [+g];
+    var list = String(all || "").split(",").map(Number).filter(function (n) { return n >= 1 && n <= 3; });
+    return list.length ? list : [1, 2, 3];
+  }
   function fillRandom(holder) {
     holder.innerHTML = "";
     holder.appendChild(el("div", "iml-rnd-title", "🎲 Random na set"));
     if (!hasLevels()) {
-      var one = el("button", "iml-rnd-btn", "Pumili ng random na set"); one.type = "button";
+      holder.appendChild(el("div", "iml-rnd-hint", "I-click ulit para sa ibang set."));
+      var one = el("button", "iml-rnd-btn"); one.type = "button";
+      one.appendChild(el("b", null, "🎲 Pumili ng random na set"));
       one.addEventListener("click", function () { applyRandom(2); });
       holder.appendChild(one);
       return holder;
     }
+    var offered = offeredLevels();
+    holder.appendChild(el("div", "iml-rnd-hint", offered.length === 1
+      ? "Para sa level ng napiling learner. I-click ulit para sa ibang set."
+      : "Pumili ng level — i-click ulit para sa ibang set."));
     var row = el("div", "iml-rnd-row");
     LEVELS.forEach(function (L) {
+      if (offered.indexOf(L.n) === -1) return;
       var b = el("button", "iml-rnd-btn iml-rnd-l" + L.n); b.type = "button";
-      b.appendChild(el("b", null, "Level " + L.n));
-      b.appendChild(el("span", null, L.fil.split(" · ")[1]));
+      b.appendChild(el("b", null, (offered.length === 1 ? "🎲 " : "") + "Level " + L.n));
+      // ●○○ / ●●○ / ●●● — how hard, at a glance
+      var dots = el("span", "iml-rnd-dots");
+      for (var d = 1; d <= 3; d++) dots.appendChild(el("i", d <= L.n ? "on" : null));
+      b.appendChild(dots);
+      b.setAttribute("aria-label", "Random set, Level " + L.n);
       b.title = L.tip + " — i-click ulit para sa ibang set.";
       b.addEventListener("click", function () { applyRandom(L.n); });
       row.appendChild(b);
@@ -578,6 +613,8 @@
       else setTimeout(maybeIntro, 900);
     },
     open: open,
+    // True when this template can build random sets (Quick Sets, "Per student").
+    canPersonalize: function () { return !!cfg.applySet; },
     // {url, name} for one photo id — lets templates seed real-photo defaults.
     photo: function (id, inLang) {
       var p = PHOTO_BY_ID[id];
@@ -590,6 +627,8 @@
       b.addEventListener("click", function () { open({ onPick: onPick, query: getQuery ? getQuery() : "" }); });
       return newBadge(b);
     },
+    // Just the "🎲 Random na set" Level buttons (templates without Quick Sets).
+    randomBox: function () { injectCss(); return randomBox(); },
     // Side-panel card content that opens the Quick Sets.
     launcher: function () {
       injectCss();
@@ -611,13 +650,16 @@
       var level = +p.level === 2 || +p.level === 3 ? +p.level : 1;
       var keepIndex = state.currentIndex || 0, done = 0;
       rand = seeded(+p.seed || 1);
-      forcedLang = state.levelLang === "en" || state.levelLang === "fil" ? state.levelLang : null;
+      // The learner's own English/Tagalog choice (activity audio settings)
+      // wins; until they pick one, the language the teacher published in.
+      var chosen = window.ActivityAudio && ActivityAudio.langChosen && ActivityAudio.langChosen() ? ActivityAudio.lang() : null;
+      forcedLang = chosen || (state.levelLang === "en" || state.levelLang === "fil" ? state.levelLang : null);
       try {
         for (var i = 0; i < state.activities.length; i++) {
           state.currentIndex = i;
           var s = randomSet(level);
           if (!s) continue;
-          cfg.applySet(resolveSet(s), setLang(s));
+          cfg.applySet(s.raw ? s : resolveSet(s), setLang(s));
           done++;
         }
       } catch (e) {

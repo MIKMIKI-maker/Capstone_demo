@@ -13,7 +13,7 @@
     <title>Generate Materials – SPED ALM</title>
     <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
     <link href="../ASSETS/vendor/fontawesome/css/all.min.css" rel="stylesheet" />
-    <link href="TEACHER_CSS/Teacher_generate.css?v=2" rel="stylesheet" />
+    <link href="TEACHER_CSS/Teacher_generate.css?v=3" rel="stylesheet" />
     <link href="TEACHER_CSS/teacher_theme.css?v=2" rel="stylesheet" />
     <link href="TEACHER_CSS/teacher_responsive.css?v=75" rel="stylesheet" />
 </head>
@@ -108,6 +108,9 @@
                 <h2 class="teacher-section-title">Define Materials and Content</h2>
                 <p class="teacher-section-sub">Select an Activity Type Template</p>
             </div>
+            <!-- WHO IT'S FOR + LEVEL — the generation is categorized per level and
+                 per student: each learner's level comes from their recent scores. -->
+            <div class="gen-level-panel" id="genLevelPanel" style="display:none;"></div>
             <!-- TEMPLATE GRID — rendered from TEMPLATE_DEFS in script below -->
             <div class="teacher-template-grid" id="teacher-templateGrid"></div>
             <!-- ACTION ROW -->
@@ -193,7 +196,8 @@
                 .then(function(r){ return r.json(); })
                 .then(function(students) {
                     allLearners = (students || []).map(function(s) {
-                        return { id: String(s.id), name: s.name, disability: s.disability || 'General' };
+                        return { id: String(s.id), name: s.name, disability: s.disability || 'General',
+                                 level: +s.level || 1, levelAvg: s.level_average, levelBasedOn: +s.level_based_on || 0 };
                     });
                     // Restore IDs passed from IEP page
                     var savedIds = [];
@@ -209,6 +213,7 @@
                     renderLearnerCheckList(allLearners);
                     updateLearnerDisplay();
                     updateLearnerSelectedCount();
+                    renderGenLevel();
                     setCondition();
                 })
                 .catch(function(){});
@@ -335,7 +340,9 @@
             { key: 'MathMixed',       name: 'Math Activity Builder',         desc: 'Counting, comparing, and number sense with mixed answer styles per slide', goal: 'Cognitive / Numeracy', icon: 'fa-calculator', color: 'tpl-yellow', file: 'TEMPLATES/Math_Template.html' },
             { key: 'PictureLabeling', name: 'Picture Labeling',              desc: 'Label parts of a picture by dragging words to the correct spots', goal: 'Communication / Vocabulary', icon: 'fa-tag', color: 'tpl-green', file: 'TEMPLATES/Picture_ Labeling_Template.html' },
             { key: 'WrittenResponse', name: 'Written Response',              desc: 'Answer questions with short written responses', goal: 'Communication / Expression',  icon: 'fa-pencil',         color: 'tpl-blue',   file: 'TEMPLATES/Written_Response_Template.html' },
-            { key: 'Tracing',         name: 'Letter & Number Tracing',       desc: 'Trace over dotted letters and numbers to build handwriting and fine motor skills', goal: 'Fine Motor / Handwriting', icon: 'fa-pen-nib', color: 'tpl-green', file: 'TEMPLATES/Tracing_Template.html' }
+            { key: 'Tracing',         name: 'Letter & Number Tracing',       desc: 'Trace over dotted letters and numbers to build handwriting and fine motor skills', goal: 'Fine Motor / Handwriting', icon: 'fa-pen-nib', color: 'tpl-green', file: 'TEMPLATES/Tracing_Template.html' },
+            { key: 'VideoQuiz',       name: 'Video Learning',                desc: 'Learners watch a short video, then tap the right picture — Animals, Daily Living Skills, Identifying Emotions, Shapes and Colors, Basic Safety Awareness', goal: 'Cognitive / Viewing', icon: 'fa-film', color: 'tpl-blue', file: 'TEMPLATES/Media_Template.html?type=video' },
+            { key: 'AudioQuiz',       name: 'Audio Learning',                desc: 'Learners press the sound button and listen, then tap the right picture — Animal Sounds, Letter Sounds / Phonics, Environmental Sounds', goal: 'Communication / Auditory Skills', icon: 'fa-volume-high', color: 'tpl-yellow', file: 'TEMPLATES/Media_Template.html?type=audio' }
         ];
 
         function renderTemplateGrid() {
@@ -353,6 +360,61 @@
                     + '</div>'
                     + '</div>';
             }).join('');
+        }
+
+        /* ── Per level / per student ─────────────────────────────────
+           Shows who the material is for and their levels, and the Level to
+           make it at: one level for everyone, or 🎲 Per student (each
+           learner gets their own random set at their level). The template
+           starts with this level (ASSETS/activity_levels.js reads gen_level). */
+        var GEN_LOOK = { 1: ['Level 1', 'Madali', '#dcfce7', '#166534'], 2: ['Level 2', 'Katamtaman', '#ffedd5', '#9a3412'], 3: ['Level 3', 'Mahirap', '#fee2e2', '#991b1b'] };
+        function genSelected() {
+            return allLearners.filter(function(s){ return selectedLearnerIds.indexOf(s.id) >= 0; });
+        }
+        // Same level for everyone → that level; mixed → Per student.
+        function suggestedLevel(list) {
+            var lv = list.map(function(s){ return s.level; });
+            return lv.length && lv.every(function(l){ return l === lv[0]; }) ? String(lv[0]) : 'auto';
+        }
+        function renderGenLevel() {
+            var box = document.getElementById('genLevelPanel');
+            if (!box) return;
+            var list = genSelected();
+            if (!list.length) { box.style.display = 'none'; return; }
+            var current = sessionStorage.getItem('gen_level');
+            if (['1', '2', '3', 'auto'].indexOf(current) < 0 || sessionStorage.getItem('gen_level_for') !== selectedLearnerIds.join(',')) {
+                current = suggestedLevel(list);
+                sessionStorage.setItem('gen_level', current);
+                sessionStorage.setItem('gen_level_for', selectedLearnerIds.join(','));
+            }
+            // Templates without the Image Library can't do Per student — they
+            // fall back to the lowest level among the chosen learners.
+            sessionStorage.setItem('gen_level_min', String(Math.min.apply(null, list.map(function(s){ return s.level; }))));
+            // The levels the chosen learners are at — the templates' 🎲 Random
+            // box only offers these (all Level 3 → just Level 3).
+            sessionStorage.setItem('gen_levels', list.map(function(s){ return +s.level || 1; })
+                .filter(function(l, i, a){ return a.indexOf(l) === i; }).sort().join(','));
+            var pills = list.map(function(s){
+                var k = GEN_LOOK[s.level] || GEN_LOOK[1];
+                return '<span class="gen-lv-pill">' + escHtml(s.name) + ' <b style="background:' + k[2] + ';color:' + k[3] + ';">' + k[0] + '</b></span>';
+            }).join('');
+            var opts = [['1', 'Level 1'], ['2', 'Level 2'], ['3', 'Level 3'], ['auto', '🎲 Per student']];
+            var sug = suggestedLevel(list);
+            box.innerHTML =
+                '<div class="gen-lv-row"><span class="gen-lv-label">🎯 Generating for</span><div class="gen-lv-pills">' + pills + '</div></div>' +
+                '<div class="gen-lv-row"><span class="gen-lv-label">📶 Level</span><div class="gen-lv-opts">' +
+                opts.map(function(o){
+                    return '<button type="button" class="gen-lv-opt' + (o[0] === current ? ' on' : '') + '" onclick="setGenLevel(\'' + o[0] + '\')">' + o[1] + (o[0] === sug ? ' <i>suggested</i>' : '') + '</button>';
+                }).join('') + '</div></div>' +
+                '<p class="gen-lv-hint">' + (current === 'auto'
+                    ? '🎲 Each learner gets their own random set at their own level (Image Library templates).'
+                    : 'Everyone selected gets the same activity at ' + GEN_LOOK[current][0] + '.') + '</p>';
+            box.style.display = '';
+        }
+        function setGenLevel(l) {
+            sessionStorage.setItem('gen_level', l);
+            sessionStorage.setItem('gen_level_for', selectedLearnerIds.join(','));
+            renderGenLevel();
         }
 
         function selectTemplate(idx) {

@@ -176,3 +176,18 @@ body { background: var(--bg); color: var(--text); font-family: 'Poppins', sans-s
 .btn-back-iep { display: inline-flex; align-items: center; gap: 8px; background: var(--white); border: 1.5px solid #E2E8F0; color: var(--text); text-decoration: none; padding: 12px 22px; border-radius: 12px; font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 600; transition: .22s ease; box-shadow: var(--shadow-sm); }
 .btn-back-iep:hover { background: #F1F5F9; border-color: #CBD5E1; }
 
+/* Who the material is for + the Level to make it at (per level / per student) */
+.gen-level-panel {
+    background: #fff; border: 1px solid #e3eaf6; border-radius: 16px; padding: 14px 18px; margin: 0 0 18px;
+    box-shadow: 0 6px 0 rgba(36, 58, 94, .06), 0 14px 28px rgba(36, 58, 94, .10);
+}
+.gen-lv-row { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.gen-lv-label { flex: none; width: 140px; font-size: 13px; font-weight: 700; color: #1e3a8a; padding-top: 6px; }
+.gen-lv-pills, .gen-lv-opts { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; min-width: 0; }
+.gen-lv-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 6px 5px 12px; border-radius: 999px; background: #f1f5f9; font-size: 12.5px; font-weight: 600; color: #1e293b; }
+.gen-lv-pill b { padding: 2px 8px; border-radius: 999px; font-size: 11px; }
+.gen-lv-opt { border: 1.5px solid #e2e8f0; background: #f8fafc; color: #475569; border-radius: 999px; padding: 7px 14px; font-family: 'Poppins', sans-serif; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.gen-lv-opt i { font-style: normal; font-size: 10.5px; color: #16a34a; margin-left: 2px; }
+.gen-lv-opt.on { border-color: #1d4ed8; background: #eff6ff; color: #1d4ed8; }
+.gen-lv-hint { margin: 2px 0 0; font-size: 12px; color: #64748b; }
+@media (max-width: 640px) { .gen-lv-label { width: 100%; padding-top: 0; } }

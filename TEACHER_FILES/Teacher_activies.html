@@ -129,9 +129,9 @@
                 <!-- Activities by level (set in each template's Publish pop-up) -->
                 <select id="levelFilter" class="level-filter" onchange="filterTable()" aria-label="Filter by level">
                     <option value="">📶 All levels</option>
-                    <option value="1">Level 1 · Madali</option>
-                    <option value="2">Level 2 · Katamtaman</option>
-                    <option value="3">Level 3 · Mahirap</option>
+                    <option value="1">Level 1</option>
+                    <option value="2">Level 2</option>
+                    <option value="3">Level 3</option>
                     <option value="auto">🎲 Per student</option>
                 </select>
             </div>
@@ -603,7 +603,7 @@
                     ? formatLearnerNames(a.learner) + ' <span style="color:#64748b;font-size:11px;">(' + esc(a.grading) + ' Grading)</span>'
                     : formatLearnerNames(a.learner);
 
-                var _typeIcons = {Matching:'🔗',Sorting:'🗂️',Sequencing:'🔢',LetterID:'🔤',PictureLabeling:'🏷️',WrittenResponse:'✏️',CheckOrX:'✅',Tracing:'✍️',Upload:'📎'};
+                var _typeIcons = {Matching:'🔗',Sorting:'🗂️',Sequencing:'🔢',LetterID:'🔤',PictureLabeling:'🏷️',WrittenResponse:'✏️',CheckOrX:'✅',Tracing:'✍️',MathMixed:'🔢',MediaQuiz:'🎬',VideoQuiz:'🎬',AudioQuiz:'🔊',Upload:'📎'};
                 var _fallbackIcon = (a._isUpload && a.material_kind === 'activity') ? '📝' : (_typeIcons[a.type] || '🖼️');
                 var _tbInner = a.thumbnail
                     ? '<img src="'+esc(a.thumbnail)+'" style="width:44px;height:44px;object-fit:contain;background:#f8fafc;border-radius:8px;flex:none;" />'
@@ -656,7 +656,10 @@
             PictureLabeling:  'TEMPLATES/Picture_%20Labeling_Template.html',
             WrittenResponse:  'TEMPLATES/Written_Response_Template.html',
             Tracing:          'TEMPLATES/Tracing_Template.html',
-            MathMixed:        'TEMPLATES/Math_Template.html'
+            MathMixed:        'TEMPLATES/Math_Template.html',
+            MediaQuiz:        'TEMPLATES/Media_Template.html',
+            VideoQuiz:        'TEMPLATES/Media_Template.html',
+            AudioQuiz:        'TEMPLATES/Media_Template.html'
         };
         function editPublished(id, type) {
             var tpl = EDITABLE_TYPES[type];

@@ -209,7 +209,7 @@
       var lv = level === 'auto' ? (window._stuLevel || 1) : +level;
       var look = { 1: ['#dcfce7', '#166534', 'Madali'], 2: ['#ffedd5', '#9a3412', 'Katamtaman'], 3: ['#fee2e2', '#991b1b', 'Mahirap'] }[lv] || ['#e0e7ff', '#3730a3', ''];
       return '<div style="display:inline-block;margin:2px 0 6px;padding:2px 10px;border-radius:999px;font-size:11.5px;font-weight:800;background:' + look[0] + ';color:' + look[1] + ';">' +
-        (level === 'auto' ? '🎲 ' : '📶 ') + 'Level ' + lv + ' · ' + look[2] + (level === 'auto' ? ' (para sa iyo)' : '') + '</div>';
+        (level === 'auto' ? '🎲 ' : '📶 ') + 'Level ' + lv + (level === 'auto' ? ' (para sa iyo)' : '') + '</div>';
     }
 
     function renderCard(act, idx, locked, prevTitle) {
@@ -629,7 +629,10 @@
       'PictureLabeling':  '../TEACHER_FILES/TEMPLATES/Picture_ Labeling_Template.html',
       'WrittenResponse':  '../TEACHER_FILES/TEMPLATES/Written_Response_Template.html',
       'Tracing':          '../TEACHER_FILES/TEMPLATES/Tracing_Template.html',
-      'MathMixed':        '../TEACHER_FILES/TEMPLATES/Math_Template.html'
+      'MathMixed':        '../TEACHER_FILES/TEMPLATES/Math_Template.html',
+      'MediaQuiz':        '../TEACHER_FILES/TEMPLATES/Media_Template.html',
+      'VideoQuiz':        '../TEACHER_FILES/TEMPLATES/Media_Template.html',
+      'AudioQuiz':        '../TEACHER_FILES/TEMPLATES/Media_Template.html'
     };
     function startActivity(dbId, type, isReview) {
       var tpl = TPL_MAP[type];
