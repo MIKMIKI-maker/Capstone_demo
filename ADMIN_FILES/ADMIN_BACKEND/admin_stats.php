@@ -61,18 +61,17 @@ if ($tconn) {
 
 // Active students: last_seen within 2 minutes (heartbeat-based)
 $stats['active_students'] = 0;
-$lsRes = $conn->query("SELECT COUNT(*) AS cnt FROM admin_accounts WHERE role='student' AND last_seen > DATE_SUB(NOW(), INTERVAL 2 MINUTE) AND (is_deleted = 0 OR is_deleted IS NULL)");
+$lsRes = $conn->query("SELECT COUNT(*) AS cnt FROM admin_accounts WHERE role='student' AND last_seen > DATE_SUB(NOW(), INTERVAL 2 MINUTE) AND status = 'active' AND (is_deleted = 0 OR is_deleted IS NULL)");
 if ($lsRes) { $stats['active_students'] = (int)$lsRes->fetch_assoc()['cnt']; $lsRes->close(); }
 
 // Active teachers: last_seen within 2 minutes
-$ltRes = $conn->query("SELECT COUNT(*) AS cnt FROM admin_accounts WHERE role='teacher' AND last_seen > DATE_SUB(NOW(), INTERVAL 2 MINUTE) AND (is_deleted = 0 OR is_deleted IS NULL)");
+$ltRes = $conn->query("SELECT COUNT(*) AS cnt FROM admin_accounts WHERE role='teacher' AND last_seen > DATE_SUB(NOW(), INTERVAL 2 MINUTE) AND status = 'active' AND (is_deleted = 0 OR is_deleted IS NULL)");
 if ($ltRes) { $stats['active_teachers'] = (int)$ltRes->fetch_assoc()['cnt']; $ltRes->close(); }
 
-// Active accounts (Manage Users card): currently online across all roles,
-// same last_seen-based definition the table's status badge uses — not the
-// stored `status` column, which gates login and would give a different number.
+// Active accounts (Manage Users card): currently online across all roles —
+// seen in the last 2 minutes (heartbeat) and not logged out since.
 $stats['active_accounts'] = 0;
-$laRes = $conn->query("SELECT COUNT(*) AS cnt FROM admin_accounts WHERE last_seen > DATE_SUB(NOW(), INTERVAL 2 MINUTE) AND (is_deleted = 0 OR is_deleted IS NULL)");
+$laRes = $conn->query("SELECT COUNT(*) AS cnt FROM admin_accounts WHERE last_seen > DATE_SUB(NOW(), INTERVAL 2 MINUTE) AND status = 'active' AND (is_deleted = 0 OR is_deleted IS NULL)");
 if ($laRes) { $stats['active_accounts'] = (int)$laRes->fetch_assoc()['cnt']; $laRes->close(); }
 
 $conn->close();

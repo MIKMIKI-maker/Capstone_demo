@@ -89,6 +89,47 @@ while ($row = $r->fetch_assoc()) {
     ];
 }
 $stmt->close();
+
+// Uploaded "Activity" materials (work the learner hands in as a file),
+// counted the same way once the teacher grades them. Older databases
+// without the materials' school_year_id column simply skip this.
+$col = $conn->query("SHOW COLUMNS FROM teacher_uploaded_materials LIKE 'school_year_id'");
+if ($col && $col->num_rows > 0) {
+    $stmt = $conn->prepare("SELECT m.school_year_id, m.title, m.domain, m.final_score, m.is_graded, m.assistance_level,
+            DATE(COALESCE(m.graded_at, (SELECT MAX(ms.submitted_at) FROM material_submissions ms WHERE ms.material_id = m.id AND ms.student_id = m.student_id))) AS completed_on,
+            CONCAT(t.first_name, ' ', t.last_name) AS teacher_name
+        FROM teacher_uploaded_materials m
+        LEFT JOIN teacher_accounts t ON t.id = m.teacher_id
+        WHERE m.student_id = ? AND m.material_kind = 'activity'
+        ORDER BY m.uploaded_at DESC");
+    if ($stmt) {
+        $stmt->bind_param("i", $student_id);
+        $stmt->execute();
+        $r = $stmt->get_result();
+        while ($row = $r->fetch_assoc()) {
+            $sy = (int)$row['school_year_id'];
+            if (!isset($years[$sy])) continue;
+            $graded = (int)$row['is_graded'] === 1 && $row['final_score'] !== null;
+            $years[$sy]['activities'][] = [
+                'title'            => $row['title'],
+                'type'             => 'Upload',
+                'subject'          => $row['domain'],
+                'teacher_name'     => trim((string)$row['teacher_name']),
+                'completed_on'     => $row['completed_on'],
+                'score'            => $graded ? (int)$row['final_score'] : null,
+                'is_finalized'     => $graded,
+                'assistance_level' => $row['assistance_level'],
+                'is_upload'        => true,
+            ];
+        }
+        $stmt->close();
+    }
+}
+// Newest first, online and uploaded activities together.
+foreach ($years as &$y) {
+    usort($y['activities'], function ($a, $b) { return strcmp((string)$b['completed_on'], (string)$a['completed_on']); });
+}
+unset($y);
 $conn->close();
 
 // Summaries, and only the years the learner actually has something in.

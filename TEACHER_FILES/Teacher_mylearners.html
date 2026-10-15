@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
+    <script src="../ASSETS/portal_guard.js?v=3" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
     <script src="../ASSETS/teacher_portal.js?v=15"></script>
     <script src="../ASSETS/school_info.js?v=1"></script>
     <script src="../ASSETS/school_year_switcher.js?v=9" data-picker="off" defer></script>
@@ -13,7 +13,7 @@
     <title>Learner Progress – SPED ALM</title>
     <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
     <link href="../ASSETS/vendor/fontawesome/css/all.min.css" rel="stylesheet" />
-    <link href="TEACHER_CSS/Teacher_mylearners.css?v=6" rel="stylesheet" />
+    <link href="TEACHER_CSS/Teacher_mylearners.css?v=8" rel="stylesheet" />
     <link href="TEACHER_CSS/teacher_theme.css?v=2" rel="stylesheet" />
     <link href="TEACHER_CSS/teacher_responsive.css?v=75" rel="stylesheet" />
     <script src="../ASSETS/vendor/js/chart.umd.min.js"></script>
@@ -416,9 +416,16 @@
                 .then(data => {
                     if (!data.success || !data.years.length) {
                         list.innerHTML = '<div class="teacher-goals-empty">No School Year records yet.</div>';
+                        list._html = null;
                         return;
                     }
-                    list.innerHTML = data.years.map(y => {
+                    // This reloads every few seconds with the rest of the page:
+                    // keep each S.Y. open or closed the way the teacher left it,
+                    // and leave the list alone when nothing changed (it used to
+                    // snap shut a moment after being opened).
+                    const wasOpen = {};
+                    list.querySelectorAll('details[data-sy]').forEach(d => { wasOpen[d.dataset.sy] = d.open; });
+                    const html = data.years.map(y => {
                         const meta = [y.section, y.teacher_name ? 'Teacher ' + y.teacher_name : null].filter(Boolean).join(' · ');
                         const badge = y.is_active
                             ? '<span style="background:#16a34a;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;">ACTIVE</span>'
@@ -426,20 +433,27 @@
                         const rows = y.activities.map(a =>
                             '<div class="teacher-history-row">'
                             + '<span class="teacher-history-date">' + (a.completed_on ? new Date(a.completed_on + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—') + '</span>'
-                            + '<span class="teacher-history-activity">' + escHtml(a.title) + (a.teacher_name ? ' <span style="color:#94a3b8;font-size:11px;">(' + escHtml(a.teacher_name) + ')</span>' : '') + '</span>'
+                            + '<span class="teacher-history-activity">' + escHtml(a.title)
+                            + (a.is_upload ? ' <span style="background:#ede9fe;color:#6d28d9;font-size:10px;font-weight:700;padding:1px 7px;border-radius:20px;vertical-align:middle;">Upload</span>' : '')
+                            + (a.teacher_name ? ' <span style="color:#94a3b8;font-size:11px;">(' + escHtml(a.teacher_name) + ')</span>' : '') + '</span>'
                             + '<span class="teacher-history-score">' + (a.score !== null ? a.score + '%' : '—') + '</span>'
                             + '</div>').join('') || '<div class="teacher-goals-empty">No activities this School Year.</div>';
-                        return '<details style="border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;"' + (y.is_active ? '' : ' open') + '>'
+                        const open = (y.name in wasOpen) ? wasOpen[y.name] : !y.is_active;
+                        return '<details data-sy="' + escHtml(y.name) + '" style="border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;"' + (open ? ' open' : '') + '>'
                             + '<summary style="cursor:pointer;list-style:none;">'
-                            + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><strong>S.Y. ' + escHtml(y.name) + '</strong>' + badge + '</div>'
+                            + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><strong>S.Y. ' + escHtml(y.name) + '</strong>' + badge + '<span class="sy-hist-toggle"><span class="sy-hist-show">Show activities</span><span class="sy-hist-hide">Hide activities</span> <i class="fa-solid fa-chevron-down"></i></span></div>'
                             + '<div style="font-size:12px;color:#64748b;margin-top:2px;">' + escHtml(meta || 'No class on record') + '</div>'
                             + '<div style="font-size:12px;color:#334155;margin-top:4px;">Assigned ' + y.assigned + ' · Completed ' + y.completed + ' · Average ' + (y.average !== null ? y.average + '%' : '—') + '</div>'
                             + '</summary>'
                             + '<div style="margin-top:8px;">' + rows + '</div>'
                             + '</details>';
                     }).join('');
+                    if (list._html !== html) {
+                        list.innerHTML = html;
+                        list._html = html;
+                    }
                 })
-                .catch(() => { list.innerHTML = '<div class="teacher-goals-empty">Could not load School Year history.</div>'; });
+                .catch(() => { if (!list._html) list.innerHTML = '<div class="teacher-goals-empty">Could not load School Year history.</div>'; });
         }
 
         // The learner's current level for "🎲 Per student" activities — worked

@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-  <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="admin" data-status-path="ADMIN_BACKEND/session_status.php" data-login-path="admin_screen.html?session=expired"></script>
+  <script src="../ASSETS/portal_guard.js?v=3" data-portal-role="admin" data-status-path="ADMIN_BACKEND/session_status.php" data-login-path="admin_screen.html?session=expired"></script>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
   <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
@@ -364,7 +364,8 @@
     function lastSeenMs(user) {
       return user.last_seen ? new Date(user.last_seen.replace(' ', 'T') + 'Z').getTime() : 0;
     }
-    function isOnline(user) { return !!user.last_seen && (Date.now() - lastSeenMs(user)) < 2 * 60 * 1000; }
+    // Logging out sets status to inactive, so a logged-out user drops off at once.
+    function isOnline(user) { return !!user.last_seen && user.status === 'active' && (Date.now() - lastSeenMs(user)) < 2 * 60 * 1000; }
     function timeAgo(ms) {
       var diff = Math.max(0, Date.now() - ms) / 1000;
       if (diff < 60) return 'just now';

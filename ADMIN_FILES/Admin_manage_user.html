@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-  <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="admin" data-status-path="ADMIN_BACKEND/session_status.php" data-login-path="admin_screen.html?session=expired"></script>
+  <script src="../ASSETS/portal_guard.js?v=3" data-portal-role="admin" data-status-path="ADMIN_BACKEND/session_status.php" data-login-path="admin_screen.html?session=expired"></script>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
   <link rel="icon" type="image/png" href="../ASSETS/logo.png" />
@@ -925,7 +925,8 @@
     // before parsing — otherwise the Date constructor would misread them as
     // already being in the browser's local time.
     function isOnline(account) {
-      if (!account.last_seen) return false;
+      // Logging out sets status to inactive: offline at once, not 2 minutes later.
+      if (!account.last_seen || account.status !== 'active') return false;
       var lastSeenMs = new Date(account.last_seen.replace(' ', 'T') + 'Z').getTime();
       return (Date.now() - lastSeenMs) < 2 * 60 * 1000;
     }

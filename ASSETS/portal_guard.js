@@ -47,10 +47,11 @@
 
   // Re-checking on an interval (not just once per page load) also doubles
   // as a heartbeat — session_status.php refreshes last_seen on every call,
-  // which is what Manage Users' "currently online" status is based on.
-  // Only while the tab is actually visible, so a background/minimized tab
-  // doesn't keep a user looking "online" indefinitely.
-  setInterval(function () {
-    if (document.visibilityState === 'visible') checkSession();
-  }, 60000);
+  // which is what "online" (Manage Users, Admin Dashboard) is based on.
+  // It runs in background tabs too: a teacher or learner with the portal
+  // open in another tab is still online (it used to count only the tab on
+  // screen, so only the Admin ever looked online). 45s keeps a throttled
+  // background tab (about one tick a minute) inside the 2-minute window;
+  // closing the tab or logging out ends it.
+  setInterval(checkSession, 45000);
 })();
