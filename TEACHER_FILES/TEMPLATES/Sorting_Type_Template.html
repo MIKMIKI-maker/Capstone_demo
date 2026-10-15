@@ -9,11 +9,11 @@
 <script src="../../ASSETS/missing_highlight.js?v=1"></script>
 <script src="../../ASSETS/activity_audio.js?v=6"></script>
 <script src="../../ASSETS/image_shrink.js?v=1"></script>
-<script src="../../ASSETS/activity_levels.js?v=4"></script>
+<script src="../../ASSETS/activity_levels.js?v=7"></script>
 <script src="../../ASSETS/activity_demo.js?v=4"></script>
 <script src="../../ASSETS/activity_demos/sorting.js?v=1"></script>
 <script src="../../ASSETS/image_library/library_data.js?v=5"></script>
-<script src="../../ASSETS/image_library.js?v=20"></script>
+<script src="../../ASSETS/image_library.js?v=33"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SPED ALM — Sorting Template Generator</title>
@@ -678,10 +678,13 @@ function initActivityTheme(){
        fixed pixel ceiling too, since the em value alone (tied to the
        stage's font-size, not the viewport) could still be too wide to
        fit more than one column on a genuinely narrow phone. */
-    .srt-bin-items{ grid-template-columns:repeat(auto-fill, minmax(min(calc(4.4em * var(--img-scale,1)), 84px), 1fr)); gap:6px; }
-    .srt-pool{ grid-template-columns:repeat(auto-fill, minmax(min(calc(4.4em * var(--img-scale,1)), 84px), 1fr)); gap:6px; padding:10px; }
-    .srt-chip{ width:min(calc(4.4em * var(--img-scale,1)), 84px); padding:5px; }
-    .srt-chip-imgwrap{ height:min(calc(2.6em * var(--img-scale,1)), 52px); }
+    /* Caps raised (84→120px chip, 52→84px picture): activities have 2–4
+       pictures (by ASD level), and a learner needs pictures big enough to
+       see and drag with a finger — at least 48px, more for young children. */
+    .srt-bin-items{ grid-template-columns:repeat(auto-fill, minmax(min(calc(4.4em * var(--img-scale,1)), 120px), 1fr)); gap:6px; }
+    .srt-pool{ grid-template-columns:repeat(auto-fill, minmax(min(calc(4.4em * var(--img-scale,1)), 120px), 1fr)); gap:6px; padding:10px; }
+    .srt-chip{ width:min(calc(4.4em * var(--img-scale,1)), 120px); padding:5px; }
+    .srt-chip-imgwrap{ height:min(calc(2.6em * var(--img-scale,1)), 84px); }
     .srt-stage{ padding:16px; }
     /* Fixed 2 columns (not auto-fill) — a bin only gets half the screen
        width, and auto-fill still measured it as "only room for one" at
@@ -691,8 +694,8 @@ function initActivityTheme(){
        via min() below so it just centers in its half instead of
        stretching to fill it. */
     .srt-bin-items{ grid-template-columns:repeat(2, 1fr); gap:5px; }
-    .srt-bin-items .srt-chip{ width:min(calc(4.4em * var(--img-scale,1)), 62px); max-width:100%; padding:4px; }
-    .srt-bin-items .srt-chip-imgwrap{ height:min(calc(2.6em * var(--img-scale,1)), 40px); }
+    .srt-bin-items .srt-chip{ width:min(calc(4.4em * var(--img-scale,1)), 90px); max-width:100%; padding:4px; }
+    .srt-bin-items .srt-chip-imgwrap{ height:min(calc(2.6em * var(--img-scale,1)), 60px); }
     .srt-bin{ padding:10px; }
     .srt-oo-tile{ width:min(calc(4.4em * var(--img-scale,1)), 84px); padding:5px; }
     .srt-oo-imgwrap{ height:min(calc(2.6em * var(--img-scale,1)), 52px); }

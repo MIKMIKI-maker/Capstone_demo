@@ -17,10 +17,12 @@
 (function () {
   if (window.ActivityLevels) return;
 
+  // '1' / '2' / '3' = Easy / Moderate / Difficult, for learners with ASD or
+  // ID; the teacher picks it here or with the Image Library's Random set.
   var LEVELS = [
-    { v: '1', label: 'Level 1' },
-    { v: '2', label: 'Level 2' },
-    { v: '3', label: 'Level 3' },
+    { v: '1', label: 'Level 1 · Easy', support: 'the easiest: fewest and biggest pictures' },
+    { v: '2', label: 'Level 2 · Moderate', support: 'a little more to do, with visual hints' },
+    { v: '3', label: 'Level 3 · Difficult', support: 'the most to do, with less visual support' },
     { v: 'auto', label: '🎲 Per student', personal: true }
   ];
 
@@ -87,17 +89,16 @@
     if (!help || !st) return;
     help.textContent = st.level === 'auto'
       ? '🎲 Bawat learner ay may sariling random na set ayon sa level niya (galing sa huling 5 scores: <60% = L1, 60–84% = L2, 85%+ = L3). Ang slides mo ang preview lang.'
-      : 'Lahat ng in-assign na learner ay makakatanggap ng activity na ito.';
+      : ((LEVELS.filter(function (L) { return L.v === String(st.level); })[0] || LEVELS[0]).label)
+        + ' — ' + ((LEVELS.filter(function (L) { return L.v === String(st.level); })[0] || LEVELS[0]).support) + '. Every assigned learner receives this activity.';
   }
 
-  // The Level picked on Generate Materials (per level / per student) for the
-  // chosen learners; a template that can't do "Per student" uses the lowest
-  // level among them instead.
+  // Starting choice for a new activity: Level 1 (Easy) unless "Per student"
+  // was chosen on Generate Materials; the teacher picks the level here.
   function generateLevel() {
-    var g = null, min = null;
-    try { g = sessionStorage.getItem('gen_level'); min = sessionStorage.getItem('gen_level_min'); } catch (e) {}
-    if (g === 'auto' && !canPersonalize()) g = min;
-    return ['1', '2', '3', 'auto'].indexOf(String(g)) !== -1 ? String(g) : '1';
+    var g = null;
+    try { g = sessionStorage.getItem('gen_level'); } catch (e) {}
+    return g === 'auto' && canPersonalize() ? 'auto' : '1';
   }
 
   // Show what the activity is set to. A new activity starts at the level
@@ -121,5 +122,9 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 
-  window.ActivityLevels = { sync: sync, levels: LEVELS };
+  // Set the activity's level from elsewhere (e.g. the Image Library's Random
+  // set button), so Publish opens on the level the teacher just picked.
+  function use(v) { setLevel(String(v)); sync(); }
+
+  window.ActivityLevels = { sync: sync, use: use, levels: LEVELS };
 })();

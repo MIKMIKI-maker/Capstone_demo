@@ -4,7 +4,7 @@
 <html lang="en">
 
 <head>
-    <script src="../ASSETS/portal_guard.js?v=2" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
+    <script src="../ASSETS/portal_guard.js?v=3" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
     <script src="../ASSETS/teacher_portal.js?v=15"></script>
     <script src="../ASSETS/school_year_switcher.js?v=9" data-picker="off" defer></script>
     <meta charset="utf-8" />
@@ -110,8 +110,7 @@
                 <h2 class="teacher-section-title">Define Materials and Content</h2>
                 <p class="teacher-section-sub">Select an Activity Type Template</p>
             </div>
-            <!-- WHO IT'S FOR + LEVEL — the generation is categorized per level and
-                 per student: each learner's level comes from their recent scores. -->
+            <!-- Hidden: the Level is picked inside each activity (Publish). -->
             <div class="gen-level-panel" id="genLevelPanel" style="display:none;"></div>
             <!-- TEMPLATE GRID — rendered from TEMPLATE_DEFS in script below -->
             <div class="teacher-template-grid" id="teacher-templateGrid"></div>
@@ -364,12 +363,11 @@
             }).join('');
         }
 
-        /* ── Per level / per student ─────────────────────────────────
-           Shows who the material is for and their levels, and the Level to
-           make it at: one level for everyone, or 🎲 Per student (each
-           learner gets their own random set at their level). The template
-           starts with this level (ASSETS/activity_levels.js reads gen_level). */
-        var GEN_LOOK = { 1: ['Level 1', 'Madali', '#dcfce7', '#166534'], 2: ['Level 2', 'Katamtaman', '#ffedd5', '#9a3412'], 3: ['Level 3', 'Mahirap', '#fee2e2', '#991b1b'] };
+        /* ── Starting level for the template ──────────────────────────
+           Nothing is shown here; the Level is picked inside the activity
+           (Publish). The template just starts at the level that fits the
+           chosen learners: their shared level, or 🎲 Per student when they
+           differ (ASSETS/activity_levels.js reads gen_level). */
         function genSelected() {
             return allLearners.filter(function(s){ return selectedLearnerIds.indexOf(s.id) >= 0; });
         }
@@ -383,12 +381,12 @@
             if (!box) return;
             var list = genSelected();
             if (!list.length) { box.style.display = 'none'; return; }
-            var current = sessionStorage.getItem('gen_level');
-            if (['1', '2', '3', 'auto'].indexOf(current) < 0 || sessionStorage.getItem('gen_level_for') !== selectedLearnerIds.join(',')) {
-                current = suggestedLevel(list);
-                sessionStorage.setItem('gen_level', current);
-                sessionStorage.setItem('gen_level_for', selectedLearnerIds.join(','));
-            }
+            // The Level is chosen inside the activity (its Publish pop-up), not
+            // here: this page only hands the template a starting point that
+            // fits the chosen learners, which the teacher can change there.
+            var current = suggestedLevel(list);
+            sessionStorage.setItem('gen_level', current);
+            sessionStorage.setItem('gen_level_for', selectedLearnerIds.join(','));
             // Templates without the Image Library can't do Per student — they
             // fall back to the lowest level among the chosen learners.
             sessionStorage.setItem('gen_level_min', String(Math.min.apply(null, list.map(function(s){ return s.level; }))));
@@ -396,27 +394,7 @@
             // box only offers these (all Level 3 → just Level 3).
             sessionStorage.setItem('gen_levels', list.map(function(s){ return +s.level || 1; })
                 .filter(function(l, i, a){ return a.indexOf(l) === i; }).sort().join(','));
-            var pills = list.map(function(s){
-                var k = GEN_LOOK[s.level] || GEN_LOOK[1];
-                return '<span class="gen-lv-pill">' + escHtml(s.name) + ' <b style="background:' + k[2] + ';color:' + k[3] + ';">' + k[0] + '</b></span>';
-            }).join('');
-            var opts = [['1', 'Level 1'], ['2', 'Level 2'], ['3', 'Level 3'], ['auto', '🎲 Per student']];
-            var sug = suggestedLevel(list);
-            box.innerHTML =
-                '<div class="gen-lv-row"><span class="gen-lv-label">🎯 Generating for</span><div class="gen-lv-pills">' + pills + '</div></div>' +
-                '<div class="gen-lv-row"><span class="gen-lv-label">📶 Level</span><div class="gen-lv-opts">' +
-                opts.map(function(o){
-                    return '<button type="button" class="gen-lv-opt' + (o[0] === current ? ' on' : '') + '" onclick="setGenLevel(\'' + o[0] + '\')">' + o[1] + (o[0] === sug ? ' <i>suggested</i>' : '') + '</button>';
-                }).join('') + '</div></div>' +
-                '<p class="gen-lv-hint">' + (current === 'auto'
-                    ? '🎲 Each learner gets their own random set at their own level (Image Library templates).'
-                    : 'Everyone selected gets the same activity at ' + GEN_LOOK[current][0] + '.') + '</p>';
-            box.style.display = '';
-        }
-        function setGenLevel(l) {
-            sessionStorage.setItem('gen_level', l);
-            sessionStorage.setItem('gen_level_for', selectedLearnerIds.join(','));
-            renderGenLevel();
+            box.style.display = 'none';
         }
 
         function selectTemplate(idx) {

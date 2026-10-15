@@ -134,8 +134,6 @@
                         Select All
                     </label>
                 </div>
-                <!-- Learners by level (from their recent scores) -->
-                <div class="iep-level-filter" id="iepLevelFilter"></div>
                 <div class="iep-table-wrap">
                     <table class="iep-student-table">
                         <thead>
@@ -143,11 +141,10 @@
                                 <th style="width:48px;"></th>
                                 <th>Student Name</th>
                                 <th>Condition</th>
-                                <th>Level</th>
                             </tr>
                         </thead>
                         <tbody id="iep-student-tbody">
-                            <tr><td colspan="4" class="iep-st-empty">Loading learners...</td></tr>
+                            <tr><td colspan="3" class="iep-st-empty">Loading learners...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -308,21 +305,22 @@
                     renderStudentTable();
                 }).catch(function(){
                     var tb = document.getElementById('iep-student-tbody');
-                    if (tb) tb.innerHTML = '<tr><td colspan="4" class="iep-st-empty">Could not load learners.</td></tr>';
+                    if (tb) tb.innerHTML = '<tr><td colspan="3" class="iep-st-empty">Could not load learners.</td></tr>';
                 });
         }
 
         function renderStudentTable() {
             var tbody = document.getElementById('iep-student-tbody');
             if (!tbody) return;
-            renderLevelFilter();
+            // Levels are not shown on this page; the Generate page still reads
+            // each chosen learner's level for "Per student" activities.
             if (!allLearners.length) {
-                tbody.innerHTML = '<tr><td colspan="4" class="iep-st-empty">No learners enrolled yet.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="3" class="iep-st-empty">No learners enrolled yet.</td></tr>';
                 return;
             }
             var shown = visibleLearners();
             if (!shown.length) {
-                tbody.innerHTML = '<tr><td colspan="4" class="iep-st-empty">No learners at this level.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="3" class="iep-st-empty">No learners at this level.</td></tr>';
                 updateSelectAllState();
                 return;
             }
@@ -334,7 +332,6 @@
                     + '<td class="iep-cb-cell"><input type="checkbox" value="' + escHtml(s.id) + '" ' + (checked ? 'checked' : '') + ' onclick="event.stopPropagation();toggleLearnerRow(\'' + s.id + '\')" style="accent-color:#2563eb;width:16px;height:16px;cursor:pointer;"></td>'
                     + '<td class="iep-st-name">' + escHtml(s.name) + '</td>'
                     + '<td><span class="' + badgeCls + '">' + escHtml(cond) + '</span></td>'
-                    + '<td>' + levelBadge(s) + '</td>'
                     + '</tr>';
             }).join('');
             updateSelectAllState();

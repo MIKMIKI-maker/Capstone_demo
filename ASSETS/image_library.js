@@ -114,6 +114,8 @@
       ".iml-body > .iml-rnd{margin:0 0 12px;}",
       ".iml-rnd-title{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:800;color:#9a3412;}",
       ".iml-rnd-hint{font-size:11.5px;font-weight:600;color:#b45309;margin:3px 0 10px;line-height:1.35;}",
+      ".iml-rnd-diff{display:block;font-size:10px;font-weight:700;opacity:.92;margin-top:2px;}",
+      ".iml-rnd-legend{font-size:10.5px;color:#92400e;margin-top:8px;line-height:1.35;opacity:.85;}",
       ".iml-rnd-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:8px;}",
       ".iml-rnd-btn{cursor:pointer;border:none;border-radius:12px;padding:9px 6px 8px;min-height:54px;font:inherit;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;line-height:1.1;width:100%;"
         + "background:linear-gradient(135deg,#f59e0b,#f97316);box-shadow:0 3px 0 rgba(0,0,0,.2),0 6px 12px rgba(234,88,12,.18);transition:transform .08s ease,box-shadow .08s ease,filter .12s ease;}",
@@ -265,7 +267,11 @@
   function resolveSet(s) {
     var L = setLang(s);
     function item(x) {
-      var o = typeof x === "string" ? { id: x } : x, p = PHOTO_BY_ID[o.id];
+      var o = typeof x === "string" ? { id: x } : x;
+      // An action picture from the media library (Picture Matching's "what is
+      // it used for" pairs) instead of a library photo.
+      if (o.icon) return { id: "icon-" + o.icon, url: new URL("../media_library/icons/" + o.icon + ".svg", BASE).pathname, name: o[L] || o.fil || o.en };
+      var p = PHOTO_BY_ID[o.id];
       return { id: o.id, url: photoUrl(p), name: o[L] || p[L] || p.fil, yes: o.yes };
     }
     function text(t) { return t ? (t[L] || t.fil || t.en) : ""; }
@@ -316,6 +322,42 @@
   }
   function idsIn(cat) { return DATA.photos.filter(function (p) { return p.cat === cat; }).map(function (p) { return p.id; }); }
   function catsWith(n) { return shuffle(DATA.categories.filter(function (c) { return idsIn(c.id).length >= n; })); }
+  // Picture Matching, Level 2 (Moderate): everyday things that go together.
+  var MATCH_RELATED = [
+    ["sipilyo", "toothpaste"], ["sapatos", "medyas"], ["kutsara", "tinidor"], ["lapis", "pambura"],
+    ["unan", "kama"], ["mesa", "upuan"], ["sabon", "tuwalya"], ["lapis", "pantasa"],
+    ["bolpen", "kuwaderno"], ["tasa", "takure"], ["plato", "kutsara"], ["pisara", "tisa"]
+  ];
+  // Picture Matching, Level 3 (Difficult): a thing and what we use it for,
+  // or the situation it is right for (pictures from ASSETS/media_library/icons).
+  var MATCH_FUNCTION = [
+    { id: "sipilyo", icon: "brushteeth", fil: "Pagsisipilyo", en: "Brushing teeth" },
+    { id: "suklay", icon: "combing", fil: "Pagsusuklay", en: "Combing hair" },
+    { id: "walis", icon: "sweeping", fil: "Pagwawalis", en: "Sweeping" },
+    { id: "unan", icon: "sleeping", fil: "Pagtulog", en: "Sleeping" },
+    { id: "kama", icon: "sleeping", fil: "Pagtulog", en: "Sleeping" },
+    { id: "baso", icon: "drinking", fil: "Pag-inom", en: "Drinking" },
+    { id: "tasa", icon: "drinking", fil: "Pag-inom", en: "Drinking" },
+    { id: "kutsara", icon: "eating", fil: "Pagkain", en: "Eating" },
+    { id: "plato", icon: "eating", fil: "Pagkain", en: "Eating" },
+    { id: "sabon", icon: "washhands", fil: "Paghuhugas ng kamay", en: "Washing hands" },
+    { id: "tuwalya", icon: "bath", fil: "Paliligo", en: "Taking a bath" },
+    { id: "damit", icon: "dressing", fil: "Pagbibihis", en: "Getting dressed" },
+    { id: "sapatos", icon: "walk", fil: "Paglalakad", en: "Walking" },
+    // situations
+    { id: "payong", icon: "rain", fil: "Kapag umuulan", en: "When it rains" },
+    { id: "bag", icon: "schoolbell", fil: "Pagpasok sa paaralan", en: "Going to school" },
+    { id: "orasan", icon: "alarm", fil: "Paggising sa umaga", en: "Waking up" },
+    { id: "timba", icon: "faucet", fil: "Pag-iigib ng tubig", en: "Getting water" },
+    { id: "salamin", icon: "books", fil: "Pagbabasa", en: "Reading" }
+  ];
+  // Everyday, concrete things a learner sees at home — used for the simplest
+  // (Level 1, Easy) sets, since familiar pictures come before new ones.
+  var FAMILIAR_CATS = ["pagkain", "prutas", "bahay", "pansarili", "hayop", "laruan"];
+  function familiarCatsWith(n) {
+    var fam = catsWith(n).filter(function (c) { return FAMILIAR_CATS.indexOf(c.id) !== -1; });
+    return fam.length ? fam : catsWith(n);
+  }
   // Photos whose names (in the current language) start with different
   // letters — for the beginning-letter templates.
   function distinctLetters(n) {
@@ -334,49 +376,85 @@
 
   // Level 1 / 2 / 3 — like the templates' Easy → Medium → Hard slides:
   // more pictures per level, and at Level 3 more mixing between categories.
-  var LEVELS = [
-    { n: 1, fil: "Level 1", en: "Level 1",   tip: "Kaunting litrato, iisang kategorya" },
-    { n: 2, fil: "Level 2", en: "Level 2", tip: "Mas maraming litrato" },
-    { n: 3, fil: "Level 3", en: "Level 3",   tip: "Pinakamaraming litrato, halo-halong kategorya" }
+  // Random set levels for learners with ASD or ID: Level 1 is the easiest
+  // (fewest, biggest, most familiar pictures), Level 3 the most difficult.
+  var SET_LEVELS = [
+    { n: 1, name: "Easy" },
+    { n: 2, name: "Moderate" },
+    { n: 3, name: "Difficult" }
   ];
+  // Image size (%) the Random set gives each level — bigger for easier.
+  var LEVEL_IMAGE_SIZE = { 1: 160, 2: 130, 3: 100 };
   function byLevel(level, l1, l2, l3) { return level === 1 ? l1 : level === 2 ? l2 : l3; }
   // Sequencing's sets are fixed sequences, so it has no levels.
   function hasLevels() { return cfg.template !== "sequencing"; }
 
+  // Level 1 / 2 / 3 = Easy / Moderate / Difficult. Never fewer than 3
+  // items, and only a few more per level, so a set fits a phone screen and
+  // an easy set isn't a long task.
   function randomSet(level) {
     level = level === 1 || level === 3 ? level : 2;
     var c, ids, n, tag = { fil: " (Level " + level + ")", en: " (Level " + level + ")" };
     function named(fil, en) { return { fil: "Random: " + fil + tag.fil, en: "Random: " + en + tag.en }; }
     switch (cfg.template) {
       case "matching":
-        n = byLevel(level, 3, 4, 5);
-        if (level === 3) {
-          ids = shuffle(DATA.photos.map(function (p) { return p.id; })).slice(0, n);
-          c = { fil: "Halo-halo", en: "Mixed" };
-        } else {
-          c = catsWith(n)[0]; if (!c) return null; ids = shuffle(idsIn(c.id)).slice(0, n);
+        // Level 1 Easy: 2–3 pairs of identical, familiar pictures.
+        // Level 2 Moderate: 4–5 pairs of related pictures (go together).
+        // Level 3 Difficult: 5–6 pairs, picture → what it is used for.
+        if (level === 2) {
+          // No picture twice in one set (pencil–eraser and pencil–sharpener
+          // together would show two pencils).
+          var usedPic = {};
+          var rel = shuffle(MATCH_RELATED.filter(function (pr) { return PHOTO_BY_ID[pr[0]] && PHOTO_BY_ID[pr[1]]; }))
+            .filter(function (pr) { if (usedPic[pr[0]] || usedPic[pr[1]]) return false; usedPic[pr[0]] = usedPic[pr[1]] = true; return true; });
+          rel = rel.slice(0, 4 + Math.floor(rand() * 2));
+          if (rel.length < 2) return null;
+          return Object.assign({ id: "random",
+            title: { fil: "Pagtapatin ang Magkasama", en: "Match the Things That Go Together" },
+            instruction: { fil: "Pagdugtungin ang mga bagay na magkasama.", en: "Draw a line to the thing that goes with it." },
+            pairs: shuffle(rel).map(function (pr) { return [pr[0], pr[1]]; }) }, named("Magkasama", "Go Together"));
         }
+        if (level === 3) {
+          var fn = shuffle(MATCH_FUNCTION.filter(function (f) { return PHOTO_BY_ID[f.id]; }));
+          var usedIcon = {};
+          fn = fn.filter(function (f) { if (usedIcon[f.icon]) return false; usedIcon[f.icon] = true; return true; });
+          fn = fn.slice(0, 5 + Math.floor(rand() * 2));
+          if (fn.length < 2) return null;
+          return Object.assign({ id: "random",
+            title: { fil: "Para Saan Ito?", en: "What Is It Used For?" },
+            instruction: { fil: "Pagdugtungin ang bawat bagay sa gamit nito o kung kailan ito ginagamit.", en: "Match each thing to what we use it for or when we use it." },
+            pairs: fn.map(function (f) { return [f.id, { icon: f.icon, fil: f.fil, en: f.en }]; }) }, named("Gamit", "Uses"));
+        }
+        n = 3;
+        c = familiarCatsWith(n)[0]; if (!c) return null; ids = shuffle(idsIn(c.id)).slice(0, n);
         return Object.assign({ id: "random",
           title: { fil: "Pagtapatin ang Magkapareho", en: "Match the Same Pictures" },
-          instruction: { fil: "Pagdugtungin ng linya ang magkaparehong larawan.", en: "Draw a line to match the same pictures." },
+          instruction: { fil: "Hanapin ang kapareho.", en: "Find the same picture." },
           pairs: ids.map(function (id) { return [id, id]; }) }, named(c.fil, c.en));
       case "sorting":
-        var per = byLevel(level, 2, 3, 3);
-        var gs = catsWith(per).slice(0, byLevel(level, 2, 2, 3));
+        // 3 pictures in 2 groups, 4 in 2 groups, 6 in 3 groups
+        var total = byLevel(level, 3, 4, 6), ng = byLevel(level, 2, 2, 3);
+        var per = Math.ceil(total / ng);
+        var gs = (level === 1 ? familiarCatsWith(per) : catsWith(per)).slice(0, ng);
         if (gs.length < 2) return null;
         return Object.assign({ id: "random",
-          groups: gs.map(function (g) { return { fil: g.fil, en: g.en, items: shuffle(idsIn(g.id)).slice(0, per) }; }) },
+          groups: gs.map(function (g, gi) {
+            // spread the pictures over the groups (e.g. 3 → 2 + 1)
+            var count = Math.floor(total / ng) + (gi < total % ng ? 1 : 0);
+            return { fil: g.fil, en: g.en, items: shuffle(idsIn(g.id)).slice(0, count) };
+          }) },
           named(gs.map(function (g) { return g.fil; }).join(", "), gs.map(function (g) { return g.en; }).join(", ")));
       case "labeling":
         n = byLevel(level, 3, 4, 5);
-        var ex = byLevel(level, 0, 1, 2);
-        c = catsWith(n + ex)[0]; if (!c) return null; ids = shuffle(idsIn(c.id));
+        var ex = byLevel(level, 0, 0, 1);   // an extra (unused) label only at the top level
+        c = (level === 1 ? familiarCatsWith(n + ex) : catsWith(n + ex))[0]; if (!c) return null; ids = shuffle(idsIn(c.id));
         return Object.assign({ id: "random", items: ids.slice(0, n), extras: ids.slice(n, n + ex) }, named(c.fil, c.en));
       case "check":
-        n = byLevel(level, 2, 3, 4);   // this many ✓ and this many ✗
-        c = catsWith(n)[0]; if (!c) return null;
+        n = byLevel(level, 2, 2, 3);                 // this many ✓ …
+        var nNo = byLevel(level, 1, 2, 2);           // … and this many ✗ → 3 / 4 / 5
+        c = (level === 1 ? familiarCatsWith(n) : catsWith(n))[0]; if (!c) return null;
         var yes = shuffle(idsIn(c.id)).slice(0, n);
-        var no = shuffle(DATA.photos.filter(function (p) { return p.cat !== c.id; }).map(function (p) { return p.id; })).slice(0, n);
+        var no = shuffle(DATA.photos.filter(function (p) { return p.cat !== c.id; }).map(function (p) { return p.id; })).slice(0, nNo);
         var q = CHECK_Q[c.id] || { fil: c.fil + " ba ito?", en: "Is it in " + c.en + "?" };
         return Object.assign({ id: "random", title: q,
           instruction: { fil: "Lagyan ng tsek (✓) kung oo, at ekis (✗) kung hindi.", en: "Put a check (✓) if yes, and an X if not." },
@@ -400,7 +478,7 @@
     }
   }
 
-  function applyRandom(level) {
+  function applyRandom(level, picked) {
     if (!cfg.applySet) return;
     // A category with too few photos for a level (e.g. after the library
     // data is edited) must not break the page — just say so.
@@ -420,6 +498,16 @@
     ask.then(function (ok) {
       if (!ok) return;
       cfg.applySet(s.raw ? s : resolveSet(s), setLang(s));
+      // A Level 2 random set makes the activity Level 2 (Publish shows it).
+      if (hasLevels() && window.ActivityLevels && window.ActivityLevels.use) window.ActivityLevels.use(level);
+      // Bigger pictures for more support (easier to see and tap on a phone):
+      // moves the template's own Image size slider, so the teacher can still
+      // change it.
+      var sizeSlider = picked && document.querySelector('input[type="range"][id$="ImgSize"]');
+      if (sizeSlider) {
+        sizeSlider.value = LEVEL_IMAGE_SIZE[level];
+        sizeSlider.dispatchEvent(new Event('input', { bubbles: true }));
+      }
       if (root) hide();
     });
   }
@@ -428,18 +516,6 @@
   // templates without levels). Filled again by init(), because templates
   // build the side card with launcher() just before calling init().
   var randomHolders = [];
-  // Only the levels of the learners chosen on Generate Materials (a Level 3
-  // learner never needs the Level 1 / 2 sets); every level when editing an
-  // existing activity or draft, or when opened without Generate.
-  function offeredLevels() {
-    var q = new URLSearchParams(location.search);
-    if (q.get("edit_pub_id") || q.get("draft_id")) return [1, 2, 3];
-    var g = null, all = null;
-    try { g = sessionStorage.getItem("gen_level"); all = sessionStorage.getItem("gen_levels"); } catch (e) {}
-    if (g === "1" || g === "2" || g === "3") return [+g];
-    var list = String(all || "").split(",").map(Number).filter(function (n) { return n >= 1 && n <= 3; });
-    return list.length ? list : [1, 2, 3];
-  }
   function fillRandom(holder) {
     holder.innerHTML = "";
     holder.appendChild(el("div", "iml-rnd-title", "🎲 Random na set"));
@@ -451,25 +527,23 @@
       holder.appendChild(one);
       return holder;
     }
-    var offered = offeredLevels();
-    holder.appendChild(el("div", "iml-rnd-hint", offered.length === 1
-      ? "Para sa level ng napiling learner. I-click ulit para sa ibang set."
-      : "Pumili ng level — i-click ulit para sa ibang set."));
+    holder.appendChild(el("div", "iml-rnd-hint", "Pick the level that fits the learner — click again for another set."));
     var row = el("div", "iml-rnd-row");
-    LEVELS.forEach(function (L) {
-      if (offered.indexOf(L.n) === -1) return;
+    SET_LEVELS.forEach(function (L) {
       var b = el("button", "iml-rnd-btn iml-rnd-l" + L.n); b.type = "button";
-      b.appendChild(el("b", null, (offered.length === 1 ? "🎲 " : "") + "Level " + L.n));
+      b.appendChild(el("b", null, "Level " + L.n));
       // ●○○ / ●●○ / ●●● — how hard, at a glance
       var dots = el("span", "iml-rnd-dots");
       for (var d = 1; d <= 3; d++) dots.appendChild(el("i", d <= L.n ? "on" : null));
       b.appendChild(dots);
-      b.setAttribute("aria-label", "Random set, Level " + L.n);
-      b.title = L.tip + " — i-click ulit para sa ibang set.";
-      b.addEventListener("click", function () { applyRandom(L.n); });
+      b.appendChild(el("span", "iml-rnd-diff", L.name));
+      b.setAttribute("aria-label", "Random set, Level " + L.n + " (" + L.name + ")");
+      b.title = "Level " + L.n + " — " + L.name + ". Click again for another set.";
+      b.addEventListener("click", function () { applyRandom(L.n, true); });
       row.appendChild(b);
     });
     holder.appendChild(row);
+    holder.appendChild(el("div", "iml-rnd-legend", "For learners with ASD or ID — Level 1 is the easiest."));
     return holder;
   }
   function randomBox() {

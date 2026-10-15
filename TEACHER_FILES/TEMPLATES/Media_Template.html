@@ -9,11 +9,11 @@
 <script src="../../ASSETS/missing_highlight.js?v=1"></script>
 <script src="../../ASSETS/activity_audio.js?v=6"></script>
 <script src="../../ASSETS/image_shrink.js?v=1"></script>
-<script src="../../ASSETS/activity_levels.js?v=4"></script>
+<script src="../../ASSETS/activity_levels.js?v=7"></script>
 <script src="../../ASSETS/activity_demo.js?v=4"></script>
 <script src="../../ASSETS/activity_demos/media.js?v=1"></script>
 <script src="../../ASSETS/image_library/library_data.js?v=5"></script>
-<script src="../../ASSETS/image_library.js?v=20"></script>
+<script src="../../ASSETS/image_library.js?v=33"></script>
 <script src="../../ASSETS/media_library/media_data.js?v=1"></script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -1050,7 +1050,9 @@ function initActivityTheme(){
 
   // Difficulty = how many pictures to choose from. Audio (panel): Easy 2,
   // Medium 4, Hard 6.
-  const CHOICE_COUNT = { video:[2, 3, 4], audio:[2, 4, 6] };
+  // 3 / 3 / 4 choices for Easy / Medium / Hard (never fewer than 3) —
+  // few, big choices that fit a phone screen.
+  const CHOICE_COUNT = { video:[3, 3, 4], audio:[3, 3, 4] };
   const DIFF_NAMES = ["Easy", "Medium", "Hard"];
   function maxChoices(mode){ return mode === "audio" ? 6 : 4; }
   function diffOf(a){ return a.difficulty === 1 || a.difficulty === 2 ? a.difficulty : 0; }
@@ -1184,7 +1186,8 @@ function initActivityTheme(){
       mediaSet: function(level, rnd){
         const a = currentActivity();
         const cat = a.category && a.category !== "custom" ? a.category : "animals";
-        const items = shuffleWith(itemsOf(a.mode, cat), rnd).slice(0, Math.max(1, Math.min(3, level)));
+        // 3 clips at every level; the level changes the number of choices.
+        const items = shuffleWith(itemsOf(a.mode, cat), rnd).slice(0, 3);
         if (!items.length) return null;
         return { id:"random", raw:true, picks: items.map(function(it){ return it.id; }), level: level, rnd: rnd };
       },
