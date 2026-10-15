@@ -12,10 +12,10 @@
     <title>IEP Materials – SPED ALM</title>
     <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
     <link href="../ASSETS/vendor/fontawesome/css/all.min.css" rel="stylesheet" />
-    <link href="TEACHER_CSS/Teacher_IEP.css?v=8" rel="stylesheet" />
+    <link href="TEACHER_CSS/Teacher_IEP.css?v=9" rel="stylesheet" />
     <link href="TEACHER_CSS/teacher_theme.css?v=2" rel="stylesheet" />
     <link href="TEACHER_CSS/teacher_responsive.css?v=75" rel="stylesheet" />
-<script src="../ASSETS/i18n_dict.js?v=3"></script>
+<script src="../ASSETS/i18n_dict.js?v=6"></script>
 <script src="../ASSETS/i18n.js?v=2"></script>
 </head>
 
@@ -351,17 +351,23 @@
         function levelBadge(s) {
             var k = LEVEL_LOOK[s.level] || LEVEL_LOOK[1];
             var tip = s.levelBasedOn ? 'Average of the last ' + s.levelBasedOn + ' scores: ' + s.levelAvg + '%' : 'No scores yet — starts at Level 1';
-            return '<span title="' + escHtml(tip) + '" style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:700;white-space:nowrap;background:' + k[2] + ';color:' + k[3] + ';">📶 ' + k[0] + '</span>';
+            return '<span title="' + escHtml(tip) + '" style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:700;white-space:nowrap;background:' + k[2] + ';color:' + k[3] + ';">' + k[0] + '</span>';
         }
         function renderLevelFilter() {
             var box = document.getElementById('iepLevelFilter');
             if (!box) return;
             var counts = { 1: 0, 2: 0, 3: 0 };
             allLearners.forEach(function(s){ counts[s.level] = (counts[s.level] || 0) + 1; });
-            var chips = [[0, '📶 All levels', allLearners.length]].concat([1, 2, 3].map(function(l){ return [l, LEVEL_LOOK[l][0], counts[l]]; }));
-            box.innerHTML = chips.map(function(c){
-                return '<button type="button" class="iep-level-chip' + (levelFilter === c[0] ? ' on' : '') + '" onclick="setLevelFilter(' + c[0] + ')">' + escHtml(c[1]) + ' <b>' + c[2] + '</b></button>';
-            }).join('');
+            // Plain words for every button ("Level 1 · 2 learners"), a colored
+            // dot like the table badges, and empty levels can't be picked.
+            var chips = [[0, 'All', allLearners.length, '#1e3a8a']].concat([1, 2, 3].map(function(l){ return [l, LEVEL_LOOK[l][0], counts[l], LEVEL_LOOK[l][3]]; }));
+            box.innerHTML = '<span class="iep-level-label">Show learners by level:</span>' + chips.map(function(c){
+                var on = levelFilter === c[0], empty = c[0] && !c[2];
+                return '<button type="button" class="iep-level-chip' + (on ? ' on' : '') + '"' + (empty ? ' disabled' : '') + ' aria-pressed="' + on + '" onclick="setLevelFilter(' + c[0] + ')">'
+                    + (on ? '<span class="iep-level-check">✓</span>' : '<span class="iep-level-dot" style="background:' + c[3] + ';"></span>')
+                    + '<span class="iep-level-name">' + escHtml(c[1]) + '</span>'
+                    + '<span class="iep-level-count">' + c[2] + ' ' + (c[2] === 1 ? 'learner' : 'learners') + '</span></button>';
+            }).join('') + '<p class="iep-level-help">The level comes from each learner&#39;s recent scores.</p>';
         }
         function setLevelFilter(l) {
             levelFilter = l;
