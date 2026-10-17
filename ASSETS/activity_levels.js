@@ -39,6 +39,9 @@
     var st = tplState();
     if (!st) return;
     st.level = v;
+    // Templates that size their activity by level (Video & Audio: number of
+    // choices) listen for this.
+    try { document.dispatchEvent(new CustomEvent('activitylevel', { detail: { level: v } })); } catch (e) {}
     if (v === 'auto') {
       var lang = null;
       try { lang = localStorage.getItem('imglib_lang'); } catch (e) {}

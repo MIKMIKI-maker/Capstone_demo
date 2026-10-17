@@ -9,7 +9,7 @@
 <script src="../../ASSETS/missing_highlight.js?v=1"></script>
 <script src="../../ASSETS/activity_audio.js?v=6"></script>
 <script src="../../ASSETS/image_shrink.js?v=1"></script>
-<script src="../../ASSETS/activity_levels.js?v=7"></script>
+<script src="../../ASSETS/activity_levels.js?v=8"></script>
 <script src="../../ASSETS/activity_demo.js?v=4"></script>
 <script src="../../ASSETS/activity_demos/media.js?v=1"></script>
 <script src="../../ASSETS/image_library/library_data.js?v=5"></script>
@@ -342,6 +342,14 @@ function initActivityTheme(){
   .mda-content{ position:relative; z-index:2; display:flex; flex-direction:column; gap:28px; align-items:center; }
   .mda-q-wrap{ display:flex; flex-direction:column; align-items:center; gap:14px; }
   .mda-q-wrap + .mda-q-wrap{ padding-top:24px; border-top:2px dashed rgba(0,0,0,.12); width:100%; }
+  /* One question on screen at a time (easier to follow, fits a phone) */
+  .mda-q-wrap.mda-q-hidden{ display:none; }
+  .mda-q-wrap.mda-q-current{ padding-top:0; border-top:none; width:100%; }
+  .mda-qnav{ display:flex; align-items:center; justify-content:center; gap:12px; margin-top:16px; flex-wrap:wrap; }
+  .mda-qnav button{ font:inherit; font-weight:800; font-size:.42em; border:none; border-radius:999px; padding:.55em 1.2em; cursor:pointer; background:#e0e7ff; color:#1e3a8a; min-height:44px; }
+  .mda-qnav button:disabled{ opacity:.35; cursor:default; }
+  .mda-qnav button.mda-qnav-ready{ background:#2563eb; color:#fff; box-shadow:0 4px 12px rgba(37,99,235,.35); }
+  .mda-qnav-count{ font-weight:800; font-size:.42em; color:#1e3a8a; min-width:7em; text-align:center; }
   .mda-question{ font-weight:700; font-size:.8em; text-align:center; color:var(--mda-text); }
 
   .mda-opts-row{ display:flex; gap:var(--mda-gap,22px); flex-wrap:wrap; justify-content:center; }
@@ -615,6 +623,7 @@ function initActivityTheme(){
     .mda-modal-actions button{ padding:10px 14px; font-size:13px; border-radius:12px; }
   }
 
+  .mda-btn:disabled{ opacity:.45; cursor:not-allowed; filter:grayscale(.4); box-shadow:none; }
   /* ===== PRINTABLE WORKSHEET (Generate Printable button / PDF via browser print) ===== */
   .mda-print-area{ display:none; }
   .mda-print-area.mda-pdf-capture{ display:block; position:fixed; left:-99999px; top:0; background:#fff; }
@@ -697,8 +706,9 @@ function initActivityTheme(){
     </div>
     <div class="mda-top-actions">
       <button class="mda-btn mda-btn--help" id="mdaHelpBtn" type="button">❓ Help</button>
-      <button class="mda-btn mda-btn--print" id="mdaPrintBtn" type="button">🖨️ Generate Printable</button>
-      <button class="mda-btn mda-btn--ghost" id="mdaPdfBtn" type="button">⬇️ Download PDF</button>
+      <!-- Disabled: a video or sound can't be printed. -->
+      <button class="mda-btn mda-btn--print" id="mdaPrintBtn" type="button" disabled title="Not available: videos and sounds can't be printed.">🖨️ Generate Printable</button>
+      <button class="mda-btn mda-btn--ghost" id="mdaPdfBtn" type="button" disabled title="Not available: videos and sounds can't be printed.">⬇️ Download PDF</button>
       <button class="mda-btn mda-btn--ghost" id="mdaPreviewBtn" type="button">👁 Preview</button>
       <button class="mda-btn mda-btn--ghost" id="mdaDraftBtn" type="button">💾 Save Draft</button>
       <button class="mda-btn mda-btn--pub" id="mdaPubBtn" type="button">🌐 Publish</button>
@@ -728,10 +738,6 @@ function initActivityTheme(){
       <div class="mda-card">
         <div class="mda-step">1. Category <span class="mda-edit-link">(per slide)</span></div>
         <div class="mda-mode-picker" id="mdaModePicker"></div>
-        <div class="mda-diff-row">
-          <label for="mdaDifficulty">Difficulty</label>
-          <select id="mdaDifficulty" class="mda-select"></select>
-        </div>
         <p class="mda-type-desc" id="mdaModeDesc"></p>
       </div>
 
@@ -1053,7 +1059,6 @@ function initActivityTheme(){
   // 3 / 3 / 4 choices for Easy / Medium / Hard (never fewer than 3) —
   // few, big choices that fit a phone screen.
   const CHOICE_COUNT = { video:[3, 3, 4], audio:[3, 3, 4] };
-  const DIFF_NAMES = ["Easy", "Medium", "Hard"];
   function maxChoices(mode){ return mode === "audio" ? 6 : 4; }
   function diffOf(a){ return a.difficulty === 1 || a.difficulty === 2 ? a.difficulty : 0; }
   function choiceCount(a){ return CHOICE_COUNT[a.mode === "audio" ? "audio" : "video"][diffOf(a)]; }
@@ -1210,6 +1215,7 @@ function initActivityTheme(){
 
   // Play-mode state — reset whenever a slide is (re)rendered.
   let chosen = {};                    // questionIndex -> chosen choice index
+  let qOnScreen = 0;                  // the one question shown at a time
   let reviewResults = [];             // generic per-check results for the score modal
   let stageScale = 1;
 
@@ -1260,6 +1266,7 @@ function initActivityTheme(){
 
   function goToSlide(index){
     state.currentIndex = Math.max(0, Math.min(state.activities.length-1, index));
+    qOnScreen = 0;   // each slide starts at its first question
     refreshSlideUI();
   }
 
@@ -1301,18 +1308,17 @@ function initActivityTheme(){
         });
         pick.appendChild(b);
       });
-    const sel = $("mdaDifficulty");
-    sel.innerHTML = DIFF_NAMES.map(function(n, i){
-      return '<option value="' + i + '">' + n + ' — ' + CHOICE_COUNT[mode === "audio" ? "audio" : "video"][i] + ' choices</option>';
-    }).join("");
-    sel.value = String(diffOf(a));
     const cat = catOf(mode, a.category);
     $("mdaModeDesc").textContent = cat
       ? "Pick a sample for each question in Question Details — its picture becomes the right answer, with " + choiceCount(a) + " choices."
       : "Upload your own " + (mode === "audio" ? "sound" : "video") + " (or paste a link), then add the pictures to choose from.";
   }
-  $("mdaDifficulty").addEventListener("change", function(){
-    setDifficulty(currentActivity(), +this.value);
+  // The number of choices follows the activity's Level (Random set or
+  // Publish): Level 1 / 2 / 3 → Easy / Medium / Hard.
+  document.addEventListener("activitylevel", function(e){
+    const lv = String(e.detail && e.detail.level);
+    if (lv !== "1" && lv !== "2" && lv !== "3") return;
+    state.activities.forEach(function(a){ if (diffOf(a) !== +lv - 1) setDifficulty(a, +lv - 1); });
     renderModePicker(); renderFields(); renderActivity();
   });
   // Heading follows the activity's type.
@@ -1534,7 +1540,10 @@ function initActivityTheme(){
     } catch (e) {}
   }
   let activeMedia = [];
-  function stopAllMedia(){ activeMedia.forEach(function(m){ try { m.pause(); } catch (e) {} }); activeMedia = []; }
+  // Pauses every clip but keeps the list, so a clip started later (another
+  // question's Listen) still stops the others — emptying it here let two
+  // questions' sounds play at the same time.
+  function stopAllMedia(){ activeMedia.forEach(function(m){ try { m.pause(); } catch (e) {} }); }
   function hookMedia(m, btn){
     activeMedia.push(m);
     m.addEventListener("play", function(){
@@ -1577,14 +1586,11 @@ function initActivityTheme(){
 
   function renderStageMedia(wrap, activity){
     stopAllMedia();
+    activeMedia = [];   // the old clips are gone with the old cards
     chosen = {};
     activity.mediaQuestions.forEach(function(q, qi){
       chosen[qi] = null;
       const box = document.createElement("div"); box.className = "mda-q-wrap";
-      if (activity.mediaQuestions.length > 1){
-        const numLbl = document.createElement("div"); numLbl.className = "mda-q-num"; numLbl.textContent = "Question " + (qi+1);
-        box.appendChild(numLbl);
-      }
       box.appendChild(mediaEl(q, activity.mode));
       if (q.question){
         const qEl = document.createElement("div"); qEl.className = "mda-question"; qEl.textContent = q.question;
@@ -1604,6 +1610,34 @@ function initActivityTheme(){
       box.appendChild(row);
       wrap.appendChild(box);
     });
+    // Back / Next between the questions (only when there is more than one)
+    const total = activity.mediaQuestions.length;
+    if (qOnScreen >= total) qOnScreen = total - 1;
+    if (total > 1){
+      const nav = document.createElement("div"); nav.className = "mda-qnav";
+      nav.innerHTML = '<button type="button" class="mda-qprev">◀ Back</button><span class="mda-qnav-count"></span><button type="button" class="mda-qnext">Next ▶</button>';
+      nav.querySelector(".mda-qprev").addEventListener("click", function(){ showQuestion(qOnScreen - 1); });
+      nav.querySelector(".mda-qnext").addEventListener("click", function(){ showQuestion(qOnScreen + 1); });
+      wrap.appendChild(nav);
+    }
+    showQuestion(qOnScreen);
+  }
+  function showQuestion(i){
+    const boxes = content.querySelectorAll(".mda-q-wrap");
+    if (!boxes.length) return;
+    i = Math.max(0, Math.min(boxes.length - 1, i));
+    if (i !== qOnScreen) stopAllMedia();
+    qOnScreen = i;
+    boxes.forEach(function(b, bi){ b.classList.toggle("mda-q-hidden", bi !== i); b.classList.toggle("mda-q-current", bi === i); });
+    const nav = content.querySelector(".mda-qnav");
+    if (nav){
+      nav.querySelector(".mda-qprev").disabled = i === 0;
+      const next = nav.querySelector(".mda-qnext");
+      next.disabled = i === boxes.length - 1;
+      next.classList.toggle("mda-qnav-ready", chosen[i] !== null && chosen[i] !== undefined && i < boxes.length - 1);
+      nav.querySelector(".mda-qnav-count").textContent = "Question " + (i + 1) + " of " + boxes.length;
+    }
+    if (document.body.classList.contains("mda-preview-only")) setTimeout(fitStageToScreen, 30);
   }
   function selectChoice(qi, ci, btnEl){
     playDropSound(true);
@@ -1611,6 +1645,8 @@ function initActivityTheme(){
     btnEl.closest(".mda-q-wrap").querySelectorAll(".mda-choice").forEach(function(b){ b.classList.remove("sel"); b.style.borderColor = ""; });
     btnEl.classList.add("sel");
     $("mdaHint").textContent = "";
+    const next = content.querySelector(".mda-qnav .mda-qnext");
+    if (next && !next.disabled) next.classList.add("mda-qnav-ready");
   }
 
   function renderActivity(){
@@ -1632,6 +1668,7 @@ function initActivityTheme(){
     $("mdaHint").textContent = "";
     currentActivity().mediaQuestions.forEach(function(q, qi){ chosen[qi] = null; });
     document.querySelectorAll(".mda-choice").forEach(function(b){ b.classList.remove("sel"); b.style.borderColor = ""; });
+    showQuestion(0);
   }
   $("mdaReset").addEventListener("click", resetAnswers);
 
@@ -1645,6 +1682,7 @@ function initActivityTheme(){
     const allAnswered = qs.every(function(q, qi){ return chosen[qi] !== null && chosen[qi] !== undefined; });
     if (!allAnswered) {
       $("mdaHint").textContent = "Tap a picture for every question first.";
+      showQuestion(qs.findIndex(function(q, qi){ return chosen[qi] === null || chosen[qi] === undefined; }));
       MissingMark.flag(qs.map(function(q, qi){
         if (chosen[qi] !== null && chosen[qi] !== undefined) return null;
         const b = document.querySelector('.mda-choice[data-qi="'+qi+'"]');
@@ -2742,7 +2780,7 @@ function initActivityTheme(){
   (function(){
     var STEPS=[
       {get:function(){return document.querySelector('.mda-left-col');},title:'📋 Step 1 of 9 — Activity Slides',desc:'Each slide is ONE math question. Click the arrows to switch slides and "+ Add Slide" to create more (up to 3).',side:'right'},
-      {get:function(){return $('mdaModePicker');},title:'🗂️ Step 2 of 9 — Category & Difficulty',desc:'Pick a category for this slide (or use your own video / sound), then the difficulty — how many pictures the learner chooses from.',side:'right'},
+      {get:function(){return $('mdaModePicker');},title:'🗂️ Step 2 of 9 — Category',desc:'Pick a category for this slide (or use your own video / sound). How many pictures the learner chooses from follows the Level (Random set or Publish).',side:'right'},
       {get:function(){return $('mdaFields');},title:'📝 Step 3 of 9 — Question Details',desc:'Pick a sample (or upload / paste a link), check the question, and mark the right picture. You can change any choice.',side:'right'},
       {get:function(){document.body.classList.remove('mda-right-collapsed');return $('mdaInstrInput');},title:'💬 Step 4 of 9 — Instruction Text',desc:'Type the direction shown at the top of the learner\'s screen, e.g. "Tap the correct answer."',side:'left'},
       {get:function(){return document.querySelector('#mdaContent');},title:'🖥️ Step 5 of 9 — Live Preview',desc:'See exactly how this slide will look and play for the learner, updating instantly as you edit it.',side:'left'},
