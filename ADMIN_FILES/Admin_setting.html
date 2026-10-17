@@ -1187,6 +1187,12 @@
         chips.push('<span class="sy-chip ' + (pr.avg >= target ? 'good' : 'warn') + '" title="' + escSy(tip) + '">Avg ' + pr.avg + '%'
           + (pr.skills_total ? ' · Goals ' + pr.skills_met + '/' + pr.skills_total : '') + '</span>');
       }
+      // The system's end-of-year assessment (teacher_learner_assessment.php)
+      var sa = (d.learner_assessments || {})[st.student_admin_id];
+      if (sa && sa.result && sa.result !== 'none') {
+        var look = { passed: ['good', '✅ Passed'], reassess: ['warn', '⚠️ For reassessment'], practice: ['warn', '🔁 Needs more practice'] }[sa.result];
+        if (look) chips.push('<span class="sy-chip ' + look[0] + '" title="System assessment' + (sa.stage === 'final' ? ' after reassessment' : sa.stage === 'reassess' ? ' (reassessment in progress)' : '') + ': ' + sa.completed + ' of ' + sa.assigned + ' activities done, average ' + sa.average + '%">System: ' + look[1] + '</span>');
+      }
       if (st.rec) {
         chips.push('<span class="sy-chip rec" title="' + escSy((st.rec.teacher_name ? st.rec.teacher_name + ': ' : '') + (st.rec.note || '')) + '">Teacher: '
           + (WIZ_REC_LABELS[st.rec.recommendation] || escSy(st.rec.recommendation)) + '</span>');

@@ -551,3 +551,147 @@ function learnerProgressSummaries(mysqli $conn, int $sy): array {
     }
     return $out;
 }
+
+/* ── End-of-year system assessment ───────────────────────────────────────
+ * The system evaluates each learner for a S.Y. from their own work:
+ *   completion  how many assigned activities (and Activity materials) have
+ *               a score, and how many of those reached the pass mark
+ *   initial     Passed / For reassessment / Needs more practice
+ *   reassess    the teacher may start one reassessment per S.Y.: the initial
+ *               result is kept, the learner redoes what was failed or not
+ *               done, and the teacher finishes it to record the final result.
+ * It is a guide; the Admin still decides in Set as Active. */
+const ASSESS_PASS_SCORE = 80;        // an activity is passed at 80% (the app's pass mark)
+const ASSESS_PASS_COMPLETION = 80;   // Passed: at least 80% of activities done …
+const ASSESS_PASS_AVERAGE = 80;      // … and an average of 80% or more
+const ASSESS_REASSESS_AVERAGE = 70;  // not passed, but 70% or more → For reassessment
+
+function ensureLearnerAssessmentSchema(mysqli $conn): void {
+    $conn->query("CREATE TABLE IF NOT EXISTS learner_assessments (
+        id                  INT AUTO_INCREMENT PRIMARY KEY,
+        school_year_id      INT NOT NULL,
+        student_id          INT NOT NULL,
+        initial_result      VARCHAR(20) NOT NULL,
+        initial_json        TEXT NULL,
+        reassess_items      TEXT NULL,
+        reassess_started_at TIMESTAMP NULL DEFAULT NULL,
+        final_result        VARCHAR(20) NULL,
+        final_json          TEXT NULL,
+        finished_at         TIMESTAMP NULL DEFAULT NULL,
+        teacher_admin_id    INT NOT NULL DEFAULT 0,
+        UNIQUE KEY uniq_assess (school_year_id, student_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+}
+
+/** 'passed' | 'reassess' | 'practice' | 'none' (nothing scored yet) */
+function assessmentResult(array $e): string {
+    if ($e['assigned'] === 0 || $e['completed'] === 0) return 'none';
+    if ($e['completion'] >= ASSESS_PASS_COMPLETION && $e['average'] >= ASSESS_PASS_AVERAGE) return 'passed';
+    return $e['average'] >= ASSESS_REASSESS_AVERAGE ? 'reassess' : 'practice';
+}
+
+/**
+ * The live evaluation of each learner's work in a S.Y., keyed by students.id:
+ * assigned, completed, passed, completion %, average, redo (items failed or
+ * not done) and result. Only activities assigned to the learner count, plus
+ * their Activity materials; a finalized score wins over the auto score.
+ */
+function learnerEvaluations(mysqli $conn, int $sy, array $studentIds = []): array {
+    $ids = implode(',', array_map('intval', $studentIds));
+    $items = [];   // students.id => [ key => [title, score|null] ]
+    $res = $conn->query("SELECT aa.student_id, ta.id, ta.activity_title,
+            CASE WHEN sub.is_finalized = 1 AND sub.finalized_score IS NOT NULL THEN sub.finalized_score ELSE lp.score END AS score
+        FROM activity_assignments aa
+        INNER JOIN teacher_activities ta ON ta.id = aa.activity_id AND ta.school_year_id = $sy AND ta.status = 'published'
+        LEFT JOIN learner_progress lp ON lp.activity_id = ta.id AND lp.student_id = aa.student_id
+        LEFT JOIN activity_submissions sub ON sub.activity_id = ta.id AND sub.student_id = aa.student_id
+        WHERE 1 = 1" . ($ids !== '' ? " AND aa.student_id IN ($ids)" : ''));
+    while ($res && ($r = $res->fetch_assoc())) {
+        $items[(int)$r['student_id']]['a' . $r['id']] = ['title' => $r['activity_title'], 'score' => $r['score'] === null ? null : (float)$r['score']];
+    }
+    $col = $conn->query("SHOW COLUMNS FROM teacher_uploaded_materials LIKE 'school_year_id'");
+    if ($col && $col->num_rows > 0) {
+        $res = $conn->query("SELECT m.student_id, m.id, m.title, CASE WHEN m.is_graded = 1 THEN m.final_score ELSE NULL END AS score
+            FROM teacher_uploaded_materials m
+            WHERE m.material_kind = 'activity' AND m.school_year_id = $sy AND m.student_id IS NOT NULL"
+            . ($ids !== '' ? " AND m.student_id IN ($ids)" : ''));
+        while ($res && ($r = $res->fetch_assoc())) {
+            $items[(int)$r['student_id']]['m' . $r['id']] = ['title' => $r['title'], 'score' => $r['score'] === null ? null : (float)$r['score']];
+        }
+    }
+    $out = [];
+    foreach ($items as $sid => $list) {
+        $scores = [];
+        $passed = 0;
+        $redo = [];
+        foreach ($list as $key => $it) {
+            if ($it['score'] === null) { $redo[] = ['key' => $key, 'title' => $it['title'], 'why' => 'not done']; continue; }
+            $scores[] = $it['score'];
+            if ($it['score'] >= ASSESS_PASS_SCORE) $passed++;
+            else $redo[] = ['key' => $key, 'title' => $it['title'], 'why' => round($it['score']) . '%'];
+        }
+        $e = [
+            'assigned'   => count($list),
+            'completed'  => count($scores),
+            'passed'     => $passed,
+            'completion' => count($list) ? (int)round(count($scores) * 100 / count($list)) : 0,
+            'average'    => $scores ? (int)round(array_sum($scores) / count($scores)) : 0,
+            'redo'       => $redo,
+        ];
+        $e['result'] = assessmentResult($e);
+        $out[$sid] = $e;
+    }
+    return $out;
+}
+
+/**
+ * What to show for each learner (keyed by students.id):
+ *   stage 'initial'   no reassessment yet — result is the live evaluation
+ *   stage 'reassess'  reassessment in progress — initial kept, live result now
+ *   stage 'final'     reassessment finished — initial and final results
+ */
+function learnerAssessments(mysqli $conn, int $sy, array $studentIds = []): array {
+    ensureLearnerAssessmentSchema($conn);
+    $live = learnerEvaluations($conn, $sy, $studentIds);
+    $empty = ['assigned' => 0, 'completed' => 0, 'passed' => 0, 'completion' => 0, 'average' => 0, 'redo' => [], 'result' => 'none'];
+    $out = [];
+    foreach ($studentIds ?: array_keys($live) as $sid) {
+        $sid = (int)$sid;
+        $e = $live[$sid] ?? $empty;
+        $out[$sid] = ['stage' => 'initial', 'result' => $e['result'], 'now' => $e, 'initial' => null, 'final' => null, 'reassess_items' => []];
+    }
+    $ids = implode(',', array_map('intval', $studentIds));
+    $res = $conn->query("SELECT * FROM learner_assessments WHERE school_year_id = $sy" . ($ids !== '' ? " AND student_id IN ($ids)" : ''));
+    while ($res && ($r = $res->fetch_assoc())) {
+        $sid = (int)$r['student_id'];
+        if (!isset($out[$sid])) continue;
+        $initial = json_decode((string)$r['initial_json'], true) ?: [];
+        $initial['result'] = $r['initial_result'];
+        $out[$sid]['initial'] = $initial;
+        $out[$sid]['reassess_items'] = json_decode((string)$r['reassess_items'], true) ?: [];
+        if ($r['final_result']) {
+            $final = json_decode((string)$r['final_json'], true) ?: [];
+            $final['result'] = $r['final_result'];
+            $out[$sid]['stage'] = 'final';
+            $out[$sid]['final'] = $final;
+            $out[$sid]['result'] = $r['final_result'];
+        } else {
+            $out[$sid]['stage'] = 'reassess';
+        }
+    }
+    return $out;
+}
+
+/** learnerAssessments() keyed by the learner's account id (admin_accounts.id) — for the Admin's Set as Active steps. */
+function assessmentsByAccount(mysqli $conn, int $sy): array {
+    $byRecord = learnerAssessments($conn, $sy);
+    if (!$byRecord) return [];
+    $out = [];
+    $res = $conn->query('SELECT id, admin_account_id FROM students WHERE admin_account_id > 0 AND id IN (' . implode(',', array_map('intval', array_keys($byRecord))) . ')');
+    while ($res && ($r = $res->fetch_assoc())) {
+        $a = $byRecord[(int)$r['id']];
+        $e = $a['stage'] === 'final' ? $a['final'] : $a['now'];
+        $out[(int)$r['admin_account_id']] = ['result' => $a['result'], 'stage' => $a['stage'], 'completed' => $e['completed'], 'assigned' => $e['assigned'], 'average' => $e['average']];
+    }
+    return $out;
+}

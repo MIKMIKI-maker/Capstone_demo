@@ -76,6 +76,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             // next to every learner so the Admin has a basis for the choice.
             'learner_progress' => (object)learnerProgressSummaries($conn, $activeId),
             'learner_recommendations' => (object)learnerRecommendations($conn, $activeId),
+            // The system's end-of-year evaluation, by account id like the rest.
+            'learner_assessments' => (object)assessmentsByAccount($conn, $activeId),
             'goal_target' => LEARNER_GOAL_TARGET,
             'suggested' => ['name' => $target['name'], 'start_date' => $target['start_date'], 'end_date' => $target['end_date']],
         ] + loadClassesForSchoolYear($conn, $activeId));

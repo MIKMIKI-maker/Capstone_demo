@@ -4,6 +4,7 @@
 
 <head>
     <script src="../ASSETS/portal_guard.js?v=3" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
+    <script src="../ASSETS/app_dialog.js?v=1"></script>
     <script src="../ASSETS/teacher_portal.js?v=15"></script>
     <script src="../ASSETS/school_info.js?v=1"></script>
     <script src="../ASSETS/school_year_switcher.js?v=9" data-picker="off" defer></script>
@@ -216,6 +217,11 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- END-OF-YEAR ASSESSMENT — the system's evaluation of this learner (teacher_learner_assessment.php) -->
+                        <div class="teacher-history-card" id="assess-card">
+                            <div class="teacher-history-title">📋 End-of-Year Assessment</div>
+                            <div id="assess-body" style="margin-top:10px;"><div class="teacher-goals-empty">Loading...</div></div>
+                        </div>
                         <!-- SCHOOL YEAR HISTORY — every S.Y., class and teacher, from teacher_student_history.php -->
                         <div class="teacher-history-card">
                             <div class="teacher-history-title">📚 School Year History</div>
@@ -408,6 +414,83 @@
             return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
 
+        // ── End-of-Year Assessment (the system's own evaluation) ───
+        const ASSESS_LOOK = {
+            passed:   ['✅', 'Passed',              '#dcfce7', '#166534'],
+            reassess: ['⚠️', 'For reassessment',    '#fef3c7', '#92400e'],
+            practice: ['🔁', 'Needs more practice', '#fee2e2', '#991b1b'],
+            none:     ['—',  'Not assessed yet',    '#f1f5f9', '#64748b']
+        };
+        function assessBadge(result, big) {
+            const k = ASSESS_LOOK[result] || ASSESS_LOOK.none;
+            return '<span style="display:inline-block;background:' + k[2] + ';color:' + k[3] + ';font-weight:800;border-radius:999px;padding:' + (big ? '6px 14px;font-size:14px' : '3px 10px;font-size:11.5px') + ';">' + k[0] + ' ' + k[1] + '</span>';
+        }
+        function assessStats(e) {
+            return '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:10px 0;">'
+                + [['Activities completed', e.completed + ' of ' + e.assigned + ' (' + e.completion + '%)'],
+                   ['Passed (' + _assessRules.pass_score + '%+)', e.passed + ' of ' + e.assigned],
+                   ['Average score', e.completed ? e.average + '%' : '—']]
+                  .map(function (x) { return '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 12px;"><div style="font-size:11px;color:#64748b;font-weight:600;">' + x[0] + '</div><div style="font-size:15px;font-weight:800;color:#0f172a;">' + x[1] + '</div></div>'; }).join('')
+                + '</div>';
+        }
+        let _assessRules = { pass_score: 80, pass_completion: 80, pass_average: 80, reassess_average: 70 };
+        function loadAssessment() {
+            const body = document.getElementById('assess-body');
+            fetch('TEACHER_BACKEND/teacher_learner_assessment.php?student_id=' + encodeURIComponent(currentStudentId) + '&_t=' + Date.now(), { cache: 'no-store' })
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.success) { body.innerHTML = '<div class="teacher-goals-empty">Could not load the assessment.</div>'; return; }
+                    _assessRules = data.rules || _assessRules;
+                    const a = data.assessments[currentStudentId];
+                    if (!a) { body.innerHTML = '<div class="teacher-goals-empty">No assessment for this School Year.</div>'; return; }
+                    let html = '';
+                    const R = _assessRules;
+                    const rule = '<p style="font-size:11.5px;color:#64748b;margin:6px 0 0;">Passed = at least ' + R.pass_completion + '% of activities done and an average of ' + R.pass_average + '%+ · For reassessment = average ' + R.reassess_average + '–' + (R.pass_average - 1) + '% or not finished · An activity is passed at ' + R.pass_score + '%. The system result is a guide; the Admin decides in Set as Active.</p>';
+                    if (a.stage === 'initial') {
+                        html += '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;"><b style="font-size:13px;">System result:</b>' + assessBadge(a.result, true) + '</div>';
+                        html += assessStats(a.now);
+                    } else {
+                        html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;"><b>Initial:</b>' + assessBadge(a.initial.result) + '<span style="color:#94a3b8;">→</span><b>' + (a.stage === 'final' ? 'After reassessment:' : 'Now (reassessing):') + '</b>' + assessBadge(a.stage === 'final' ? a.final.result : a.now.result, true) + '</div>';
+                        html += assessStats(a.stage === 'final' ? a.final : a.now);
+                    }
+                    const redo = a.stage === 'initial' ? a.now.redo : (a.reassess_items || []);
+                    if (a.result !== 'passed' && redo && redo.length) {
+                        html += '<div style="font-size:12.5px;margin:4px 0 8px;"><b>' + (a.stage === 'initial' ? 'To redo or finish:' : 'Reassessment list:') + '</b> '
+                            + redo.map(function (r) { return escHtml(r.title) + ' <span style="color:#94a3b8;">(' + escHtml(r.why) + ')</span>'; }).join(', ') + '</div>';
+                    }
+                    if (data.is_active && a.stage === 'initial' && (a.result === 'reassess' || a.result === 'practice')) {
+                        html += '<button type="button" class="assess-btn" data-sy-write onclick="assessAction(\'start\')" style="background:#2563eb;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-weight:700;cursor:pointer;">🔁 Start reassessment</button>'
+                            + '<span style="font-size:11.5px;color:#64748b;margin-left:8px;">The learner redoes the list above; once only this School Year.</span>';
+                    } else if (data.is_active && a.stage === 'reassess') {
+                        html += '<button type="button" class="assess-btn" data-sy-write onclick="assessAction(\'finish\')" style="background:#16a34a;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-weight:700;cursor:pointer;">✓ Finish reassessment</button>'
+                            + '<span style="font-size:11.5px;color:#64748b;margin-left:8px;">Records the result from the learner\'s scores now.</span>';
+                    }
+                    html += rule;
+                    // auto-refresh: leave the card alone when nothing changed
+                    if (body._html !== html) { body.innerHTML = html; body._html = html; }
+                })
+                .catch(() => {});
+        }
+        function assessAction(action) {
+            const go = function () {
+                const fd = new FormData();
+                fd.append('action', action);
+                fd.append('student_id', currentStudentId);
+                fetch('TEACHER_BACKEND/teacher_learner_assessment.php', { method: 'POST', body: fd })
+                    .then(r => r.json())
+                    .then(d => {
+                        if (window.showToast) window.showToast(d.message || (d.success ? 'Saved.' : 'Could not save.'), d.success ? 'success' : 'error', 4000);
+                        loadAssessment();
+                    })
+                    .catch(() => { if (window.showToast) window.showToast('Network error. Please try again.', 'error', 4000); });
+            };
+            const msg = action === 'start'
+                ? 'The current result is kept as the initial assessment. The learner then redoes the activities they failed or did not finish. This can be done once this School Year.'
+                : 'The system will record the learner\'s result from their scores now as the result after reassessment.';
+            if (window.appConfirm) window.appConfirm(msg, { title: action === 'start' ? 'Start reassessment?' : 'Finish reassessment?', okText: action === 'start' ? 'Start' : 'Finish' }).then(function (ok) { if (ok) go(); });
+            else if (confirm(msg)) go();
+        }
+
         // ── School Year history (every S.Y., whichever teacher) ───
         function loadSchoolYearHistory() {
             const list = document.getElementById('sy-history-list');
@@ -443,7 +526,8 @@
                             + '<summary style="cursor:pointer;list-style:none;">'
                             + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"><strong>S.Y. ' + escHtml(y.name) + '</strong>' + badge + '<span class="sy-hist-toggle"><span class="sy-hist-show">Show activities</span><span class="sy-hist-hide">Hide activities</span> <i class="fa-solid fa-chevron-down"></i></span></div>'
                             + '<div style="font-size:12px;color:#64748b;margin-top:2px;">' + escHtml(meta || 'No class on record') + '</div>'
-                            + '<div style="font-size:12px;color:#334155;margin-top:4px;">Assigned ' + y.assigned + ' · Completed ' + y.completed + ' · Average ' + (y.average !== null ? y.average + '%' : '—') + '</div>'
+                            + '<div style="font-size:12px;color:#334155;margin-top:4px;">Assigned ' + y.assigned + ' · Completed ' + y.completed + ' · Average ' + (y.average !== null ? y.average + '%' : '—')
+                            + (y.assessment && y.assessment.result !== 'none' ? ' · ' + assessBadge(y.assessment.result) + (y.assessment.stage === 'final' ? ' <span style="font-size:10.5px;color:#64748b;">after reassessment</span>' : '') : '') + '</div>'
                             + '</summary>'
                             + '<div style="margin-top:8px;">' + rows + '</div>'
                             + '</details>';
@@ -454,26 +538,6 @@
                     }
                 })
                 .catch(() => { if (!list._html) list.innerHTML = '<div class="teacher-goals-empty">Could not load School Year history.</div>'; });
-        }
-
-        // The learner's current level for "🎲 Per student" activities — worked
-        // out from their last few scores (TEACHER_BACKEND/student_level.php).
-        function showLearningLevel(info) {
-            var nameEl = document.getElementById('student-name-display');
-            if (!nameEl || !info) return;
-            var badge = document.getElementById('learner-level-badge');
-            if (!badge) {
-                badge = document.createElement('span');
-                badge.id = 'learner-level-badge';
-                nameEl.parentNode.insertBefore(badge, nameEl.nextSibling);
-            }
-            var lv = +info.level === 2 || +info.level === 3 ? +info.level : 1;
-            var look = { 1: ['#dcfce7', '#166534', 'Madali'], 2: ['#ffedd5', '#9a3412', 'Katamtaman'], 3: ['#fee2e2', '#991b1b', 'Mahirap'] }[lv];
-            badge.style.cssText = 'display:inline-flex;align-items:center;gap:4px;margin-left:10px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;vertical-align:middle;background:' + look[0] + ';color:' + look[1] + ';';
-            badge.textContent = '📶 Level ' + lv;
-            badge.title = info.based_on
-                ? 'Average of the last ' + info.based_on + ' score' + (info.based_on > 1 ? 's' : '') + ': ' + info.average + '% (below 60% = Level 1, 60–84% = Level 2, 85%+ = Level 3)'
-                : 'No scores yet — starts at Level 1';
         }
 
         // ── Fetch & render ────────────────────────────────────────
@@ -501,7 +565,6 @@
                     if (data.student_name) {
                         document.getElementById('student-name-display').textContent = data.student_name;
                     }
-                    showLearningLevel(data.learning_level);
                     updateProgressCards(data);
                     renderActivityHistory(data.activities);
                     renderSkillsPie(data.skills);
@@ -510,6 +573,7 @@
                     renderAssistanceHistory(data.activities);
                     renderTeacherNotes(data.notes);
                     loadSchoolYearHistory();
+                    loadAssessment();
                 })
                 .catch(err => showLoadError(err.message));
         }

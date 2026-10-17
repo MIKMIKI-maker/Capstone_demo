@@ -130,7 +130,6 @@ foreach ($years as &$y) {
     usort($y['activities'], function ($a, $b) { return strcmp((string)$b['completed_on'], (string)$a['completed_on']); });
 }
 unset($y);
-$conn->close();
 
 // Summaries, and only the years the learner actually has something in.
 $out = [];
@@ -140,7 +139,11 @@ foreach ($years as $y) {
     $y['assigned']  = count($y['activities']);
     $y['completed'] = count(array_filter($y['activities'], function ($a) { return $a['completed_on'] !== null; }));
     $y['average']   = $scores ? (int)round(array_sum($scores) / count($scores)) : null;
+    // The system's end-of-year assessment for that S.Y. (final result if reassessed).
+    $as = learnerAssessments($conn, (int)$y['school_year_id'], [$student_id])[$student_id] ?? null;
+    $y['assessment'] = $as ? ['result' => $as['result'], 'stage' => $as['stage']] : null;
     $out[] = $y;
 }
 
+$conn->close();
 echo json_encode(['success' => true, 'years' => $out]);
