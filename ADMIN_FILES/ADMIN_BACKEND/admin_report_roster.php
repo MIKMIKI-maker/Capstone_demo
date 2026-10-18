@@ -56,11 +56,41 @@ while ($row = $result->fetch_assoc()) {
         'students'      => $students,
     ];
 }
+$totalTeachers = count($sections);
+
+// Every student account counts, not only those on a teacher's list. A
+// student moved to another teacher in Manage Users stays 'pending' until
+// that teacher enrolls them (admin_manage_user_save.php), and a student
+// added without a teacher has no record yet — both are listed together
+// under "Not enrolled yet" instead of silently missing from the totals.
+$unenrolled = [];
+$res = $conn->query("SELECT a.first_name, a.last_name, CONCAT(t.first_name, ' ', t.last_name) AS assigned_to
+    FROM admin_accounts a
+    LEFT JOIN admin_accounts t ON t.id = a.assigned_teacher_id AND t.role = 'teacher' AND (t.is_deleted IS NULL OR t.is_deleted = 0)
+    WHERE a.role = 'student' AND (a.is_deleted IS NULL OR a.is_deleted = 0)
+      AND NOT EXISTS (SELECT 1 FROM students s WHERE s.admin_account_id = a.id AND s.status = 'active')
+    ORDER BY a.first_name, a.last_name");
+while ($res && ($row = $res->fetch_assoc())) {
+    $name = trim($row['first_name'] . ' ' . $row['last_name']);
+    $assigned = trim((string)$row['assigned_to']);
+    $unenrolled[] = $assigned !== '' ? "$name (assigned to $assigned)" : $name;
+}
+if ($unenrolled) {
+    $totalStudents += count($unenrolled);
+    $sections[] = [
+        'teacher_id'    => 0,
+        'teacher_name'  => '',
+        'class_section' => 'Not enrolled yet',
+        'students'      => $unenrolled,
+        'unenrolled'    => true,
+    ];
+}
 $conn->close();
 
 echo json_encode([
     'success'        => true,
     'sections'       => $sections,
-    'total_teachers' => count($sections),
+    'total_teachers' => $totalTeachers,
     'total_students' => $totalStudents,
+    'unenrolled'     => count($unenrolled),
 ]);

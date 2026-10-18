@@ -223,6 +223,13 @@
           var studentsHtml = sec.students.length
             ? sec.students.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('')
             : '<li class="rp-list-empty">No students recorded.</li>';
+          if (sec.unenrolled) {
+            return '<div class="rp-print-section">'
+              + '<p class="rp-print-section-title">NOT ENROLLED YET</p>'
+              + '<p class="rp-print-section-label">Students with an account but not yet on a teacher\'s class list</p>'
+              + '<ol class="rp-print-list">' + studentsHtml + '</ol>'
+              + '</div>';
+          }
           return '<div class="rp-print-section">'
             + '<p class="rp-print-section-title">SECTION: ' + esc(sectionLabel(sec)) + '</p>'
             + '<p class="rp-print-section-label">Teacher</p>'
@@ -238,6 +245,19 @@
         var studentsHtml = sec.students.length
           ? sec.students.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('')
           : '<li class="rp-list-empty">No students recorded.</li>';
+        if (sec.unenrolled) {
+          return '<div class="rp-section-block" style="border-left-color:#f59e0b;">'
+            + '<div class="rp-section-head">'
+            +   '<span class="rp-section-icon" style="background:#fef3c7;color:#b45309;"><i class="fa-solid fa-user-clock"></i></span>'
+            +   '<div class="rp-section-head-text">'
+            +     '<p class="rp-section-eyebrow">Not enrolled yet</p>'
+            +     '<p class="rp-section-title">Waiting for a teacher to enroll them</p>'
+            +   '</div>'
+            + '</div>'
+            + '<p class="rp-section-label">Students <span class="rp-section-count">' + sec.students.length + '</span></p>'
+            + '<ol class="rp-name-list rp-section-student-list">' + studentsHtml + '</ol>'
+            + '</div>';
+        }
         return '<div class="rp-section-block">'
           + '<div class="rp-section-head">'
           +   '<span class="rp-section-icon"><i class="fa-solid fa-chalkboard-user"></i></span>'
