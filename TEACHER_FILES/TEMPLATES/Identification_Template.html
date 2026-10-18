@@ -3,8 +3,8 @@
 <head>
 <script src="../../ASSETS/portal_guard.js?v=3" data-portal-role="teacher,student" data-status-path="../../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../../ADMIN_FILES/login_screen.html?session=expired"></script>
 <script src="../../ASSETS/app_dialog.js?v=1"></script>
-<script src="../../ASSETS/teacher_portal.js?v=17"></script>
-<script src="../../ASSETS/print_options.js?v=7"></script>
+<script src="../../ASSETS/teacher_portal.js?v=18"></script>
+<script src="../../ASSETS/print_options.js?v=8"></script>
 <script src="../../ASSETS/attempt_history.js?v=4"></script>
 <script src="../../ASSETS/missing_highlight.js?v=1"></script>
 <script src="../../ASSETS/activity_audio.js?v=6"></script>
@@ -1747,7 +1747,7 @@ function initActivityTheme(){
     var chain = Promise.resolve();
     pageEls.forEach(function(pageEl){
       chain = chain.then(function(){
-        return html2canvas(pageEl, { scale:2, useCORS:true, backgroundColor:"#ffffff" });
+        return PrintOptions.capture(pageEl);
       }).then(function(canvas){
         var imgData = canvas.toDataURL("image/jpeg", 0.92);
         var pageWmm = 210, pageHmm = 297;

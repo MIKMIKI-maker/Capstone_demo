@@ -4,7 +4,7 @@
 
 <head>
     <script src="../ASSETS/portal_guard.js?v=3" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
-    <script src="../ASSETS/teacher_portal.js?v=15"></script>
+    <script src="../ASSETS/teacher_portal.js?v=18"></script>
     <script src="../ASSETS/school_year_switcher.js?v=9" data-picker="off" defer></script>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
@@ -128,14 +128,6 @@
                 <button class="tab-btn" id="tab-uploads" type="button" onclick="switchTab('uploads')">
                     Uploads <span class="tab-count tab-count-uploads" id="count-uploads">0</span>
                 </button>
-                <!-- Activities by level (set in each template's Publish pop-up) -->
-                <select id="levelFilter" class="level-filter" onchange="filterTable()" aria-label="Filter by level">
-                    <option value="">📶 All levels</option>
-                    <option value="1">Level 1</option>
-                    <option value="2">Level 2</option>
-                    <option value="3">Level 3</option>
-                    <option value="auto">🎲 Per student</option>
-                </select>
             </div>
 
             <!-- TABLE CARD -->
@@ -422,14 +414,10 @@
                 base = allActivities;
             }
 
-            var lvlSel = document.getElementById('levelFilter');
-            var lvl = lvlSel ? lvlSel.value : '';
             var filtered = base.filter(function(a) {
-                if (lvl && a.level !== lvl) return false;
                 return !q ||
                        a.title.toLowerCase().includes(q) ||
                        a.type.toLowerCase().includes(q)  ||
-                       levelText(a.level).toLowerCase().includes(q) ||
                        a.learner.toLowerCase().includes(q);
             });
 
@@ -619,7 +607,7 @@
                     + '<td class="teacher-activity-title"><div style="display:flex;align-items:center;gap:10px;">'+_tb+'<span>'+esc(a.title)+'</span></div></td>'
                     + '<td>' + esc(a.type) + (a._isUpload && a.material_kind === 'activity'
                         ? ' <span style="display:inline-block;margin-left:4px;padding:2px 8px;border-radius:20px;background:#f3e8ff;color:#6b21a8;font-size:11px;font-weight:700;white-space:nowrap;">📝 Activity</span>'
-                        : '') + levelChip(a.level) + '</td>'
+                        : '') + '</td>'
                     + '<td>' + learnerCell + '</td>'
                     + '<td class="date-cell">' + dateStr + '</td>'
                     + '<td>' + statusBadge + '</td>'
@@ -1098,20 +1086,6 @@
                     document.getElementById('msubsSub').textContent = '';
                     document.getElementById('msubsBody').innerHTML = '<div class="msubs-empty"><b>⚠️</b>' + esc(e.message || 'Could not load submissions.') + '</div>';
                 });
-        }
-
-        // Level set in the template's Publish pop-up ('1'/'2'/'3', or 'auto' =
-        // every learner gets their own random set at their level).
-        var LEVEL_LOOK = {
-            '1':    ['Level 1', '#dcfce7', '#166534'],
-            '2':    ['Level 2', '#ffedd5', '#9a3412'],
-            '3':    ['Level 3', '#fee2e2', '#991b1b'],
-            'auto': ['🎲 Per student', '#e0e7ff', '#3730a3']
-        };
-        function levelText(l) { return LEVEL_LOOK[l] ? LEVEL_LOOK[l][0] : ''; }
-        function levelChip(l) {
-            var k = LEVEL_LOOK[l];
-            return k ? ' <span title="' + (l === 'auto' ? 'Each learner gets their own random set at their level' : 'Activity level') + '" style="display:inline-block;margin-left:4px;padding:2px 8px;border-radius:20px;background:' + k[1] + ';color:' + k[2] + ';font-size:11px;font-weight:700;white-space:nowrap;">📶 ' + k[0] + '</span>' : '';
         }
 
         /* ── 👥 Add Learners — a learner forgotten when the activity was

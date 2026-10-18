@@ -5,7 +5,7 @@
 <head>
     <script src="../ASSETS/portal_guard.js?v=3" data-portal-role="teacher" data-status-path="../ADMIN_FILES/ADMIN_BACKEND/session_status.php" data-login-path="../ADMIN_FILES/login_screen.html?session=expired"></script>
     <script src="../ASSETS/app_dialog.js?v=1"></script>
-    <script src="../ASSETS/teacher_portal.js?v=15"></script>
+    <script src="../ASSETS/teacher_portal.js?v=18"></script>
     <script src="../ASSETS/school_info.js?v=1"></script>
     <script src="../ASSETS/school_year_switcher.js?v=9" data-picker="off" defer></script>
     <meta charset="utf-8" />
@@ -973,10 +973,14 @@
                         h.attempts.map(a => a.correct + '/' + a.total).join(' → ')
                       ).join(' · ')}</span>`
                     : '';
+                // Uploaded "Activity" material, graded by the teacher by hand
+                const manualLbl = act.is_material
+                    ? '<span style="display:block;width:max-content;margin-top:4px;padding:2px 8px;border-radius:20px;background:#f3e8ff;color:#6b21a8;font-size:11px;font-weight:700;white-space:nowrap;" title="Uploaded activity, graded by the teacher">📝 Manual Activity</span>'
+                    : '';
 
                 html += `<div class="teacher-history-row">
                     <span class="teacher-history-date">${dateStr}</span>
-                    <span class="teacher-history-activity">${escHtml(act.name)}${triesLbl}</span>
+                    <span class="teacher-history-activity">${escHtml(act.name)}${manualLbl}${triesLbl}</span>
                     <span class="teacher-history-score" style="color:${scoreCol};">${scoreStr}</span>
                     <span class="teacher-history-retakes">${retakeLbl}</span>
                     <span class="teacher-history-assist">${assistLbl}</span>

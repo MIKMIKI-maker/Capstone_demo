@@ -296,6 +296,38 @@
     });
   }
 
+  /*
+   * One page of Download PDF as a canvas. Two things made html2canvas slow
+   * (about 12 s a page on Tracing, so the PDF looked stuck):
+   *   - every dashed letter is hundreds of tiny SVG <line>s, each styled and
+   *     drawn one by one — so each plain SVG becomes a single <img> first;
+   *   - it copies the whole editor page every time — so everything outside
+   *     the page being captured (and the <head>) is left out of the copy.
+   * An SVG with <text> is left as it is (fonts don't load inside an <img>).
+   */
+  function capture(pageEl) {
+    pageEl.querySelectorAll('svg').forEach(function (svg) {
+      if (svg.ownerSVGElement || svg.querySelector('text')) return;
+      var r = svg.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      var copy = svg.cloneNode(true);
+      copy.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+      copy.setAttribute('width', r.width);
+      copy.setAttribute('height', r.height);
+      copy.removeAttribute('style');
+      var img = new Image();
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(copy));
+      img.style.cssText = 'display:block;width:' + r.width + 'px;height:' + r.height + 'px;'
+        + (svg.style.position ? 'position:' + svg.style.position + ';left:' + svg.style.left + ';top:' + svg.style.top + ';' : '');
+      svg.parentNode.replaceChild(img, svg);
+    });
+    var keep = function (el) {
+      return el.contains(pageEl) || pageEl.contains(el) || el.tagName === 'HEAD' || el.tagName === 'STYLE' || el.tagName === 'LINK'
+        || (el.closest && el.closest('head'));
+    };
+    return html2canvas(pageEl, { scale: 2, useCORS: true, backgroundColor: '#ffffff', ignoreElements: function (el) { return !keep(el); } });
+  }
+
   // Drawn at the real worksheet width, then scaled down to fit the dialog
   // (see fitPreview) so the preview shows exactly what prints.
   var PREVIEW_W = 740;
@@ -426,5 +458,5 @@
     });
   }
 
-  window.PrintOptions = { ask: ask, build: build, fit: fit };
+  window.PrintOptions = { ask: ask, build: build, fit: fit, capture: capture };
 })();

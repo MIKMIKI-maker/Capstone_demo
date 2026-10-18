@@ -1,5 +1,8 @@
 (function () {
   'use strict';
+  var LOADING_LOGO = document.currentScript && document.currentScript.src
+    ? new URL('logo_loading.png', document.currentScript.src).href
+    : '../ASSETS/logo_loading.png';
 
   // Activity templates render their teacher editor before the student content
   // arrives. Keep that editor hidden while showing the learner's intro screen.
@@ -73,7 +76,7 @@
       el = document.createElement('div');
       el.id = 'teacher-action-loading';
       el.className = 'teacher-action-loading';
-      el.innerHTML = '<img src="../ASSETS/logo_loading.png" alt="" onerror="this.style.display=\'none\'">' +
+      el.innerHTML = '<img src="' + LOADING_LOGO + '" alt="" onerror="this.style.display=\'none\'">' +
         '<div class="teacher-al-dots"><span></span><span></span><span></span></div>' +
         '<p>Please wait…</p>';
       document.body.appendChild(el);
