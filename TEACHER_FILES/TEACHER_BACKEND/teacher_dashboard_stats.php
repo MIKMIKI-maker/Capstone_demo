@@ -3,6 +3,7 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/teacher_auth.php';
 require_once __DIR__ . '/teacher_check_pending_reminders.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/school_year.php';
+require_once __DIR__ . '/material_helpers.php';
 
 header('Content-Type: application/json');
 
@@ -102,14 +103,24 @@ if ($stmt) {
 
 $stats['recent_activities'] = $recent;
 
-// Per-student progress
+// Per-student progress — online activities plus graded manual activities
+// (uploaded 'activity' materials), the same as the progress reports.
+$manual = [];   // students.id => [scores of graded manual activities]
+foreach (materialActivityRows($conn, $teacher_id, $syId) as $m) {
+    if ($m['graded']) $manual[$m['student_id']][] = $m['score'];
+}
 $stmt = $conn->prepare(
     "SELECT s.id, s.student_name, s.disability_type, s.status,
-        (SELECT ROUND(AVG(CASE WHEN sub.is_finalized = 1 AND sub.finalized_score IS NOT NULL THEN sub.finalized_score ELSE lp.score END))
+        (SELECT SUM(CASE WHEN sub.is_finalized = 1 AND sub.finalized_score IS NOT NULL THEN sub.finalized_score ELSE lp.score END)
          FROM learner_progress lp
          JOIN teacher_activities ta ON ta.id = lp.activity_id AND ta.teacher_id = lp.teacher_id
          LEFT JOIN activity_submissions sub ON sub.student_id = lp.student_id AND sub.activity_id = lp.activity_id AND sub.teacher_id = lp.teacher_id
-         WHERE lp.student_id = s.id AND lp.teacher_id = ? AND ta.school_year_id = $syId) AS last_score,
+         WHERE lp.student_id = s.id AND lp.teacher_id = ? AND ta.school_year_id = $syId) AS score_sum,
+        (SELECT COUNT(CASE WHEN sub.is_finalized = 1 AND sub.finalized_score IS NOT NULL THEN sub.finalized_score ELSE lp.score END)
+         FROM learner_progress lp
+         JOIN teacher_activities ta ON ta.id = lp.activity_id AND ta.teacher_id = lp.teacher_id
+         LEFT JOIN activity_submissions sub ON sub.student_id = lp.student_id AND sub.activity_id = lp.activity_id AND sub.teacher_id = lp.teacher_id
+         WHERE lp.student_id = s.id AND lp.teacher_id = ? AND ta.school_year_id = $syId) AS score_n,
         (SELECT COUNT(*) FROM learner_progress lp
          JOIN teacher_activities ta ON ta.id = lp.activity_id AND ta.teacher_id = lp.teacher_id
          WHERE lp.student_id = s.id AND lp.teacher_id = ? AND ta.school_year_id = $syId) AS activity_count
@@ -119,10 +130,13 @@ $stmt = $conn->prepare(
      LIMIT 12"
 );
 if ($stmt) {
-    $stmt->bind_param("ii", $teacher_id, $teacher_id);
+    $stmt->bind_param("iii", $teacher_id, $teacher_id, $teacher_id);
     $stmt->execute();
     $res = $stmt->get_result();
     while ($row = $res->fetch_assoc()) {
+        $graded = $manual[(int)$row['id']] ?? [];
+        $sum = (float)$row['score_sum'] + array_sum($graded);
+        $n = (int)$row['score_n'] + count($graded);
         $name = trim($row['student_name']);
         $parts = preg_split('/\s+/', $name, 2);
         $initials = strtoupper(
@@ -133,8 +147,8 @@ if ($stmt) {
             'name'           => $name,
             'initials'       => $initials ?: '?',
             'condition'      => $row['disability_type'] ?: '',
-            'last_score'     => $row['last_score'] !== null ? (int)$row['last_score'] : null,
-            'activity_count' => (int)$row['activity_count'],
+            'last_score'     => $n ? (int)round($sum / $n) : null,
+            'activity_count' => (int)$row['activity_count'] + count($graded),
             'status'         => $row['status']
         ];
     }
