@@ -371,7 +371,9 @@
         /* ── Learners table ── */
         // Your end-of-year recommendation per learner ({ <student id>: { recommendation } }).
         var learnerRecs = {};
-        var learnerAssess = {};   // { <student id>: assessment } — teacher_learner_assessment.php
+        var learnerAssess = null; // { <student id>: assessment } — teacher_learner_assessment.php (null = still loading)
+        var assessFailed = false;
+        var assessBusy = false;    // a load (with its retries) is running
         var ASSESS_LOOK = {
             passed:   ['✅', 'Passed',              '#dcfce7', '#166534'],
             reassess: ['⚠️', 'For reassessment',    '#fef3c7', '#92400e'],
@@ -379,6 +381,9 @@
             none:     ['—',  'Not assessed yet',    '#f1f5f9', '#64748b']
         };
         function assessCell(id) {
+            if (!learnerAssess) return assessFailed
+                ? '<span style="color:#94A3B8;font-size:11.5px;">Could not load — <a href="#" onclick="assessFailed=false;filterTable();loadAssessments(0);return false;" style="color:#2563eb;">retry</a></span>'
+                : '<span style="color:#94A3B8;font-size:11.5px;">Checking…</span>';
             var a = learnerAssess[id];
             if (!a) return '<span style="color:#94A3B8;">—</span>';
             var k = ASSESS_LOOK[a.result] || ASSESS_LOOK.none, e = a.stage === 'final' ? (a.final || a.now) : a.now;
@@ -401,13 +406,35 @@
                 .then(function(r) { return r.json(); })
                 .then(function(d) { return (d && d.success && d.recommendations) || {}; })
                 .catch(function() { return {}; });
-            var assess = fetch('TEACHER_BACKEND/teacher_learner_assessment.php?_t=' + Date.now(), { cache: 'no-store' })
-                .then(function(r) { return r.json(); })
-                .then(function(d) { return (d && d.success && d.assessments) || {}; })
-                .catch(function() { return {}; });
-            Promise.all([list, recs, assess])
-                .then(function(res) { learnerRecs = res[1]; learnerAssess = res[2]; allStudents = res[0]; filterTable(); })
+            Promise.all([list, recs])
+                .then(function(res) { learnerRecs = res[1]; allStudents = res[0]; filterTable(); })
                 .catch(function(){});
+            loadAssessments(0);
+        }
+
+        // The System Assessment column fills in on its own, so a slow or failed
+        // request (e.g. the server waking up) never leaves it blank: it tries up
+        // to three times, then offers a retry link.
+        function loadAssessments(attempt) {
+            if (!attempt) {
+                if (assessBusy) return;   // the 5-second refresh: one load at a time
+                assessBusy = true;
+            }
+            fetch('TEACHER_BACKEND/teacher_learner_assessment.php?_t=' + Date.now(), { cache: 'no-store' })
+                .then(function(r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+                .then(function(d) {
+                    if (!d || !d.success) throw new Error('bad response');
+                    learnerAssess = d.assessments || {};
+                    assessFailed = false;
+                    assessBusy = false;
+                    filterTable();
+                })
+                .catch(function() {
+                    if (attempt < 2) { setTimeout(function() { loadAssessments(attempt + 1); }, 1500 * (attempt + 1)); return; }
+                    assessBusy = false;
+                    // Keep the last good result; only say it failed if there is none.
+                    if (!learnerAssess) { assessFailed = true; filterTable(); }
+                });
         }
 
         function saveRecommendation(studentId, value, select) {
