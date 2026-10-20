@@ -2516,6 +2516,25 @@ function initActivityTheme(){
   loadDraftIfAny();
   loadPublishedForEditIfAny();
 
+  /* A new Video/Audio Learning activity is an Additional Alternative Learning
+     Material: the chosen learners need their Learning Modality Assessment
+     first (Teacher_generate.html). Publishing checks it again on the server. */
+  (function () {
+    var p = new URLSearchParams(location.search);
+    if (p.get('student_mode') === '1' || p.get('edit_pub_id') || p.get('draft_id')) return;
+    var ids = [];
+    try { ids = JSON.parse(sessionStorage.getItem('selected_learner_ids') || '[]').map(String); } catch(e) {}
+    var back = function(){ window.location.replace('../Teacher_generate.html?alt=1'); };
+    if (!ids.length) { back(); return; }
+    fetch('../TEACHER_BACKEND/teacher_alt_material_assessment.php', { cache: 'no-store' })
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if (!d || !d.success) return;
+        var a = d.assessments || {}, part = actMode() + '_allowed';
+        if (ids.some(function(id){ return !a[id] || !a[id][part]; })) back();
+      }).catch(function(){});
+  })();
+
   /* ── STUDENT MODE ─────────────────────────────────────────── */
   (function () {
     var p = new URLSearchParams(location.search);

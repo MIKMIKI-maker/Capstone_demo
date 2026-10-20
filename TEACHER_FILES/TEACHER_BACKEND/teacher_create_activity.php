@@ -5,6 +5,7 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/teacher_auth.php';
 require_once __DIR__ . '/student_level.php';
 require_once __DIR__ . '/../../ADMIN_FILES/ADMIN_BACKEND/school_year.php';
+require_once __DIR__ . '/alt_material_helpers.php';
 
 header('Content-Type: application/json');
 
@@ -72,6 +73,14 @@ if (!$teacher_conn) {
 // New activities always belong to the Active School Year.
 requireActiveSchoolYearView($teacher_conn);
 $school_year_id = getActiveSchoolYearId($teacher_conn);
+
+// Video / Audio Learning (Additional Alternative Learning Material) only for
+// learners whose Learning Modality Assessment is done and allows it.
+$altBlock = altMaterialBlockReason($teacher_conn, $school_year_id, $activity_type, $assigned_student_ids);
+if ($altBlock !== '') {
+    echo json_encode(['success' => false, 'message' => $altBlock]);
+    exit;
+}
 
 // Insert activity into teacher database
 $sql = "INSERT INTO teacher_activities (teacher_id, activity_title, activity_description, activity_type, subject, grade_level, difficulty, status, term_name, content_json, deadline, thumbnail, school_year_id)

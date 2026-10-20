@@ -13,7 +13,7 @@
     <title>Generate Materials – SPED ALM</title>
     <link href="../ASSETS/vendor/fonts/fonts.css" rel="stylesheet" />
     <link href="../ASSETS/vendor/fontawesome/css/all.min.css" rel="stylesheet" />
-    <link href="TEACHER_CSS/Teacher_generate.css?v=3" rel="stylesheet" />
+    <link href="TEACHER_CSS/Teacher_generate.css?v=4" rel="stylesheet" />
     <link href="TEACHER_CSS/teacher_theme.css?v=2" rel="stylesheet" />
     <link href="TEACHER_CSS/teacher_responsive.css?v=75" rel="stylesheet" />
 <script src="../ASSETS/i18n_dict.js?v=6"></script>
@@ -114,6 +114,15 @@
             <div class="gen-level-panel" id="genLevelPanel" style="display:none;"></div>
             <!-- TEMPLATE GRID — rendered from TEMPLATE_DEFS in script below -->
             <div class="teacher-template-grid" id="teacher-templateGrid"></div>
+            <!-- ADDITIONAL ALTERNATIVE LEARNING MATERIAL (Video / Audio) — unlocked by the Learning Modality Assessment -->
+            <button type="button" class="alt-mat-btn" onclick="openAltModal()">
+                <div class="teacher-tpl-icon"><i class="fa-solid fa-photo-film"></i></div>
+                <div class="alt-mat-btn-text">
+                    <b>Additional Alternative Learning Material</b>
+                    <span>Video Learning and Audio Learning for learners who learn better by watching or listening. Each learner needs a short Learning Modality Assessment first.</span>
+                </div>
+                <span class="alt-mat-btn-tag"><i class="fa-solid fa-clipboard-check"></i> Assessment required</span>
+            </button>
             <!-- ACTION ROW -->
             <div class="teacher-action-row">
                 <a class="btn-back-iep" href="Teacher_IEP.html">
@@ -124,7 +133,7 @@
         </main>
     </div>
     <!-- ===== LEARNER MULTI-SELECT MODAL ===== -->
-    <div id="learnerSelectModal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(15,23,42,.5);align-items:center;justify-content:center;">
+    <div id="learnerSelectModal" style="display:none;position:fixed;inset:0;z-index:9200;background:rgba(15,23,42,.5);align-items:center;justify-content:center;">
       <div style="background:#fff;border-radius:18px;padding:24px 26px 20px;width:440px;max-width:95vw;max-height:85vh;display:flex;flex-direction:column;gap:14px;box-shadow:0 24px 64px rgba(0,0,0,.25);font-family:'Poppins',sans-serif;">
         <div style="display:flex;align-items:center;justify-content:space-between;">
           <span style="font-size:16px;font-weight:700;color:#1e3a8a;">Select Learner(s)</span>
@@ -142,6 +151,38 @@
             <span id="learnerSelectedCount" style="font-size:12px;color:#64748b;">0 selected</span>
             <button onclick="closeLearnerModal()" type="button" style="padding:9px 22px;background:#1d4ed8;color:#fff;border:none;border-radius:10px;font-family:'Poppins',sans-serif;font-size:13px;font-weight:600;cursor:pointer;">Done</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ADDITIONAL ALTERNATIVE LEARNING MATERIAL MODAL ===== -->
+    <div id="altModal" class="alt-modal" role="dialog" aria-modal="true" aria-labelledby="altModalTitle">
+      <div class="alt-modal-box">
+        <div class="alt-modal-head">
+          <div>
+            <h3 id="altModalTitle">Additional Alternative Learning Material</h3>
+            <p>Video and Audio Learning unlock once every chosen learner has a Learning Modality Assessment this School Year.</p>
+          </div>
+          <button type="button" class="alt-x" onclick="closeAltModal()" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="alt-modal-body" id="altModalBody"></div>
+      </div>
+    </div>
+
+    <!-- ===== LEARNING MODALITY ASSESSMENT FORM ===== -->
+    <div id="altAssessModal" class="alt-modal" role="dialog" aria-modal="true" aria-labelledby="altAssessTitle" style="z-index:9100;">
+      <div class="alt-modal-box">
+        <div class="alt-modal-head">
+          <div>
+            <h3 id="altAssessTitle">Learning Modality Assessment</h3>
+            <p id="altAssessSub"></p>
+          </div>
+          <button type="button" class="alt-x" onclick="closeAltAssess()" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="alt-modal-body" id="altAssessBody"></div>
+        <div class="alt-modal-foot">
+          <button type="button" class="alt-btn ghost" onclick="closeAltAssess()">Cancel</button>
+          <button type="button" class="alt-btn primary" id="altAssessSave" onclick="saveAltAssess()">Save Assessment</button>
         </div>
       </div>
     </div>
@@ -216,6 +257,8 @@
                     updateLearnerSelectedCount();
                     renderGenLevel();
                     setCondition();
+                    // Sent back here from Video/Audio Learning without an assessment.
+                    if (/[?&]alt=1\b/.test(location.search)) openAltModal();
                 })
                 .catch(function(){});
         }
@@ -304,6 +347,8 @@
 
         function closeLearnerModal() {
             document.getElementById('learnerSelectModal').style.display = 'none';
+            renderGenLevel();
+            if (document.getElementById('altModal').classList.contains('open')) renderAltModal();
         }
 
         function setCondition() {
@@ -341,10 +386,182 @@
             { key: 'MathMixed',       name: 'Math Activity Builder',         desc: 'Counting, comparing, and number sense with mixed answer styles per slide', goal: 'Cognitive / Numeracy', icon: 'fa-calculator', color: 'tpl-yellow', file: 'TEMPLATES/Math_Template.html' },
             { key: 'PictureLabeling', name: 'Picture Labeling',              desc: 'Label parts of a picture by dragging words to the correct spots', goal: 'Communication / Vocabulary', icon: 'fa-tag', color: 'tpl-green', file: 'TEMPLATES/Picture_ Labeling_Template.html' },
             { key: 'WrittenResponse', name: 'Written Response',              desc: 'Answer questions with short written responses', goal: 'Communication / Expression',  icon: 'fa-pencil',         color: 'tpl-blue',   file: 'TEMPLATES/Written_Response_Template.html' },
-            { key: 'Tracing',         name: 'Letter & Number Tracing',       desc: 'Trace over dotted letters and numbers to build handwriting and fine motor skills', goal: 'Fine Motor / Handwriting', icon: 'fa-pen-nib', color: 'tpl-green', file: 'TEMPLATES/Tracing_Template.html' },
-            { key: 'VideoQuiz',       name: 'Video Learning',                desc: 'Learners watch a short video, then tap the right picture — Animals, Daily Living Skills, Identifying Emotions, Shapes and Colors, Basic Safety Awareness', goal: 'Cognitive / Viewing', icon: 'fa-film', color: 'tpl-blue', file: 'TEMPLATES/Media_Template.html?type=video' },
-            { key: 'AudioQuiz',       name: 'Audio Learning',                desc: 'Learners press the sound button and listen, then tap the right picture — Animal Sounds, Letter Sounds / Phonics, Environmental Sounds', goal: 'Communication / Auditory Skills', icon: 'fa-volume-high', color: 'tpl-yellow', file: 'TEMPLATES/Media_Template.html?type=audio' }
+            { key: 'Tracing',         name: 'Letter & Number Tracing',       desc: 'Trace over dotted letters and numbers to build handwriting and fine motor skills', goal: 'Fine Motor / Handwriting', icon: 'fa-pen-nib', color: 'tpl-green', file: 'TEMPLATES/Tracing_Template.html' }
         ];
+
+        /* Additional Alternative Learning Material — behind the "Additional
+           Alternative Learning Material" button, unlocked per learner by the
+           Learning Modality Assessment (TEACHER_BACKEND/alt_material_helpers.php;
+           teacher_create_activity.php checks it again on publish). */
+        var ALT_DEFS = [
+            { key: 'VideoQuiz', part: 'video', name: 'Video Learning', desc: 'Learners watch a short video, then tap the right picture — Animals, Daily Living Skills, Identifying Emotions, Shapes and Colors, Basic Safety Awareness', goal: 'Cognitive / Viewing', icon: 'fa-film', color: 'tpl-blue', file: 'TEMPLATES/Media_Template.html?type=video' },
+            { key: 'AudioQuiz', part: 'audio', name: 'Audio Learning', desc: 'Learners press the sound button and listen, then tap the right picture — Animal Sounds, Letter Sounds / Phonics, Environmental Sounds', goal: 'Communication / Auditory Skills', icon: 'fa-volume-high', color: 'tpl-yellow', file: 'TEMPLATES/Media_Template.html?type=audio' }
+        ];
+        var ALT_QUESTIONS = [
+            { title: 'Watching (visual)', icon: 'fa-eye', items: [
+                ['v1', 'Pays attention to pictures, videos, or demonstrations.'],
+                ['v2', 'Learns a new skill better when shown how (modeling).'],
+                ['v3', 'Can watch a short video (1–2 minutes) without looking away for long.'],
+                ['v4', 'Recognizes familiar objects or actions in pictures and videos.'] ] },
+            { title: 'Listening (auditory)', icon: 'fa-ear-listen', items: [
+                ['a1', 'Responds to sounds (turns toward or looks for the sound).'],
+                ['a2', 'Follows simple spoken directions.'],
+                ['a3', 'Imitates or repeats sounds, words, or animal sounds.'],
+                ['a4', 'Enjoys songs, rhymes, or listening to stories.'] ] },
+            { title: 'Device readiness', icon: 'fa-tablet-screen-button', items: [
+                ['r1', 'Can tap or click a picture on a device to answer.'],
+                ['r2', 'Stays calm with screen sounds and moving images.'] ] }
+        ];
+        var ALT_SCREENING = [
+            ['hearing', 'Has a hearing impairment that makes listening to audio difficult?'],
+            ['vision', 'Has a visual impairment that makes watching videos difficult?']
+        ];
+        var ALT_REC_LABEL = { video: 'Video Learning', audio: 'Audio Learning', both: 'Video & Audio', none: 'Neither' };
+        var altAssessments = {};
+        var altAssessFor = null;
+
+        function openAltModal() {
+            document.getElementById('altModal').classList.add('open');
+            document.getElementById('altModalBody').innerHTML = '<p class="alt-empty">Loading assessments…</p>';
+            fetch('TEACHER_BACKEND/teacher_alt_material_assessment.php', { cache: 'no-store' })
+                .then(function(r){ return r.json(); })
+                .then(function(d){
+                    if (!d.success) throw new Error(d.message || '');
+                    altAssessments = d.assessments || {};
+                    renderAltModal();
+                })
+                .catch(function(){
+                    document.getElementById('altModalBody').innerHTML = '<p class="alt-empty">Could not load the assessments. Please check your connection and try again.</p>';
+                });
+        }
+        function closeAltModal() { document.getElementById('altModal').classList.remove('open'); }
+
+        // Why a material can't be opened for the chosen learners yet ('' = it can).
+        function altLockReason(def, list) {
+            if (!list.length) return 'Choose the learner(s) first.';
+            var todo = list.filter(function(s){ return !altAssessments[s.id]; });
+            if (todo.length) return 'Complete the assessment of ' + todo.length + ' learner(s) first.';
+            var unsuited = list.filter(function(s){ return !altAssessments[s.id][def.part + '_allowed']; });
+            if (unsuited.length) return 'Not suited to ' + unsuited.map(function(s){ return s.name; }).join(', ') + ' (based on the assessment).';
+            return '';
+        }
+
+        function renderAltModal() {
+            var list = genSelected();
+            var html = '<div><div class="alt-sec-title"><span>1. Assess the learner(s)</span>'
+                + '<button type="button" class="alt-link" onclick="openLearnerModal()"><i class="fa-solid fa-user-pen"></i> Change learners</button></div>';
+            if (!list.length) {
+                html += '<div class="alt-empty">No learner chosen yet.<br><button type="button" class="alt-btn primary" style="margin-top:10px;" onclick="openLearnerModal()">Choose learner(s)</button></div>';
+            } else {
+                html += list.map(function(s) {
+                    var a = altAssessments[s.id];
+                    var status = a
+                        ? '<span class="alt-badge ok"><i class="fa-solid fa-check"></i> Best fit: ' + ALT_REC_LABEL[a.recommended] + '</span>'
+                          + '<button type="button" class="alt-btn ghost" onclick="openAltAssess(\'' + s.id + '\')">Retake</button>'
+                        : '<span class="alt-badge todo">Not assessed</span>'
+                          + '<button type="button" class="alt-btn primary" onclick="openAltAssess(\'' + s.id + '\')">Assess</button>';
+                    var sub = a ? 'Assessed ' + escHtml(String(a.assessed_at).substring(0, 10)) + ' · Watching ' + a.visual_pct + '% · Listening ' + a.auditory_pct + '%'
+                                : escHtml(s.disability);
+                    return '<div class="alt-learner"><div class="alt-learner-info"><div class="alt-learner-name">' + escHtml(s.name) + '</div>'
+                        + '<div class="alt-learner-sub">' + sub + '</div></div>' + status + '</div>';
+                }).join('');
+            }
+            html += '</div><div><div class="alt-sec-title"><span>2. Choose the material</span></div><div class="alt-mats">';
+            html += ALT_DEFS.map(function(t, i) {
+                var why = altLockReason(t, list);
+                var rec = !why && list.every(function(s){ var r = altAssessments[s.id].recommended; return r === t.part || r === 'both'; });
+                return '<div class="alt-mat' + (why ? ' locked' : '') + '" role="button" tabindex="0" aria-disabled="' + (why ? 'true' : 'false') + '"'
+                    + ' onclick="selectAltTemplate(' + i + ')" onkeydown="if(event.key===\'Enter\')selectAltTemplate(' + i + ')">'
+                    + (rec ? '<span class="alt-mat-rec">Recommended</span>' : '')
+                    + '<div class="teacher-tpl-icon ' + t.color + '"><i class="fa-solid ' + t.icon + '"></i></div>'
+                    + '<h4>' + t.name + '</h4><p>' + t.desc + '</p>'
+                    + (why ? '<div class="alt-mat-lock"><i class="fa-solid fa-lock"></i><span>' + escHtml(why) + '</span></div>' : '')
+                    + '</div>';
+            }).join('');
+            html += '</div></div>';
+            document.getElementById('altModalBody').innerHTML = html;
+        }
+
+        function selectAltTemplate(idx) {
+            var t = ALT_DEFS[idx];
+            if (!t || altLockReason(t, genSelected())) return;
+            setCondition();
+            window.location.href = t.file;
+        }
+
+        function altOpts(key, labels, current) {
+            return '<div class="alt-q-opts" role="radiogroup">' + labels.map(function(l, v) {
+                return '<label><input type="radio" name="altq_' + key + '" value="' + v + '"' + (String(current) === String(v) ? ' checked' : '') + '><span>' + l + '</span></label>';
+            }).join('') + '</div>';
+        }
+
+        function openAltAssess(id) {
+            var s = allLearners.filter(function(l){ return l.id === String(id); })[0];
+            if (!s) return;
+            altAssessFor = s.id;
+            var prev = altAssessments[s.id] || {};
+            var ans = prev.answers || {};
+            document.getElementById('altAssessSub').textContent = s.name + ' · ' + s.disability;
+            var html = '<div class="alt-q-intro">Answer from what you have seen of this learner in class. '
+                + 'The result shows whether <b>Video Learning</b>, <b>Audio Learning</b>, or both fit the learner. It is kept for this School Year and can be retaken anytime.</div>';
+            html += ALT_QUESTIONS.map(function(g) {
+                return '<div class="alt-q-group"><h5><i class="fa-solid ' + g.icon + '"></i> ' + g.title + '</h5>'
+                    + g.items.map(function(q) {
+                        return '<div class="alt-q" data-q="' + q[0] + '"><div class="alt-q-text">' + q[1] + '</div>'
+                            + altOpts(q[0], ['Not yet', 'Sometimes', 'Often'], ans[q[0]]) + '</div>';
+                    }).join('') + '</div>';
+            }).join('');
+            html += '<div class="alt-q-group"><h5><i class="fa-solid fa-notes-medical"></i> Screening</h5>'
+                + ALT_SCREENING.map(function(q) {
+                    return '<div class="alt-q" data-q="' + q[0] + '"><div class="alt-q-text">' + q[1] + '</div>'
+                        + altOpts(q[0], ['No', 'Yes'], ans[q[0]]) + '</div>';
+                }).join('') + '</div>';
+            html += '<div class="alt-q-group"><h5><i class="fa-regular fa-note-sticky"></i> Notes (optional)</h5>'
+                + '<textarea class="alt-notes" id="altAssessNotes" maxlength="500" placeholder="e.g. Responds best to songs; needs help tapping.">' + escHtml(prev.notes || '') + '</textarea></div>';
+            document.getElementById('altAssessBody').innerHTML = html;
+            document.getElementById('altAssessBody').scrollTop = 0;
+            document.getElementById('altAssessSave').disabled = false;
+            document.getElementById('altAssessModal').classList.add('open');
+        }
+        function closeAltAssess() { document.getElementById('altAssessModal').classList.remove('open'); altAssessFor = null; }
+
+        function saveAltAssess() {
+            if (!altAssessFor) return;
+            var answers = {}, missing = [];
+            document.querySelectorAll('#altAssessBody .alt-q').forEach(function(row) {
+                var key = row.getAttribute('data-q');
+                var picked = row.querySelector('input:checked');
+                row.classList.toggle('missing', !picked);
+                if (picked) answers[key] = picked.value; else missing.push(row);
+            });
+            if (missing.length) {
+                missing[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                if (window.showToast) window.showToast('Please answer every question (' + missing.length + ' left).', 'error', 3500);
+                return;
+            }
+            var btn = document.getElementById('altAssessSave');
+            btn.disabled = true;
+            var studentId = altAssessFor;
+            var fd = new FormData();
+            fd.append('action', 'save');
+            fd.append('student_id', studentId);
+            fd.append('answers', JSON.stringify(answers));
+            fd.append('notes', document.getElementById('altAssessNotes').value || '');
+            fetch('TEACHER_BACKEND/teacher_alt_material_assessment.php', { method: 'POST', body: fd })
+                .then(function(r){ return r.json(); })
+                .then(function(d){
+                    if (!d.success || !d.assessment) throw new Error(d.message || 'Could not save the assessment.');
+                    altAssessments[studentId] = d.assessment;
+                    closeAltAssess();
+                    renderAltModal();
+                    if (window.showToast) window.showToast('Assessment saved — best fit: ' + ALT_REC_LABEL[d.assessment.recommended] + '.', 'success', 3500);
+                })
+                .catch(function(e){
+                    btn.disabled = false;
+                    var msg = (e && e.message) || 'Could not save the assessment.';
+                    if (window.showToast) window.showToast(msg, 'error', 4500); else alert(msg);
+                });
+        }
 
         function renderTemplateGrid() {
             var grid = document.getElementById('teacher-templateGrid');
@@ -407,6 +624,13 @@
         document.addEventListener('click', function(e) {
             var lModal = document.getElementById('learnerSelectModal');
             if (e.target === lModal) closeLearnerModal();
+            if (e.target === document.getElementById('altModal')) closeAltModal();
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key !== 'Escape') return;
+            if (document.getElementById('learnerSelectModal').style.display === 'flex') closeLearnerModal();
+            else if (document.getElementById('altAssessModal').classList.contains('open')) closeAltAssess();
+            else if (document.getElementById('altModal').classList.contains('open')) closeAltModal();
         });
     </script>
 <script>(function(){var _id=sessionStorage.getItem('admin_id');if(!_id)return;fetch('../ADMIN_FILES/ADMIN_BACKEND/check_account_active.php?id='+encodeURIComponent(_id)).then(function(r){return r.json();}).then(function(d){if(d&&d.active===false){sessionStorage.clear();window.location.href='../ADMIN_FILES/login_screen.html?deactivated=1';}}).catch(function(){});})();</script>
