@@ -14,6 +14,7 @@
 (function () {
   var script = document.currentScript;
   var learnersUrl = new URL('../TEACHER_FILES/TEACHER_BACKEND/teacher_list_learners.php', script.src).href;
+  var activityLearnersUrl = new URL('../TEACHER_FILES/TEACHER_BACKEND/teacher_activity_learners.php', script.src).href;
   var STORE_KEY = 'spedalm_print_options_v2';
 
   // Last choices, kept between prints on this device.
@@ -22,8 +23,8 @@
     learnerIds: [],
     trace: true,
     style: 'trace',         // 'trace' (dashed pen path) | 'fade'
-    traceRows: 0,           // extra practice page: rows with the name to trace (0-6)
-    writeRows: 0,           // extra practice page: blank rows to write it (0-4)
+    traceRows: 0,           // first page: rows with the name to trace (0-6)
+    writeRows: 0,           // first page: blank rows to write it (0-4)
   };
   try {
     var saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
@@ -193,11 +194,11 @@
     return '<span style="display:flex;align-items:center;gap:8px;">Date: <span style="display:inline-block;width:170px;border-bottom:1.5px solid #64748b;height:14px;"></span></span>';
   }
 
-  // The line at the top of a worksheet page: just the Date (the learner's
-  // name goes on the title's ruled lines instead — see nameOnTitleLines).
-  // With tracing turned off, the name is printed here plainly.
-  function headerStrip(learner) {
-    var plainName = learner && !config.trace ? '<span>Name: <b>' + esc(learner.name) + '</b></span>' : '<span></span>';
+  // The line at the top of a worksheet page: the Date, and — except on the
+  // first page, where the learner traces it on the title's lines — the
+  // learner's name printed plainly so loose sheets never lose whose they are.
+  function headerStrip(learner, first) {
+    var plainName = learner && (!config.trace || !first) ? '<span>Name: <b>' + esc(learner.name) + '</b></span>' : '<span></span>';
     return '<div class="pro-print-header" style="font-family:Poppins,sans-serif;color:#243a5e;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:24px;font-size:14px;font-weight:600;">'
       + plainName + dateLine() + '</div>';
   }
@@ -224,27 +225,16 @@
     return '<svg class="pro-title-name" style="position:absolute;left:0;top:0;width:100%;height:' + DIVIDER_H + 'px;overflow:visible;" xmlns="http://www.w3.org/2000/svg">' + letters + '</svg>';
   }
 
-  // Optional extra page of name practice before the learner's worksheet.
-  function usesPracticePage() {
+  // Name practice rows (trace / write) under the title of the first page.
+  function usesNameRows() {
     return config.mode === 'learners' && config.trace && (Number(config.traceRows) + Number(config.writeRows)) > 0;
   }
-
-  function practiceRows(learner) {
+  function nameRows(learner) {
     var name = String(learner.name || '').trim();
     var rows = '';
     for (var i = 0; i < Number(config.traceRows); i++) rows += handwritingRow(name);
     for (var j = 0; j < Number(config.writeRows); j++) rows += handwritingRow('');
-    return rows;
-  }
-
-  function practicePage(learner, prefix) {
-    var gap = '<div style="height:14px;"></div>';
-    var rows = practiceRows(learner).replace(/<\/svg>/g, '</svg>' + gap);
-    return '<div class="' + prefix + '-print-page" style="font-family:Poppins,sans-serif;color:#243a5e;">'
-      + '<div style="display:flex;justify-content:flex-end;font-size:14px;font-weight:600;margin-bottom:6px;">' + dateLine() + '</div>'
-      + '<h2 style="text-align:center;font-size:21px;font-weight:700;margin:6px 0 4px;">Bakatin ang iyong pangalan</h2>'
-      + '<div style="text-align:center;font-size:13.5px;font-style:italic;color:#5d7299;font-weight:600;margin-bottom:18px;">(Trace your name with a pencil, then write it on your own.)</div>'
-      + rows + '</div>';
+    return '<div class="pro-name-rows" style="display:flex;flex-direction:column;gap:2px;margin:4px 0 10px;">' + rows + '</div>';
   }
 
   /*
@@ -260,19 +250,26 @@
       var tmp = document.createElement('div');
       tmp.innerHTML = buildPages();
       var pages = tmp.querySelectorAll(pageSel);
-      if (learner && usesPracticePage() && pages.length) pages[0].insertAdjacentHTML('beforebegin', practicePage(learner, prefix));
       Array.prototype.forEach.call(pages, function (page, i) {
         // Every page gets the Date and the learner's name, so loose sheets
-        // never lose whose they are.
-        page.insertAdjacentHTML('afterbegin', headerStrip(learner));
+        // never lose whose they are; the name is traced on the first page only.
+        page.insertAdjacentHTML('afterbegin', headerStrip(learner, i === 0));
+        if (!learner || !config.trace || i > 0) return;
         var divider = page.querySelector('.' + prefix + '-print-divider');
-        if (learner && config.trace && divider) {
+        if (divider) {
           divider.style.position = 'relative';
           divider.insertAdjacentHTML('beforeend', nameOnTitleLines(String(learner.name || '').trim()));
+        }
+        // Extra practice rows sit right under the name line (compact), on
+        // the same page — not on a page of their own.
+        if (usesNameRows()) {
+          var at = divider || page.querySelector('.pro-print-header');
+          if (at) { at.insertAdjacentHTML('afterend', nameRows(learner)); page.setAttribute('data-pro-rows', ''); }
         }
       });
       while (tmp.firstChild) holder.appendChild(tmp.firstChild);
     });
+    if (usesNameRows()) readyPrintFit();
     var all = holder.querySelectorAll(pageSel);
     Array.prototype.forEach.call(all, function (page, i) {
       if (i < all.length - 1) {
@@ -282,6 +279,43 @@
       }
     });
     return holder.innerHTML;
+  }
+
+  /*
+   * The name rows make a learner's first page taller. Right before printing
+   * (when the template has finished laying the pages out), each such page is
+   * measured at the sheet's printable width; one that no longer fits a sheet
+   * is scaled down evenly for Print only (CSS zoom at a fixed width, so the
+   * full-width rows shrink too) and stays on one sheet. Download PDF
+   * already fits its pages (see fit()).
+   */
+  var PRINT_W = 734, PRINT_H = 990;   // A4 / Letter minus the templates' 8mm @page margins
+  var printFitReady = false;
+  function fitPagesForPrint() {
+    document.querySelectorAll('[data-pro-rows]').forEach(function (page) {
+      var area = page.parentElement;
+      if (!area) return;
+      var aOld = area.getAttribute('style'), pOld = page.getAttribute('style');
+      area.style.cssText = (aOld || '') + ';display:block;position:absolute;left:-99999px;top:0;width:' + PRINT_W + 'px;visibility:hidden;';
+      page.style.boxSizing = 'border-box'; page.style.padding = '23px 30px'; page.style.width = PRINT_W + 'px'; page.style.height = 'auto';
+      var h = page.scrollHeight;
+      if (aOld === null) area.removeAttribute('style'); else area.setAttribute('style', aOld);
+      if (pOld === null) page.removeAttribute('style'); else page.setAttribute('style', pOld);
+      if (h > PRINT_H) {
+        page.setAttribute('data-pro-zoom', '');
+        page.style.setProperty('--pro-zoom', Math.max(0.55, PRINT_H / h).toFixed(3));
+      } else {
+        page.removeAttribute('data-pro-zoom');
+      }
+    });
+  }
+  function readyPrintFit() {
+    if (printFitReady) return;
+    printFitReady = true;
+    var st = document.createElement('style');
+    st.textContent = '@media print{[data-pro-zoom]{zoom:var(--pro-zoom);width:' + PRINT_W + 'px !important;box-sizing:border-box;margin-left:auto !important;margin-right:auto !important;}}';
+    document.head.appendChild(st);
+    window.addEventListener('beforeprint', fitPagesForPrint);
   }
 
   /*
@@ -350,6 +384,28 @@
     try { localStorage.setItem(STORE_KEY, JSON.stringify(config)); } catch (e) {}
   }
 
+  /* The learners this activity is for: the ones it is assigned to (editing a
+   * published activity), else the ones picked on IEP / Generate Materials. */
+  function activityLearnerIds() {
+    var pubId = new URLSearchParams(location.search).get('edit_pub_id');
+    var dbId = null;
+    if (pubId) {
+      try {
+        var pub = JSON.parse(localStorage.getItem('published_activities') || '[]').filter(function (p) { return p.id === pubId; })[0];
+        dbId = pub && pub.db_activity_id;
+      } catch (e) {}
+    }
+    if (dbId) {
+      return fetch(activityLearnersUrl + '?activity_id=' + encodeURIComponent(dbId), { credentials: 'same-origin', cache: 'no-store' })
+        .then(function (r) { return r.json(); })
+        .then(function (d) { return ((d && d.assigned) || []).map(function (a) { return Number(a.id); }); })
+        .catch(function () { return []; });
+    }
+    var ids = [];
+    try { ids = JSON.parse(sessionStorage.getItem('selected_learner_ids') || '[]'); } catch (e) {}
+    return Promise.resolve((Array.isArray(ids) ? ids : []).map(Number).filter(Boolean));
+  }
+
   /* Shows the options, then runs `go` (the template's print or PDF function). */
   function ask(go) {
     var el = document.createElement('div');
@@ -362,10 +418,10 @@
       + '<div class="pro-list" id="pro-list"><div style="font-size:12.5px;color:#94a3b8;padding:8px 0;">Loading learners…</div></div>'
       + '<div id="pro-trace-wrap">'
       +   '<div class="pro-sect">Trace Name</div>'
-      +   '<label class="pro-choice"><input type="checkbox" id="pro-trace"> <span>Let each learner trace their full name on the lines under the title of every page</span></label>'
+      +   '<label class="pro-choice"><input type="checkbox" id="pro-trace"> <span>Let each learner trace their full name on the lines under the title (first page)</span></label>'
       +   '<div class="pro-grid" id="pro-trace-opts">'
       +     '<span>Letters</span><select id="pro-style"><option value="trace">Trace lines (like Tracing)</option><option value="fade">Light gray (fade)</option></select>'
-      +     '<span>Practice page</span><select id="pro-traceRows">' + [0, 1, 2, 3, 4, 5, 6].map(function (n) { return '<option value="' + n + '">' + (n ? n + (n === 1 ? ' row' : ' rows') + ' to trace' : 'None') + '</option>'; }).join('') + '</select>'
+      +     '<span>More rows</span><select id="pro-traceRows">' + [0, 1, 2, 3, 4, 5, 6].map(function (n) { return '<option value="' + n + '">' + (n ? n + (n === 1 ? ' row' : ' rows') + ' to trace' : 'None') + '</option>'; }).join('') + '</select>'
       +     '<span>+ Write rows</span><select id="pro-writeRows">' + [0, 1, 2, 3, 4].map(function (n) { return '<option value="' + n + '">' + (n ? n + (n === 1 ? ' blank row' : ' blank rows') + ' to write' : 'None') + '</option>'; }).join('') + '</select>'
       +   '</div>'
       +   '<div class="pro-hint" id="pro-rows-note" style="margin:8px 0 0 24px;"></div>'
@@ -392,9 +448,9 @@
       $('pro-trace-opts').classList.toggle('pro-off', !config.trace);
       var picked = roster.filter(function (l) { return config.learnerIds.indexOf(l.id) !== -1; });
       var sample = picked[0] || roster[0];
-      $('pro-rows-note').textContent = usesPracticePage()
-        ? 'Each learner also gets a "Bakatin ang iyong pangalan" practice page before the worksheet.'
-        : 'Optional: add a separate page for more name practice.';
+      $('pro-rows-note').textContent = usesNameRows()
+        ? 'The extra rows go on the first page, right under the name — later pages just show the name.'
+        : 'Optional: add more rows to trace or write the name on the first page.';
       $('pro-preview').innerHTML = mode === 'learners' && config.trace && sample ? previewTitleLines(sample) : '';
       $('pro-preview').style.display = $('pro-preview').innerHTML ? '' : 'none';
       $('pro-preview').style.height = '';
@@ -409,15 +465,22 @@
     $('pro-trace').checked = config.trace;
     ['style', 'traceRows', 'writeRows'].forEach(function (k) { $('pro-' + k).value = config[k]; });
 
-    fetch(learnersUrl, { credentials: 'same-origin', cache: 'no-store' })
-      .then(function (r) { return r.json(); })
-      .then(function (list) {
+    Promise.all([
+      fetch(learnersUrl, { credentials: 'same-origin', cache: 'no-store' }).then(function (r) { return r.json(); }),
+      activityLearnerIds()
+    ])
+      .then(function (res) {
+        var list = res[0], forActivity = res[1];
         roster = (Array.isArray(list) ? list : []).map(function (s) { return { id: Number(s.id), name: s.name }; });
         if (!roster.length) {
           $('pro-list').innerHTML = '<div style="font-size:12.5px;color:#94a3b8;padding:8px 0;">No learners in your class yet.</div>';
         } else {
-          var keep = config.learnerIds.filter(function (id) { return roster.some(function (l) { return l.id === id; }); });
-          var pre = keep.length ? keep : roster.map(function (l) { return l.id; });
+          // Checked first: the learners chosen for this activity; else the
+          // last choice on this device; else everyone.
+          var inClass = function (id) { return roster.some(function (l) { return l.id === id; }); };
+          var mine = forActivity.filter(inClass);
+          var keep = config.learnerIds.filter(inClass);
+          var pre = mine.length ? mine : keep.length ? keep : roster.map(function (l) { return l.id; });
           $('pro-list').innerHTML = '<label class="pro-all"><input type="checkbox"> Select all (' + roster.length + ')</label>'
             + roster.map(function (l) {
               return '<label><input type="checkbox" class="pro-learner" value="' + l.id + '"' + (pre.indexOf(l.id) !== -1 ? ' checked' : '') + '> ' + esc(l.name) + '</label>';
@@ -458,5 +521,5 @@
     });
   }
 
-  window.PrintOptions = { ask: ask, build: build, fit: fit, capture: capture };
+  window.PrintOptions = { ask: ask, build: build, fit: fit, capture: capture, fitForPrint: fitPagesForPrint };
 })();
