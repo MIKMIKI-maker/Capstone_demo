@@ -46,7 +46,7 @@ if ($parent_email !== '') {
         exit;
     }
     if (!isAllowedEmailDomain($parent_email)) {
-        echo json_encode(['success' => false, 'message' => 'Parent ' . lcfirst(ALLOWED_EMAIL_DOMAINS_MESSAGE)]);
+        echo json_encode(['success' => false, 'message' => 'Parent email: ' . emailDomainProblem($parent_email)]);
         exit;
     }
 }

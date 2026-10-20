@@ -131,7 +131,7 @@ foreach ($rows as $r) {
         continue;
     }
     if (!isAllowedEmailDomain($email)) {
-        $results[] = ['row' => $num, 'email' => $email, 'status' => 'skipped', 'reason' => 'Unsupported email provider'];
+        $results[] = ['row' => $num, 'email' => $email, 'status' => 'skipped', 'reason' => emailDomainProblem($email)];
         continue;
     }
     if (mb_strlen($firstName) > 100 || mb_strlen($lastName) > 100 || mb_strlen($email) > 255) {

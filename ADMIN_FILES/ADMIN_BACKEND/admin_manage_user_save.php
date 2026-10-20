@@ -76,7 +76,7 @@ if (strcasecmp($email_address, $previous_email) !== 0) {
         exit;
     }
     if (!isAllowedEmailDomain($email_address)) {
-        echo json_encode(['success' => false, 'message' => ALLOWED_EMAIL_DOMAINS_MESSAGE]);
+        echo json_encode(['success' => false, 'message' => emailDomainProblem($email_address)]);
         exit;
     }
 }

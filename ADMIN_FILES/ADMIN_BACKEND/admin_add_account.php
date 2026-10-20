@@ -79,7 +79,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 
     if (!isAllowedEmailDomain($email)) {
-        echo json_encode(['success' => false, 'message' => ALLOWED_EMAIL_DOMAINS_MESSAGE]);
+        echo json_encode(['success' => false, 'message' => emailDomainProblem($email)]);
         $conn->close();
         exit;
     }
