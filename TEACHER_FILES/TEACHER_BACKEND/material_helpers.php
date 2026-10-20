@@ -115,7 +115,8 @@ function materialActivityRows($conn, $teacherId, $syId, $studentId = 0) {
     ensureMaterialSchema($conn);
     $sql = "SELECT m.id, m.student_id, m.title, m.domain, m.final_score, m.is_graded, m.graded_at, m.uploaded_at,
                    m.assistance_level, m.teacher_note,
-                   (SELECT COUNT(*) FROM material_submissions ms WHERE ms.material_id = m.id AND ms.student_id = m.student_id) AS files
+                   (SELECT COUNT(*) FROM material_submissions ms WHERE ms.material_id = m.id AND ms.student_id = m.student_id) AS files,
+                   (SELECT MAX(ms.submitted_at) FROM material_submissions ms WHERE ms.material_id = m.id AND ms.student_id = m.student_id) AS last_submitted
             FROM teacher_uploaded_materials m
             WHERE m.teacher_id = ? AND m.material_kind = 'activity' AND m.school_year_id = ?"
          . ($studentId ? " AND m.student_id = ?" : "") . "
@@ -139,6 +140,7 @@ function materialActivityRows($conn, $teacherId, $syId, $studentId = 0) {
             'graded'           => $graded,
             'score'            => $graded ? (int)$r['final_score'] : null,
             'date'             => $graded ? $r['graded_at'] : null,
+            'submitted_at'     => $r['last_submitted'],
             'uploaded_at'      => $r['uploaded_at'],
             'assistance_level' => $r['assistance_level'],
             'teacher_note'     => $r['teacher_note'],

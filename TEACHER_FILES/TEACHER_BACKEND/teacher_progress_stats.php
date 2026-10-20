@@ -191,14 +191,17 @@ if ($stmt) {
     $stmt->close();
 }
 
-// Graded manual activities in the history, newest first with the rest.
+// Every manual activity (uploaded 'activity' material) in the history with
+// the rest, newest first: graded = completed with its score, turned in =
+// waiting for the teacher's grade, else not started yet.
 foreach ($matRows as $m) {
-    if (!$m['graded']) continue;
     $sc = $m['score'];
+    $status = $m['graded'] ? 'completed' : ($m['submitted'] ? 'to-grade' : 'not-started');
     $progress['activities'][] = [
-        'id' => 'm' . $m['id'], 'name' => $m['title'], 'subject' => $m['domain'], 'date' => $m['date'],
-        'score' => $sc, 'score_color' => $sc >= 80 ? '#10b981' : ($sc >= 60 ? '#f59e0b' : ($sc > 0 ? '#ef4444' : '#CBD5E1')),
-        'status' => 'completed', 'assistance_level' => $m['assistance_level'], 'finalized_score' => $sc, 'is_finalized' => true,
+        'id' => 'm' . $m['id'], 'name' => $m['title'], 'subject' => $m['domain'],
+        'date' => $m['graded'] ? $m['date'] : ($m['submitted_at'] ?: null),
+        'score' => $sc, 'score_color' => $sc === null ? '#CBD5E1' : ($sc >= 80 ? '#10b981' : ($sc >= 60 ? '#f59e0b' : ($sc > 0 ? '#ef4444' : '#CBD5E1'))),
+        'status' => $status, 'assistance_level' => $m['assistance_level'], 'finalized_score' => $sc, 'is_finalized' => $m['graded'],
         'scaffold_used' => 0, 'struggled_items' => [], 'retake_count' => 0, 'attempt_history' => [], 'is_material' => true,
         'activity_type' => 'Manual Activity',
     ];
