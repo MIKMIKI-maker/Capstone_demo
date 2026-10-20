@@ -11,6 +11,12 @@ if (!$conn) {
     exit;
 }
 
+// Times are shown in Philippine time (UTC+8) whatever time zone the database
+// server runs in (it is UTC on the live site): shift by the server's own
+// offset from UTC, then +8 hours.
+$PH = "INTERVAL (28800 - TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(), NOW())) SECOND";
+$PH_FMT = "'%Y-%m-%d %l:%i %p'";
+
 // Brevo's free tier caps at 300 sends per rolling 24h window (visible on
 // Brevo's own "Usage and plan" page too, but this is the in-app view).
 $todayRes = $conn->query("SELECT COUNT(*) AS cnt FROM email_log WHERE success = 1 AND sent_at >= (NOW() - INTERVAL 1 DAY)");
@@ -21,7 +27,7 @@ $sentLast24h = $todayRes ? (int)$todayRes->fetch_assoc()['cnt'] : 0;
 $resumesAt = null;
 if ($sentLast24h >= EMAIL_DAILY_LIMIT) {
     $offset = $sentLast24h - EMAIL_DAILY_LIMIT;
-    $resRes = $conn->query("SELECT sent_at + INTERVAL 1 DAY AS resumes FROM email_log
+    $resRes = $conn->query("SELECT DATE_FORMAT(sent_at + INTERVAL 1 DAY + $PH, $PH_FMT) AS resumes FROM email_log
         WHERE success = 1 AND sent_at >= (NOW() - INTERVAL 1 DAY) ORDER BY sent_at ASC LIMIT 1 OFFSET $offset");
     $resumesAt = $resRes && ($r = $resRes->fetch_assoc()) ? $r['resumes'] : null;
 }
@@ -30,7 +36,7 @@ $failedRes = $conn->query("SELECT COUNT(*) AS cnt FROM email_log WHERE success =
 $failedLast24h = $failedRes ? (int)$failedRes->fetch_assoc()['cnt'] : 0;
 
 $rows = [];
-$listRes = $conn->query("SELECT recipient_email, subject, success, error_message, sent_at FROM email_log ORDER BY sent_at DESC LIMIT 30");
+$listRes = $conn->query("SELECT recipient_email, subject, success, error_message, DATE_FORMAT(sent_at + $PH, $PH_FMT) AS sent_at_ph FROM email_log ORDER BY sent_at DESC LIMIT 30");
 if ($listRes) {
     while ($r = $listRes->fetch_assoc()) {
         $rows[] = [
@@ -38,7 +44,7 @@ if ($listRes) {
             'subject'         => $r['subject'],
             'success'         => (bool)$r['success'],
             'error_message'   => $r['error_message'],
-            'sent_at'         => $r['sent_at'],
+            'sent_at'         => $r['sent_at_ph'],
         ];
     }
 }
