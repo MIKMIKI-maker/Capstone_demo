@@ -2,6 +2,9 @@
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/csrf.php';
 require_once __DIR__ . '/../../MAILER/email_domains.php';
+require_once __DIR__ . '/../../MAILER/send_email.php';
+require_once __DIR__ . '/../../MAILER/account_emails.php';
+require_once __DIR__ . '/password_policy.php';
 require_once __DIR__ . '/school_year.php';
 requireAdminSession();
 csrf_require_valid_token();
@@ -107,13 +110,52 @@ if ($stmt->execute()) {
     }
     // Keep this S.Y.'s class enrollments in step with the new assignment.
     reconcileActiveEnrollments($conn);
-    echo json_encode(['success' => true, 'message' => 'User updated successfully']);
+    $response = ['success' => true, 'message' => 'User updated successfully'];
+    if (strcasecmp($email_address, $previous_email) !== 0) {
+        $response += emailNewAddress($conn, $user_id, $user_role, trim($first_name . ' ' . $last_name), $email_address);
+    }
+    echo json_encode($response);
 } else {
     echo json_encode(['success' => false, 'message' => 'Update failed']);
 }
 
 $stmt->close();
 $conn->close();
+
+/*
+ * The account's email was changed: tell the new address. An account that
+ * was never logged into (e.g. the first email had a typo, so its welcome
+ * email went nowhere) gets the welcome email again with a fresh temporary
+ * password; one already in use just gets a notice, and keeps its password.
+ */
+function emailNewAddress(mysqli $conn, int $userId, string $role, string $fullName, string $email): array {
+    $st = $conn->prepare("SELECT last_login FROM admin_accounts WHERE id = ?");
+    $st->bind_param("i", $userId);
+    $st->execute();
+    $row = $st->get_result()->fetch_assoc();
+    $st->close();
+    $neverUsed = $row && $row['last_login'] === null;
+
+    if (!$neverUsed) {
+        $sent = send_email($email, $fullName, 'Your SPED ALM login email was updated', accountEmailChangedHtml($fullName, $email));
+        return ['email_sent' => $sent, 'email_kind' => 'notice'];
+    }
+
+    $parts = explode(' ', $fullName, 2);
+    $raw = generateTemporaryPassword($parts[0], $parts[1] ?? '');
+    $hash = password_hash($raw, PASSWORD_DEFAULT);
+    $mustChange = in_array($role, ['teacher', 'student'], true) ? 1 : 0;
+    $st = $conn->prepare("UPDATE admin_accounts SET admin_password = ?, must_change_password = ? WHERE id = ?");
+    $st->bind_param("sii", $hash, $mustChange, $userId);
+    $st->execute();
+    $st->close();
+    $sent = send_email($email, $fullName, 'Your SPED ALM account details',
+        accountWelcomeEmailHtml($fullName, ucfirst($role), $email, $raw));
+    // The email is the only place the new password is shown, so if it
+    // didn't go out, hand it to the Admin to pass along instead.
+    return $sent ? ['email_sent' => true, 'email_kind' => 'welcome']
+                 : ['email_sent' => false, 'email_kind' => 'welcome', 'temp_password' => $raw];
+}
 
 // Function to sync teacher to teacher_accounts table
 function syncTeacherAccount($email, $firstName, $lastName, $phone = '', $previousEmail = '') {

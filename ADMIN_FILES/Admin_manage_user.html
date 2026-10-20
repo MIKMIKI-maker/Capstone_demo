@@ -1383,6 +1383,14 @@
       .then(function(result) {
         if (result && result.success === false) {
           showMuToast(result.message || 'Could not save changes.', true);
+        } else if (result && result.email_kind && result.email_sent === false && result.temp_password) {
+          showMuToast('User updated, but the email to the new address failed. Give this temporary password to the user: ' + result.temp_password, true, 15000);
+        } else if (result && result.email_kind && result.email_sent === false) {
+          showMuToast('User updated, but the email to the new address could not be sent.', true, 8000);
+        } else if (result && result.email_kind === 'welcome') {
+          showMuToast('User updated. The login details were sent to the new email.', false, 6000);
+        } else if (result && result.email_kind === 'notice') {
+          showMuToast('User updated. The new email was told about the change.', false, 6000);
         } else {
           showMuToast('User updated successfully!');
         }
