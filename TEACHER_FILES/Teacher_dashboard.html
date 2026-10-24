@@ -708,7 +708,12 @@
                 var acts = s.activity_count ? s.activity_count + ' activit' + (s.activity_count === 1 ? 'y' : 'ies') : '';
                 var sub = [s.condition || 'Student', acts].filter(Boolean).join(' · ');
                 return '<div class="teacher-progress-card">'
-                    + '<div class="teacher-prog-avatar">' + escHtml(s.initials) + '</div>'
+                    + '<div class="teacher-prog-avatar"' + (s.photo ? ' style="overflow:hidden;padding:0;"' : '') + '>'
+                    // The learner's photo when they uploaded one; their initials if not (or if it won't load)
+                    +   (s.photo
+                          ? '<img src="' + escHtml(s.photo) + '" alt="" data-initials="' + escHtml(s.initials) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;" onerror="var d=this.parentNode;d.style.overflow=\'\';d.textContent=this.getAttribute(\'data-initials\');">'
+                          : escHtml(s.initials))
+                    + '</div>'
                     + '<div class="teacher-prog-info">'
                     + '<div class="teacher-prog-name">' + escHtml(s.name) + '</div>'
                     + '<div class="teacher-prog-sub">' + escHtml(sub) + '</div>'

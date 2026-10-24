@@ -111,6 +111,7 @@ foreach (materialActivityRows($conn, $teacher_id, $syId) as $m) {
 }
 $stmt = $conn->prepare(
     "SELECT s.id, s.student_name, s.disability_type, s.status,
+        (SELECT COALESCE(a.profile_photo, '') FROM admin_accounts a WHERE a.id = s.admin_account_id) AS photo,
         (SELECT SUM(CASE WHEN sub.is_finalized = 1 AND sub.finalized_score IS NOT NULL THEN sub.finalized_score ELSE lp.score END)
          FROM learner_progress lp
          JOIN teacher_activities ta ON ta.id = lp.activity_id AND ta.teacher_id = lp.teacher_id
@@ -149,7 +150,9 @@ if ($stmt) {
             'condition'      => $row['disability_type'] ?: '',
             'last_score'     => $n ? (int)round($sum / $n) : null,
             'activity_count' => (int)$row['activity_count'] + count($graded),
-            'status'         => $row['status']
+            'status'         => $row['status'],
+            // The learner's own profile photo (uploaded in the student portal), if any
+            'photo'          => preg_match('#^(https?://|data:image/)#', $row['photo']) ? $row['photo'] : ''
         ];
     }
     $stmt->close();
